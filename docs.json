@@ -15,6 +15,15 @@
         "default": true,
         "tabs": [
           {
+            "tab": "VeADK",
+            "groups": [
+              {
+                "group": "开始使用",
+                "pages": ["zh/veadk/index", "zh/veadk/quickstart"]
+              }
+            ]
+          },
+          {
             "tab": "AgentKit CLI",
             "groups": [
               {
@@ -26,21 +35,21 @@
                 "pages": ["zh/agentkit-cli/commands"]
               }
             ]
-          },
-          {
-            "tab": "VeADK",
-            "groups": [
-              {
-                "group": "开始使用",
-                "pages": ["zh/veadk/index", "zh/veadk/quickstart"]
-              }
-            ]
           }
         ]
       },
       {
         "language": "en",
         "tabs": [
+          {
+            "tab": "VeADK",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": ["en/veadk/index", "en/veadk/quickstart"]
+              }
+            ]
+          },
           {
             "tab": "AgentKit CLI",
             "groups": [
@@ -53,23 +62,10 @@
                 "pages": ["en/agentkit-cli/commands"]
               }
             ]
-          },
-          {
-            "tab": "VeADK",
-            "groups": [
-              {
-                "group": "Getting Started",
-                "pages": ["en/veadk/index", "en/veadk/quickstart"]
-              }
-            ]
           }
         ]
       }
     ]
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
   },
   "navbar": {
     "links": [
