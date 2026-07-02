@@ -12,11 +12,6 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "redirects": [
-    { "source": "/", "destination": "/zh/veadk" },
-    { "source": "/zh", "destination": "/zh/veadk" },
-    { "source": "/en", "destination": "/en/veadk" }
-  ],
   "navigation": {
     "languages": [
       {
@@ -34,11 +29,7 @@
                 "group": "快速开始",
                 "pages": [
                   "zh/veadk/get-started/installation",
-                  "zh/veadk/get-started/quickstart",
-                  {
-                    "anchor": "Changelog",
-                    "href": "https://github.com/volcengine/veadk-python/releases"
-                  }
+                  "zh/veadk/get-started/quickstart"
                 ]
               },
               {
@@ -93,11 +84,7 @@
                 "group": "Get started",
                 "pages": [
                   "en/veadk/get-started/installation",
-                  "en/veadk/get-started/quickstart",
-                  {
-                    "anchor": "Changelog",
-                    "href": "https://github.com/volcengine/veadk-python/releases"
-                  }
+                  "en/veadk/get-started/quickstart"
                 ]
               },
               {
@@ -142,6 +129,10 @@
   },
   "navbar": {
     "links": [
+      {
+        "label": "Changelog",
+        "href": "https://github.com/volcengine/veadk-python/releases"
+      },
       {
         "label": "GitHub",
         "href": "https://github.com/volcengine/veadk-python"
