@@ -13,6 +13,15 @@
     "dark": "/logo/dark.svg"
   },
   "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Changelog",
+          "href": "https://github.com/volcengine/veadk-python/releases",
+          "icon": "clock-rotate-left"
+        }
+      ]
+    },
     "languages": [
       {
         "language": "zh",
@@ -129,10 +138,6 @@
   },
   "navbar": {
     "links": [
-      {
-        "label": "Changelog",
-        "href": "https://github.com/volcengine/veadk-python/releases"
-      },
       {
         "label": "GitHub",
         "href": "https://github.com/volcengine/veadk-python"
