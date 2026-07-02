@@ -23,7 +23,7 @@
             "groups": [
               {
                 "group": "概览",
-                "pages": ["zh/veadk/overview"]
+                "pages": ["zh/veadk/index"]
               },
               {
                 "group": "快速开始",
@@ -82,7 +82,7 @@
             "groups": [
               {
                 "group": "Overview",
-                "pages": ["en/veadk/overview"]
+                "pages": ["en/veadk/index"]
               },
               {
                 "group": "Get started",
