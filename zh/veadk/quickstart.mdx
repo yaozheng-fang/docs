@@ -1,28 +1,28 @@
 ---
 title: "快速开始"
-description: "安装 VeADK、配置模型并运行一个最小 agent"
+description: "安装 VeADK、配置模型并运行一个最小智能体"
 ---
 
-本教程介绍如何安装 VeADK、配置模型，并运行一个最小可用的 agent，最终在终端获得模型的回答。
+本教程介绍如何安装 VeADK、配置模型，并运行一个最小可用的智能体，最终在终端获得模型的回答。
 
 <Note>
-  本章仅覆盖从安装到首次运行的最小路径。部署到 AgentKit、记忆、知识库、多 agent、评测等主题请参见对应章节。
+  本章仅覆盖从安装到首次运行的最小路径。部署到 AgentKit、记忆、知识库、多智能体、评测等主题请参见对应章节。
 </Note>
 
 ## 前置条件
 
 - Python 3.10 及以上版本。
-- 火山方舟（Ark）API Key，用于调用模型，可在[火山引擎方舟控制台](https://console.volcengine.com/ark)创建。
+- 火山方舟 API Key，用于调用模型，可在[火山引擎方舟控制台](https://console.volcengine.com/ark)创建。
 
 ## 安装
 
-从 PyPI 安装核心包：
+从 [PyPI](https://pypi.org/project/veadk-python/) 安装核心包：
 
 ```bash
 pip install veadk-python
 ```
 
-VeADK 通过可选依赖组（extras）提供按需能力，可根据用途单独安装：
+VeADK 通过可选依赖组提供按需能力，可根据用途单独安装：
 
 ```bash
 pip install "veadk-python[extensions]"
@@ -30,17 +30,17 @@ pip install "veadk-python[extensions]"
 
 可用的依赖组：
 
-| Extra | 用途 |
+| 依赖组 | 用途 |
 | --- | --- |
 | `extensions` | 飞书渠道、Cozeloop、LlamaIndex 等集成 |
 | `database` | Redis、MySQL、Viking DB、mem0 等存储后端 |
 | `eval` | 基于 DeepEval 与 Google ADK 的评测 |
-| `a2ui` | A2UI（agent 驱动的界面） |
+| `a2ui` | A2UI（智能体驱动的界面） |
 | `pdf` | PDF 页面渲染 |
 
 ## 配置模型
 
-在项目根目录创建 `config.yaml`，VeADK 会自动读取。运行最小 agent 仅需配置模型：
+在项目根目录创建 `config.yaml`，VeADK 会自动读取。运行最小智能体仅需配置模型：
 
 ```yaml config.yaml
 model:
@@ -52,10 +52,10 @@ model:
 ```
 
 <Tip>
-  `provider: openai` 表示采用 OpenAI 兼容协议，`api_base` 指向火山方舟的兼容接口，因此可直接使用豆包（doubao）等方舟模型。
+  `provider: openai` 表示采用 OpenAI 兼容协议，`api_base` 指向火山方舟的兼容接口，因此可直接使用豆包等方舟模型。
 </Tip>
 
-## 编写第一个 agent
+## 编写第一个智能体
 
 创建 `main.py`：
 
@@ -65,7 +65,7 @@ import asyncio
 
 agent = Agent()
 
-res = asyncio.run(agent.run("用一句话介绍火山引擎（Volcengine）。"))
+res = asyncio.run(agent.run("用一句话介绍火山引擎。"))
 print(res)
 ```
 
@@ -77,21 +77,4 @@ print(res)
 python main.py
 ```
 
-终端将打印模型返回的回答。至此，一个最小 VeADK agent 已完成运行。
-
-## 下一步
-
-<CardGroup cols={2}>
-  <Card title="官方文档" icon="book" href="https://volcengine.github.io/veadk-python/">
-    完整的配置、组件与 API 说明。
-  </Card>
-  <Card title="交互式教程" icon="flask" href="https://github.com/volcengine/veadk-python/blob/main/veadk_tutorial.ipynb">
-    Jupyter Notebook 版教程，可在 Colab 中直接打开。
-  </Card>
-  <Card title="示例集" icon="code" href="https://github.com/volcengine/veadk-python/tree/main/examples">
-    自定义工具、记忆、知识库 RAG、多 agent、评测等进阶示例。
-  </Card>
-  <Card title="源码" icon="github" href="https://github.com/volcengine/veadk-python">
-    volcengine/veadk-python
-  </Card>
-</CardGroup>
+终端将打印模型返回的回答。至此，一个最小 VeADK 智能体已完成运行。
