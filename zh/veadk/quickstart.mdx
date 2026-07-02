@@ -1,14 +1,86 @@
 ---
 title: "快速开始"
-description: "安装 VeADK 并运行第一个 agent"
+description: "从零到第一个 VeADK agent：安装、配置模型、跑通一次对话"
 ---
 
-## 安装
-
-```bash
-pip install veadk
-```
+本教程带你在几分钟内跑通第一个 VeADK agent——安装、配好模型、写一段最小代码并拿到一次真实回答。
 
 <Note>
-  完整的快速开始正在从 [volcengine/veadk-python](https://github.com/volcengine/veadk-python) 迁移中。
+  本章只覆盖“零到第一个回答”。部署到 AgentKit、记忆、知识库、多 agent、评测等进阶主题见各自章节。
 </Note>
+
+## 前置条件
+
+- **Python 3.10+**
+- **火山方舟（Ark）API Key** —— 在[火山引擎方舟控制台](https://console.volcengine.com/ark)创建，用于调用模型。
+
+## 1. 安装
+
+```bash
+pip install veadk-python
+```
+
+可选：安装扩展能力（如飞书渠道、A2UI 等）。
+
+```bash
+pip install veadk-python[extensions]
+```
+
+## 2. 配置模型
+
+在你项目的根目录创建一个 `config.yaml`，VeADK 会自动读取。跑一个最小 agent 只需配置模型：
+
+```yaml config.yaml
+model:
+  agent:
+    provider: openai
+    name: doubao-seed-1-6-250615
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: # <-- 填入你的火山方舟 API Key
+```
+
+<Tip>
+  `provider: openai` 表示走 OpenAI 兼容协议；`api_base` 指向火山方舟的兼容接口，因此可以直接使用豆包（doubao）等方舟模型。
+</Tip>
+
+## 3. 写第一个 agent
+
+新建 `main.py`：
+
+```python main.py
+from veadk import Agent
+import asyncio
+
+agent = Agent()
+
+res = asyncio.run(agent.run("用一句话介绍火山引擎（Volcengine）。"))
+print(res)
+```
+
+- `Agent` 持有模型与指令；不传参数时使用 `config.yaml` 里的默认模型。
+- `agent.run(...)` 是异步的，返回最终的文本回答。
+
+运行：
+
+```bash
+python main.py
+```
+
+你会看到模型对该问题的一句话回答打印在终端里。至此，你的第一个 VeADK agent 已经跑通。
+
+## 下一步
+
+<CardGroup cols={2}>
+  <Card title="官方文档" icon="book" href="https://volcengine.github.io/veadk-python/">
+    完整的配置、组件与 API 说明。
+  </Card>
+  <Card title="交互式教程" icon="flask" href="https://github.com/volcengine/veadk-python/blob/main/veadk_tutorial.ipynb">
+    Jupyter Notebook 版教程，可在 Colab 直接打开。
+  </Card>
+  <Card title="示例集" icon="code" href="https://github.com/volcengine/veadk-python/tree/main/examples">
+    自定义工具、记忆、知识库 RAG、多 agent、评测等进阶示例。
+  </Card>
+  <Card title="源码" icon="github" href="https://github.com/volcengine/veadk-python">
+    volcengine/veadk-python
+  </Card>
+</CardGroup>
