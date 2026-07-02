@@ -1,0 +1,389 @@
+---
+title: "Command reference"
+description: "Every command with a one-line description and an example"
+---
+
+Run `agentkit tree` any time to print the full command tree (`--all` expands
+args/options, `--json` for machine-readable output).
+
+## init
+
+Scaffold a new agent project from a language/template.
+
+```bash
+agentkit init my-agent -L python -t basic-agent
+```
+
+## deploy
+
+One-shot build & deploy of the current project (runs config → build → apply).
+
+```bash
+agentkit deploy --name my-agent --project default
+```
+
+### deploy config
+
+Scaffold `.agentkit/` (`agentkit.yaml` + `Dockerfile`).
+
+```bash
+agentkit deploy config --name my-agent
+```
+
+### deploy build
+
+Build the image in the cloud and write the artifact.
+
+```bash
+agentkit deploy build
+```
+
+### deploy apply
+
+Create/update the runtime from the latest built artifact.
+
+```bash
+agentkit deploy apply
+```
+
+## runtime
+
+### runtime list
+
+List all runtimes.
+
+```bash
+agentkit runtime list
+```
+
+### runtime show
+
+Show a runtime's details (optionally a specific version).
+
+```bash
+agentkit runtime show my-agent --rev 3
+```
+
+### runtime delete
+
+Delete a runtime.
+
+```bash
+agentkit runtime delete my-agent -y
+```
+
+### runtime logs
+
+Show logs for a runtime instance.
+
+```bash
+agentkit runtime logs my-agent --instance <id> --limit 100
+```
+
+### runtime versions
+
+List a runtime's version history.
+
+```bash
+agentkit runtime versions my-agent
+```
+
+### runtime release
+
+Release (publish) a runtime version, making it live.
+
+```bash
+agentkit runtime release my-agent --rev 3
+```
+
+### runtime update
+
+Update a runtime's configuration (does not release unless `--auto-release`).
+
+```bash
+agentkit runtime update my-agent --min-instance 1 --max-instance 5 --auto-release
+```
+
+## knowledge (kb)
+
+### knowledge list
+
+List all knowledge bases.
+
+```bash
+agentkit knowledge list
+```
+
+### knowledge show
+
+Show a knowledge base's details.
+
+```bash
+agentkit knowledge show <id>
+```
+
+### knowledge create
+
+Create a knowledge base.
+
+```bash
+agentkit knowledge create --name my-kb --provider-type viking --provider-knowledge-id <id>
+```
+
+### knowledge update
+
+Update a knowledge base.
+
+```bash
+agentkit knowledge update <id> --description "product docs"
+```
+
+### knowledge delete
+
+Delete a knowledge base.
+
+```bash
+agentkit knowledge delete <id> -y
+```
+
+## memory (mem)
+
+### memory list
+
+List all memory collections.
+
+```bash
+agentkit memory list
+```
+
+### memory show
+
+Show a memory collection's details.
+
+```bash
+agentkit memory show <id>
+```
+
+### memory create
+
+Create a memory collection.
+
+```bash
+agentkit memory create --name my-mem --provider-type viking
+```
+
+### memory update
+
+Update a memory collection.
+
+```bash
+agentkit memory update <id> --description "user preferences"
+```
+
+### memory delete
+
+Delete a memory collection.
+
+```bash
+agentkit memory delete <id> -y
+```
+
+## tool
+
+### tool list
+
+List all tools.
+
+```bash
+agentkit tool list
+```
+
+### tool show
+
+Show a tool's details.
+
+```bash
+agentkit tool show <id>
+```
+
+### tool create
+
+Create a tool.
+
+```bash
+agentkit tool create --name my-mcp --tool-type McpServer --image-url <url> --port 8080
+```
+
+### tool update
+
+Update a tool.
+
+```bash
+agentkit tool update <id> --image-url <url>
+```
+
+### tool delete
+
+Delete a tool.
+
+```bash
+agentkit tool delete <id> -y
+```
+
+## harness
+
+Code-free agent defined entirely by a `harness.yaml`.
+
+### harness init
+
+Create a harness directory (`harness.yaml` + `.env.example`).
+
+```bash
+agentkit harness init my-harness
+```
+
+### harness set
+
+Set fields in `harness.yaml` (partial update; run with no flags to list them).
+
+```bash
+agentkit harness set --name my-agent --model-name doubao --system-prompt "You are helpful."
+```
+
+### harness deploy
+
+Build the harness image and create/update the runtime from `harness.yaml`.
+
+```bash
+agentkit harness deploy
+```
+
+## invoke
+
+Call a deployed runtime by name or id (resolves endpoint + auth automatically).
+
+```bash
+agentkit invoke my-agent -m "hello"
+```
+
+## auth
+
+SSO authentication. `login` / `logout` / `whoami` are also available at the top level.
+
+### auth login
+
+Authenticate via browser SSO and store short-lived STS credentials.
+
+```bash
+agentkit login sso.example.com
+```
+
+### auth logout
+
+Clear the stored SSO session.
+
+```bash
+agentkit logout
+```
+
+### auth whoami
+
+Show the identity behind the current credentials.
+
+```bash
+agentkit whoami
+```
+
+### auth profile set
+
+Create or update a login profile's coordinates.
+
+```bash
+agentkit auth profile set prod --issuer <url> --client-id <id> --role-trn <trn>
+```
+
+### auth profile list
+
+List saved profiles.
+
+```bash
+agentkit auth profile list
+```
+
+### auth profile show
+
+Show a profile's coordinates (default: active).
+
+```bash
+agentkit auth profile show prod
+```
+
+## onboard
+
+Install the bundled agent skills into your local coding agents (Claude Code, Codex, Trae).
+
+```bash
+agentkit onboard --agent claude-code,codex --scope project
+```
+
+## eval dataset
+
+Manage evaluation datasets and their case items. The `eval` prefix is optional
+(`agentkit dataset …`). Verbs distinguish the target: `create`/`delete` act on
+the dataset, `add`/`remove` act on its cases.
+
+### dataset list
+
+List evaluation datasets.
+
+```bash
+agentkit dataset list
+```
+
+### dataset show
+
+Show a dataset's details, schema, and case items (with their ITEM IDs).
+
+```bash
+agentkit dataset show my-dataset --items 20
+```
+
+### dataset create
+
+Create a dataset (schema defaults to `input,reference_output,output`).
+
+```bash
+agentkit dataset create --name my-dataset --schema question,answer
+```
+
+### dataset delete
+
+Delete a dataset (and all its cases).
+
+```bash
+agentkit dataset delete my-dataset -y
+```
+
+### dataset add
+
+Add one or more cases to a dataset (fields must match the schema).
+
+```bash
+agentkit dataset add my-dataset --field 'input=Largest planet?' --field 'reference_output=Jupiter'
+```
+
+### dataset remove
+
+Remove cases by ITEM ID (get IDs from `dataset show`).
+
+```bash
+agentkit dataset remove my-dataset 7590105346029796098
+```
+
+## tree
+
+Print the full command tree.
+
+```bash
+agentkit tree
+```

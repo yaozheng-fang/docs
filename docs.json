@@ -1,37 +1,71 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "AgentKit 文档",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#DB2777",
+    "light": "#EC4899",
+    "dark": "#BE185D"
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "pages": [
+    "languages": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
+        "language": "zh",
+        "default": true,
+        "tabs": [
+          {
+            "tab": "AgentKit CLI",
+            "groups": [
+              {
+                "group": "开始使用",
+                "pages": ["zh/agentkit-cli/index", "zh/agentkit-cli/quickstart"]
+              },
+              {
+                "group": "参考",
+                "pages": ["zh/agentkit-cli/commands"]
+              }
+            ]
+          },
+          {
+            "tab": "VeADK",
+            "groups": [
+              {
+                "group": "开始使用",
+                "pages": ["zh/veadk/index", "zh/veadk/quickstart"]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "language": "en",
+        "tabs": [
+          {
+            "tab": "AgentKit CLI",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": ["en/agentkit-cli/index", "en/agentkit-cli/quickstart"]
+              },
+              {
+                "group": "Reference",
+                "pages": ["en/agentkit-cli/commands"]
+              }
+            ]
+          },
+          {
+            "tab": "VeADK",
+            "groups": [
+              {
+                "group": "Getting Started",
+                "pages": ["en/veadk/index", "en/veadk/quickstart"]
+              }
+            ]
+          }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/logo/light.svg",
@@ -40,33 +74,22 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "GitHub",
+        "href": "https://github.com/volcengine/veadk-python"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.mintlify.com"
-    }
+    ]
   },
   "contextual": {
     "options": [
       "copy",
       "view",
       "chatgpt",
-      "claude",
-      "perplexity",
-      "mcp",
-      "cursor",
-      "vscode"
+      "claude"
     ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/volcengine/veadk-python"
     }
   }
 }

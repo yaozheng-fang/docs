@@ -1,0 +1,65 @@
+---
+title: "快速开始"
+description: "安装、登录，三步部署你的第一个 agent"
+---
+
+## 安装
+
+```bash
+pnpm install
+pnpm build
+node dist/index.js --help
+```
+
+开发时可直接从源码运行：
+
+```bash
+pnpm dev --help          # tsx src/index.ts
+```
+
+## 鉴权
+
+CLI 会对 Volcengine OpenAPI 请求签名，凭证二选一：
+
+<Tabs>
+  <Tab title="SSO（推荐）">
+    浏览器登录，存储短期 STS 凭证。
+
+    ```bash
+    agentkit login <sso-address>
+    agentkit whoami
+    ```
+  </Tab>
+  <Tab title="AK/SK">
+    在环境变量或本地 `.env`（已被 git 忽略）中设置：
+
+    ```bash
+    VOLCENGINE_ACCESS_KEY=...
+    VOLCENGINE_SECRET_KEY=...
+    VOLCENGINE_REGION=cn-beijing   # 可选，默认 cn-beijing
+    ```
+  </Tab>
+</Tabs>
+
+## 三步部署
+
+<Steps>
+  <Step title="脚手架项目">
+    ```bash
+    agentkit init my-agent -L python -t basic-agent
+    cd my-agent
+    ```
+  </Step>
+  <Step title="构建并部署">
+    ```bash
+    agentkit deploy --name my-agent
+    ```
+  </Step>
+  <Step title="调用运行时">
+    ```bash
+    agentkit invoke my-agent -m "hello"
+    ```
+  </Step>
+</Steps>
+
+完整命令见 [命令参考](/agentkit-cli/commands)，或运行 `agentkit tree` 打印命令树。

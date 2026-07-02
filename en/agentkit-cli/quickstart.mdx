@@ -1,0 +1,66 @@
+---
+title: "Quickstart"
+description: "Install, log in, and deploy your first agent in three steps"
+---
+
+## Install
+
+```bash
+pnpm install
+pnpm build
+node dist/index.js --help
+```
+
+Run from source during development:
+
+```bash
+pnpm dev --help          # tsx src/index.ts
+```
+
+## Authentication
+
+The CLI signs Volcengine OpenAPI requests. Provide credentials one of two ways:
+
+<Tabs>
+  <Tab title="SSO (recommended)">
+    Browser login that stores short-lived STS credentials.
+
+    ```bash
+    agentkit login <sso-address>
+    agentkit whoami
+    ```
+  </Tab>
+  <Tab title="AK/SK">
+    Set these in your environment or a local `.env` (git-ignored):
+
+    ```bash
+    VOLCENGINE_ACCESS_KEY=...
+    VOLCENGINE_SECRET_KEY=...
+    VOLCENGINE_REGION=cn-beijing   # optional, defaults to cn-beijing
+    ```
+  </Tab>
+</Tabs>
+
+## Deploy in three steps
+
+<Steps>
+  <Step title="Scaffold a project">
+    ```bash
+    agentkit init my-agent -L python -t basic-agent
+    cd my-agent
+    ```
+  </Step>
+  <Step title="Build & deploy">
+    ```bash
+    agentkit deploy --name my-agent
+    ```
+  </Step>
+  <Step title="Invoke the runtime">
+    ```bash
+    agentkit invoke my-agent -m "hello"
+    ```
+  </Step>
+</Steps>
+
+See the [command reference](/en/agentkit-cli/commands), or run `agentkit tree`
+to print the command tree.

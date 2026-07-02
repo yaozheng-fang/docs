@@ -1,0 +1,387 @@
+---
+title: "命令参考"
+description: "每个命令一句话说明 + 一个示例"
+---
+
+运行 `agentkit tree` 可随时打印完整命令树（`--all` 展开参数/选项，`--json` 输出机器可读结构）。
+
+## init
+
+从语言/模板脚手架一个新项目。
+
+```bash
+agentkit init my-agent -L python -t basic-agent
+```
+
+## deploy
+
+一键构建并部署当前项目（依次执行 config → build → apply）。
+
+```bash
+agentkit deploy --name my-agent --project default
+```
+
+### deploy config
+
+生成 `.agentkit/`（`agentkit.yaml` + `Dockerfile`）。
+
+```bash
+agentkit deploy config --name my-agent
+```
+
+### deploy build
+
+在云端构建镜像并写入 artifact。
+
+```bash
+agentkit deploy build
+```
+
+### deploy apply
+
+用最新构建的 artifact 创建/更新运行时。
+
+```bash
+agentkit deploy apply
+```
+
+## runtime
+
+### runtime list
+
+列出所有运行时。
+
+```bash
+agentkit runtime list
+```
+
+### runtime show
+
+查看运行时详情（可指定版本）。
+
+```bash
+agentkit runtime show my-agent --rev 3
+```
+
+### runtime delete
+
+删除运行时。
+
+```bash
+agentkit runtime delete my-agent -y
+```
+
+### runtime logs
+
+查看运行时实例日志。
+
+```bash
+agentkit runtime logs my-agent --instance <id> --limit 100
+```
+
+### runtime versions
+
+查看运行时的版本历史。
+
+```bash
+agentkit runtime versions my-agent
+```
+
+### runtime release
+
+发布某个运行时版本，使其生效。
+
+```bash
+agentkit runtime release my-agent --rev 3
+```
+
+### runtime update
+
+更新运行时配置（除非 `--auto-release`，否则不发布）。
+
+```bash
+agentkit runtime update my-agent --min-instance 1 --max-instance 5 --auto-release
+```
+
+## knowledge (kb)
+
+### knowledge list
+
+列出所有知识库。
+
+```bash
+agentkit knowledge list
+```
+
+### knowledge show
+
+查看知识库详情。
+
+```bash
+agentkit knowledge show <id>
+```
+
+### knowledge create
+
+创建知识库。
+
+```bash
+agentkit knowledge create --name my-kb --provider-type viking --provider-knowledge-id <id>
+```
+
+### knowledge update
+
+更新知识库。
+
+```bash
+agentkit knowledge update <id> --description "产品文档"
+```
+
+### knowledge delete
+
+删除知识库。
+
+```bash
+agentkit knowledge delete <id> -y
+```
+
+## memory (mem)
+
+### memory list
+
+列出所有记忆集合。
+
+```bash
+agentkit memory list
+```
+
+### memory show
+
+查看记忆集合详情。
+
+```bash
+agentkit memory show <id>
+```
+
+### memory create
+
+创建记忆集合。
+
+```bash
+agentkit memory create --name my-mem --provider-type viking
+```
+
+### memory update
+
+更新记忆集合。
+
+```bash
+agentkit memory update <id> --description "用户偏好"
+```
+
+### memory delete
+
+删除记忆集合。
+
+```bash
+agentkit memory delete <id> -y
+```
+
+## tool
+
+### tool list
+
+列出所有工具。
+
+```bash
+agentkit tool list
+```
+
+### tool show
+
+查看工具详情。
+
+```bash
+agentkit tool show <id>
+```
+
+### tool create
+
+创建工具。
+
+```bash
+agentkit tool create --name my-mcp --tool-type McpServer --image-url <url> --port 8080
+```
+
+### tool update
+
+更新工具。
+
+```bash
+agentkit tool update <id> --image-url <url>
+```
+
+### tool delete
+
+删除工具。
+
+```bash
+agentkit tool delete <id> -y
+```
+
+## harness
+
+完全由 `harness.yaml` 定义的免代码 agent。
+
+### harness init
+
+创建 harness 目录（`harness.yaml` + `.env.example`）。
+
+```bash
+agentkit harness init my-harness
+```
+
+### harness set
+
+设置 `harness.yaml` 中的字段（局部更新；不带参数运行会列出所有字段）。
+
+```bash
+agentkit harness set --name my-agent --model-name doubao --system-prompt "You are helpful."
+```
+
+### harness deploy
+
+构建 harness 镜像并从 `harness.yaml` 创建/更新运行时。
+
+```bash
+agentkit harness deploy
+```
+
+## invoke
+
+按名称或 id 调用已部署的运行时（自动解析 endpoint + 鉴权）。
+
+```bash
+agentkit invoke my-agent -m "hello"
+```
+
+## auth
+
+SSO 鉴权。`login` / `logout` / `whoami` 同时也在顶层可用。
+
+### auth login
+
+浏览器 SSO 登录，存储短期 STS 凭证。
+
+```bash
+agentkit login sso.example.com
+```
+
+### auth logout
+
+清除已存储的 SSO 会话。
+
+```bash
+agentkit logout
+```
+
+### auth whoami
+
+显示当前凭证背后的身份。
+
+```bash
+agentkit whoami
+```
+
+### auth profile set
+
+创建或更新一个登录 profile 的坐标。
+
+```bash
+agentkit auth profile set prod --issuer <url> --client-id <id> --role-trn <trn>
+```
+
+### auth profile list
+
+列出已保存的 profile。
+
+```bash
+agentkit auth profile list
+```
+
+### auth profile show
+
+查看某个 profile 的坐标（默认：当前激活）。
+
+```bash
+agentkit auth profile show prod
+```
+
+## onboard
+
+把内置的 agent 技能装进本地 coding agent（Claude Code、Codex、Trae）。
+
+```bash
+agentkit onboard --agent claude-code,codex --scope project
+```
+
+## eval dataset
+
+管理评测数据集及其用例。`eval` 前缀可省略（`agentkit dataset …`）。动词区分对象：
+`create`/`delete` 作用于数据集本身，`add`/`remove` 作用于其中的用例。
+
+### dataset list
+
+列出评测数据集。
+
+```bash
+agentkit dataset list
+```
+
+### dataset show
+
+查看数据集详情、schema 及用例（含用例的 ITEM ID）。
+
+```bash
+agentkit dataset show my-dataset --items 20
+```
+
+### dataset create
+
+创建数据集（schema 默认 `input,reference_output,output`）。
+
+```bash
+agentkit dataset create --name my-dataset --schema question,answer
+```
+
+### dataset delete
+
+删除数据集（及其全部用例）。
+
+```bash
+agentkit dataset delete my-dataset -y
+```
+
+### dataset add
+
+往数据集添加一条或多条用例（字段需匹配 schema）。
+
+```bash
+agentkit dataset add my-dataset --field 'input=最大的行星?' --field 'reference_output=木星'
+```
+
+### dataset remove
+
+按 ITEM ID 删除用例（ID 从 `dataset show` 获取）。
+
+```bash
+agentkit dataset remove my-dataset 7590105346029796098
+```
+
+## tree
+
+打印完整命令树。
+
+```bash
+agentkit tree
+```

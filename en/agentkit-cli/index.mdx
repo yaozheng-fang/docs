@@ -1,0 +1,43 @@
+---
+title: "AgentKit CLI"
+description: "Scaffold, deploy, and manage AgentKit agents from your terminal"
+---
+
+`agentkit` is the command-line tool for AgentKit: scaffold projects, build and
+deploy runtimes, and manage tools, knowledge bases, memory, and evaluation —
+all from your terminal.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/en/agentkit-cli/quickstart">
+    Install, log in, and deploy your first agent in three steps.
+  </Card>
+  <Card title="Command reference" icon="terminal" href="/en/agentkit-cli/commands">
+    Every command with a one-line description and an example.
+  </Card>
+</CardGroup>
+
+## Command groups
+
+| Group | What it manages |
+| --- | --- |
+| `init` | scaffold a new agent project |
+| `deploy` | build & deploy the project (`config` → `build` → `apply`) |
+| `runtime` | deployed runtimes (list/show/logs/versions/release/update/delete) |
+| `knowledge` (`kb`) | knowledge bases |
+| `memory` (`mem`) | memory collections |
+| `tool` | tools (MCP servers, code environments, …) |
+| `harness` | code-free agents defined by a `harness.yaml` |
+| `invoke` | call a deployed runtime |
+| `auth` | SSO login/logout/whoami and login profiles |
+| `onboard` | install bundled skills into local coding agents |
+| `eval dataset` | evaluation datasets and their cases (`eval` prefix optional) |
+| `tree` | print the command tree |
+
+## Conventions
+
+- `knowledge`↔`kb`, `memory`↔`mem` are aliases; the `eval` prefix is optional
+  (`agentkit dataset …` == `agentkit eval dataset …`).
+- Most read commands accept `--json`; region is auto-sensed unless you pass
+  `-r, --region`.
+- Destructive commands (`delete`, `remove`) prompt for confirmation; pass `-y`
+  to skip.
