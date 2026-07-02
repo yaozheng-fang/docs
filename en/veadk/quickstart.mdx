@@ -1,37 +1,51 @@
 ---
 title: "Quickstart"
-description: "From zero to your first VeADK agent: install, configure a model, run a conversation"
+description: "Install VeADK, configure a model, and run a minimal agent"
 ---
 
-This tutorial gets your first VeADK agent running in a few minutes — install it,
-configure a model, write a minimal script, and get a real answer back.
+This tutorial explains how to install VeADK, configure a model, and run a
+minimal agent that returns an answer in your terminal.
 
 <Note>
-  This chapter only covers "zero to first answer." Deploying to AgentKit, memory,
-  knowledge bases, multi-agent, and evaluation are covered in their own chapters.
+  This chapter covers only the minimal path from installation to a first run.
+  Deploying to AgentKit, memory, knowledge bases, multi-agent, and evaluation
+  are covered in their respective chapters.
 </Note>
 
 ## Prerequisites
 
-- **Python 3.10+**
-- **A Volcengine Ark API key** — create one in the [Ark console](https://console.volcengine.com/ark) to call models.
+- Python 3.10 or later.
+- A Volcengine Ark API key for calling models, created in the [Ark console](https://console.volcengine.com/ark).
 
-## 1. Install
+## Installation
+
+Install the core package from PyPI:
 
 ```bash
 pip install veadk-python
 ```
 
-Optionally, install the extensions (Feishu channel, A2UI, etc.):
+VeADK provides optional dependency groups (extras) for on-demand capabilities,
+installed individually as needed:
 
 ```bash
-pip install veadk-python[extensions]
+pip install "veadk-python[extensions]"
 ```
 
-## 2. Configure a model
+Available extras:
 
-Create a `config.yaml` in your project root — VeADK reads it automatically. A
-minimal agent only needs the model configured:
+| Extra | Purpose |
+| --- | --- |
+| `extensions` | Feishu channel, Cozeloop, LlamaIndex, and related integrations |
+| `database` | Redis, MySQL, Viking DB, mem0, and other storage backends |
+| `eval` | Evaluation via DeepEval and Google ADK |
+| `a2ui` | A2UI (agent-driven UI) |
+| `pdf` | PDF page rendering |
+
+## Configure a model
+
+Create `config.yaml` in the project root; VeADK reads it automatically. A
+minimal agent only requires the model to be configured:
 
 ```yaml config.yaml
 model:
@@ -39,15 +53,15 @@ model:
     provider: openai
     name: doubao-seed-1-6-250615
     api_base: https://ark.cn-beijing.volces.com/api/v3/
-    api_key: # <-- your Volcengine Ark API key
+    api_key: # your Volcengine Ark API key
 ```
 
 <Tip>
-  `provider: openai` means the OpenAI-compatible protocol; `api_base` points at
-  Ark's compatible endpoint, so you can use Ark models like doubao directly.
+  `provider: openai` uses the OpenAI-compatible protocol, and `api_base` points
+  at Ark's compatible endpoint, so Ark models such as doubao can be used directly.
 </Tip>
 
-## 3. Write your first agent
+## Write your first agent
 
 Create `main.py`:
 
@@ -61,9 +75,9 @@ res = asyncio.run(agent.run("Introduce Volcengine in one sentence."))
 print(res)
 ```
 
-- `Agent` holds the model and instruction; with no arguments it uses the default
-  model from `config.yaml`.
-- `agent.run(...)` is async and returns the final text answer.
+`Agent` holds the model and instruction; with no arguments it uses the default
+model from `config.yaml`. `agent.run(...)` is asynchronous and returns the final
+text answer.
 
 Run it:
 
@@ -71,8 +85,7 @@ Run it:
 python main.py
 ```
 
-You'll see the model's one-sentence answer printed to your terminal. Your first
-VeADK agent is now working.
+The terminal prints the model's answer, completing a minimal VeADK agent run.
 
 ## Next steps
 
