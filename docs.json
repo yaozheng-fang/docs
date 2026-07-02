@@ -12,6 +12,11 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
+  "redirects": [
+    { "source": "/", "destination": "/zh/veadk" },
+    { "source": "/zh", "destination": "/zh/veadk" },
+    { "source": "/en", "destination": "/en/veadk" }
+  ],
   "navigation": {
     "languages": [
       {
