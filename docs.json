@@ -2,6 +2,9 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "AgentKit 文档",
+  "metadata": {
+    "timestamp": true
+  },
   "colors": {
     "primary": "#DB2777",
     "light": "#EC4899",
