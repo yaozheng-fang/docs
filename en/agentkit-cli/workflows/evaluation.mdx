@@ -5,7 +5,7 @@ title: "Evaluation loop"
 Evaluation closes the "develop → deploy → evaluate → tune" loop: use a fixed dataset and one or more evaluators to score a deployed runtime, then iterate on the quantified results. This page walks through the full flow — from initializing a project to viewing evaluation results — using a question-answering agent as the example. For details on each command, see [Manage datasets](/en/agentkit-cli/commands/eval/dataset), [Manage evaluators](/en/agentkit-cli/commands/eval/evaluator), [Run an experiment](/en/agentkit-cli/commands/eval/run), and [View experiments and results](/en/agentkit-cli/commands/eval/experiment).
 
 <Note>
-Before you start, make sure you are logged in with `agentkit auth login`. Evaluation is currently in Preview; commands are automatically routed to the region where the evaluation service lives, so `-r/--region` is not needed.
+Before you start, make sure your Volcengine access keys are configured (the `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` environment variables). Evaluation is currently in Preview; commands are automatically routed to the region where the evaluation service lives, so `-r/--region` is not needed.
 </Note>
 
 ## End-to-end flow

@@ -5,7 +5,7 @@ title: "评测闭环"
 评测把「开发 → 部署 → 评测 → 调优」的闭环补齐：用一份固定的评测集与一个或多个评估器，对已部署的运行时打分，再依据量化结果迭代。本页以一个问答智能体为例，走通从初始化项目到看到评测结果的完整流程。各命令的详细用法见[管理评测集](/zh/agentkit-cli/commands/eval/dataset)、[管理评估器](/zh/agentkit-cli/commands/eval/evaluator)、[运行评测实验](/zh/agentkit-cli/commands/eval/run)与[查看实验与结果](/zh/agentkit-cli/commands/eval/experiment)。
 
 <Note>
-开始前请确认已通过 `agentkit auth login` 登录。评测能力当前处于 Preview 阶段，命令会自动路由到评测服务所在区域，无需指定 `-r/--region`。
+开始前请确认已配置火山引擎访问密钥（环境变量 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`）。评测能力当前处于 Preview 阶段，命令会自动路由到评测服务所在区域，无需指定 `-r/--region`。
 </Note>
 
 ## 端到端流程
