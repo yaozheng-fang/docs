@@ -1,0 +1,171 @@
+---
+title: "Inbound authentication"
+---
+
+Inbound authentication verifies the identity of requests coming into the agent. VeADK supports API keys and OAuth2.
+
+## API key authentication
+
+An API key verifies the caller's identity and authorizes access to API resources with a single string secret. VeADK passes the API key in the URL's `token` parameter.
+
+<Note>
+  API keys apply only to the A2A / MCP Server deployment mode; they are not recommended for the VeADK Web mode, which should use OAuth2 instead.
+</Note>
+
+Select API-key auth when scaffolding an agent, or add `--auth-method=api-key` when deploying an existing project. The API gateway then validates the API key carried in the `token` URL parameter on each request.
+
+## OAuth2 single sign-on
+
+OAuth2 is an open authorization framework: instead of exposing account credentials, it grants limited access via tokens, so a single login lets users reach multiple related applications without re-authenticating. VeADK offers two integration paths:
+
+| Path | When to use | Notes |
+| --- | --- | --- |
+| API gateway | VeFaaS cloud deployment | Deployed via scaffolding; the API gateway handles auth |
+| Starlette / FastAPI middleware | Local dev / self-hosted | Integrate the OAuth2 middleware in the app |
+
+### API gateway
+
+For VeADK Web apps deployed on VeFaaS, where the API gateway runs the OAuth2 flow.
+
+<Note>
+  The API gateway mode requires API gateway version 4.0.0 or later.
+</Note>
+
+Select OAuth2 when scaffolding an agent, or add `--auth-method=oauth2` when deploying an existing project; VeADK creates the Identity user pool and client for you. To reuse existing resources, pass `--user-pool-name` and `--client-name` at deploy time.
+
+After deploying, create users in Agent Identity:
+
+<Steps>
+  <Step title="Open the user pool">
+    In the Volcengine console, go to Agent Identity, select **Authentication › User Pools**, and choose your pool.
+  </Step>
+  <Step title="Create a user">
+    On the pool's **Users** tab, click **New User**, fill in the details, and confirm.
+  </Step>
+</Steps>
+
+When a user visits the app, the API gateway guides them through login; afterwards you can read the user's JWT from the `Authorization` header.
+
+### Starlette / FastAPI middleware
+
+For local development or self-hosted deployment, VeADK's middleware handles OAuth2 inside the app and supports any Starlette-based framework (including FastAPI). Prefer `OAuth2Config.from_veidentity()`, which auto-configures a VeIdentity user pool:
+
+```python
+from fastapi import FastAPI
+from veadk.auth.middleware.oauth2_auth import OAuth2Config, setup_oauth2
+
+app = FastAPI()
+
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_name="my-app",
+        client_name="my-app-web",
+        redirect_uri="https://myapp.com/oauth2/callback",
+    ),
+)
+```
+
+This creates the user pool and client (if missing), registers the callback URL, and configures the OAuth2 endpoints. Starlette usage is identical — swap `FastAPI()` for `Starlette()`.
+
+To reuse existing resources, disable auto-creation:
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_name="existing-pool",
+        client_name="existing-client",
+        redirect_uri="https://myapp.com/oauth2/callback",
+        auto_create=False,             # error if the resource doesn't exist
+        auto_register_callback=False,  # don't modify the callback URL
+    ),
+)
+```
+
+Local development needs HTTPS cookies disabled:
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_name="my-app",
+        client_name="my-app-web",
+        redirect_uri="http://localhost:8000/oauth2/callback",
+        cookie_secure=False,  # local HTTP development
+    ),
+)
+```
+
+To use an OAuth2 provider other than VeIdentity, construct `OAuth2Config` directly:
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config(
+        authorize_url="https://provider.com/oauth2/authorize",
+        token_url="https://provider.com/oauth2/token",
+        userinfo_url="https://provider.com/oauth2/userinfo",
+        client_id="your-client-id",
+        client_secret="your-client-secret",
+        redirect_uri="https://myapp.com/oauth2/callback",
+    ),
+)
+```
+
+The middleware registers these routes automatically:
+
+| Route | Description |
+| --- | --- |
+| `/oauth2/login` | Start the OAuth2 login flow |
+| `/oauth2/callback` | Handle the OAuth2 callback |
+| `/oauth2/logout` | Log out and clear the session |
+| `/oauth2/userinfo` | Get the current user's info |
+
+You can exempt paths from auth: `exempt_paths=["/health", "/metrics"]` (exact match) and `exempt_prefixes=["/public/", "/static/"]` (prefix match). The middleware responds by request type: browser requests redirect to the login page; API requests get a `401`. API requests are detected via the `Accept: application/json` header, a path prefix (default `/api/`), or the `X-Requested-With: XMLHttpRequest` header, and can be customized with `api_path_prefixes`.
+
+Key `OAuth2Config.from_veidentity()` parameters:
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `user_pool_name` | required | VeIdentity user pool name |
+| `client_name` | required | User pool client name |
+| `redirect_uri` | required | OAuth2 callback URL |
+| `auto_create` | `True` | Create resources if missing |
+| `auto_register_callback` | `True` | Register the callback URL automatically |
+| `client_type` | `WEB_APPLICATION` | Client type |
+| `scope` | `"openid profile email"` | OAuth2 scope |
+
+Key `OAuth2Config` parameters:
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `session_timeout_seconds` | `3600` | Session timeout (seconds) |
+| `cookie_secure` | `True` | Enable secure cookies |
+| `auto_refresh_token` | `True` | Refresh tokens automatically |
+| `token_refresh_threshold_seconds` | `300` | Token refresh threshold (seconds) |
+| `api_path_prefixes` | `["/api/"]` | API path prefixes |
+
+<Note>
+  The default `InMemoryStateStore` fits single-process deployments only. For distributed setups, implement a state store backed by Redis or similar and pass it via `setup_oauth2(app, config, state_store=...)`.
+</Note>
+
+## OAuth2 JWT authentication
+
+OAuth2 JWT auth combines the OAuth2 framework with JWT, carrying the authorization token as a JWT. It applies to A2A / MCP Server.
+
+Select OAuth2 when scaffolding an agent, or add `--auth-method=oauth2` when deploying; VeADK creates the Identity user pool, or reuses one via `--user-pool-name`. Then create an M2M client in the pool and exchange its credentials for a JWT:
+
+```bash
+REGION="cn-beijing"
+USER_POOL_ID="FILL_IN_YOUR_USER_POOL_ID"
+CLIENT_ID="FILL_IN_YOUR_CLIENT_ID"
+CLIENT_SECRET="FILL_IN_YOUR_SECRET"
+
+curl --location "https://userpool-${USER_POOL_ID}.userpool.auth.id.${REGION}.volces.com/oauth/token" \
+  --header "Content-Type: application/x-www-form-urlencoded" \
+  --header "Authorization: Basic $(echo -n "${CLIENT_ID}:${CLIENT_SECRET}" | base64)" \
+  --data-urlencode "grant_type=client_credentials"
+```
+
+When a user calls the app, the API gateway validates the JWT they carry; read it from the `Authorization` header.

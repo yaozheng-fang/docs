@@ -139,6 +139,40 @@ Field reference:
 - **Advanced** (optional): `role_name` is the IAM role (auto-created when omitted); `client_token` is an idempotency token for the create call.
 - **`infrastructure`**: where the image is built and stored. `Auto` means the platform creates and manages it for you; replace a value with your own resource to reuse one. `container_registry` is the Volcengine CR, with `instance_name` (`Auto` → `agentkit-platform-<account-id>`), `namespace_name`, and `repo_name` (defaults to the app name); `tos` is the object storage holding build artifacts, with `bucket_name` (`Auto` → `agentkit-platform-<account-id>`) and `object_prefix`.
 
+## Container entrypoint and port
+
+`deploy` has no entrypoint setting — how the runtime starts is determined entirely by the Dockerfile used to build the image. The template Dockerfile sets the start command via `CMD`:
+
+```dockerfile
+EXPOSE 8000
+CMD ["python", "main.py"]
+```
+
+The one hard requirement is that the process inside the container must listen on `0.0.0.0:8000`; the runtime probes that port to decide whether an instance is ready. To change how it starts, edit the Dockerfile's `CMD` (or point the `dockerfile` field at a different file) rather than passing a flag to `deploy`.
+
+## Environment variables
+
+Runtime environment variables come from two sources, merged at deploy time:
+
+- **`envs` in `agentkit.yaml`**: plaintext key-value pairs committed with the config. Suitable for non-sensitive settings such as log levels and feature flags.
+- **`AK_`-prefixed environment variables**: every variable in the deploy process environment that starts with `AK_` is injected into the runtime with the prefix stripped — for example `AK_OPENAI_API_KEY` becomes the runtime's `OPENAI_API_KEY`. This is the recommended way to get secrets into the runtime without writing them into `agentkit.yaml`; the `VOLCENGINE_*` deploy credentials are not injected.
+
+When a key appears in both, the `AK_`-prefixed variable overrides the one in `agentkit.yaml`.
+
+For a local deploy, export it in your shell:
+
+```bash
+export AK_OPENAI_API_KEY=sk-...
+agentkit deploy
+# the runtime receives the environment variable OPENAI_API_KEY
+```
+
+In continuous deployment, add the secret as an `AK_`-prefixed repository secret and the workflow forwards it to the deploy job — see the GitHub CI/CD section of [Initialize a project](/en/agentkit-cli/commands/init).
+
+<Warning>
+  Do not put secrets in `agentkit.yaml`'s `envs` and commit them. Always supply sensitive values through `AK_`-prefixed environment variables.
+</Warning>
+
 ## deploy build
 
 Build the image in the cloud and write the artifact.

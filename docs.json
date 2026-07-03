@@ -131,8 +131,7 @@
                   {
                     "group": "消息渠道",
                     "pages": ["zh/veadk/components/extensions/feishu-channel"]
-                  },
-                  "zh/veadk/components/extensions/content-safety"
+                  }
                 ]
               },
               {
@@ -142,6 +141,16 @@
                   "zh/veadk/components/frontend/veadk-web",
                   "zh/veadk/components/frontend/veadk-frontend",
                   "zh/veadk/components/frontend/a2ui"
+                ]
+              },
+              {
+                "group": "安全",
+                "pages": [
+                  "zh/veadk/components/security/index",
+                  "zh/veadk/components/security/inbound",
+                  "zh/veadk/components/security/outbound",
+                  "zh/veadk/components/security/trusted-mcp",
+                  "zh/veadk/components/security/content-safety"
                 ]
               }
             ]
@@ -320,8 +329,7 @@
                   {
                     "group": "Message channels",
                     "pages": ["en/veadk/components/extensions/feishu-channel"]
-                  },
-                  "en/veadk/components/extensions/content-safety"
+                  }
                 ]
               },
               {
@@ -331,6 +339,16 @@
                   "en/veadk/components/frontend/veadk-web",
                   "en/veadk/components/frontend/veadk-frontend",
                   "en/veadk/components/frontend/a2ui"
+                ]
+              },
+              {
+                "group": "Security",
+                "pages": [
+                  "en/veadk/components/security/index",
+                  "en/veadk/components/security/inbound",
+                  "en/veadk/components/security/outbound",
+                  "en/veadk/components/security/trusted-mcp",
+                  "en/veadk/components/security/content-safety"
                 ]
               }
             ]

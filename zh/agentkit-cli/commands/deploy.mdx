@@ -130,7 +130,7 @@ infrastructure:
 - **`dockerfile`**：构建镜像所用的 Dockerfile 路径，默认 `.agentkit/Dockerfile`；若项目根目录存在 `./Dockerfile` 则改用它。
 - **`envs`（环境变量）**：注入运行时的键值对。请勿提交密钥，改为从本地环境引用。
 - **`model_agent_name`（可选）**：运行时使用的模型名称。
-- **关联资源（可选）**：`knowledge_id`、`memory_id`、`tool_id`、`mcp_toolset_id` 分别关联知识库、记忆集合、工具与 MCP 工具集。
+- **关联资源（可选）**：`knowledge_id`、`memory_id`、`tool_id`、`mcp_toolset_id` 分别关联知识库、记忆库、工具与 MCP 工具集。
 - **`auth`（可选，二选一）**：`type: key_auth` 为 API Key 鉴权，配 `api_key_name`（省略时自动创建）与 `api_key_location`（`header` 或 `query`）；`type: custom_jwt` 为 JWT 鉴权，`discovery_url`（OIDC discovery 地址）必填，`allowed_clients` 为可选的客户端白名单。
 - **`network`（可选）**：`enable_public_network`、`enable_private_network` 控制公/私网访问；使用 VPC 时 `vpc.vpc_id` 必填，并配 `subnet_ids` 与 `enable_shared_internet_access`。
 - **`tls`（可选）**：日志投递。启用需 `enable_log: true`，并填 `tls_project_id`、`tls_topic_id`。
@@ -138,6 +138,40 @@ infrastructure:
 - **`tags`（可选）**：资源标签列表，形如 `{ key: team, value: ai }`。
 - **高级（可选）**：`role_name` 为 IAM 角色（省略时自动创建）；`client_token` 为创建操作的幂等 token。
 - **`infrastructure`（基础设施）**：镜像的构建与存储位置。`Auto` 表示由平台自动创建并托管，如需复用已有资源可替换为自己的值。`container_registry` 为容器镜像仓库 CR，含 `instance_name`（`Auto` → `agentkit-platform-<account-id>`）、`namespace_name`、`repo_name`（默认应用名）；`tos` 为存放构建产物的对象存储，含 `bucket_name`（`Auto` → `agentkit-platform-<account-id>`）与 `object_prefix`。
+
+## 容器入口与端口
+
+`deploy` 不涉及入口点配置——运行时如何启动，完全由构建镜像所用的 Dockerfile 决定。模板 Dockerfile 以 `CMD` 指定启动命令：
+
+```dockerfile
+EXPOSE 8000
+CMD ["python", "main.py"]
+```
+
+唯一的硬性约定是：容器内的进程必须监听 `0.0.0.0:8000`，运行时会探测该端口以判断实例是否就绪。要更换启动方式，请修改 Dockerfile 的 `CMD`（或通过 `dockerfile` 字段指向其他文件），而不是向 `deploy` 传参。
+
+## 环境变量
+
+运行时的环境变量有两个来源，二者在部署时合并：
+
+- **`agentkit.yaml` 的 `envs`**：明文键值对，随配置一起提交。适合非敏感的配置项，如日志级别、功能开关。
+- **`AK_` 前缀的环境变量**：部署进程环境中所有以 `AK_` 开头的变量，会在部署时去掉前缀后注入运行时——例如 `AK_OPENAI_API_KEY` 成为运行时的 `OPENAI_API_KEY`。这是把密钥送入运行时而不写进 `agentkit.yaml` 的推荐方式；用于部署鉴权的 `VOLCENGINE_*` 不会被注入运行时。
+
+两个来源出现同名键时，`AK_` 前缀变量覆盖 `agentkit.yaml` 中的同名项。
+
+本地部署时，直接在 shell 中导出即可：
+
+```bash
+export AK_OPENAI_API_KEY=sk-...
+agentkit deploy
+# 运行时将获得环境变量 OPENAI_API_KEY
+```
+
+在持续部署中，把密钥加为 `AK_` 前缀的仓库 Secret，工作流会转发到部署任务，详见[初始化项目](/zh/agentkit-cli/commands/init)中的 GitHub CI/CD 一节。
+
+<Warning>
+  不要把密钥写进 `agentkit.yaml` 的 `envs` 并提交到仓库。敏感值一律通过 `AK_` 前缀的环境变量提供。
+</Warning>
 
 ## deploy build
 
