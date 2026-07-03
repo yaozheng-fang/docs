@@ -152,7 +152,7 @@ The one hard requirement is that the process inside the container must listen on
 
 ## Environment variables
 
-Runtime environment variables come from two sources, merged at deploy time:
+The `.env` file used for local development applies on your machine only and is not uploaded to the runtime on deploy. Runtime environment variables come from two sources, merged at deploy time:
 
 - **`envs` in `agentkit.yaml`**: plaintext key-value pairs committed with the config. Suitable for non-sensitive settings such as log levels and feature flags.
 - **`AK_`-prefixed environment variables**: every variable in the deploy process environment that starts with `AK_` is injected into the runtime with the prefix stripped — for example `AK_OPENAI_API_KEY` becomes the runtime's `OPENAI_API_KEY`. This is the recommended way to get secrets into the runtime without writing them into `agentkit.yaml`; the `VOLCENGINE_*` deploy credentials are not injected.
