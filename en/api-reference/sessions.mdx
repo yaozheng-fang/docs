@@ -1,0 +1,76 @@
+---
+title: "Applications and sessions"
+description: "HTTP routes and request models for listing applications and managing sessions"
+---
+
+Application routes list and query the agent applications currently loaded by the server. Session routes create, query, update, and delete sessions scoped to a given application and user.
+
+## Applications
+
+### List applications
+
+`GET /list-apps`
+
+Lists all agent applications currently loaded by the server.
+
+| Query parameter | Type | Description |
+| --- | --- | --- |
+| `detailed` | boolean | Whether to return detailed information. Defaults to `false`. |
+
+When `detailed` is `false`, the response is an array of application name strings. When `true`, the response is a `ListAppsResponse` whose `apps` field is a list of `AppInfo`. `AppInfo` contains `name`, `root_agent_name`, `description`, `language`, `is_computer_use`, and an optional `agents` field.
+
+### Get application info
+
+`GET /apps/{app_name}/app-info`
+
+Returns detailed information about the given application as an `AppInfo`. If the root agent is not an LlmAgent, the server returns 400.
+
+## Sessions
+
+### Create a session
+
+`POST /apps/{app_name}/users/{user_id}/sessions`
+
+Creates a new session. The `CreateSessionRequest` body is optional and has the following fields.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `session_id` | string | Session ID. A random ID is generated when omitted. |
+| `state` | object | Initial state of the session. |
+| `events` | array | Events used to initialize the session. |
+
+The response is the created `Session` object.
+
+<Note>
+The route `POST /apps/{app_name}/users/{user_id}/sessions/{session_id}`, which passes the session ID in the path, is deprecated. Use the route above and pass `session_id` in the request body instead.
+</Note>
+
+### Get a session
+
+`GET /apps/{app_name}/users/{user_id}/sessions/{session_id}`
+
+Returns the specified session object, or 404 if the session does not exist.
+
+### List sessions
+
+`GET /apps/{app_name}/users/{user_id}/sessions`
+
+Returns all sessions for the user under the application. Sessions generated during evaluation are filtered out automatically.
+
+### Update session state
+
+`PATCH /apps/{app_name}/users/{user_id}/sessions/{session_id}`
+
+Updates session state without running the agent. The `UpdateSessionRequest` body has the following field.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `state_delta` | object | State changes to apply to the session. |
+
+The server creates a state-update event authored by `user` from this delta, appends it to the session, and returns the updated `Session`. Returns 404 if the session does not exist.
+
+### Delete a session
+
+`DELETE /apps/{app_name}/users/{user_id}/sessions/{session_id}`
+
+Deletes the specified session. No response body.

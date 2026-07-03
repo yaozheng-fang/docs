@@ -1,0 +1,35 @@
+---
+title: "制品"
+description: "会话内制品的保存、读取、删除与版本管理路由及请求模型"
+---
+
+制品用于在会话内存取文件类数据。以下路由均位于 `/apps/{app_name}/users/{user_id}/sessions/{session_id}` 命名空间下。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| POST | `/artifacts` | 保存新制品，返回 `ArtifactVersion`。 |
+| GET | `/artifacts` | 列出会话内全部制品名称。 |
+| GET | `/artifacts/{artifact_name}` | 读取制品内容，可选 `version` 查询参数指定版本；返回 `types.Part`。 |
+| DELETE | `/artifacts/{artifact_name}` | 删除指定制品。 |
+| GET | `/artifacts/{artifact_name}/versions` | 列出制品的全部版本号。 |
+| GET | `/artifacts/{artifact_name}/versions/metadata` | 列出制品全部版本的元数据（`ArtifactVersion` 列表）。 |
+| GET | `/artifacts/{artifact_name}/versions/{version_id}` | 读取制品指定版本的内容。 |
+| GET | `/artifacts/{artifact_name}/versions/{version_id}/metadata` | 读取制品指定版本的元数据。 |
+
+保存制品的请求体 `SaveArtifactRequest` 字段如下。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `filename` | string | 制品文件名。 |
+| `artifact` | object | 制品负载，编码为 `types.Part`。 |
+| `custom_metadata` | object | 与该制品版本关联的可选元数据。 |
+
+制品版本元数据 `ArtifactVersion` 字段如下。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `version` | integer | 单调递增的版本标识。 |
+| `canonical_uri` | string | 指向持久化制品负载的规范 URI。 |
+| `custom_metadata` | object | 保存时随制品存入的用户自定义元数据。 |
+| `create_time` | number | 版本记录创建时间的 Unix 时间戳（秒）。 |
+| `mime_type` | string | 当负载以二进制存储时的 MIME 类型。 |

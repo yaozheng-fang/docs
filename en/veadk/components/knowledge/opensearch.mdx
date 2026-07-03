@@ -1,0 +1,115 @@
+---
+title: "OpenSearch (opensearch)"
+description: "Use OpenSearch as the vector store for a self-hosted knowledge base, with persistence and multi-instance sharing"
+---
+
+The `opensearch` backend is implemented by `OpensearchKnowledgeBackend` and uses OpenSearch as the vector store. Knowledge text is embedded by an embedding model, written to OpenSearch via LlamaIndex, and retrieved by similarity.
+
+## When to use
+
+- You already run an OpenSearch cluster and want self-hosted vector search;
+- You need persistence, sharing across processes and instances, and full control over indexing and retrieval.
+
+## Dependencies
+
+```bash
+pip install "veadk-python[extensions]"
+```
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+# index must be lowercase, only a-z0-9_-., and not start with _ or -
+kb = KnowledgeBase(backend="opensearch", index="company_faq")
+kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+
+agent = Agent(
+    name="demo",
+    instruction="Answer the user; when needed, use the `load_knowledgebase` tool to search the knowledge base.",
+    knowledgebase=kb,
+)
+```
+
+You can also pass connection and embedding config explicitly via `backend_config`:
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+from veadk.configs.database_configs import OpensearchConfig
+
+kb = KnowledgeBase(
+    backend="opensearch",
+    index="company_faq",
+    backend_config={
+        "index": "company_faq",
+        "opensearch_config": OpensearchConfig(
+            host="localhost",
+            port=9200,
+            username="admin",
+            password="admin",
+            use_ssl=True,
+            cert_path="/path/to/ca.pem",
+        ),
+    },
+)
+```
+
+## Parameters
+
+### Constructor parameters
+
+`OpensearchKnowledgeBackend` accepts the following fields:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | No default; provided by `KnowledgeBase` | Knowledge base index name; must follow OpenSearch naming rules. |
+| `opensearch_config` | `OpensearchConfig` | Read automatically from `DATABASE_OPENSEARCH_*` env vars | OpenSearch connection config. |
+| `embedding_config` | `EmbeddingModelConfig` | Read automatically from `MODEL_EMBEDDING_*` env vars | Embedding model config. |
+
+### OpenSearch connection config
+
+`opensearch_config` is an `OpensearchConfig` with env prefix `DATABASE_OPENSEARCH_`:
+
+| Field | Env var | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `host` | `DATABASE_OPENSEARCH_HOST` | `str` | `""` | OpenSearch host. |
+| `port` | `DATABASE_OPENSEARCH_PORT` | `int` | `9200` | Port. |
+| `use_ssl` | `DATABASE_OPENSEARCH_USE_SSL` | `bool` | `true` | Whether to enable SSL. |
+| `username` | `DATABASE_OPENSEARCH_USERNAME` | `str` | `""` | Username. |
+| `password` | `DATABASE_OPENSEARCH_PASSWORD` | `str` | `""` | Password. |
+| `cert_path` | `DATABASE_OPENSEARCH_CERT_PATH` | `str` | `""` | CA certificate path. When empty, certificates are not verified — a security risk that triggers a warning. |
+| `secret_token` | `DATABASE_OPENSEARCH_SECRET_TOKEN` | `str` | `""` | STS temporary-credential token. |
+
+### Embedding config
+
+`embedding_config` is an `EmbeddingModelConfig` with env prefix `MODEL_EMBEDDING_`:
+
+| Field | Env var | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | Embedding model name. |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | Embedding vector dimension; used to build the index's vector field. |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | API base of the embedding service. |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | Falls back to `MODEL_AGENT_API_KEY`, then an auto-fetched Ark token | Key for accessing the embedding service. |
+
+## Environment variables
+
+```bash
+# OpenSearch connection
+export DATABASE_OPENSEARCH_HOST="localhost"
+export DATABASE_OPENSEARCH_PORT=9200
+export DATABASE_OPENSEARCH_USERNAME="admin"
+export DATABASE_OPENSEARCH_PASSWORD="admin"
+export DATABASE_OPENSEARCH_USE_SSL=true
+export DATABASE_OPENSEARCH_CERT_PATH="/path/to/ca.pem"
+
+# Embedding model
+export MODEL_EMBEDDING_NAME="doubao-embedding-vision-250615"
+export MODEL_EMBEDDING_DIM=2048
+export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
+```
+
+<Warning>
+`index` must follow OpenSearch naming rules: all lowercase, only `a-z0-9_-.`, and not starting with `_` or `-`; otherwise a `ValueError` is raised. In production, set `cert_path` to enable certificate verification and avoid security risks.
+</Warning>

@@ -1,0 +1,34 @@
+---
+title: "MCP Router"
+tag: "MCP 工具"
+description: "通过火山引擎 MCP Router 聚合并转发多个 MCP Server 的工具。"
+---
+
+## 功能说明
+
+`mcp_router`（`from veadk.tools.builtin_tools.mcp_router import mcp_router`）通过火山引擎 MCP Router 聚合并转发多个 MCP Server 的工具，适合需要统一接入多个 MCP 服务的场景。它基于可流式传输的 HTTP 连接（`StreamableHTTPConnectionParams`）工作。
+
+## 环境变量与前提
+
+环境变量：
+
+- `TOOL_MCP_ROUTER_URL`：MCP Router 的服务地址
+- `TOOL_MCP_ROUTER_API_KEY`：鉴权 API Key，将作为 `Authorization: Bearer <key>` 请求头发送
+
+或在 `config.yaml` 中配置：
+
+```yaml title="config.yaml"
+tool:
+  mcp_router:
+    url: https://your-mcp-router-endpoint
+    api_key: your-api-key-here
+```
+
+## 使用方法
+
+```python
+from veadk import Agent
+from veadk.tools.builtin_tools.mcp_router import mcp_router
+
+agent = Agent(tools=[mcp_router])
+```

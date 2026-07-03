@@ -1,0 +1,21 @@
+---
+title: "安装内置技能"
+description: "将内置智能体技能安装到编码智能体中。"
+---
+
+`onboard` 命令将随 CLI 附带的智能体技能安装到编码智能体中（Claude Code、Codex、Trae）。
+
+## onboard
+
+将内置智能体技能安装到编码智能体中。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-a, --agent <ids>` | 逗号分隔的目标：`claude-code`、`codex`、`trae`。 | 无 |
+| `--all` | 安装到所有受支持的智能体。 | `false` |
+| `-s, --scope <scope>` | 安装范围：`project` \| `global`。 | 无 |
+| `-y, --yes` | 非交互模式：使用检测到的智能体与默认范围。 | `false` |
+
+```bash
+agentkit onboard --agent claude-code --scope project
+```

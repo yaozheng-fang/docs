@@ -1,0 +1,14 @@
+---
+title: "概述"
+description: "VeADK 前端能力总览：内置 Web 界面与智能体驱动的 A2UI"
+---
+
+VeADK 的前端能力由两部分组成：面向界面的 Web 应用，以及让智能体返回富交互界面的 A2UI 机制。
+
+## VeADK Web 与 VeADK Frontend
+
+VeADK 提供两种前端。**VeADK Web** 是一个继承自 Google ADK Web 的可视化调试界面，零前端代码即可在浏览器中与智能体对话、查看执行过程，适合本地开发与排查。**VeADK Frontend** 是一个可定制的生产级 React 应用，用于渲染智能体流式返回的 A2UI，并与 `veadk frontend` 启动的同一个服务进程通信，因此无需单独部署后端。调试界面的用法详见 [VeADK Web](/zh/veadk/components/frontend/veadk-web)，`veadk frontend` 命令与构建方式详见 [VeADK Frontend](/zh/veadk/components/frontend/veadk-frontend)。
+
+## A2UI
+
+[A2UI](/zh/veadk/components/frontend/a2ui) 让智能体不只返回纯文本，还能返回卡片、表单、行列布局等富交互界面，由前端以原生组件渲染。创建智能体时设置 `enable_a2ui=True` 即可启用，界面则由 VeADK Frontend 渲染。企业还可以在内置组件之外扩展自定义组件。

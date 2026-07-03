@@ -1,0 +1,29 @@
+---
+title: "Overview"
+description: "Overview of the built-in Google ADK API server: base path, common path parameters, and service information routes"
+---
+
+Google ADK ships with a built-in FastAPI-based API server that hosts your loaded agents and exposes session management, agent execution, artifact read/write, memory ingestion, and evaluation over HTTP. This reference describes each route by feature area, including its method, path, request parameters, and response structure, as a guide for building clients or integrations on top of ADK.
+
+## Base path
+
+Every route uses `/apps/{app_name}` as the namespace for an agent application. Session routes further scope to a specific user and session through `/users/{user_id}/sessions/{session_id}`.
+
+## Common path parameters
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `app_name` | string | Name of the agent application; the namespace for most routes. |
+| `user_id` | string | User ID used to scope sessions and memory for a user within an application. |
+| `session_id` | string | Session ID used to scope a specific session and its artifacts. |
+
+<Note>
+Request body field names follow the source definitions and use `snake_case`. Some response models, such as artifact version metadata (`ArtifactVersion`), are serialized with `camelCase` aliases; the field meanings match the descriptions here.
+</Note>
+
+## Service information
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Health check; returns `{"status": "ok"}`. |
+| GET | `/version` | Returns the ADK version, language, and runtime language version. |

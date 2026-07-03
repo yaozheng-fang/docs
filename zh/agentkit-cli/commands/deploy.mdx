@@ -1,0 +1,59 @@
+---
+title: "构建与部署"
+description: "构建并将项目部署到 AgentKit。"
+---
+
+`deploy` 命令用于构建并将项目部署到 AgentKit，依次执行配置、构建与应用的完整流程。同时，该流程的各个阶段也以独立子命令的形式提供。
+
+## deploy
+
+执行完整的部署流程（config → build → apply）。顶层选项将在配置阶段生效。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 运行时/应用名称（配置阶段）。 | — |
+| `-r, --region <region>` | Volcengine 区域（配置阶段）。 | — |
+| `-p, --project <name>` | AgentKit 项目（配置阶段）。 | — |
+
+```bash
+agentkit deploy --name my-agent --region cn-beijing --project demo
+```
+
+## deploy config
+
+脚手架生成 `.agentkit/` 目录，其中包含 `agentkit.yaml` 与 `Dockerfile`。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 运行时/应用名称。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | — |
+| `-p, --project <name>` | AgentKit 项目。 | — |
+| `-f, --force` | 覆盖已生成的文件。 | `false` |
+
+```bash
+agentkit deploy config --name my-agent --force
+```
+
+## deploy build
+
+在云端构建镜像并写入构建产物。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit deploy build
+```
+
+## deploy apply
+
+基于最新构建产物创建或更新运行时。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit deploy apply
+```

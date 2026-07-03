@@ -1,0 +1,35 @@
+---
+title: "Artifacts"
+description: "Routes and request models for saving, loading, deleting, and versioning session artifacts"
+---
+
+Artifacts let you store and retrieve file-like data within a session. All routes below live under the `/apps/{app_name}/users/{user_id}/sessions/{session_id}` namespace.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/artifacts` | Save a new artifact; returns `ArtifactVersion`. |
+| GET | `/artifacts` | List all artifact names in the session. |
+| GET | `/artifacts/{artifact_name}` | Load artifact content; the optional `version` query parameter selects a version. Returns `types.Part`. |
+| DELETE | `/artifacts/{artifact_name}` | Delete the specified artifact. |
+| GET | `/artifacts/{artifact_name}/versions` | List all version numbers of the artifact. |
+| GET | `/artifacts/{artifact_name}/versions/metadata` | List metadata for all versions (a list of `ArtifactVersion`). |
+| GET | `/artifacts/{artifact_name}/versions/{version_id}` | Load the content of a specific artifact version. |
+| GET | `/artifacts/{artifact_name}/versions/{version_id}/metadata` | Load the metadata of a specific artifact version. |
+
+The `SaveArtifactRequest` body has the following fields.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `filename` | string | Artifact filename. |
+| `artifact` | object | Artifact payload encoded as a `types.Part`. |
+| `custom_metadata` | object | Optional metadata associated with this artifact version. |
+
+The `ArtifactVersion` metadata has the following fields.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `version` | integer | Monotonically increasing version identifier. |
+| `canonical_uri` | string | Canonical URI referencing the persisted artifact payload. |
+| `custom_metadata` | object | User-supplied metadata stored with the artifact. |
+| `create_time` | number | Unix timestamp (seconds) when the version record was created. |
+| `mime_type` | string | MIME type when the payload is stored as binary data. |

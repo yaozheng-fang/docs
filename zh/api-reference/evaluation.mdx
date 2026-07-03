@@ -1,0 +1,53 @@
+---
+title: "评测"
+description: "管理评测集、评测用例、发起评测与查询评测结果的 HTTP 路由与请求模型"
+---
+
+评测相关路由带有 `Evaluation` 标签，用于管理评测集（eval set）、评测用例（eval case）、发起评测与查询评测结果。部分路径提供连字符与下划线两种写法，下划线写法为兼容旧版而保留。
+
+## 评测集
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| POST | `/apps/{app_name}/eval-sets` | 创建评测集，请求体为 `CreateEvalSetRequest`（含 `eval_set`），返回 `EvalSet`。 |
+| GET | `/apps/{app_name}/eval-sets` | 列出全部评测集 ID，返回 `ListEvalSetsResponse`。 |
+| POST | `/apps/{app_name}/eval-sets/{eval_set_id}/add-session` | 将一个会话转换为评测用例并加入评测集。 |
+
+`add-session` 的请求体 `AddSessionToEvalSetRequest` 字段如下。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `eval_id` | string | 新建评测用例的 ID。 |
+| `session_id` | string | 作为用例来源的会话 ID。 |
+| `user_id` | string | 会话所属用户 ID。 |
+
+## 评测用例
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/apps/{app_name}/eval-sets/{eval_set_id}/evals` | 列出评测集内全部评测用例 ID。 |
+| GET | `/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | 获取指定评测用例，返回 `EvalCase`。 |
+| PUT | `/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | 更新指定评测用例，请求体为 `EvalCase`。 |
+| DELETE | `/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | 删除指定评测用例。 |
+
+## 发起评测
+
+`POST /apps/{app_name}/eval-sets/{eval_set_id}/run`
+
+对评测集发起评测。请求体 `RunEvalRequest` 字段如下。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `eval_case_ids` | array | 要评测的评测用例 ID 列表；为空时评测该评测集内的全部用例。 |
+| `eval_metrics` | array | 参与评测的指标列表（`EvalMetric`）。 |
+| `eval_ids` | array | 已废弃，请改用 `eval_case_ids`。 |
+
+响应为 `RunEvalResponse`，其 `run_eval_results` 是每个用例的评测结果列表，包含最终状态、各指标结果、`user_id` 与 `session_id` 等。
+
+## 评测结果与指标
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/apps/{app_name}/eval-results` | 列出全部评测结果 ID，返回 `ListEvalResultsResponse`。 |
+| GET | `/apps/{app_name}/eval-results/{eval_result_id}` | 获取指定评测结果，返回 `EvalResult`。 |
+| GET | `/apps/{app_name}/metrics-info` | 列出可用的评测指标信息，返回 `ListMetricsInfoResponse`。 |

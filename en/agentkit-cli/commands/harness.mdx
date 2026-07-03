@@ -1,0 +1,91 @@
+---
+title: "Code-free agents"
+description: "Initialize, configure, and deploy a code-free harness.yaml agent."
+---
+
+The `harness` command group creates an agent without writing any application code: initialize a `harness.yaml`, set its fields, then deploy it directly as a runtime.
+
+## harness init
+
+Create a harness directory (`harness.yaml` + `.env.example`) for a code-free agent.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[name]` | Harness name (or `.` for the current directory) | None |
+| `-y, --yes` | Skip prompts and use defaults | `false` |
+| `-f, --force` | Scaffold into a non-empty directory / overwrite `harness.yaml` | `false` |
+
+```bash
+agentkit harness init my-harness
+```
+
+## harness set
+
+Set fields in `harness.yaml` (partial update; only the flags you pass are changed). Run with no flags to list the current fields. Fields fall into groups: core (model / tools / skills / prompt / runtime), knowledgebase, long-term-memory, short-term-memory, and auth. When configuring a component, set its `--<comp>-type` first, then its connection parameters.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | Harness/runtime name | None |
+| `--model-name <name>` | Reasoning model name | None |
+| `--tools <list>` | Comma-separated built-in tools | None |
+| `--skills <list>` | Comma-separated skill hub names | None |
+| `--system-prompt <text>` | Agent instruction | None |
+| `--runtime <backend>` | Agent runtime backend: `adk` \| `codex` | None |
+| `--knowledgebase-type <type>` | knowledgebase backend type (`""` disables it) | None |
+| `--knowledgebase-project <value>` | knowledgebase project | None |
+| `--knowledgebase-region <value>` | knowledgebase region | None |
+| `--knowledgebase-host <value>` | knowledgebase host | None |
+| `--knowledgebase-port <value>` | knowledgebase port | None |
+| `--knowledgebase-username <value>` | knowledgebase username | None |
+| `--knowledgebase-password <value>` | knowledgebase password | None |
+| `--knowledgebase-use-ssl` | knowledgebase use_ssl | `false` |
+| `--knowledgebase-cert-path <value>` | knowledgebase cert_path | None |
+| `--knowledgebase-secret-token <value>` | knowledgebase secret_token | None |
+| `--knowledgebase-db <value>` | knowledgebase db | None |
+| `--long-term-memory-type <type>` | long_term_memory backend type (`""` disables it) | None |
+| `--long-term-memory-project <value>` | long_term_memory project | None |
+| `--long-term-memory-region <value>` | long_term_memory region | None |
+| `--long-term-memory-host <value>` | long_term_memory host | None |
+| `--long-term-memory-port <value>` | long_term_memory port | None |
+| `--long-term-memory-username <value>` | long_term_memory username | None |
+| `--long-term-memory-password <value>` | long_term_memory password | None |
+| `--long-term-memory-use-ssl` | long_term_memory use_ssl | `false` |
+| `--long-term-memory-cert-path <value>` | long_term_memory cert_path | None |
+| `--long-term-memory-secret-token <value>` | long_term_memory secret_token | None |
+| `--long-term-memory-db <value>` | long_term_memory db | None |
+| `--long-term-memory-api-key <value>` | long_term_memory api_key | None |
+| `--long-term-memory-api-key-id <value>` | long_term_memory api_key_id | None |
+| `--long-term-memory-project-id <value>` | long_term_memory project_id | None |
+| `--long-term-memory-base-url <value>` | long_term_memory base_url | None |
+| `--short-term-memory-type <type>` | short_term_memory backend type (`""` disables it) | None |
+| `--short-term-memory-host <value>` | short_term_memory host | None |
+| `--short-term-memory-user <value>` | short_term_memory user | None |
+| `--short-term-memory-password <value>` | short_term_memory password | None |
+| `--short-term-memory-database <value>` | short_term_memory database | None |
+| `--short-term-memory-charset <value>` | short_term_memory charset | None |
+| `--short-term-memory-port <value>` | short_term_memory port | None |
+| `--discovery-url <url>` | OAuth2/JWT OIDC discovery URL (enables custom_jwt) | None |
+| `--allowed-id <ids>` | Comma-separated allowed client IDs | None |
+
+```bash
+agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
+```
+
+<Tip>
+Only the flags you pass are changed. To configure a component, set its `--<comp>-type` first, then supply its connection parameters.
+</Tip>
+
+## harness deploy
+
+Build the harness image and create or update the runtime from `harness.yaml`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Runtime deploy region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--discovery-url <url>` | OIDC discovery URL (enables OAuth2/JWT, overrides `harness.yaml`) | None |
+| `--allowed-id <ids>` | Comma-separated allowed client IDs (overrides `harness.yaml`) | None |
+
+```bash
+agentkit harness deploy --project default --region cn-beijing
+```

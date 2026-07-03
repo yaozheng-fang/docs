@@ -46,20 +46,108 @@
                 "pages": [
                   {
                     "group": "智能体",
-                    "pages": ["zh/veadk/components/agent/index"]
+                    "pages": [
+                      "zh/veadk/components/agent/model",
+                      "zh/veadk/components/agent/runtime",
+                      "zh/veadk/components/agent/system-prompt",
+                      "zh/veadk/components/agent/prompt-management",
+                      "zh/veadk/components/agent/structured-output",
+                      "zh/veadk/components/agent/skills"
+                    ]
+                  },
+                  {
+                    "group": "执行引擎",
+                    "pages": ["zh/veadk/components/execution-engine/index"]
                   },
                   {
                     "group": "工具",
-                    "pages": ["zh/veadk/components/tools/index"]
+                    "pages": [
+                      "zh/veadk/components/tools/index",
+                      "zh/veadk/components/tools/custom-function",
+                      "zh/veadk/components/tools/web-search",
+                      "zh/veadk/components/tools/vesearch",
+                      "zh/veadk/components/tools/link-reader",
+                      "zh/veadk/components/tools/web-fetch",
+                      "zh/veadk/components/tools/image-generate",
+                      "zh/veadk/components/tools/image-edit",
+                      "zh/veadk/components/tools/video-generate",
+                      "zh/veadk/components/tools/text-to-speech",
+                      "zh/veadk/components/tools/code-sandbox",
+                      "zh/veadk/components/tools/mobile-run",
+                      "zh/veadk/components/tools/mcp-router",
+                      "zh/veadk/components/tools/lark",
+                      "zh/veadk/components/tools/las",
+                      "zh/veadk/components/tools/vod",
+                      "zh/veadk/components/tools/supabase",
+                      "zh/veadk/components/tools/trusted-mcp",
+                      "zh/veadk/components/tools/custom-mcp",
+                      "zh/veadk/components/tools/load-knowledgebase",
+                      "zh/veadk/components/tools/load-memory"
+                    ]
                   },
                   {
                     "group": "短期会话",
-                    "pages": ["zh/veadk/components/session/index"]
+                    "pages": [
+                      "zh/veadk/components/session/index",
+                      "zh/veadk/components/session/local",
+                      "zh/veadk/components/session/sqlite",
+                      "zh/veadk/components/session/mysql",
+                      "zh/veadk/components/session/postgresql"
+                    ]
                   },
                   {
                     "group": "长期记忆",
-                    "pages": ["zh/veadk/components/memory/index"]
+                    "pages": [
+                      "zh/veadk/components/memory/index",
+                      "zh/veadk/components/memory/local",
+                      "zh/veadk/components/memory/vikingdb",
+                      "zh/veadk/components/memory/mem0",
+                      "zh/veadk/components/memory/opensearch",
+                      "zh/veadk/components/memory/redis"
+                    ]
+                  },
+                  {
+                    "group": "知识库",
+                    "pages": [
+                      "zh/veadk/components/knowledge/index",
+                      "zh/veadk/components/knowledge/local",
+                      "zh/veadk/components/knowledge/opensearch",
+                      "zh/veadk/components/knowledge/redis",
+                      "zh/veadk/components/knowledge/tos-vector",
+                      "zh/veadk/components/knowledge/viking",
+                      "zh/veadk/components/knowledge/context-search"
+                    ]
                   }
+                ]
+              },
+              {
+                "group": "可观测",
+                "pages": [
+                  "zh/veadk/components/observability/index",
+                  "zh/veadk/components/observability/apmplus",
+                  "zh/veadk/components/observability/cozeloop",
+                  "zh/veadk/components/observability/tls",
+                  "zh/veadk/components/observability/inmemory"
+                ]
+              },
+              {
+                "group": "扩展",
+                "pages": [
+                  "zh/veadk/components/extensions/index",
+                  {
+                    "group": "消息渠道",
+                    "pages": ["zh/veadk/components/extensions/feishu-channel"]
+                  },
+                  "zh/veadk/components/extensions/content-safety"
+                ]
+              },
+              {
+                "group": "前端",
+                "pages": [
+                  "zh/veadk/components/frontend/index",
+                  "zh/veadk/components/frontend/veadk-web",
+                  "zh/veadk/components/frontend/veadk-frontend",
+                  "zh/veadk/components/frontend/a2ui"
                 ]
               }
             ]
@@ -72,8 +160,42 @@
                 "pages": ["zh/agentkit-cli/index", "zh/agentkit-cli/quickstart"]
               },
               {
-                "group": "参考",
-                "pages": ["zh/agentkit-cli/commands"]
+                "group": "命令参考",
+                "pages": [
+                  "zh/agentkit-cli/commands",
+                  "zh/agentkit-cli/commands/init",
+                  "zh/agentkit-cli/commands/deploy",
+                  "zh/agentkit-cli/commands/runtime",
+                  "zh/agentkit-cli/commands/destroy",
+                  "zh/agentkit-cli/commands/knowledge",
+                  "zh/agentkit-cli/commands/memory",
+                  "zh/agentkit-cli/commands/tool",
+                  "zh/agentkit-cli/commands/sandbox",
+                  "zh/agentkit-cli/commands/skill",
+                  "zh/agentkit-cli/commands/harness",
+                  "zh/agentkit-cli/commands/invoke",
+                  "zh/agentkit-cli/commands/eval",
+                  "zh/agentkit-cli/commands/auth",
+                  "zh/agentkit-cli/commands/onboard",
+                  "zh/agentkit-cli/commands/tree"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API 参考",
+            "groups": [
+              {
+                "group": "ADK API Server",
+                "pages": [
+                  "zh/api-reference/index",
+                  "zh/api-reference/sessions",
+                  "zh/api-reference/run",
+                  "zh/api-reference/artifacts",
+                  "zh/api-reference/memory",
+                  "zh/api-reference/evaluation",
+                  "zh/api-reference/debug"
+                ]
               }
             ]
           }
@@ -101,20 +223,108 @@
                 "pages": [
                   {
                     "group": "Agent",
-                    "pages": ["en/veadk/components/agent/index"]
+                    "pages": [
+                      "en/veadk/components/agent/model",
+                      "en/veadk/components/agent/runtime",
+                      "en/veadk/components/agent/system-prompt",
+                      "en/veadk/components/agent/prompt-management",
+                      "en/veadk/components/agent/structured-output",
+                      "en/veadk/components/agent/skills"
+                    ]
+                  },
+                  {
+                    "group": "Execution engine",
+                    "pages": ["en/veadk/components/execution-engine/index"]
                   },
                   {
                     "group": "Tools",
-                    "pages": ["en/veadk/components/tools/index"]
+                    "pages": [
+                      "en/veadk/components/tools/index",
+                      "en/veadk/components/tools/custom-function",
+                      "en/veadk/components/tools/web-search",
+                      "en/veadk/components/tools/vesearch",
+                      "en/veadk/components/tools/link-reader",
+                      "en/veadk/components/tools/web-fetch",
+                      "en/veadk/components/tools/image-generate",
+                      "en/veadk/components/tools/image-edit",
+                      "en/veadk/components/tools/video-generate",
+                      "en/veadk/components/tools/text-to-speech",
+                      "en/veadk/components/tools/code-sandbox",
+                      "en/veadk/components/tools/mobile-run",
+                      "en/veadk/components/tools/mcp-router",
+                      "en/veadk/components/tools/lark",
+                      "en/veadk/components/tools/las",
+                      "en/veadk/components/tools/vod",
+                      "en/veadk/components/tools/supabase",
+                      "en/veadk/components/tools/trusted-mcp",
+                      "en/veadk/components/tools/custom-mcp",
+                      "en/veadk/components/tools/load-knowledgebase",
+                      "en/veadk/components/tools/load-memory"
+                    ]
                   },
                   {
                     "group": "Short-term sessions",
-                    "pages": ["en/veadk/components/session/index"]
+                    "pages": [
+                      "en/veadk/components/session/index",
+                      "en/veadk/components/session/local",
+                      "en/veadk/components/session/sqlite",
+                      "en/veadk/components/session/mysql",
+                      "en/veadk/components/session/postgresql"
+                    ]
                   },
                   {
                     "group": "Long-term memory",
-                    "pages": ["en/veadk/components/memory/index"]
+                    "pages": [
+                      "en/veadk/components/memory/index",
+                      "en/veadk/components/memory/local",
+                      "en/veadk/components/memory/vikingdb",
+                      "en/veadk/components/memory/mem0",
+                      "en/veadk/components/memory/opensearch",
+                      "en/veadk/components/memory/redis"
+                    ]
+                  },
+                  {
+                    "group": "Knowledge base",
+                    "pages": [
+                      "en/veadk/components/knowledge/index",
+                      "en/veadk/components/knowledge/local",
+                      "en/veadk/components/knowledge/opensearch",
+                      "en/veadk/components/knowledge/redis",
+                      "en/veadk/components/knowledge/tos-vector",
+                      "en/veadk/components/knowledge/viking",
+                      "en/veadk/components/knowledge/context-search"
+                    ]
                   }
+                ]
+              },
+              {
+                "group": "Observability",
+                "pages": [
+                  "en/veadk/components/observability/index",
+                  "en/veadk/components/observability/apmplus",
+                  "en/veadk/components/observability/cozeloop",
+                  "en/veadk/components/observability/tls",
+                  "en/veadk/components/observability/inmemory"
+                ]
+              },
+              {
+                "group": "Extensions",
+                "pages": [
+                  "en/veadk/components/extensions/index",
+                  {
+                    "group": "Message channels",
+                    "pages": ["en/veadk/components/extensions/feishu-channel"]
+                  },
+                  "en/veadk/components/extensions/content-safety"
+                ]
+              },
+              {
+                "group": "Frontend",
+                "pages": [
+                  "en/veadk/components/frontend/index",
+                  "en/veadk/components/frontend/veadk-web",
+                  "en/veadk/components/frontend/veadk-frontend",
+                  "en/veadk/components/frontend/a2ui"
                 ]
               }
             ]
@@ -127,8 +337,42 @@
                 "pages": ["en/agentkit-cli/index", "en/agentkit-cli/quickstart"]
               },
               {
-                "group": "Reference",
-                "pages": ["en/agentkit-cli/commands"]
+                "group": "Command reference",
+                "pages": [
+                  "en/agentkit-cli/commands",
+                  "en/agentkit-cli/commands/init",
+                  "en/agentkit-cli/commands/deploy",
+                  "en/agentkit-cli/commands/runtime",
+                  "en/agentkit-cli/commands/destroy",
+                  "en/agentkit-cli/commands/knowledge",
+                  "en/agentkit-cli/commands/memory",
+                  "en/agentkit-cli/commands/tool",
+                  "en/agentkit-cli/commands/sandbox",
+                  "en/agentkit-cli/commands/skill",
+                  "en/agentkit-cli/commands/harness",
+                  "en/agentkit-cli/commands/invoke",
+                  "en/agentkit-cli/commands/eval",
+                  "en/agentkit-cli/commands/auth",
+                  "en/agentkit-cli/commands/onboard",
+                  "en/agentkit-cli/commands/tree"
+                ]
+              }
+            ]
+          },
+          {
+            "tab": "API Reference",
+            "groups": [
+              {
+                "group": "ADK API Server",
+                "pages": [
+                  "en/api-reference/index",
+                  "en/api-reference/sessions",
+                  "en/api-reference/run",
+                  "en/api-reference/artifacts",
+                  "en/api-reference/memory",
+                  "en/api-reference/evaluation",
+                  "en/api-reference/debug"
+                ]
               }
             ]
           }

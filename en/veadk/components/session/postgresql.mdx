@@ -1,0 +1,102 @@
+---
+title: "PostgreSQL (postgresql)"
+description: "The postgresql backend stores sessions in a PostgreSQL database so multiple agent instances can share them for distributed persistence."
+---
+
+The `postgresql` backend stores sessions in a PostgreSQL database, backed by Google ADK's `DatabaseSessionService`. Multiple agent instances can connect to the same database for shared, distributed persistence.
+
+The backing implementation class is `PostgreSqlSTMBackend`, which reads connection details from `PostgreSqlConfig` and assembles a SQLAlchemy connection string.
+
+## When to use
+
+- Production, multi-instance, or distributed deployments;
+- Teams already using PostgreSQL as shared storage.
+
+## Usage
+
+Provide connection details via `config.yaml` (or the matching environment variables) — never hard-code the password.
+
+```python
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+
+stm = ShortTermMemory(backend="postgresql")  # connection details from config.yaml / env
+
+agent = Agent(name="demo")
+runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+```
+
+To forward SQLAlchemy driver args such as connection pooling, use `db_kwargs`:
+
+```python
+stm = ShortTermMemory(
+    backend="postgresql",
+    db_kwargs={"pool_size": 10, "pool_recycle": 3600},
+)
+```
+
+You can also inject a `PostgreSqlConfig` directly through `backend_configs` to override the environment variables:
+
+```python
+from veadk.configs.database_configs import PostgreSqlConfig
+
+stm = ShortTermMemory(
+    backend="postgresql",
+    backend_configs={
+        "postgresql_config": PostgreSqlConfig(
+            host="127.0.0.1",
+            port=5432,
+            user="veadk",
+            password="secret",
+            database="veadk_sessions",
+        )
+    },
+)
+```
+
+## Parameters
+
+### ShortTermMemory constructor parameters (postgresql)
+
+| Parameter | Type | Default | Effective for postgresql | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `backend` | `str` | `"local"` | Yes | Set to `"postgresql"` to select this backend. |
+| `backend_configs` | `dict` | `{}` | Yes | Expanded as keyword arguments to `PostgreSqlSTMBackend`; may include `postgresql_config` (a `PostgreSqlConfig` instance) to override the config otherwise read from environment variables. |
+| `db_kwargs` | `dict` | `{}` | Yes | Forwarded to the underlying `DatabaseSessionService` (the SQLAlchemy engine); commonly used for pool settings such as `pool_size`, `pool_recycle`, `pool_pre_ping`. |
+| `db_url` | `str` | `""` | Yes (override) | A connection string. Once set, `backend` and `backend_configs` are ignored and `DatabaseSessionService` is built directly from `db_url` + `db_kwargs`. |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | No | Used only by `sqlite`. |
+| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Callback invoked after a session is loaded; receives the loaded `Session`. |
+
+### Backend implementation class parameters (PostgreSqlSTMBackend)
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `postgresql_config` | `PostgreSqlConfig` | built from env vars | PostgreSQL connection config. By default read automatically from the `DATABASE_POSTGRESQL_*` environment variables. |
+| `db_kwargs` | `dict` | `{}` | Extra args forwarded to `DatabaseSessionService`; same as the `db_kwargs` above. |
+
+### PostgreSqlConfig fields and environment variables
+
+The `PostgreSqlConfig` config class uses the env prefix `DATABASE_POSTGRESQL_`.
+
+```yaml config.yaml
+database:
+  postgresql:
+    host:       # host or IP
+    port: 5432
+    user:
+    password:
+    database:
+```
+
+| Field | Env var | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `host` | `DATABASE_POSTGRESQL_HOST` | `str` | `""` | Database host or IP. |
+| `port` | `DATABASE_POSTGRESQL_PORT` | `int` | `5432` | Port. |
+| `user` | `DATABASE_POSTGRESQL_USER` | `str` | `""` | Username. |
+| `password` | `DATABASE_POSTGRESQL_PASSWORD` | `str` | `""` | Password. |
+| `database` | `DATABASE_POSTGRESQL_DATABASE` | `str` | `""` | Database name. |
+| `secret_token` | `DATABASE_POSTGRESQL_SECRET_TOKEN` | `str` | `""` | STS token for PostgreSQL auth; not supported yet. |
+
+<Note>
+VeADK auto-selects the sync or async PostgreSQL driver based on the Google ADK version: ADK ≥ 1.19.0 uses the async `postgresql+asyncpg://`, otherwise the sync `postgresql://`. Special characters in the username and password are URL-encoded automatically (`urllib.parse.quote_plus`). You can [provision PostgreSQL on Volcengine](https://www.volcengine.com/product/rds-pg).
+</Note>

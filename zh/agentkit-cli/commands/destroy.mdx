@@ -1,0 +1,20 @@
+---
+title: "删除运行时"
+description: "删除已部署的运行时。"
+---
+
+`destroy` 命令用于删除已部署的运行时，可通过名称指定，或从本地配置中解析。
+
+## destroy
+
+删除已部署的运行时。在未提供名称时，将从本地配置中解析目标。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[name]` | 运行时名称。 | 来自本地配置 |
+| `-r, --region <region>` | Volcengine 区域。 | 自动感知 |
+| `-y, --yes` | 跳过确认。 | `false` |
+
+```bash
+agentkit destroy my-agent --yes
+```

@@ -1,0 +1,58 @@
+---
+title: "Volcengine search"
+tag: "Function tool"
+description: "Searches via Volcengine's web-aware Q&A Agent."
+---
+
+## Overview
+
+Tool identifier `vesearch`.
+
+`vesearch` searches via Volcengine's [web-aware Q&A Agent](https://www.volcengine.com/docs/85508/1512748). The tool reads its own credentials from environment variables — you do not pass an `api_key` on the `Agent`.
+
+Import path: `from veadk.tools.builtin_tools.vesearch import vesearch`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure the API key for the agent's reasoning model.
+2. Configure the Q&A Agent ID (create an agent in the [console](https://console.volcengine.com/ask-echo/my-agent), then copy its ID) into the `TOOL_VESEARCH_ENDPOINT` environment variable.
+3. Configure the Q&A Agent API key into the `TOOL_VESEARCH_API_KEY` environment variable.
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `TOOL_VESEARCH_ENDPOINT`: the Q&A Agent ID (**must be set as an environment variable**)
+- `TOOL_VESEARCH_API_KEY`: the Q&A Agent API key
+
+## Usage
+
+```python title="examples/tools/vesearch/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.vesearch import vesearch
+
+agent = Agent(
+    name="vesearch_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="An agent that answers questions with veSearch.",
+    instruction="You are a helpful assistant. Use the vesearch tool to look things up online.",
+    tools=[vesearch],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("What's the weather in Hangzhou today?")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

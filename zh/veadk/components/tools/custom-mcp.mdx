@@ -1,0 +1,28 @@
+---
+title: "自定义 MCP Server"
+tag: "MCP 工具"
+description: "使用 Google ADK 的 MCPToolset 连接任意 MCP Server。"
+---
+
+## 功能说明
+
+如果内置接入方式都无法满足需求，可直接使用 Google ADK 的 `MCPToolset` 连接任意 MCP Server。注册后，智能体会自动加载 MCP Server 暴露的工具，并在推理过程中按需调用。
+
+## 使用方法
+
+```python
+from veadk import Agent
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import (
+    StreamableHTTPConnectionParams,
+)
+
+toolset = MCPToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://your-mcp-endpoint",
+        headers={"Authorization": "Bearer your-api-key-here"},
+    ),
+)
+
+agent = Agent(tools=[toolset])
+```

@@ -1,0 +1,12 @@
+---
+title: "调试"
+description: "供开发调试与可视化使用的追踪与智能体图 HTTP 路由"
+---
+
+调试相关路由带有 `Debug` 标签，主要供开发调试与可视化使用。
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/debug/trace/{event_id}` | 按事件 ID 获取追踪信息，未找到返回 404。 |
+| GET | `/debug/trace/session/{session_id}` | 获取指定会话的追踪 span 列表。 |
+| GET | `/dev/{app_name}/graph` | 以 DOT 格式返回智能体图，可选 `dark_mode` 查询参数；返回 `GetEventGraphResult`（含 `dot_src`）。 |

@@ -1,0 +1,21 @@
+---
+title: "Install built-in skills"
+description: "Install the bundled agent skills into coding agents."
+---
+
+The `onboard` command installs the CLI's bundled agent skills into coding agents (Claude Code, Codex, Trae).
+
+## onboard
+
+Install the bundled agent skills into coding agents.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-a, --agent <ids>` | Comma-separated targets: `claude-code`, `codex`, `trae` | None |
+| `--all` | Install into all supported agents | `false` |
+| `-s, --scope <scope>` | Install scope: `project` \| `global` | None |
+| `-y, --yes` | Non-interactive: use detected agents + default scope | `false` |
+
+```bash
+agentkit onboard --agent claude-code --scope project
+```

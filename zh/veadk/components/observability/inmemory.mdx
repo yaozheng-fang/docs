@@ -1,0 +1,74 @@
+---
+title: "内存导出器"
+description: "在进程内存中留存 span，用于本地调试、测试与将追踪数据落盘为 JSON"
+---
+
+`InMemoryExporter` 把 span 数据保存在进程内存中，而非上报至外部平台。它按 `session_id` 组织 span，便于本地调试、测试以及将某次会话的追踪数据落盘为 JSON 文件进行离线分析。
+
+## 何时使用
+
+- 本地开发与调试智能体执行流程；
+- 在单元测试或集成测试中校验 span；
+- 离线环境中无外部平台连接，需要本地留存与分析追踪数据。
+
+## 自动管理
+
+`InMemoryExporter` 由 `OpentelemetryTracer` 自动创建并管理，其 span 处理器被放在处理器链首位以记录全部 span。因此它**不能**被显式加入 `OpentelemetryTracer` 的 `exporters` 列表，否则初始化会抛出 `ValueError`。
+
+```python
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+# 即使不配置任何外部导出器，内存导出器仍会自动附加
+tracer = OpentelemetryTracer(exporters=[])
+```
+
+## 使用示例
+
+会话运行结束后，可调用追踪器的 `dump` 方法，将该会话的 span 导出为本地 JSON 文件：
+
+```python
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.demo_tools import get_city_weather
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer()
+
+agent = Agent(tools=[get_city_weather], tracers=[tracer])
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_id_demo"))
+
+# 将当前会话的 span 落盘为 JSON
+path = tracer.dump(user_id="user-1", session_id="session_id_demo")
+print(f"trace 已写入 {path}")
+```
+
+## 参数
+
+### 构造参数
+
+`InMemoryExporter` 通常无需手动构造，其构造参数如下：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | `inmemory_exporter` | 导出器实例标识。 |
+
+### `dump` 方法参数
+
+`OpentelemetryTracer.dump` 依赖内存导出器留存的 span，参数如下：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `str` | `unknown_user_id` | 用户标识，用于组织与命名落盘文件。 |
+| `session_id` | `str` | `unknown_session_id` | 会话标识，用于筛选该会话的 span。 |
+| `path` | `str` | 智能体目录 | 输出文件所在目录，默认写入智能体目录。 |
+
+落盘文件名形如 `{name}_{user_id}_{session_id}_{trace_id}.json`，内容为 span 列表，每个 span 包含名称、`span_id`、`trace_id`、起止时间、属性以及父 span 关系。
+
+<Note>
+内存导出器的占用会随 span 数量增长，长时间运行的进程应注意内存增长。会话级筛选依赖正确配置的 `session_id`；`dump` 会先强制导出所有待处理 span，再按 `session_id` 筛选写入文件。
+</Note>

@@ -1,59 +1,43 @@
 ---
 title: "快速开始"
-description: "安装 VeADK、配置模型并运行一个最小智能体"
+description: "配置模型并运行第一个 VeADK 智能体"
 ---
 
-本教程介绍如何安装 VeADK、配置模型，并运行一个最小可用的智能体，最终在终端获得模型的回答。
+本教程介绍如何配置模型并运行一个最小可用的智能体，最终在终端获得模型的回答。
 
 <Note>
-  本章仅覆盖从安装到首次运行的最小路径。部署到 AgentKit、记忆、知识库、多智能体、评测等主题请参见对应章节。
+  开始前请先完成[安装](/zh/veadk/get-started/installation)，并准备好火山方舟 API Key。本章仅覆盖首次运行的最小路径，部署到 AgentKit、记忆、知识库、多智能体、评测等主题请参见对应章节。
 </Note>
-
-## 前置条件
-
-- Python 3.10 及以上版本。
-- 火山方舟 API Key，用于调用模型，可在[火山引擎方舟控制台](https://console.volcengine.com/ark)创建。
-
-## 安装
-
-从 [PyPI](https://pypi.org/project/veadk-python/) 安装核心包：
-
-```bash
-pip install veadk-python
-```
-
-VeADK 通过可选依赖组提供按需能力，可根据用途单独安装：
-
-```bash
-pip install "veadk-python[extensions]"
-```
-
-可用的依赖组：
-
-| 依赖组 | 用途 |
-| --- | --- |
-| `extensions` | 飞书渠道、Cozeloop、LlamaIndex 等集成 |
-| `database` | Redis、MySQL、Viking DB、mem0 等存储后端 |
-| `eval` | 基于 DeepEval 与 Google ADK 的评测 |
-| `a2ui` | A2UI（智能体驱动的界面） |
-| `pdf` | PDF 页面渲染 |
 
 ## 配置模型
 
-在项目根目录创建 `config.yaml`，VeADK 会自动读取。运行最小智能体仅需配置模型：
+配置调用模型所需的凭证，以下两种方式二选一。最简单的方式是设置环境变量，仅需提供 API Key。
 
-```yaml config.yaml
-model:
-  agent:
-    provider: openai
-    name: doubao-seed-1-6-250615
-    api_base: https://ark.cn-beijing.volces.com/api/v3/
-    api_key: # 填入火山方舟 API Key
-```
+<Tabs>
+  <Tab title="环境变量">
+    设置 API Key 后，VeADK 默认使用火山方舟上的豆包模型：
 
-<Tip>
-  `provider: openai` 表示采用 OpenAI 兼容协议，`api_base` 指向火山方舟的兼容接口，因此可直接使用豆包等方舟模型。
-</Tip>
+    ```bash
+    export MODEL_AGENT_API_KEY="填入火山方舟 API Key"
+    ```
+
+    如需指定其它模型，可另外设置 `MODEL_AGENT_NAME`、`MODEL_AGENT_PROVIDER`、`MODEL_AGENT_API_BASE`。
+  </Tab>
+  <Tab title="配置文件">
+    在项目根目录创建 `config.yaml`，VeADK 会自动读取：
+
+    ```yaml config.yaml
+    model:
+      agent:
+        provider: openai
+        name: doubao-seed-1-6-250615
+        api_base: https://ark.cn-beijing.volces.com/api/v3/
+        api_key: # 填入火山方舟 API Key
+    ```
+
+    `provider: openai` 表示采用 OpenAI 兼容协议，`api_base` 指向火山方舟的兼容接口，因此可直接使用豆包等方舟模型。
+  </Tab>
+</Tabs>
 
 ## 编写第一个智能体
 
@@ -71,7 +55,7 @@ print(res)
 
 `Agent` 持有模型与指令，不传参数时使用 `config.yaml` 中的默认模型；`agent.run(...)` 为异步方法，返回最终的文本回答。
 
-运行：
+## 运行
 
 ```bash
 python main.py

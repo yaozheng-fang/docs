@@ -1,0 +1,53 @@
+---
+title: "Evaluation"
+description: "HTTP routes and request models for managing eval sets, eval cases, evaluation runs, and eval results"
+---
+
+Evaluation routes carry the `Evaluation` tag and manage eval sets, eval cases, evaluation runs, and eval results. Some paths offer both hyphenated and underscored forms; the underscored form is kept for backward compatibility.
+
+## Eval sets
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/apps/{app_name}/eval-sets` | Create an eval set. Body is `CreateEvalSetRequest` (with `eval_set`); returns `EvalSet`. |
+| GET | `/apps/{app_name}/eval-sets` | List all eval set IDs; returns `ListEvalSetsResponse`. |
+| POST | `/apps/{app_name}/eval-sets/{eval_set_id}/add-session` | Convert a session into an eval case and add it to the eval set. |
+
+The `add-session` request body `AddSessionToEvalSetRequest` has the following fields.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `eval_id` | string | ID of the new eval case. |
+| `session_id` | string | ID of the source session. |
+| `user_id` | string | ID of the user who owns the session. |
+
+## Eval cases
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/apps/{app_name}/eval-sets/{eval_set_id}/evals` | List all eval case IDs in the eval set. |
+| GET | `/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | Get the specified eval case; returns `EvalCase`. |
+| PUT | `/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | Update the specified eval case. Body is `EvalCase`. |
+| DELETE | `/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | Delete the specified eval case. |
+
+## Run an evaluation
+
+`POST /apps/{app_name}/eval-sets/{eval_set_id}/run`
+
+Runs an evaluation over an eval set. The `RunEvalRequest` body has the following fields.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `eval_case_ids` | array | Eval case IDs to evaluate; when empty, all cases in the eval set are run. |
+| `eval_metrics` | array | Metrics to evaluate against (a list of `EvalMetric`). |
+| `eval_ids` | array | Deprecated; use `eval_case_ids` instead. |
+
+The response is a `RunEvalResponse` whose `run_eval_results` is a list of per-case results, each including the final status, per-metric results, `user_id`, and `session_id`.
+
+## Eval results and metrics
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/apps/{app_name}/eval-results` | List all eval result IDs; returns `ListEvalResultsResponse`. |
+| GET | `/apps/{app_name}/eval-results/{eval_result_id}` | Get the specified eval result; returns `EvalResult`. |
+| GET | `/apps/{app_name}/metrics-info` | List available eval metrics; returns `ListMetricsInfoResponse`. |

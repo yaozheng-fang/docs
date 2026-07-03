@@ -1,0 +1,170 @@
+---
+title: "使用沙箱"
+description: "操作沙箱：运行命令、管理会话。"
+---
+
+`sandbox` 命令组用于操作沙箱：在沙箱会话中运行命令、打开交互式终端、传输文件、预览 Web、注入订阅凭据，以及管理会话。一个沙箱本质上是一个 `code` 类型的工具。
+
+<Note>
+各子命令共有一组会话与工具相关标志：`-s, --session <id>`（会话 ID，存在则复用，否则新建）、`--tool-id <id>`（沙箱工具 ID）、`--type <type>`（沙箱类型 `code` \| `skill`，默认 `code`）、`--auto-create`（无可用沙箱工具时自动创建）、`-r, --region <region>`（Volcengine 区域）、`-p, --project <name>`（AgentKit 项目，默认 `default`）。下方表格逐命令完整列出。
+</Note>
+
+## sandbox run
+
+在沙箱会话中运行命令并打印其输出。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<command>` | 要运行的命令（必填） | 无 |
+| `--json` | 打印原始结果（`{ output, ... }`） | `false` |
+| `--cwd <dir>` | 运行时的工作目录 | 无 |
+| `--model-name <name>` | 沙箱编码智能体所用的模型 | 无 |
+| `--model-api-key <key>` | 模型 API key | 无 |
+| `--model-provider <provider>` | 模型提供方 | 无 |
+| `--cpu <milli>` | `--auto-create` 时的 CPU（毫核） | 无 |
+| `--memory <mb>` | `--auto-create` 时的内存（MB） | 无 |
+| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+
+```bash
+agentkit sandbox run "ls -la" --session my-session
+```
+
+## sandbox shell
+
+在沙箱会话中打开交互式终端（按 Ctrl-] 脱离）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tmux` | 附加或创建一个持久化 tmux 会话 | `false` |
+| `--command <cmd>` | 附加后先执行的初始命令 | 无 |
+| `--workspace <dir>` | 沙箱工作区根目录 | 无 |
+| `--src-dir <path>` | 附加前要上传的本地文件/目录 | 无 |
+| `--dst-dir <dir>` | `--src-dir` 的远端目标目录（位于 `--workspace` 下） | 无 |
+| `--model-name <name>` | 沙箱编码智能体所用的模型 | 无 |
+| `--model-api-key <key>` | 模型 API key | 无 |
+| `--model-provider <provider>` | 模型提供方 | 无 |
+| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+
+```bash
+agentkit sandbox shell --tmux --session my-session
+```
+
+## sandbox cp
+
+在本地与沙箱会话之间复制文件，用 `:` 前缀标记远端一侧。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<src>` | 源路径（远端一侧以 `:` 前缀，必填） | 无 |
+| `<dst>` | 目标路径（远端一侧以 `:` 前缀，必填） | 无 |
+| `--overwrite` | 下载时覆盖已存在的本地文件 | `false` |
+| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+
+```bash
+agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
+```
+
+## sandbox web
+
+在浏览器中打开沙箱的 Web 预览。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--no-open` | 仅打印 URL，不打开浏览器 | `false` |
+| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+
+```bash
+agentkit sandbox web --session my-session
+```
+
+## sandbox login
+
+将本地的 codex/claude 订阅凭据注入到沙箱会话中。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--provider <provider>` | `codex` \| `claude` | 无 |
+| `--auth-file <path>` | 使用指定的本地凭据文件 | 无 |
+| `--codex-home <dir>` | 本地 codex home | `$CODEX_HOME` 或 `~/.codex` |
+| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+
+```bash
+agentkit sandbox login --provider claude --session my-session
+```
+
+## sandbox sessions
+
+列出活跃的沙箱会话。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit sandbox sessions
+```
+
+## sandbox logs
+
+显示某个沙箱会话的日志。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[session]` | 会话 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `--tail <n>` | 最大日志行数 | 无 |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit sandbox logs my-session --tail 100
+```
+
+## sandbox rm
+
+停止并删除一个沙箱会话（或使用 `--all` 删除全部）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[session]` | 会话 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
+| `--all` | 删除该工具上的所有会话 | `false` |
+| `-y, --yes` | 跳过确认 | `false` |
+| `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+
+```bash
+agentkit sandbox rm my-session -y
+```

@@ -1,0 +1,83 @@
+---
+title: "Manage knowledge bases"
+description: "Manage AgentKit knowledge bases."
+---
+
+The `knowledge` command group manages AgentKit knowledge bases, covering listing, inspection, creation, update, and deletion. The command is also available under the `kb` and `knowledgebase` aliases.
+
+## knowledge list
+
+List all knowledge bases.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-p, --project <name>` | Project name. | — |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit knowledge list --project demo
+```
+
+## knowledge show
+
+Show details of a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit knowledge show kb-12345678
+```
+
+## knowledge create
+
+Create a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-n, --name <name>` | Knowledge base name. | — |
+| `--provider-knowledge-id <id>` | Provider-side knowledge id to register. | — |
+| `--provider-type <type>` | Provider type, e.g. `viking`. | — |
+| `-d, --description <text>` | Knowledge base description. | — |
+| `-p, --project <name>` | Project name. | — |
+| `-r, --region <region>` | Volcengine region. | from env/default |
+| `--json <jsonString>` | Advanced: a JSON object merged into the request body (overrides options). | — |
+
+```bash
+agentkit knowledge create --name docs-kb --provider-type viking --provider-knowledge-id pk-123
+```
+
+## knowledge update
+
+Update a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
+| `-d, --description <text>` | New description. | — |
+| `--vpc-id <id>` | VPC id to attach. | — |
+| `--subnet-ids <ids>` | Comma-separated subnet ids (requires `--vpc-id`). | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--json <jsonString>` | Advanced: a JSON object merged into the request body (overrides options). | — |
+
+```bash
+agentkit knowledge update kb-12345678 --description "Updated docs"
+```
+
+## knowledge delete
+
+Delete a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-y, --yes` | Skip the confirmation prompt. | `false` |
+
+```bash
+agentkit knowledge delete kb-12345678 --yes
+```

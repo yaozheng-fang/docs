@@ -1,0 +1,59 @@
+---
+title: "Build & deploy"
+description: "Build and deploy the project to AgentKit."
+---
+
+The `deploy` command builds and deploys the project to AgentKit, running the full pipeline of configuration, build, and apply. It also exposes each stage as a dedicated subcommand.
+
+## deploy
+
+Run the full deployment pipeline (config → build → apply). The top-level options are applied during the configuration stage.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-n, --name <name>` | Runtime/app name (config). | — |
+| `-r, --region <region>` | Volcengine region (config). | — |
+| `-p, --project <name>` | AgentKit project (config). | — |
+
+```bash
+agentkit deploy --name my-agent --region cn-beijing --project demo
+```
+
+## deploy config
+
+Scaffold the `.agentkit/` directory, generating `agentkit.yaml` and a `Dockerfile`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-n, --name <name>` | Runtime/app name. | — |
+| `-r, --region <region>` | Volcengine region. | — |
+| `-p, --project <name>` | AgentKit project. | — |
+| `-f, --force` | Overwrite existing generated files. | `false` |
+
+```bash
+agentkit deploy config --name my-agent --force
+```
+
+## deploy build
+
+Build the image in the cloud and write the artifact.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| _(no options)_ | This subcommand takes no options. | — |
+
+```bash
+agentkit deploy build
+```
+
+## deploy apply
+
+Create or update the runtime from the latest built artifact.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| _(no options)_ | This subcommand takes no options. | — |
+
+```bash
+agentkit deploy apply
+```

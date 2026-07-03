@@ -4,14 +4,15 @@ description: "在终端里脚手架、部署、管理 AgentKit 上的智能体"
 ---
 
 `agentkit` 是 AgentKit 的命令行工具：脚手架项目、构建与部署运行时（runtime），
-并管理工具（tool）、知识库（knowledge）、记忆（memory）和评测（evaluation）——全部在终端完成。
+并管理工具（tool）、知识库（knowledge）、记忆（memory）、沙箱（sandbox）、技能（skill）
+和评测（evaluation）——全部在终端完成。
 
 <CardGroup cols={2}>
   <Card title="快速开始" icon="rocket" href="/agentkit-cli/quickstart">
-    安装、登录，三步部署你的第一个 agent。
+    安装、登录，三步部署你的第一个智能体。
   </Card>
   <Card title="命令参考" icon="terminal" href="/agentkit-cli/commands">
-    每个命令一句话说明 + 一个示例。
+    每个命令一句话说明加一个示例。
   </Card>
 </CardGroup>
 
@@ -21,20 +22,24 @@ description: "在终端里脚手架、部署、管理 AgentKit 上的智能体"
 | --- | --- |
 | `init` | 从模板脚手架一个新项目 |
 | `deploy` | 构建并部署项目（`config` → `build` → `apply`） |
-| `runtime` | 已部署的运行时（list/show/logs/versions/release/update/delete） |
+| `runtime` | 已部署的运行时（list、show、logs、versions、release、update、delete） |
 | `knowledge` (`kb`) | 知识库 |
 | `memory` (`mem`) | 记忆集合 |
-| `tool` | 工具（MCP server、代码环境等） |
-| `harness` | 由 `harness.yaml` 定义的免代码 agent |
+| `tool` | 工具（MCP server、代码环境、技能等） |
+| `harness` | 由 `harness.yaml` 定义的免代码智能体 |
+| `sandbox` | 在沙箱中运行命令并管理会话 |
+| `skill` | AgentKit 技能平台上的技能 |
 | `invoke` | 调用已部署的运行时 |
-| `auth` | SSO 登录/登出/身份，以及登录 profile |
+| `auth` | SSO 登录、登出、身份，以及登录 profile |
 | `onboard` | 把内置技能装进本地 coding agent |
 | `eval dataset` | 评测数据集及其用例（`eval` 前缀可省略） |
+| `destroy` | 删除已部署的运行时 |
 | `tree` | 打印完整命令树 |
 
 ## 约定
 
-- `knowledge`↔`kb`、`memory`↔`mem` 为别名；`eval` 前缀可省略
-  （`agentkit dataset …` 等价于 `agentkit eval dataset …`）。
+- `agentkit` 也可以用 `ak` 调用。
+- `knowledge` 的别名为 `kb` 和 `knowledgebase`，`memory` 的别名为 `mem`，
+  `eval` 前缀可省略（`agentkit dataset …` 等价于 `agentkit eval dataset …`）。
 - 大多数读命令支持 `--json`；region 默认自动探测，可用 `-r, --region` 指定。
-- 破坏性命令（`delete`、`remove`）默认二次确认，`-y` 跳过。
+- 破坏性命令（`delete`、`remove`、`destroy`）默认二次确认，`-y` 跳过。

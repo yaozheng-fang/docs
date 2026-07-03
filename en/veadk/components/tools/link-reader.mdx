@@ -1,0 +1,50 @@
+---
+title: "Link reading"
+tag: "Function tool"
+description: "Reads and parses the content of a list of web links, often paired with a search tool."
+---
+
+## Overview
+
+Tool identifier `link_reader`.
+
+`link_reader` takes a list of URLs and reads and parses their web content. Pair it with a search tool so the agent can find links first, then read them in depth. It authenticates with `MODEL_AGENT_API_KEY`.
+
+Import path: `from veadk.tools.builtin_tools.link_reader import link_reader`
+
+## Environment & prerequisites
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+
+## Usage
+
+```python title="examples/tools/link_reader/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.link_reader import link_reader
+
+agent = Agent(
+    name="link_reader_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="An agent that reads and summarizes web pages.",
+    instruction="Use the link_reader tool to read the given URLs, then summarize them.",
+    tools=[link_reader],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "Read https://www.volcengine.com/docs/85508/1650263 and summarize the key points"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

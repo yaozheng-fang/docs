@@ -1,0 +1,28 @@
+---
+title: "可信 MCP 工具集"
+tag: "MCP 工具"
+description: "访问受访问控制保护的 MCP Server。"
+---
+
+## 功能说明
+
+连接受访问控制保护的 MCP Server 时，使用 `TrustedMcpToolset`（`from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset`）。它在标准 `McpToolset` 的基础上为出站请求注入鉴权信息，从而安全地访问受信任的 MCP 服务。它复用 Google ADK 的连接参数，下面用 `StreamableHTTPConnectionParams` 演示：
+
+## 使用方法
+
+```python
+from veadk import Agent
+from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import (
+    StreamableHTTPConnectionParams,
+)
+
+toolset = TrustedMcpToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://your-trusted-mcp-endpoint",
+        headers={"Authorization": "Bearer your-api-key-here"},
+    ),
+)
+
+agent = Agent(tools=[toolset])
+```

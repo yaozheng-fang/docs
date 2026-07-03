@@ -1,0 +1,76 @@
+---
+title: "应用与会话"
+description: "列出与查询智能体应用、管理会话的 HTTP 路由与请求模型"
+---
+
+应用相关路由用于列出与查询当前 server 已加载的智能体应用。会话相关路由用于在指定应用与用户下创建、查询、更新与删除会话。
+
+## 应用
+
+### 列出应用
+
+`GET /list-apps`
+
+列出当前 server 已加载的全部智能体应用。
+
+| 查询参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `detailed` | boolean | 是否返回详细信息，默认 `false`。 |
+
+当 `detailed` 为 `false` 时，响应为应用名称字符串数组；为 `true` 时，响应为 `ListAppsResponse`，其 `apps` 字段是 `AppInfo` 列表。`AppInfo` 包含 `name`、`root_agent_name`、`description`、`language`、`is_computer_use` 以及可选的 `agents`。
+
+### 获取应用信息
+
+`GET /apps/{app_name}/app-info`
+
+返回指定应用的详细信息，响应为 `AppInfo`。若根智能体不是 LlmAgent，将返回 400。
+
+## 会话
+
+### 创建会话
+
+`POST /apps/{app_name}/users/{user_id}/sessions`
+
+创建一个新会话。请求体 `CreateSessionRequest` 为可选，字段如下。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `session_id` | string | 会话 ID。不提供时自动生成随机 ID。 |
+| `state` | object | 会话的初始状态。 |
+| `events` | array | 用于初始化会话的事件列表。 |
+
+响应为创建后的 `Session` 对象。
+
+<Note>
+路径 `POST /apps/{app_name}/users/{user_id}/sessions/{session_id}`（在路径中指定会话 ID）已废弃，请改用上述不带 `session_id` 的接口并在请求体中传入 `session_id`。
+</Note>
+
+### 获取会话
+
+`GET /apps/{app_name}/users/{user_id}/sessions/{session_id}`
+
+返回指定会话对象；会话不存在时返回 404。
+
+### 列出会话
+
+`GET /apps/{app_name}/users/{user_id}/sessions`
+
+返回该用户在该应用下的全部会话列表，评测过程中生成的会话会被自动过滤。
+
+### 更新会话状态
+
+`PATCH /apps/{app_name}/users/{user_id}/sessions/{session_id}`
+
+在不运行智能体的情况下更新会话状态。请求体 `UpdateSessionRequest` 字段如下。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `state_delta` | object | 要应用到会话状态的增量变更。 |
+
+服务会以该增量生成一个作者为 `user` 的状态更新事件并追加到会话，返回更新后的 `Session`。会话不存在时返回 404。
+
+### 删除会话
+
+`DELETE /apps/{app_name}/users/{user_id}/sessions/{session_id}`
+
+删除指定会话，无响应体。

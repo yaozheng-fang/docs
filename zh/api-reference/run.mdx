@@ -1,0 +1,59 @@
+---
+title: "运行智能体"
+description: "同步运行与 SSE 流式运行智能体的 HTTP 路由、RunAgentRequest 字段与示例"
+---
+
+运行相关路由用于向指定会话提交一条输入消息并触发智能体运行。`/run` 一次性返回全部事件，`/run_sse` 以 Server-Sent Events 流式返回事件。两者共用请求体 `RunAgentRequest`。
+
+## 一次性运行
+
+`POST /run`
+
+同步运行智能体，待本轮全部事件生成完毕后一次性返回，响应为 `Event` 列表。请求体为 `RunAgentRequest`。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `app_name` | string | 应用名称。必填。 |
+| `user_id` | string | 用户 ID。必填。 |
+| `session_id` | string | 会话 ID。必填。 |
+| `new_message` | object | 本轮输入消息，结构为 `types.Content`，包含 `parts` 与 `role`。 |
+| `streaming` | boolean | 是否启用流式，默认 `false`。对 `/run` 无实际效果。 |
+| `state_delta` | object | 本轮运行前要应用到会话状态的增量变更。 |
+| `function_call_event_id` | string | 长时函数恢复场景（如 OAuth 回调）使用的事件 ID。 |
+| `invocation_id` | string | 用于恢复长时函数运行的调用 ID。 |
+
+其中 `new_message` 的 `types.Content` 结构：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `parts` | array | 组成一条消息的若干部分，每部分可有不同的 MIME 类型。 |
+| `role` | string | 消息生产者，取值 `user` 或 `model`，默认按 `user` 处理。 |
+
+会话不存在时返回 404。
+
+## 流式运行
+
+`POST /run_sse`
+
+以 Server-Sent Events（SSE）流式返回运行过程中的事件。请求体同样为 `RunAgentRequest`；当 `streaming` 为 `true` 时启用 SSE 流式模式。响应的媒体类型为 `text/event-stream`，每个事件以 `data: <event-json>\n\n` 的形式逐条推送，事件 JSON 采用 `camelCase` 别名序列化。
+
+若 server 未开启自动创建会话且会话不存在，返回 404。
+
+以下示例向 `/run_sse` 发送一条用户消息并启用流式：
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/run_sse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_name": "my_agent",
+    "user_id": "u_123",
+    "session_id": "s_456",
+    "streaming": true,
+    "new_message": {
+      "role": "user",
+      "parts": [{ "text": "你好，请介绍一下你自己。" }]
+    }
+  }'
+```
+
+对应的 `/run`（一次性返回）请求体与上例一致，仅将 `streaming` 置为 `false` 即可。

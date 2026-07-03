@@ -1,0 +1,59 @@
+---
+title: "Running an agent"
+description: "HTTP routes, RunAgentRequest fields, and examples for synchronous and SSE streaming agent runs"
+---
+
+Run routes submit an input message to a given session and trigger an agent run. `/run` returns all events at once, while `/run_sse` streams events back as Server-Sent Events. Both share the `RunAgentRequest` body.
+
+## Single-shot run
+
+`POST /run`
+
+Runs the agent synchronously and returns once all events for the turn have been generated. The response is a list of `Event` objects. The request body is `RunAgentRequest`.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `app_name` | string | Application name. Required. |
+| `user_id` | string | User ID. Required. |
+| `session_id` | string | Session ID. Required. |
+| `new_message` | object | The input message for this turn, structured as a `types.Content` with `parts` and `role`. |
+| `streaming` | boolean | Whether to enable streaming. Defaults to `false`. Has no effect on `/run`. |
+| `state_delta` | object | State changes to apply to the session before this run. |
+| `function_call_event_id` | string | Event ID used to resume long-running functions, such as an OAuth callback. |
+| `invocation_id` | string | Invocation ID used to resume a long-running function run. |
+
+The `types.Content` structure for `new_message`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `parts` | array | The parts that make up a single message; each part may have a different MIME type. |
+| `role` | string | The producer of the content, either `user` or `model`; defaults to `user`. |
+
+Returns 404 if the session does not exist.
+
+## Streaming run
+
+`POST /run_sse`
+
+Streams run events back as Server-Sent Events (SSE). The request body is also `RunAgentRequest`; SSE streaming mode is enabled when `streaming` is `true`. The response media type is `text/event-stream`, and each event is pushed as `data: <event-json>\n\n`, with the event JSON serialized using `camelCase` aliases.
+
+If the server does not auto-create sessions and the session does not exist, it returns 404.
+
+The following example sends a user message to `/run_sse` with streaming enabled:
+
+```bash
+curl -N -X POST http://127.0.0.1:8000/run_sse \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_name": "my_agent",
+    "user_id": "u_123",
+    "session_id": "s_456",
+    "streaming": true,
+    "new_message": {
+      "role": "user",
+      "parts": [{ "text": "Hello, please introduce yourself." }]
+    }
+  }'
+```
+
+The `/run` request body (single-shot response) is identical; simply set `streaming` to `false`.

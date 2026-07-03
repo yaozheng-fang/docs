@@ -1,0 +1,12 @@
+---
+title: "Debugging"
+description: "Trace and agent-graph HTTP routes intended for development and visualization"
+---
+
+Debug routes carry the `Debug` tag and are intended for development and visualization.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/debug/trace/{event_id}` | Get trace information by event ID; returns 404 if not found. |
+| GET | `/debug/trace/session/{session_id}` | Get the list of trace spans for a session. |
+| GET | `/dev/{app_name}/graph` | Return the agent graph in DOT format; the optional `dark_mode` query parameter toggles the theme. Returns `GetEventGraphResult` (with `dot_src`). |

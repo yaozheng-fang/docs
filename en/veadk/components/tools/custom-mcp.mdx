@@ -1,0 +1,28 @@
+---
+title: "Custom MCP Server"
+tag: "MCP tool"
+description: "Connect to any MCP Server directly using Google ADK's MCPToolset."
+---
+
+## Overview
+
+If none of the built-in connectors meet your needs, connect to any MCP Server directly using Google ADK's `MCPToolset`. Once registered, the agent automatically loads the tools exposed by the MCP Server and calls them as needed during reasoning.
+
+## Usage
+
+```python
+from veadk import Agent
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import (
+    StreamableHTTPConnectionParams,
+)
+
+toolset = MCPToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://your-mcp-endpoint",
+        headers={"Authorization": "Bearer your-api-key-here"},
+    ),
+)
+
+agent = Agent(tools=[toolset])
+```

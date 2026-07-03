@@ -1,0 +1,26 @@
+---
+title: "Invoke a runtime"
+description: "Invoke a deployed runtime by name or id."
+---
+
+The `invoke` command invokes a deployed runtime by name or id, resolving its endpoint and authentication automatically before sending a message.
+
+## invoke
+
+Invoke a deployed runtime (resolves endpoint + auth).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<runtime>` | Runtime id (`r-...`) or name (required) | None |
+| `-m, --message <text>` | User message to send | None |
+| `-r, --region <region>` | Volcengine region | Auto-sense |
+| `--rev <n>` | Runtime version to invoke | Current |
+| `-u, --user <id>` | User id | `default` |
+| `-s, --session <id>` | Session id | `default` |
+| `--token <jwt>` | Bearer token (for custom_jwt runtimes) | None |
+| `--path <path>` | Force a specific endpoint path | Auto-detect (ADK `/run_sse`, else `/invoke`) |
+| `--json` | Print the full JSON response | `false` |
+
+```bash
+agentkit invoke my-agent -m "Hello, introduce yourself"
+```

@@ -1,0 +1,170 @@
+---
+title: "Use sandboxes"
+description: "Operate a sandbox: run commands and manage sessions."
+---
+
+The `sandbox` command group operates a sandbox: run commands in a sandbox session, open an interactive terminal, transfer files, open a web preview, inject subscription credentials, and manage sessions. A sandbox is a `code` tool.
+
+<Note>
+Most subcommands share a common set of session and tool flags: `-s, --session <id>` (session id, reused if it exists, else generated), `--tool-id <id>` (sandbox tool id), `--type <type>` (sandbox type `code` \| `skill`, default `code`), `--auto-create` (create a sandbox tool if none exists), `-r, --region <region>` (Volcengine region), and `-p, --project <name>` (AgentKit project, default `default`). Each command's full flag set is listed below.
+</Note>
+
+## sandbox run
+
+Run a command in a sandbox session and print its output.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<command>` | Command to run (required) | None |
+| `--json` | Print the raw result (`{ output, ... }`) | `false` |
+| `--cwd <dir>` | Working directory to run in | None |
+| `--model-name <name>` | Model for the sandbox coding agent | None |
+| `--model-api-key <key>` | Model API key | None |
+| `--model-provider <provider>` | Model provider | None |
+| `--cpu <milli>` | CPU milli-cores when `--auto-create` | None |
+| `--memory <mb>` | Memory MB when `--auto-create` | None |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox run "ls -la" --session my-session
+```
+
+## sandbox shell
+
+Open an interactive terminal in a sandbox session (Ctrl-] to detach).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--tmux` | Attach/create a persistent tmux session | `false` |
+| `--command <cmd>` | Run an initial command after attaching | None |
+| `--workspace <dir>` | Sandbox workspace root | None |
+| `--src-dir <path>` | Local file/dir to upload before attaching | None |
+| `--dst-dir <dir>` | Remote destination for `--src-dir` (under `--workspace`) | None |
+| `--model-name <name>` | Model for the sandbox coding agent | None |
+| `--model-api-key <key>` | Model API key | None |
+| `--model-provider <provider>` | Model provider | None |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox shell --tmux --session my-session
+```
+
+## sandbox cp
+
+Copy files to/from a sandbox session — prefix the remote side with `:`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<src>` | Source path (prefix remote side with `:`, required) | None |
+| `<dst>` | Destination path (prefix remote side with `:`, required) | None |
+| `--overwrite` | Overwrite an existing local file on download | `false` |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
+```
+
+## sandbox web
+
+Open the sandbox web preview in a browser.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--no-open` | Just print the URL | `false` |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox web --session my-session
+```
+
+## sandbox login
+
+Inject your local codex/claude subscription into a sandbox session.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--provider <provider>` | `codex` \| `claude` | None |
+| `--auth-file <path>` | Use a specific local credential file | None |
+| `--codex-home <dir>` | Local codex home | `$CODEX_HOME` or `~/.codex` |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox login --provider claude --session my-session
+```
+
+## sandbox sessions
+
+List active sandbox sessions.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit sandbox sessions
+```
+
+## sandbox logs
+
+Show a sandbox session's logs.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[session]` | Session id | None |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--tail <n>` | Max log lines | None |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit sandbox logs my-session --tail 100
+```
+
+## sandbox rm
+
+Stop and delete a sandbox session (or `--all`).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[session]` | Session id | None |
+| `--tool-id <id>` | Sandbox tool id | None |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--all` | Delete every session on the tool | `false` |
+| `-y, --yes` | Skip confirmation | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox rm my-session -y
+```

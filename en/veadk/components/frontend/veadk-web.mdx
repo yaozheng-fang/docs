@@ -1,0 +1,79 @@
+---
+title: "VeADK Web"
+description: "A visual debugging UI built on adk web, with VeADK memory wired in automatically"
+---
+
+`veadk web` wraps Google ADK's `adk web` to launch a visual debugging UI: chat with your agent and observe its execution in the browser, with zero frontend code. Compared with running `adk web` directly, it adds automatic integration of VeADK memory, warnings for workflow agents, an optional VeIdentity SSO login, and it disables the OpenAPI documentation routes and trims noisy logging by default. It is intended for local development and troubleshooting.
+
+`veadk web` passes the `adk web` options straight through, so the `adk web` usage applies here as well. This page documents only the behavior and options that VeADK adds on top of it.
+
+## Launch
+
+Run the command from the parent folder of your agent directories. Each subdirectory that contains an `agent.py` exposing a `root_agent` becomes a selectable app in the UI.
+
+```bash
+# the agents directory is a positional argument, defaulting to the current directory
+veadk web examples
+
+# bind a specific host and port
+veadk web examples --host 0.0.0.0 --port 8080
+```
+
+Open the address printed by the command to use it.
+
+## Common passthrough options
+
+The options below are provided by the underlying `adk web` and passed through by `veadk web` unchanged.
+
+| Option | Default | Description |
+| :-- | :-- | :-- |
+| `AGENTS_DIR` | current directory | Positional argument: directory of agent apps; each subdirectory exposes a `root_agent`. |
+| `--host` | `127.0.0.1` | Address the server binds to. |
+| `--port` | `8000` | Port the server binds to. |
+| `--log_level` | `ERROR` | Logging level. `veadk web` lowers the default to `ERROR`; see below. |
+| `--reload` / `--no-reload` | `--reload` | Whether to auto-reload when agent code changes. |
+| `--session_service_uri` | — | Storage URI for the session service. Uses local storage when unset. |
+
+<Note>
+  The complete set of passthrough options is defined by `adk web --help`. The table lists the ones most commonly used with this UI.
+</Note>
+
+## VeADK-specific OAuth2 options
+
+`veadk web` adds three options for VeIdentity single sign-on. The login middleware is enabled only when both the user pool and client names are supplied.
+
+| Option | Default | Description |
+| :-- | :-- | :-- |
+| `--oauth2-user-pool` | — | VeIdentity User Pool name. Enables SSO when set together with the client name. |
+| `--oauth2-user-pool-client` | — | VeIdentity User Pool client name. |
+| `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | OAuth2 redirect URI. When not set explicitly, it is derived from the passthrough `--host` and `--port`. |
+
+```bash
+veadk web examples \
+  --oauth2-user-pool <pool-name> \
+  --oauth2-user-pool-client <client-name>
+```
+
+<Note>
+  Enabling SSO requires the process to have access to Volcengine credentials. In this mode the cookie `Secure` flag is not forced, so it works over plain HTTP for local serving.
+</Note>
+
+## Automatic memory integration
+
+This is the core enhancement `veadk web` provides over plain `adk web`. The command hooks into the ADK web server's runner acquisition: before a runner is created for an app, it loads the corresponding agent and inspects its memory configuration:
+
+- If the agent has short-term memory configured, its session service is wired in as the app's session service.
+- If the agent has long-term memory configured, it is wired in as the app's memory service, and the long-term memory backend is logged.
+
+As a result, memory configured on the agent works in the UI directly — you do not need to specify a session or memory service on the launch command.
+
+<Warning>
+  When a workflow agent (Sequential, Loop, Parallel) is detected, the short-term and long-term memory configured on each of its sub-agents individually has no effect, and the command emits a warning in the logs. Configure memory on the workflow agent itself.
+</Warning>
+
+## Disabled OpenAPI and default log level
+
+At startup `veadk web` makes two adjustments to the ADK web server:
+
+- **Disables the OpenAPI documentation routes.** It removes the `/openapi.json`, `/docs`, and `/redoc` routes from the server to simplify the UI and reduce the exposed surface.
+- **Trims the default log level.** If `--log_level` is not passed explicitly, the level defaults to `ERROR` to suppress noisy output from Google ADK and LiteLLM; when `--log_level` is passed, the provided value is respected.

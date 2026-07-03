@@ -4,8 +4,8 @@ description: "Scaffold, deploy, and manage AgentKit agents from your terminal"
 ---
 
 `agentkit` is the command-line tool for AgentKit: scaffold projects, build and
-deploy runtimes, and manage tools, knowledge bases, memory, and evaluation —
-all from your terminal.
+deploy runtimes, and manage tools, knowledge bases, memory, sandboxes, skills,
+and evaluation — all from your terminal.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/en/agentkit-cli/quickstart">
@@ -21,23 +21,28 @@ all from your terminal.
 | Group | What it manages |
 | --- | --- |
 | `init` | scaffold a new agent project |
-| `deploy` | build & deploy the project (`config` → `build` → `apply`) |
-| `runtime` | deployed runtimes (list/show/logs/versions/release/update/delete) |
+| `deploy` | build and deploy the project (`config` → `build` → `apply`) |
+| `runtime` | deployed runtimes (list, show, logs, versions, release, update, delete) |
 | `knowledge` (`kb`) | knowledge bases |
 | `memory` (`mem`) | memory collections |
-| `tool` | tools (MCP servers, code environments, …) |
+| `tool` | tools (MCP servers, code environments, skills) |
 | `harness` | code-free agents defined by a `harness.yaml` |
+| `sandbox` | run commands and manage sessions in a sandbox |
+| `skill` | skills on the AgentKit skill platform |
 | `invoke` | call a deployed runtime |
-| `auth` | SSO login/logout/whoami and login profiles |
+| `auth` | SSO login, logout, whoami, and login profiles |
 | `onboard` | install bundled skills into local coding agents |
 | `eval dataset` | evaluation datasets and their cases (`eval` prefix optional) |
+| `destroy` | delete a deployed runtime |
 | `tree` | print the command tree |
 
 ## Conventions
 
-- `knowledge`↔`kb`, `memory`↔`mem` are aliases; the `eval` prefix is optional
-  (`agentkit dataset …` == `agentkit eval dataset …`).
-- Most read commands accept `--json`; region is auto-sensed unless you pass
-  `-r, --region`.
-- Destructive commands (`delete`, `remove`) prompt for confirmation; pass `-y`
-  to skip.
+- `agentkit` may also be invoked as `ak`.
+- `knowledge` has aliases `kb` and `knowledgebase`, `memory` has alias `mem`,
+  and the `eval` prefix is optional (`agentkit dataset …` is equivalent to
+  `agentkit eval dataset …`).
+- Most read commands accept `--json`; the region is auto-detected unless you
+  pass `-r, --region`.
+- Destructive commands (`delete`, `remove`, `destroy`) prompt for confirmation;
+  pass `-y` to skip.

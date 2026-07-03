@@ -1,0 +1,59 @@
+---
+title: "Text-to-speech"
+tag: "Function tool"
+description: "Synthesizes text into speech and saves the audio locally."
+---
+
+## Overview
+
+Tool identifier `text_to_speech`.
+
+`text_to_speech` synthesizes text into speech and saves the audio locally.
+
+Import path: `from veadk.tools.builtin_tools.tts import text_to_speech`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure the API key for the agent's reasoning model.
+2. Configure the VeSpeech service App ID and API key.
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `TOOL_VESPEECH_APP_ID`: VeSpeech service App ID
+- `TOOL_VESPEECH_API_KEY`: VeSpeech service API key
+- `TOOL_VESPEECH_SPEAKER`: voice, defaults to `zh_female_vv_uranus_bigtts`
+- `TOOL_VESPEECH_AUDIO_OUTPUT_PATH`: audio output directory, defaults to the system temp directory
+
+## Usage
+
+```python title="examples/tools/tts/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.tts import text_to_speech
+
+agent = Agent(
+    name="tts_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="An agent that speaks text aloud.",
+    instruction="Use the text_to_speech tool to synthesize the user's text into speech.",
+    tools=[text_to_speech],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("Read this aloud: Hello, welcome to VeADK")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

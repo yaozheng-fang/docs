@@ -1,0 +1,110 @@
+---
+title: "Redis (redis)"
+description: "Use Redis as a low-latency vector store backend for long-term memory, requires the RediSearch module"
+---
+
+The `redis` backend is implemented by `RedisLTMBackend` and uses Redis as the vector store. Memory text is embedded by an embedding model, written to Redis with a per-user index (the actual index name is `veadk-ltm/{index}/{user_id}`), and retrieved by cosine similarity.
+
+## When to use
+
+- You already run Redis with the **RediSearch** module enabled;
+- You want Redis as a low-latency vector-search backend, with persistence and multi-instance sharing.
+
+## Dependencies
+
+```bash
+pip install "veadk-python[extensions]"
+```
+
+Redis must support RediSearch (vector search).
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+ltm = LongTermMemory(backend="redis", index="ltm_demo")
+
+agent = Agent(
+    name="demo",
+    instruction="Answer the user; when needed, use the `load_memory` tool to recall past conversations.",
+    long_term_memory=ltm,
+)
+```
+
+You can also pass connection config explicitly via `backend_config`:
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+from veadk.configs.database_configs import RedisConfig
+
+ltm = LongTermMemory(
+    backend="redis",
+    index="ltm_demo",
+    backend_config={
+        "index": "ltm_demo",
+        "redis_config": RedisConfig(
+            host="localhost",
+            port=6379,
+            password="your-password",
+            db=0,
+        ),
+    },
+)
+```
+
+## Parameters
+
+### Constructor parameters
+
+`RedisLTMBackend` accepts the following fields:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | No default; provided by `LongTermMemory` | Memory index name. The Redis backend imposes no extra naming constraints. |
+| `redis_config` | `RedisConfig` | Read automatically from `DATABASE_REDIS_*` env vars | Redis connection config. |
+| `embedding_config` | `EmbeddingModelConfig` | Read automatically from `MODEL_EMBEDDING_*` env vars | Embedding model config. |
+
+### Redis connection config
+
+`redis_config` is a `RedisConfig` with env prefix `DATABASE_REDIS_`:
+
+| Field | Env var | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `host` | `DATABASE_REDIS_HOST` | `str` | `""` | Redis host. |
+| `port` | `DATABASE_REDIS_PORT` | `int` | `6379` | Port. |
+| `username` | `DATABASE_REDIS_USERNAME` | `str \| None` | `None` | Username, optional. |
+| `password` | `DATABASE_REDIS_PASSWORD` | `str` | `""` | Password. |
+| `db` | `DATABASE_REDIS_DB` | `int` | `0` | Database number. |
+| `secret_token` | `DATABASE_REDIS_SECRET_TOKEN` | `str` | `""` | STS temporary-credential token; not yet enabled. |
+
+### Embedding config
+
+`embedding_config` is an `EmbeddingModelConfig` with env prefix `MODEL_EMBEDDING_`:
+
+| Field | Env var | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | Embedding model name. |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | Embedding vector dimension; used to build the vector field. Distance metric is cosine. |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | API base of the embedding service. |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | Falls back to `MODEL_AGENT_API_KEY`, then an auto-fetched Ark token | Key for accessing the embedding service. |
+
+## Environment variables
+
+```bash
+# Redis connection
+export DATABASE_REDIS_HOST="localhost"
+export DATABASE_REDIS_PORT=6379
+export DATABASE_REDIS_PASSWORD="your-password"
+export DATABASE_REDIS_DB=0
+
+# Embedding model
+export MODEL_EMBEDDING_NAME="doubao-embedding-vision-250615"
+export MODEL_EMBEDDING_DIM=2048
+export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
+```
+
+<Note>
+The vector dimension comes from the embedding config (`MODEL_EMBEDDING_DIM`). The index uses the flat algorithm with a cosine distance metric, and an index is created per user (`veadk-ltm/{index}/{user_id}`).
+</Note>

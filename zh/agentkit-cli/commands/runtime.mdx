@@ -1,0 +1,127 @@
+---
+title: "管理运行时"
+description: "管理 AgentKit 运行时。"
+---
+
+`runtime` 命令组用于管理 AgentKit 运行时，涵盖列表、详情查看、日志获取、版本历史、发布、更新与删除等操作。
+
+## runtime list
+
+列出所有运行时。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-p, --project <name>` | 项目名称。 | — |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit runtime list --project demo
+```
+
+## runtime show
+
+查看运行时的详情，可选择指定某个版本。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `--rev <n>` | 查看指定版本而非当前版本。 | 当前版本 |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit runtime show my-agent --rev 3
+```
+
+## runtime delete
+
+删除运行时。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-y, --yes` | 跳过确认提示。 | `false` |
+
+```bash
+agentkit runtime delete my-agent --yes
+```
+
+## runtime logs
+
+查看运行时实例的日志。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
+| `-i, --instance <name>` | 实例名称。 | 自动解析 |
+| `-n, --limit <n>` | 日志行数；`0` 表示全部。 | 服务端默认 |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit runtime logs my-agent --limit 200
+```
+
+## runtime versions
+
+列出运行时的版本历史。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit runtime versions my-agent
+```
+
+## runtime release
+
+发布运行时版本，使其正式上线。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
+| `--rev <n>` | 要发布的版本号。 | 最新版本 |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `--no-wait` | 立即返回，不等待进入 `Ready` 状态。 | `false` |
+
+```bash
+agentkit runtime release my-agent --rev 3
+```
+
+## runtime update
+
+更新运行时的配置。除非传入 `--auto-release`，否则不会发布新版本。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
+| `--description <text>` | 描述。 | — |
+| `--artifact-url <url>` | 容器镜像地址。 | — |
+| `--artifact-type <type>` | 构建产物类型。 | — |
+| `--cpu-milli <n>` | CPU，单位为毫核。 | — |
+| `--memory-mb <n>` | 内存，单位为 MB。 | — |
+| `--min-instance <n>` | 最小实例数。 | — |
+| `--max-instance <n>` | 最大实例数。 | — |
+| `--max-concurrency <n>` | 单实例最大并发数。 | — |
+| `--model-agent-name <name>` | 模型智能体名称。 | — |
+| `--knowledge-id <id>` | 关联的知识库 id。 | — |
+| `--memory-id <id>` | 关联的记忆集合 id。 | — |
+| `--tool-id <id>` | 关联的工具 id。 | — |
+| `--mcp-toolset-id <id>` | 关联的 MCP 工具集 id。 | — |
+| `--apmplus` | 启用 APMPlus 监控。 | — |
+| `--no-apmplus` | 关闭 APMPlus 监控。 | — |
+| `--envs-json <json>` | 以 JSON 数组形式提供的环境变量，例如 `'[{"Key":"K","Value":"V"}]'`。 | — |
+| `--tags-json <json>` | 以 JSON 数组形式提供的标签。 | — |
+| `--json <jsonString>` | 高级：合并进请求体的 JSON 对象。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `--auto-release` | 更新后立即发布新版本。 | `false` |
+| `--no-wait` | 立即返回，不等待运行时稳定。 | `false` |
+
+```bash
+agentkit runtime update my-agent --cpu-milli 1000 --memory-mb 2048 --auto-release
+```

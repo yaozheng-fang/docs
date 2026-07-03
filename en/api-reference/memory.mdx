@@ -1,0 +1,18 @@
+---
+title: "Memory"
+description: "HTTP route and request model for ingesting session events into the memory service"
+---
+
+Memory routes ingest events from a given session into the memory service for later retrieval.
+
+## Add a session to memory
+
+`PATCH /apps/{app_name}/users/{user_id}/memory`
+
+Adds all events from a given session to the memory service. The `UpdateMemoryRequest` body has the following field.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `session_id` | string | ID of the session to add to memory. |
+
+Returns 400 if the memory service is not configured, or 404 if the session does not exist.

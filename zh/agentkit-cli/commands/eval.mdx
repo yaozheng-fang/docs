@@ -1,0 +1,106 @@
+---
+title: "管理评测数据集"
+description: "管理评测数据集。"
+---
+
+`eval dataset` 命令组用于管理评测数据集：列出、查看、创建、删除数据集，以及为数据集增删用例。
+
+<Note>
+这些子命令同时提供顶层别名，`eval` 前缀可省略：`agentkit eval dataset list` 等价于 `agentkit dataset list`。下文示例使用较短的 `agentkit dataset ...` 形式。
+</Note>
+
+## dataset list
+
+列出评测数据集。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine 区域 | 自动检测 |
+| `-p, --project <name>` | 项目名称 | 无 |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit dataset list
+```
+
+## dataset show
+
+查看某个评测数据集的详情，包括其用例条目。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `-r, --region <region>` | Volcengine 区域 | 自动检测 |
+| `-p, --project <name>` | 项目名称 | `default` |
+| `--items <n>` | 最多列出 N 条用例（0 表示跳过） | `20` |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit dataset show my-dataset --items 50
+```
+
+## dataset create
+
+创建一个评测数据集。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--name <name>` | 数据集名称 | 无 |
+| `--schema <fields>` | 逗号分隔的字段名 | `input,reference_output,output` |
+| `--description <text>` | 数据集描述 | 无 |
+| `-r, --region <region>` | Volcengine 区域 | 取自环境变量 |
+| `-p, --project <name>` | 项目名称 | `default` |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit dataset create --name my-dataset --schema "input,reference_output,output"
+```
+
+## dataset delete
+
+删除一个评测数据集。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `-r, --region <region>` | Volcengine 区域 | 自动检测 |
+| `-p, --project <name>` | 项目名称 | `default` |
+| `-y, --yes` | 跳过确认提示 | `false` |
+
+```bash
+agentkit dataset delete my-dataset -y
+```
+
+## dataset add
+
+向评测数据集添加一个或多个用例。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `--field <key=value>` | 用例字段（可重复） | 无 |
+| `--file <path>` | JSON 文件：一个对象，或由 `field: value` 对象组成的数组 | 无 |
+| `-r, --region <region>` | Volcengine 区域 | 自动检测 |
+| `-p, --project <name>` | 项目名称 | `default` |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit dataset add my-dataset --field "input=你好" --field "reference_output=您好"
+```
+
+## dataset remove
+
+从评测数据集中移除一个或多个用例。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `<itemIds...>` | 要移除的用例条目 ID（可传多个，必填） | 无 |
+| `-r, --region <region>` | Volcengine 区域 | 自动检测 |
+| `-p, --project <name>` | 项目名称 | `default` |
+| `-y, --yes` | 跳过确认提示 | `false` |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit dataset remove my-dataset item-1 item-2 -y
+```

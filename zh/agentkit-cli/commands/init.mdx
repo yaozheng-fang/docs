@@ -1,0 +1,23 @@
+---
+title: "初始化项目"
+description: "从模板脚手架创建新的智能体项目。"
+---
+
+`init` 命令基于内置模板脚手架创建新的智能体项目，模板按语言分组组织。
+
+## init
+
+从模板脚手架创建新的智能体项目。在不带任何选项运行时，将通过交互式提示引导完成语言与模板的选择。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[name]` | 项目名称（或使用 `.` 表示当前目录）。 | — |
+| `-L, --language <id>` | 语言分组（`python`、`java`、`typescript`、`golang`）。 | — |
+| `-t, --template <id>` | 语言分组内的模板 id。 | — |
+| `-y, --yes` | 跳过提示并使用默认值。 | `false` |
+| `-f, --force` | 在非空目录中执行脚手架。 | `false` |
+| `-l, --list` | 列出可用的语言与模板后退出。 | `false` |
+
+```bash
+agentkit init my-agent --language python --template default --yes
+```

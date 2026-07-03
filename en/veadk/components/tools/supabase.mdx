@@ -1,0 +1,23 @@
+---
+title: "Supabase toolset"
+tag: "MCP tool"
+description: "Build a tool set that accesses a Supabase MCP Server."
+---
+
+## Overview
+
+`build_supabase_mcptoolset` (`from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset`) quickly builds a tool set that accesses a [Supabase](https://supabase.com/) MCP Server. It accepts a `url` and an `api_key`, and returns an `MCPToolset` instance you can register on the agent directly.
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset
+
+supabase_toolset = build_supabase_mcptoolset(
+    url="https://your-supabase-mcp-endpoint",
+    api_key="your-api-key-here",
+)
+
+agent = Agent(tools=[supabase_toolset])
+```

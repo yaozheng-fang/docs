@@ -1,0 +1,91 @@
+---
+title: "无代码智能体"
+description: "以无代码方式初始化、配置并部署 harness.yaml 智能体。"
+---
+
+`harness` 命令组用于以无代码方式创建智能体：先初始化一个 `harness.yaml`，再逐项设置字段，最后直接部署为运行时，无需编写任何应用代码。
+
+## harness init
+
+创建一个 harness 目录，包含 `harness.yaml` 与 `.env.example`，用于无代码智能体。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[name]` | harness 名称（传 `.` 表示当前目录） | 无 |
+| `-y, --yes` | 跳过交互提示并使用默认值 | `false` |
+| `-f, --force` | 在非空目录中脚手架 / 覆盖已有 `harness.yaml` | `false` |
+
+```bash
+agentkit harness init my-harness
+```
+
+## harness set
+
+设置 `harness.yaml` 中的字段（局部更新，仅修改传入的字段）。不带任何标志运行时会列出当前字段。字段分为若干组：核心（模型 / 工具 / 技能 / 提示词 / 运行时）、knowledgebase、long-term-memory、short-term-memory 以及鉴权。设置某个组件时，请先设置其 `--<组件>-type`，再设置连接参数。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--name <name>` | harness/运行时名称 | 无 |
+| `--model-name <name>` | 推理模型名称 | 无 |
+| `--tools <list>` | 逗号分隔的内置工具 | 无 |
+| `--skills <list>` | 逗号分隔的技能中心名称 | 无 |
+| `--system-prompt <text>` | 智能体指令 | 无 |
+| `--runtime <backend>` | 智能体运行时后端：`adk` \| `codex` | 无 |
+| `--knowledgebase-type <type>` | knowledgebase 后端类型（传 `""` 可禁用） | 无 |
+| `--knowledgebase-project <value>` | knowledgebase 项目 | 无 |
+| `--knowledgebase-region <value>` | knowledgebase 区域 | 无 |
+| `--knowledgebase-host <value>` | knowledgebase 主机 | 无 |
+| `--knowledgebase-port <value>` | knowledgebase 端口 | 无 |
+| `--knowledgebase-username <value>` | knowledgebase 用户名 | 无 |
+| `--knowledgebase-password <value>` | knowledgebase 密码 | 无 |
+| `--knowledgebase-use-ssl` | knowledgebase 启用 use_ssl | `false` |
+| `--knowledgebase-cert-path <value>` | knowledgebase cert_path | 无 |
+| `--knowledgebase-secret-token <value>` | knowledgebase secret_token | 无 |
+| `--knowledgebase-db <value>` | knowledgebase db | 无 |
+| `--long-term-memory-type <type>` | long_term_memory 后端类型（传 `""` 可禁用） | 无 |
+| `--long-term-memory-project <value>` | long_term_memory 项目 | 无 |
+| `--long-term-memory-region <value>` | long_term_memory 区域 | 无 |
+| `--long-term-memory-host <value>` | long_term_memory 主机 | 无 |
+| `--long-term-memory-port <value>` | long_term_memory 端口 | 无 |
+| `--long-term-memory-username <value>` | long_term_memory 用户名 | 无 |
+| `--long-term-memory-password <value>` | long_term_memory 密码 | 无 |
+| `--long-term-memory-use-ssl` | long_term_memory 启用 use_ssl | `false` |
+| `--long-term-memory-cert-path <value>` | long_term_memory cert_path | 无 |
+| `--long-term-memory-secret-token <value>` | long_term_memory secret_token | 无 |
+| `--long-term-memory-db <value>` | long_term_memory db | 无 |
+| `--long-term-memory-api-key <value>` | long_term_memory api_key | 无 |
+| `--long-term-memory-api-key-id <value>` | long_term_memory api_key_id | 无 |
+| `--long-term-memory-project-id <value>` | long_term_memory project_id | 无 |
+| `--long-term-memory-base-url <value>` | long_term_memory base_url | 无 |
+| `--short-term-memory-type <type>` | short_term_memory 后端类型（传 `""` 可禁用） | 无 |
+| `--short-term-memory-host <value>` | short_term_memory 主机 | 无 |
+| `--short-term-memory-user <value>` | short_term_memory 用户 | 无 |
+| `--short-term-memory-password <value>` | short_term_memory 密码 | 无 |
+| `--short-term-memory-database <value>` | short_term_memory 数据库 | 无 |
+| `--short-term-memory-charset <value>` | short_term_memory 字符集 | 无 |
+| `--short-term-memory-port <value>` | short_term_memory 端口 | 无 |
+| `--discovery-url <url>` | OAuth2/JWT OIDC discovery URL（启用 custom_jwt） | 无 |
+| `--allowed-id <ids>` | 逗号分隔的允许客户端 ID | 无 |
+
+```bash
+agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
+```
+
+<Tip>
+只有显式传入的标志会被修改。若要配置某个组件，请先设置它的 `--<组件>-type`，再补充其连接参数。
+</Tip>
+
+## harness deploy
+
+构建 harness 镜像，并根据 `harness.yaml` 创建或更新运行时。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-r, --region <region>` | 运行时部署区域 | 无 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `--discovery-url <url>` | OIDC discovery URL（启用 OAuth2/JWT，覆盖 `harness.yaml`） | 无 |
+| `--allowed-id <ids>` | 逗号分隔的允许客户端 ID（覆盖 `harness.yaml`） | 无 |
+
+```bash
+agentkit harness deploy --project default --region cn-beijing
+```

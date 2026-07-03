@@ -1,0 +1,29 @@
+---
+title: "概述"
+description: "Google ADK 内置 API server 概览：基础路径、通用路径参数与服务信息路由"
+---
+
+Google ADK 内置了一个基于 FastAPI 的 API server，用于承载已加载的智能体，并对外提供会话管理、智能体运行、制品（artifact）读写、记忆写入与评测等能力。本参考文档按功能分组说明各路由的方法、路径、请求参数与响应结构，供在 ADK 之上构建客户端或集成服务时参考。
+
+## 基础路径
+
+所有路由都以 `/apps/{app_name}` 作为智能体应用的命名空间，会话相关路由进一步以 `/users/{user_id}/sessions/{session_id}` 定位到具体用户与会话。
+
+## 通用路径参数
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `app_name` | string | 智能体应用名称，作为大多数路由的命名空间。 |
+| `user_id` | string | 用户 ID，用于定位某用户在某应用下的会话与记忆。 |
+| `session_id` | string | 会话 ID，用于定位具体会话及其制品。 |
+
+<Note>
+请求体字段名遵循源码定义，均为 `snake_case`。制品版本（`ArtifactVersion`）等部分响应模型在序列化时会转换为 `camelCase`，字段含义与此处描述一致。
+</Note>
+
+## 服务信息
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/health` | 健康检查，返回 `{"status": "ok"}`。 |
+| GET | `/version` | 返回 ADK 版本、语言与运行时语言版本。 |
