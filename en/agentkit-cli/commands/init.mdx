@@ -20,3 +20,42 @@ Scaffold a new agent project from a template. When run without options, an inter
 ```bash
 agentkit init my-agent --language python --template default --yes
 ```
+
+## Set up GitHub CI/CD
+
+The scaffold includes a GitHub Actions workflow at `.github/workflows/deploy.yml`. Once credentials are configured, every push to the `main` branch (or a manual run from the repository's Actions page) builds the image in the cloud and idempotently creates or updates the corresponding AgentKit runtime.
+
+### Configure deploy credentials
+
+Add the following under the repository's Settings → Secrets and variables → Actions:
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `VOLCENGINE_ACCESS_KEY` | Secret | Volcengine access key, used for deploy authentication. |
+| `VOLCENGINE_SECRET_KEY` | Secret | Volcengine secret key. |
+| `VOLCENGINE_REGION` | Variable (optional) | Deploy region; defaults to `cn-beijing`. |
+
+<Warning>
+  Never hard-code credentials in source or commit them to the repository. The project template already adds `.env` to `.gitignore`; supply credentials through repository secrets only.
+</Warning>
+
+### Inject runtime environment variables
+
+Environment variables the agent runtime needs (such as a model API key) are added as repository secrets with an `AK_` prefix. `agentkit deploy` strips the prefix and injects them into the runtime at deploy time — for example, the repository secret `AK_OPENAI_API_KEY` becomes the runtime environment variable `OPENAI_API_KEY`. `VOLCENGINE_*` are deploy credentials and are not injected into the runtime. To add a runtime variable, add the corresponding `AK_` secret in the repository; no workflow edits are required.
+
+<Note>
+  Single-line values can be added directly; multi-line values need GitHub Actions' multi-line secret form.
+</Note>
+
+### What the workflow does
+
+On each trigger, the workflow runs in order:
+
+- Checks out the code and installs the AgentKit CLI (the template installs it via `npm install -g agentkit-cli`; replace this with your distribution channel if you use an internal one).
+- Forwards the repository secrets into the job environment for `agentkit deploy` to read.
+- Runs `agentkit deploy`: reads `.agentkit/agentkit.yaml` and the `Dockerfile`, builds the image in the cloud, and idempotently creates or updates the runtime by name.
+- Smoke-tests the deployed runtime with `agentkit invoke`; a failure here does not block the workflow.
+
+<Note>
+  `.agentkit/agentkit.yaml` records the runtime name, region, and project, so commit it to the repository to ensure every CI deploy targets the same runtime. (`.agentkit/artifacts/` holds per-deploy build output and is ignored by default.) For more on the deploy pipeline, see [Deploy a project](/en/agentkit-cli/commands/deploy).
+</Note>
