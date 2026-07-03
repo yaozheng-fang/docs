@@ -1,6 +1,5 @@
 ---
 title: "VikingDB (viking)"
-description: "Use the managed Volcengine VikingDB knowledge base; embedding and retrieval run server-side. Recommended for production"
 ---
 
 The `viking` backend is implemented by `VikingDBKnowledgeBackend` and integrates with the managed Volcengine VikingDB knowledge base service. Files are first uploaded to TOS (object storage), then registered into a VikingDB collection; splitting, embedding, and retrieval all run server-side, so **no local embedding is required**. It is the recommended backend for production.

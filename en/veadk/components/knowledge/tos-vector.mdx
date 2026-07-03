@@ -1,6 +1,5 @@
 ---
 title: "TOS Vector (tos_vector)"
-description: "Knowledge base backend using a Volcengine TOS vector bucket as the vector store, with embedding done locally before upload"
 ---
 
 The `tos_vector` backend is implemented by `TosVectorKnowledgeBackend` and uses a **vector bucket** in Volcengine TOS (object storage) as the vector store. Knowledge text is embedded locally by an embedding model, written to a TOS vector index, and retrieved by cosine similarity. On first use, the vector bucket and index are created automatically if they do not exist.

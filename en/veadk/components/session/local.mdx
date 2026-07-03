@@ -1,6 +1,5 @@
 ---
 title: "In-memory (local)"
-description: "The local backend keeps sessions in process memory with no external service and no disk, ideal for local development and ephemeral scenarios."
 ---
 
 The `local` backend keeps sessions in process memory, backed by Google ADK's `InMemorySessionService`. It needs no external service and never touches disk — when the process exits, sessions are gone. It is the default backend of `ShortTermMemory`.

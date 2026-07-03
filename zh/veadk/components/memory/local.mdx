@@ -1,6 +1,5 @@
 ---
 title: "使用本地内存"
-description: "进程内的向量记忆后端，无需外部服务，适合本地开发与调试"
 ---
 
 `local` 后端由 `InMemoryLTMBackend` 实现，把长期记忆保存在**当前进程的内存**中。记忆文本先经 embedding 模型向量化，再写入一个基于 llama-index 的内存向量索引，检索时按语义相似度召回。

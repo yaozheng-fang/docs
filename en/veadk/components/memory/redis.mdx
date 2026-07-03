@@ -1,6 +1,5 @@
 ---
 title: "Redis (redis)"
-description: "Use Redis as a low-latency vector store backend for long-term memory, requires the RediSearch module"
 ---
 
 The `redis` backend is implemented by `RedisLTMBackend` and uses Redis as the vector store. Memory text is embedded by an embedding model, written to Redis with a per-user index (the actual index name is `veadk-ltm/{index}/{user_id}`), and retrieved by cosine similarity.

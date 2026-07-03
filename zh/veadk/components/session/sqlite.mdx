@@ -1,6 +1,5 @@
 ---
 title: "使用 SQLite 存储"
-description: "sqlite 后端把会话持久化到本地 SQLite 文件，不依赖外部数据库服务，可跨进程、跨重启保留。"
 ---
 
 `sqlite` 后端把会话持久化到一个本地 SQLite 文件，底层使用 Google ADK 的 `DatabaseSessionService`。它不依赖外部数据库服务，但与 `local` 不同，会话会落盘，因此可以跨进程、跨重启保留。

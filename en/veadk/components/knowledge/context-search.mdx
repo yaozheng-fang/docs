@@ -1,6 +1,5 @@
 ---
 title: "Context Search (context_search)"
-description: "Knowledge base backend integrating the managed Volcengine Context Search service; indexing and retrieval run server-side"
 ---
 
 The `context_search` backend is implemented by `ContextSearchBackend` and integrates with the managed Volcengine Context Search service. Files are uploaded to TOS (object storage) via pre-signed URLs, then registered into a Context Search RAG scene; splitting, embedding, and retrieval all run server-side, so **no local embedding is required**.

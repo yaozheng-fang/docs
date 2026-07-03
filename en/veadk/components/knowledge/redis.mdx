@@ -1,6 +1,5 @@
 ---
 title: "Redis (redis)"
-description: "Knowledge base backend using Redis as a low-latency vector store, requires the RediSearch module"
 ---
 
 The `redis` backend is implemented by `RedisKnowledgeBackend` and uses Redis as the vector store. Knowledge text is embedded by an embedding model, written to Redis via LlamaIndex, and retrieved by similarity. The index collection name equals `index`.

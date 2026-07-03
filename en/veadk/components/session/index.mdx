@@ -1,6 +1,5 @@
 ---
 title: "Overview"
-description: "Short-term memory holds session-level context so an agent remembers what was said across turns, with support for multiple persistence backends."
 ---
 
 Short-term memory holds session-level context so an agent remembers what was said across turns. It is essentially the conversation context sent to the model — the system prompt plus the message history — keyed by `session_id`: reuse the same `session_id` and the agent remembers earlier turns.

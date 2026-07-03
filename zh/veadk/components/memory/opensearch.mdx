@@ -1,6 +1,5 @@
 ---
 title: "使用 OpenSearch 存储"
-description: "使用 OpenSearch 作为向量存储自建长期记忆检索，LongTermMemory 的默认后端"
 ---
 
 `opensearch` 后端由 `OpensearchLTMBackend` 实现，使用 OpenSearch 作为向量存储。记忆文本先经 embedding 模型向量化，再写入 OpenSearch，并按用户隔离索引（实际索引名为 `{index}_{user_id}`），检索时按相似度召回。它是 `LongTermMemory` 的**默认后端**。

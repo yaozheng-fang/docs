@@ -1,6 +1,5 @@
 ---
 title: "使用本地内存"
-description: "local 后端把会话保存在进程内存中，不依赖外部服务、不落盘，适用于本地开发与临时场景。"
 ---
 
 `local` 后端把会话保存在进程内存中，底层使用 Google ADK 的 `InMemorySessionService`。它不依赖任何外部服务，也不落盘——进程退出，会话即清空。这是 `ShortTermMemory` 的默认后端。

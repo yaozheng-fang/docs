@@ -1,6 +1,5 @@
 ---
 title: "Local (local)"
-description: "In-memory vector-index knowledge base backend, no external service required, ideal for local debugging"
 ---
 
 The `local` backend is implemented by `InMemoryKnowledgeBackend` and stores knowledge in an in-memory vector index from LlamaIndex. Knowledge text is embedded by an embedding model, written to an in-process vector index, and retrieved by similarity. It requires no external service, is the **default backend** for `KnowledgeBase`, and is ideal for local debugging and quick validation.

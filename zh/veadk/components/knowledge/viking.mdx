@@ -1,6 +1,5 @@
 ---
 title: "使用 VikingDB 知识库存储"
-description: "使用火山引擎 VikingDB 托管知识库，向量化与检索均在服务端完成，生产推荐"
 ---
 
 `viking` 后端由 `VikingDBKnowledgeBackend` 实现，对接火山引擎 VikingDB 托管知识库服务。文件先上传至 TOS（对象存储），再登记进 VikingDB 集合，切分、向量化与检索均在服务端完成，因此**无需本地 embedding**。它是生产环境的推荐后端。

@@ -13,15 +13,6 @@
     "dark": "/logo/dark.svg"
   },
   "navigation": {
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Changelog",
-          "href": "https://github.com/volcengine/veadk-python/releases",
-          "icon": "clock-rotate-left"
-        }
-      ]
-    },
     "languages": [
       {
         "language": "zh",
@@ -157,7 +148,22 @@
             "groups": [
               {
                 "group": "开始使用",
-                "pages": ["zh/agentkit-cli/index", "zh/agentkit-cli/quickstart"]
+                "pages": [
+                  "zh/agentkit-cli/index",
+                  "zh/agentkit-cli/quickstart",
+                  "zh/agentkit-cli/commands/tree"
+                ]
+              },
+              {
+                "group": "应用闭环",
+                "pages": [
+                  "zh/agentkit-cli/workflows/harness",
+                  "zh/agentkit-cli/workflows/high-code"
+                ]
+              },
+              {
+                "group": "AI-Friendly",
+                "pages": ["zh/agentkit-cli/commands/onboard"]
               },
               {
                 "group": "命令参考",
@@ -175,9 +181,7 @@
                   "zh/agentkit-cli/commands/harness",
                   "zh/agentkit-cli/commands/invoke",
                   "zh/agentkit-cli/commands/eval",
-                  "zh/agentkit-cli/commands/auth",
-                  "zh/agentkit-cli/commands/onboard",
-                  "zh/agentkit-cli/commands/tree"
+                  "zh/agentkit-cli/commands/auth"
                 ]
               }
             ]
@@ -334,7 +338,22 @@
             "groups": [
               {
                 "group": "Getting Started",
-                "pages": ["en/agentkit-cli/index", "en/agentkit-cli/quickstart"]
+                "pages": [
+                  "en/agentkit-cli/index",
+                  "en/agentkit-cli/quickstart",
+                  "en/agentkit-cli/commands/tree"
+                ]
+              },
+              {
+                "group": "End-to-end workflows",
+                "pages": [
+                  "en/agentkit-cli/workflows/harness",
+                  "en/agentkit-cli/workflows/high-code"
+                ]
+              },
+              {
+                "group": "AI-Friendly",
+                "pages": ["en/agentkit-cli/commands/onboard"]
               },
               {
                 "group": "Command reference",
@@ -352,9 +371,7 @@
                   "en/agentkit-cli/commands/harness",
                   "en/agentkit-cli/commands/invoke",
                   "en/agentkit-cli/commands/eval",
-                  "en/agentkit-cli/commands/auth",
-                  "en/agentkit-cli/commands/onboard",
-                  "en/agentkit-cli/commands/tree"
+                  "en/agentkit-cli/commands/auth"
                 ]
               }
             ]

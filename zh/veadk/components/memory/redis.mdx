@@ -1,6 +1,5 @@
 ---
 title: "使用 Redis 存储"
-description: "使用 Redis 作为低延迟向量存储的长期记忆后端，需启用 RediSearch 模块"
 ---
 
 `redis` 后端由 `RedisLTMBackend` 实现，使用 Redis 作为向量存储。记忆文本先经 embedding 模型向量化，再写入 Redis，并按用户隔离索引（实际索引名为 `veadk-ltm/{index}/{user_id}`），检索时按余弦相似度召回。

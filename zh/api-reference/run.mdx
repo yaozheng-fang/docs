@@ -1,6 +1,5 @@
 ---
 title: "运行智能体"
-description: "同步运行与 SSE 流式运行智能体的 HTTP 路由、RunAgentRequest 字段与示例"
 ---
 
 运行相关路由用于向指定会话提交一条输入消息并触发智能体运行。`/run` 一次性返回全部事件，`/run_sse` 以 Server-Sent Events 流式返回事件。两者共用请求体 `RunAgentRequest`。

@@ -1,13 +1,12 @@
 ---
-title: "管理记忆集合"
-description: "管理 AgentKit 记忆集合。"
+title: "管理记忆库"
 ---
 
-`memory` 命令组用于管理 AgentKit 记忆集合，涵盖列表、详情查看、创建、更新与删除等操作。该命令同时提供 `mem` 别名。
+`memory` 命令组用于管理 AgentKit 记忆库，涵盖列表、详情查看、创建、更新与删除等操作。该命令同时提供 `mem` 别名。
 
 ## memory list
 
-列出所有记忆集合。
+列出所有记忆库。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -21,11 +20,11 @@ agentkit memory list --project demo
 
 ## memory show
 
-查看记忆集合的详情。
+查看记忆库的详情。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<id>` | 记忆集合 id，例如 `m-xxxxxxxx`。必填。 | — |
+| `<id>` | 记忆库 id，例如 `m-xxxxxxxx`。必填。 | — |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
 | `--json` | 输出原始 JSON。 | `false` |
 
@@ -35,11 +34,11 @@ agentkit memory show m-12345678
 
 ## memory create
 
-创建记忆集合。
+创建记忆库。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--name <name>` | 记忆集合名称。 | — |
+| `--name <name>` | 记忆库名称。 | — |
 | `--description <text>` | 描述。 | — |
 | `-p, --project <name>` | 项目名称。 | — |
 | `--provider-type <type>` | 提供方类型（`MEM0` \| `VIKINGDB_MEMORY`）。 | — |
@@ -52,11 +51,11 @@ agentkit memory create --name user-mem --provider-type MEM0
 
 ## memory update
 
-更新记忆集合。
+更新记忆库。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<id>` | 记忆集合 id，例如 `m-xxxxxxxx`。必填。 | — |
+| `<id>` | 记忆库 id，例如 `m-xxxxxxxx`。必填。 | — |
 | `--description <text>` | 新的描述。 | — |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
 | `--json <jsonString>` | 合并进请求体的 JSON 对象（用于 `LongTermConfiguration`、`VpcConfig` 等嵌套字段）。 | — |
@@ -67,11 +66,11 @@ agentkit memory update m-12345678 --description "更新后的记忆"
 
 ## memory delete
 
-删除记忆集合。
+删除记忆库。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<id>` | 记忆集合 id，例如 `m-xxxxxxxx`。必填。 | — |
+| `<id>` | 记忆库 id，例如 `m-xxxxxxxx`。必填。 | — |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 

@@ -1,6 +1,5 @@
 ---
 title: "OpenSearch (opensearch)"
-description: "Use OpenSearch as the vector store for self-hosted long-term memory retrieval, the default LongTermMemory backend"
 ---
 
 The `opensearch` backend is implemented by `OpensearchLTMBackend` and uses OpenSearch as the vector store. Memory text is embedded by an embedding model, written to OpenSearch with a per-user index (the actual index name is `{index}_{user_id}`), and retrieved by similarity. It is the **default backend** for `LongTermMemory`.

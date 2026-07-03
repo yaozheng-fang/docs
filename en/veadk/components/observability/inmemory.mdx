@@ -1,6 +1,5 @@
 ---
 title: "In-memory exporter"
-description: "Retain spans in process memory for local debugging, testing, and dumping trace data to JSON"
 ---
 
 `InMemoryExporter` keeps span data in process memory instead of reporting it to an external platform. It organizes spans by `session_id`, which is useful for local debugging, testing, and dumping a session's trace data to a JSON file for offline analysis.

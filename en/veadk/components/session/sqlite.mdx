@@ -1,6 +1,5 @@
 ---
 title: "SQLite (sqlite)"
-description: "The sqlite backend persists sessions to a local SQLite file with no external database service, surviving across processes and restarts."
 ---
 
 The `sqlite` backend persists sessions to a local SQLite file, backed by Google ADK's `DatabaseSessionService`. It needs no external database service, but unlike `local`, sessions are written to disk and therefore survive across processes and restarts.

@@ -1,6 +1,5 @@
 ---
 title: "内存导出器"
-description: "在进程内存中留存 span，用于本地调试、测试与将追踪数据落盘为 JSON"
 ---
 
 `InMemoryExporter` 把 span 数据保存在进程内存中，而非上报至外部平台。它按 `session_id` 组织 span，便于本地调试、测试以及将某次会话的追踪数据落盘为 JSON 文件进行离线分析。

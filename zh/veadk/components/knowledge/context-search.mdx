@@ -1,6 +1,5 @@
 ---
 title: "使用 Context Search 存储"
-description: "对接火山引擎 Context Search 托管检索服务的知识库后端，索引与检索均在服务端完成"
 ---
 
 `context_search` 后端由 `ContextSearchBackend` 实现，对接火山引擎 Context Search 托管检索服务。文件通过预签名地址上传至 TOS（对象存储），再登记进 Context Search 的 RAG 场景（Scene），切分、向量化与检索均在服务端完成，因此**无需本地 embedding**。

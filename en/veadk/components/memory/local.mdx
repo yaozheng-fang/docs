@@ -1,6 +1,5 @@
 ---
 title: "In-memory (local)"
-description: "An in-process vector memory backend with no external services, ideal for local development and debugging"
 ---
 
 The `local` backend is implemented by `InMemoryLTMBackend` and keeps long-term memory in **the current process's memory**. Memory text is embedded by an embedding model and written to a llama-index in-memory vector index; retrieval recalls by semantic similarity.
