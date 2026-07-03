@@ -1,0 +1,89 @@
+---
+title: "管理评测集"
+---
+
+`eval dataset` 命令组用于管理评测集：列出、查看、创建、删除评测集，以及为评测集增删用例。评测集是实验的数据来源，其字段（如 `input`、`reference_output`）会在 [`eval run`](/zh/agentkit-cli/commands/eval/run) 中被映射到目标与评估器。
+
+<Note>
+这些子命令同时提供顶层别名，`eval` 前缀可省略：`agentkit eval dataset list` 等价于 `agentkit dataset list`。下文示例使用较短的 `agentkit dataset ...` 形式。所有子命令共享 `-p, --project <name>`（项目名称，默认 `default`）与 `--json`（输出原始 JSON）。
+</Note>
+
+## dataset list
+
+列出评测数据集。
+
+```bash
+agentkit dataset list
+```
+
+## dataset show
+
+查看某个评测数据集的详情，包括其用例条目。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `--items <n>` | 最多列出 N 条用例（0 表示跳过） | `20` |
+
+```bash
+agentkit dataset show qa-set --items 50
+```
+
+## dataset create
+
+创建一个评测数据集。字段一经创建即固定，用例的键必须与其一致。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--name <name>` | 数据集名称（必填） | 无 |
+| `--schema <fields>` | 逗号分隔的字段名 | `input,reference_output,output` |
+| `--description <text>` | 数据集描述 | 无 |
+
+```bash
+agentkit dataset create --name qa-set --schema "input,reference_output"
+```
+
+<Tip>
+`output`（模型的实际输出）通常由被评测的目标 runtime 在实验中产生，因此**不必**放进数据集 schema。数据集一般只需 `input` 与 `reference_output`。
+</Tip>
+
+## dataset add
+
+向评测数据集添加一个或多个用例。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `--field <key=value>` | 用例字段（可重复） | 无 |
+| `--file <path>` | JSON 文件：一个对象，或由 `{field: value}` 组成的数组 | 无 |
+
+```bash
+agentkit dataset add qa-set --field "input=法国的首都是？" --field "reference_output=巴黎"
+```
+
+## dataset remove
+
+从评测数据集中移除一个或多个用例。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `<itemIds...>` | 要移除的用例条目 ID（可传多个，必填） | 无 |
+| `-y, --yes` | 跳过确认提示 | `false` |
+
+```bash
+agentkit dataset remove qa-set item-1 item-2 -y
+```
+
+## dataset delete
+
+删除一个评测数据集。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 评测集 ID 或名称（必填） | 无 |
+| `-y, --yes` | 跳过确认提示 | `false` |
+
+```bash
+agentkit dataset delete qa-set -y
+```

@@ -170,7 +170,8 @@
                 "group": "最佳实践",
                 "pages": [
                   "zh/agentkit-cli/workflows/harness",
-                  "zh/agentkit-cli/workflows/high-code"
+                  "zh/agentkit-cli/workflows/high-code",
+                  "zh/agentkit-cli/workflows/evaluation"
                 ]
               },
               {
@@ -183,15 +184,23 @@
                   "zh/agentkit-cli/commands",
                   "zh/agentkit-cli/commands/init",
                   "zh/agentkit-cli/commands/deploy",
-                  "zh/agentkit-cli/commands/runtime",
                   "zh/agentkit-cli/commands/invoke",
+                  {
+                    "group": "评测",
+                    "pages": [
+                      "zh/agentkit-cli/commands/eval/dataset",
+                      "zh/agentkit-cli/commands/eval/evaluator",
+                      "zh/agentkit-cli/commands/eval/run",
+                      "zh/agentkit-cli/commands/eval/experiment"
+                    ]
+                  },
+                  "zh/agentkit-cli/commands/runtime",
                   "zh/agentkit-cli/commands/knowledge",
                   "zh/agentkit-cli/commands/memory",
                   "zh/agentkit-cli/commands/tool",
                   "zh/agentkit-cli/commands/sandbox",
                   "zh/agentkit-cli/commands/skill",
                   "zh/agentkit-cli/commands/harness",
-                  "zh/agentkit-cli/commands/eval",
                   "zh/agentkit-cli/commands/auth"
                 ]
               }
@@ -368,7 +377,8 @@
                 "group": "Best practices",
                 "pages": [
                   "en/agentkit-cli/workflows/harness",
-                  "en/agentkit-cli/workflows/high-code"
+                  "en/agentkit-cli/workflows/high-code",
+                  "en/agentkit-cli/workflows/evaluation"
                 ]
               },
               {
@@ -381,15 +391,23 @@
                   "en/agentkit-cli/commands",
                   "en/agentkit-cli/commands/init",
                   "en/agentkit-cli/commands/deploy",
-                  "en/agentkit-cli/commands/runtime",
                   "en/agentkit-cli/commands/invoke",
+                  {
+                    "group": "Evaluation",
+                    "pages": [
+                      "en/agentkit-cli/commands/eval/dataset",
+                      "en/agentkit-cli/commands/eval/evaluator",
+                      "en/agentkit-cli/commands/eval/run",
+                      "en/agentkit-cli/commands/eval/experiment"
+                    ]
+                  },
+                  "en/agentkit-cli/commands/runtime",
                   "en/agentkit-cli/commands/knowledge",
                   "en/agentkit-cli/commands/memory",
                   "en/agentkit-cli/commands/tool",
                   "en/agentkit-cli/commands/sandbox",
                   "en/agentkit-cli/commands/skill",
                   "en/agentkit-cli/commands/harness",
-                  "en/agentkit-cli/commands/eval",
                   "en/agentkit-cli/commands/auth"
                 ]
               }
