@@ -47,6 +47,24 @@ Delete a runtime.
 agentkit runtime delete my-agent --yes
 ```
 
+## destroy
+
+Delete the deployed runtime. This performs the same underlying operation as `runtime delete`, but serves a different scenario: `destroy` is the inverse of `deploy` and needs no explicit runtime — when no name is given, it resolves the runtime deployed from the current project in order from the command-line argument, `.agentkit/agentkit.yaml`, then `harness.yaml`, and deletes it. It is meant for tearing down what the current project deployed, from inside the project directory. `runtime delete`, by contrast, is a runtime-management operation: it requires an explicit runtime id or name, can delete any runtime, and does not depend on local project configuration.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[name]` | Runtime name. Resolved from local config when omitted. | from local config |
+| `-r, --region <region>` | Volcengine region. | auto-sense |
+| `-y, --yes` | Skip confirmation. | `false` |
+
+```bash
+# Inside a project directory, delete the runtime this project deployed
+agentkit destroy
+
+# Or target a runtime by name
+agentkit destroy my-agent --yes
+```
+
 ## runtime logs
 
 Show logs for a runtime instance.

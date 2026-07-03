@@ -2,12 +2,14 @@
 title: "VeADK Frontend"
 ---
 
-VeADK 自带一个生产级 React 前端，用于渲染智能体经由 Google ADK API Server 流式返回的 [A2UI](/zh/veadk/components/frontend/a2ui)。`veadk frontend` 是一个自包含的启动器：在默认模式下，它以单个进程同时提供这套 React 界面与智能体 API，两者同源，因此无需单独部署后端，也无需处理跨域配置。
+VeADK 自带一个生产级 React 前端——一个面向企业的智能体应用工作台，通过 Google ADK API Server 与智能体通信：在界面中创建、调试、管理智能体，并将其接入使用。`veadk frontend` 是一个自包含的启动器：在默认模式下，它以单个进程同时提供这套 React 界面与智能体 API，两者同源，因此无需单独部署后端，也无需处理跨域配置。
 
 ## 功能一览
 
-- **对话**：与智能体多轮对话，渲染流式返回的 A2UI 卡片，并展示思考过程、工具调用、Token 与用时。
+- **创建智能体**：在界面中从零创建智能体，支持智能对话式生成、自定义、从模板、工作流多种模式，产出可运行的 VeADK 项目（`agent.py`、`requirements.txt` 等），并可在线预览、编辑与下载。
+- **对话与调试**：与智能体多轮对话，展示思考过程、工具调用、Token 与用时；对话中还会渲染智能体返回的 [A2UI](/zh/veadk/components/frontend/a2ui) 富界面卡片。
 - **智能体选择器**：左上角切换智能体；悬停可查看该智能体的模型与挂载的工具。
+- **技能中心**：浏览并发现可复用的技能，供创建智能体时选用。
 - **历史会话**：自动保存、按时间排序，可重新打开或删除。
 - **智能搜索**：「会话」源在当前智能体的历史消息中做全文检索；「网页」源调用该智能体挂载的联网搜索工具实时检索，使用服务端环境变量里的凭据。
 - **添加 AgentKit 智能体**：填入访问地址与 API Key，按 ADK 协议接入远程智能体，接入后出现在选择器中。
@@ -120,27 +122,9 @@ Google 同理，把 `OAUTH2_PROVIDER` 换成 `google`；Keycloak、Auth0、Okta 
   登录态会被缓存：SSO 走 `veadk_session` Cookie，本地模式走 `localStorage`。会话本身在发送第一条消息时才创建，而非打开页面时。退出登录为本地登出，即清除会话并回到登录页。
 </Note>
 
-## 工作原理
+## 渲染流程
 
-<Steps>
-
-<Step>
-`adk/client.ts` 调用 `/list-apps`，创建会话，并通过 `/run_sse` 进行流式接收。
-</Step>
-
-<Step>
-`a2ui/extract.ts` 从 `send_a2ui_json_to_client` 工具的响应（`validated_a2ui_json`）中提取 A2UI 消息。
-</Step>
-
-<Step>
-`a2ui/Surface.tsx` 将 `createSurface` / `updateComponents` / `updateDataModel` 应用到 surface 状态中，并渲染根组件。
-</Step>
-
-<Step>
-`a2ui/registry.ts` 将每个组件名映射到一个 React 渲染器；每个渲染器位于 `a2ui/components/<Name>/` 目录下并自行注册。
-</Step>
-
-</Steps>
+前端与 Google ADK API Server 通信：列出可用智能体、创建会话，并以流式方式实时接收智能体的输出。当智能体返回 A2UI 消息时，前端从中解析出界面指令，据此创建并增量更新对应的界面区域，再按每个组件的类型渲染出相应的 React 组件。组件类型到渲染器的映射由一张注册表维护，因此新增一种组件类型，只需为它注册对应的渲染器。
 
 ## 添加企业自定义组件
 
@@ -169,7 +153,7 @@ export function RevenueChart({ node, ctx }: ComponentRendererProps) {
 }
 ```
 
-`components/index.ts` 通过 `import.meta.glob` 导入每个 `*/index.ts`，因此新目录会被自动拾取。
+新增的组件目录会被自动发现并注册，无需改动任何中心配置文件。
 
 <Note>
   未注册渲染器的未知组件会回退到可折叠的 JSON 视图，因此目录与渲染器不匹配也不会导致界面崩溃。

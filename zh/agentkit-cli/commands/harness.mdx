@@ -18,6 +18,137 @@ title: "Harness"
 agentkit harness init my-harness
 ```
 
+`harness.yaml` 是无代码智能体的唯一配置来源，`harness deploy` 会将其展开为运行时的环境变量。生成的文件里，常用字段处于启用状态，各组件的可选参数以注释形式按后端分组给出——设好组件的 `type` 后，取消注释该后端下的参数即可。完整内容如下：
+
+```yaml harness.yaml
+# =============================================================================
+# AgentKit harness configuration (code-free agent).
+#
+# `agentkit harness deploy` converts this file into the runtime's environment
+# variables: top-level fields and `model` are flattened (model.name -> MODEL_NAME,
+# tools -> TOOLS, ...); each component's `type` selects its backend, and the
+# component's other params map to the env vars that backend reads (e.g. viking
+# `project` -> DATABASE_VIKING_PROJECT). Empty values are skipped, so the server
+# falls back to its own defaults.
+#
+# Configure with `agentkit harness set ...` or by editing this file. For a
+# component, uncomment the params under the backend you set as `type`.
+# =============================================================================
+
+# Harness / runtime name (also the knowledgebase & long-term-memory index name).
+#   env: HARNESS_NAME          flag: --name
+harness_name: "my-harness"
+
+# Reasoning model name (Ark auth comes from the runtime's IAM role on deploy).
+#   env: MODEL_NAME            flag: --model-name
+model:
+  name: ""
+
+# Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
+tools: []
+
+# Skill hub names.       env: SKILLS  flag: --skills (comma-separated)
+skills: []
+
+# Agent instruction (empty = server default).
+#   env: SYSTEM_PROMPT         flag: --system-prompt
+system_prompt: ""
+
+# Agent runtime backend: adk (default) | codex.
+#   env: RUNTIME               flag: --runtime
+runtime: adk
+
+# --- Knowledge base ----------------------------------------------------------
+#   type -> env: KNOWLEDGEBASE_TYPE   flag: --knowledgebase-type
+#   "" disables it. Supported: viking | opensearch | redis
+knowledgebase:
+  type: ""
+  # -- viking --      flags: --knowledgebase-project / --knowledgebase-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --knowledgebase-host / -port / -username / -password / -use-ssl
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # use_ssl: true
+  # -- redis --       flags: --knowledgebase-host / -port / -username / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # username: default
+  # password: ""
+  # db: 0
+
+# --- Long-term memory --------------------------------------------------------
+#   type -> env: LONG_TERM_MEMORY_TYPE   flag: --long-term-memory-type
+#   "" disables it. Supported: viking | opensearch | redis | mem0
+long_term_memory:
+  type: ""
+  # -- viking --      flags: --long-term-memory-project / --long-term-memory-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --long-term-memory-host / -port / -username / -password
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # -- redis --       flags: --long-term-memory-host / -port / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # password: ""
+  # db: 0
+  # -- mem0 --        flags: --long-term-memory-api-key / -api-key-id / -project-id / -base-url
+  # api_key: ""
+  # api_key_id: ""
+  # project_id: ""
+  # base_url: https://api.mem0.ai/v1
+
+# --- Short-term memory (session store) ---------------------------------------
+#   type -> env: SHORT_TERM_MEMORY_TYPE   flag: --short-term-memory-type
+#   local (default) | sqlite | mysql | postgresql
+short_term_memory:
+  type: local
+  # -- mysql --       flags: --short-term-memory-host / -user / -password / -database / -charset
+  # host: 1.2.3.4
+  # user: root
+  # password: ""
+  # database: harness
+  # charset: utf8
+  # -- postgresql --  flags: --short-term-memory-host / -port / -user / -password / -database
+  # host: 1.2.3.4
+  # port: 5432
+  # user: postgres
+  # password: ""
+  # database: harness
+
+# --- Authentication (optional) -----------------------------------------------
+# Omit this block to deploy with the default API-key auth (key_auth). Add it to
+# gate the runtime with OAuth2/JWT (custom_jwt): the API gateway then only accepts
+# tokens issued by `discovery_url`'s user pool whose audience is one of
+# `allowed_ids`. Set up the user pool / client in the Volcengine Identity console.
+#   flags: --discovery-url / --allowed-id
+# auth:
+#   discovery_url: "https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com/.well-known/openid-configuration"
+#   allowed_ids: ["<client-id>"]
+```
+
+字段说明：
+
+- **`harness_name`**：harness 与运行时名称，同时用作知识库、长期记忆的索引名（env `HARNESS_NAME`，flag `--name`）。
+- **`model.name`**：推理模型名称；部署后模型的火山方舟鉴权由运行时 IAM 角色提供，无需在此填写（env `MODEL_NAME`，flag `--model-name`）。
+- **`tools`**：内置工具名列表（env `TOOLS`，flag `--tools`）。
+- **`skills`**：技能中心名称列表（env `SKILLS`，flag `--skills`）。
+- **`system_prompt`**：智能体指令，留空则使用服务端默认（env `SYSTEM_PROMPT`，flag `--system-prompt`）。
+- **`runtime`**：智能体运行时后端，`adk`（默认）或 `codex`（env `RUNTIME`，flag `--runtime`）。
+- **`knowledgebase`**：知识库。`type` 留空即禁用，支持 `viking`、`opensearch`、`redis`；设好 `type` 后取消注释该后端下对应的连接参数。
+- **`long_term_memory`**：长期记忆。`type` 留空即禁用，支持 `viking`、`opensearch`、`redis`、`mem0`。
+- **`short_term_memory`**：短期会话存储。`type` 为 `local`（默认）、`sqlite`、`mysql` 或 `postgresql`。
+- **`auth`（可选）**：省略则使用默认的 API Key 鉴权 `key_auth`；填入 `discovery_url` 与 `allowed_ids` 则改用 OAuth2/JWT `custom_jwt`，网关仅接受该用户池签发、受众在白名单内的 token。
+
+<Note>
+  展开规则：`harness deploy` 将顶层字段与 `model` 扁平化为环境变量（如 `model.name` → `MODEL_NAME`），组件参数映射为该后端读取的 `DATABASE_<BACKEND>_*` 等变量；空值会被跳过，由服务端回退到默认值。`harness init` 同时生成的 `.env.example` 仅存放部署所需的 Volcengine AK/SK，智能体配置全部在 `harness.yaml` 中。
+</Note>
+
 ## harness set
 
 设置 `harness.yaml` 中的字段（局部更新，仅修改传入的字段）。不带任何标志运行时会列出当前字段。字段分为若干组：核心（模型 / 工具 / 技能 / 提示词 / 运行时）、knowledgebase、long-term-memory、short-term-memory 以及鉴权。设置某个组件时，请先设置其 `--<组件>-type`，再设置连接参数。

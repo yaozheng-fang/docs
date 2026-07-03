@@ -5,7 +5,7 @@ title: "High-code agents"
 The high-code path suits cases that need custom logic, tools, or multi-agent orchestration: you scaffold a project from a template, write the agent code directly, and let the CLI build the image in the cloud and deploy it as a runtime. The loop starts at scaffolding and runs through editing, deploying, invoking, and reading logs, then returns to editing to iterate.
 
 <Note>
-  Complete [authentication](/en/agentkit-cli/commands/auth) first. For the full guide to writing agent code, see the [VeADK docs](/en/veadk/index).
+  Configure credentials first. `deploy` is a control-plane operation and requires AK/SK; [SSO login](/en/agentkit-cli/commands/auth) currently only covers invoking (`invoke`) a deployed runtime. See the Authentication section of the [Quickstart](/en/agentkit-cli/quickstart). For the full guide to writing agent code, see the [VeADK docs](/en/veadk/index).
 </Note>
 
 <Steps>

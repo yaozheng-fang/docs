@@ -71,7 +71,7 @@ exporter = APMPlusExporter(
 | `service_name` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME` | `str` | `veadk_tracing` | 服务名，显示在 APMPlus 控制台，用于标识来源。 |
 
 <Note>
-`app_key` 未通过环境变量提供时，导出器会调用火山引擎鉴权自动获取 APMPlus 令牌，因此需要配置有效的火山引擎凭证。`endpoint` 使用 gRPC 协议，并以 `insecure=True` 连接。
+`app_key` 未通过环境变量提供时，导出器会调用火山引擎鉴权自动获取 APMPlus 令牌，因此需要配置有效的火山引擎凭证。`endpoint` 使用 gRPC 协议、以非加密方式连接。
 </Note>
 
 ## 环境变量配置

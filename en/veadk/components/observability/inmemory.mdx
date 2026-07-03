@@ -12,7 +12,7 @@ title: "In-memory exporter"
 
 ## Automatic management
 
-`InMemoryExporter` is created and managed automatically by `OpentelemetryTracer`, and its span processor is placed first in the processor chain so it records every span. It therefore **cannot** be added explicitly to the `exporters` list of `OpentelemetryTracer`, or initialization raises `ValueError`.
+`InMemoryExporter` is created and managed automatically by `OpentelemetryTracer` and records every span. It therefore **cannot** be added explicitly to the `exporters` list of `OpentelemetryTracer`, or initialization fails.
 
 ```python
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer

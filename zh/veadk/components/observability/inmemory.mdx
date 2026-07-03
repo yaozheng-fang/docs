@@ -12,7 +12,7 @@ title: "内存导出器"
 
 ## 自动管理
 
-`InMemoryExporter` 由 `OpentelemetryTracer` 自动创建并管理，其 span 处理器被放在处理器链首位以记录全部 span。因此它**不能**被显式加入 `OpentelemetryTracer` 的 `exporters` 列表，否则初始化会抛出 `ValueError`。
+`InMemoryExporter` 由 `OpentelemetryTracer` 自动创建并管理，用于记录全部 span。因此它**不能**被显式加入 `OpentelemetryTracer` 的 `exporters` 列表，否则初始化会报错。
 
 ```python
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer

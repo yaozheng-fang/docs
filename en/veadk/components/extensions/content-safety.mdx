@@ -74,5 +74,5 @@ print(response)
 ## Notes
 
 <Note>
-Roadmap: agent-level callbacks. `content_safety` also exposes `before_agent_callback` and `after_agent_callback`, but these are placeholder implementations today (they return `None` and perform no checks) and are not yet active. Agent-level input validation and context analysis are planned; for now you don't need to wire up these two callbacks.
+Roadmap: agent-level callbacks. `content_safety` also offers `before_agent_callback` and `after_agent_callback`, but they are not yet active — they perform no checks for now, so there is no need to wire them up. Agent-level input validation and context analysis are still planned.
 </Note>

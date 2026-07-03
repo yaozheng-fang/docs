@@ -4,19 +4,13 @@ title: "Feishu"
 
 ## Overview
 
-`veadk.extensions.FeishuChannelExtension` bridges inbound messages from a Feishu (Lark) bot into the VeADK `Runner`.
+`FeishuChannelExtension` bridges inbound messages from a Feishu (Lark) bot into the VeADK `Runner`.
 
 <Note>
 This page treats Feishu as an **inbound message channel**: messages from Feishu users trigger the agent. If instead you want the agent to **call Feishu capabilities** (send messages, process cloud docs, manage calendars), see `lark_tools` in [Built-in MCP tools](/en/veadk/components/tools/builtin-mcp).
 </Note>
 
-By default it works off the `message` event of `lark_oapi.channel.FeishuChannel`, and maps the session identity according to these rules:
-
-- `sender.union_id -> Runner.user_id`
-- `conversation.thread_id -> Runner.session_id`
-- If the thread ID does not exist, it falls back to `chat_id -> Runner.session_id`
-
-This means VeADK's existing short-term memory, long-term memory, tracing, and multi-tenant isolation all carry over directly.
+It listens for the bot's message events and maps Feishu's session identity onto VeADK: the message sender becomes the `Runner`'s user identity, and the thread the message belongs to becomes the session identity; when there is no thread, it falls back to the current group or direct chat as the session. This way VeADK's existing short-term memory, long-term memory, tracing, and multi-tenant isolation all carry over directly, per user and per session.
 
 ## Environment & prerequisites
 
@@ -90,6 +84,6 @@ if __name__ == "__main__":
 
 ## Notes
 
-- The Feishu `Channel` WebSocket mode is used by default, so as long as the bot has subscribed to message events, you can start the connection directly.
-- By default replies use `reply_to=<original message_id>`, keeping VeADK output attached to the current Feishu message thread.
+- The Feishu WebSocket long-connection mode is used by default, so as long as the bot has subscribed to message events, you can start the connection directly.
+- Replies are sent as replies to the original message by default, keeping VeADK output attached to the current Feishu message thread.
 - Override the default identity mapping via `session_id_factory` and `user_id_factory`.

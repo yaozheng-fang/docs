@@ -155,7 +155,7 @@
                 ]
               },
               {
-                "group": "应用闭环",
+                "group": "最佳实践",
                 "pages": [
                   "zh/agentkit-cli/workflows/harness",
                   "zh/agentkit-cli/workflows/high-code"
@@ -172,14 +172,13 @@
                   "zh/agentkit-cli/commands/init",
                   "zh/agentkit-cli/commands/deploy",
                   "zh/agentkit-cli/commands/runtime",
-                  "zh/agentkit-cli/commands/destroy",
+                  "zh/agentkit-cli/commands/invoke",
                   "zh/agentkit-cli/commands/knowledge",
                   "zh/agentkit-cli/commands/memory",
                   "zh/agentkit-cli/commands/tool",
                   "zh/agentkit-cli/commands/sandbox",
                   "zh/agentkit-cli/commands/skill",
                   "zh/agentkit-cli/commands/harness",
-                  "zh/agentkit-cli/commands/invoke",
                   "zh/agentkit-cli/commands/eval",
                   "zh/agentkit-cli/commands/auth"
                 ]
@@ -345,7 +344,7 @@
                 ]
               },
               {
-                "group": "End-to-end workflows",
+                "group": "Best practices",
                 "pages": [
                   "en/agentkit-cli/workflows/harness",
                   "en/agentkit-cli/workflows/high-code"
@@ -362,14 +361,13 @@
                   "en/agentkit-cli/commands/init",
                   "en/agentkit-cli/commands/deploy",
                   "en/agentkit-cli/commands/runtime",
-                  "en/agentkit-cli/commands/destroy",
+                  "en/agentkit-cli/commands/invoke",
                   "en/agentkit-cli/commands/knowledge",
                   "en/agentkit-cli/commands/memory",
                   "en/agentkit-cli/commands/tool",
                   "en/agentkit-cli/commands/sandbox",
                   "en/agentkit-cli/commands/skill",
                   "en/agentkit-cli/commands/harness",
-                  "en/agentkit-cli/commands/invoke",
                   "en/agentkit-cli/commands/eval",
                   "en/agentkit-cli/commands/auth"
                 ]

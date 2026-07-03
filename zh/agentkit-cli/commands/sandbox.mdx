@@ -1,11 +1,14 @@
 ---
 title: "使用沙箱"
+tag: "NEW"
 ---
 
 `sandbox` 命令组用于操作沙箱：在沙箱会话中运行命令、打开交互式终端、传输文件、预览 Web、注入订阅凭据，以及管理会话。一个沙箱本质上是一个 `code` 类型的工具。
 
 <Note>
 各子命令共有一组会话与工具相关标志：`-s, --session <id>`（会话 ID，存在则复用，否则新建）、`--tool-id <id>`（沙箱工具 ID）、`--type <type>`（沙箱类型 `code` \| `skill`，默认 `code`）、`--auto-create`（无可用沙箱工具时自动创建）、`-r, --region <region>`（Volcengine 区域）、`-p, --project <name>`（AgentKit 项目，默认 `default`）。下方表格逐命令完整列出。
+
+未传 `--tool-id` 时，CLI 会在项目内查找该类型的沙箱工具：**恰好一个时自动选用；存在多个时命令会失败并要求显式传入 `--tool-id`**；一个都没有时需配合 `--auto-create` 自动创建。项目内已有多个 `code` 工具属常见情况，此时务必用 `agentkit tool list` 查到目标 ID 后通过 `--tool-id` 指定。
 </Note>
 
 ## sandbox run
@@ -23,7 +26,7 @@ title: "使用沙箱"
 | `--cpu <milli>` | `--auto-create` 时的 CPU（毫核） | 无 |
 | `--memory <mb>` | `--auto-create` 时的内存（MB） | 无 |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--auto-create` | 无沙箱工具时自动创建 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
@@ -48,7 +51,7 @@ agentkit sandbox run "ls -la" --session my-session
 | `--model-api-key <key>` | 模型 API key | 无 |
 | `--model-provider <provider>` | 模型提供方 | 无 |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--auto-create` | 无沙箱工具时自动创建 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
@@ -68,7 +71,7 @@ agentkit sandbox shell --tmux --session my-session
 | `<dst>` | 目标路径（远端一侧以 `:` 前缀，必填） | 无 |
 | `--overwrite` | 下载时覆盖已存在的本地文件 | `false` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--auto-create` | 无沙箱工具时自动创建 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
@@ -86,7 +89,7 @@ agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
 | --- | --- | --- |
 | `--no-open` | 仅打印 URL，不打开浏览器 | `false` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--auto-create` | 无沙箱工具时自动创建 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
@@ -106,7 +109,7 @@ agentkit sandbox web --session my-session
 | `--auth-file <path>` | 使用指定的本地凭据文件 | 无 |
 | `--codex-home <dir>` | 本地 codex home | `$CODEX_HOME` 或 `~/.codex` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--auto-create` | 无沙箱工具时自动创建 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
@@ -122,7 +125,7 @@ agentkit sandbox login --provider claude --session my-session
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
@@ -139,7 +142,7 @@ agentkit sandbox sessions
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `[session]` | 会话 ID | 无 |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--tail <n>` | 最大日志行数 | 无 |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
@@ -157,7 +160,7 @@ agentkit sandbox logs my-session --tail 100
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `[session]` | 会话 ID | 无 |
-| `--tool-id <id>` | 沙箱工具 ID | 无 |
+| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--all` | 删除该工具上的所有会话 | `false` |
 | `-y, --yes` | 跳过确认 | `false` |

@@ -47,6 +47,24 @@ agentkit runtime show my-agent --rev 3
 agentkit runtime delete my-agent --yes
 ```
 
+## destroy
+
+删除已部署的运行时。与 `runtime delete` 底层操作相同，但面向的场景不同：`destroy` 是 `deploy` 的逆操作，无需显式指定运行时——在未提供名称时，会依次从命令行参数、`.agentkit/agentkit.yaml`、`harness.yaml` 中解析出本项目部署的运行时并删除。因此它适合在项目目录中一键拆除本项目部署的运行时；而 `runtime delete` 面向运行时管理，必须显式给出运行时 id 或名称，可删除任意运行时，不依赖本地项目配置。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[name]` | 运行时名称。省略时从本地配置解析。 | 来自本地配置 |
+| `-r, --region <region>` | Volcengine 区域。 | 自动感知 |
+| `-y, --yes` | 跳过确认。 | `false` |
+
+```bash
+# 在项目目录中，删除本项目部署的运行时
+agentkit destroy
+
+# 或显式指定名称
+agentkit destroy my-agent --yes
+```
+
 ## runtime logs
 
 查看运行时实例的日志。

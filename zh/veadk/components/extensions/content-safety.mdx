@@ -74,5 +74,5 @@ print(response)
 ## 额外说明
 
 <Note>
-路线图：Agent 级回调。`content_safety` 还提供 `before_agent_callback` 与 `after_agent_callback`，但目前是占位实现（返回 `None`，不做任何检测），尚未启用。Agent 级的输入校验与上下文分析在规划中，暂时无需挂载这两个回调。
+路线图：Agent 级回调。`content_safety` 另有 `before_agent_callback` 与 `after_agent_callback` 两个 Agent 级回调，但尚未启用，当前不做任何检测，暂时无需挂载。Agent 级的输入校验与上下文分析仍在规划中。
 </Note>

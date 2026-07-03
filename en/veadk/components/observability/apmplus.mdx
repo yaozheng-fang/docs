@@ -71,7 +71,7 @@ exporter = APMPlusExporter(
 | `service_name` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME` | `str` | `veadk_tracing` | Service name shown in the APMPlus console to identify the source. |
 
 <Note>
-When `app_key` is not provided via environment variable, the exporter fetches an APMPlus token automatically through Volcengine authentication, so valid Volcengine credentials are required. The `endpoint` uses gRPC and connects with `insecure=True`.
+When `app_key` is not provided via environment variable, the exporter fetches an APMPlus token automatically through Volcengine authentication, so valid Volcengine credentials are required. The `endpoint` connects over gRPC without transport encryption.
 </Note>
 
 ## Environment variables

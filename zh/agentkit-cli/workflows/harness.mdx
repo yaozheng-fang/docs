@@ -6,7 +6,7 @@ tag: "NEW"
 harness 路径适合无需自定义代码的场景：智能体的模型、工具、知识库、记忆与提示词全部写在一个 `harness.yaml` 里，由 CLI 直接构建并部署为运行时。整个闭环只围绕一个文件展开——初始化、配置、部署、调用，再回到配置持续迭代。
 
 <Note>
-  开始前请先完成[鉴权与登录](/zh/agentkit-cli/commands/auth)。CLI 会对每一次 Volcengine OpenAPI 请求签名，缺少凭证时命令会失败。
+  开始前请先配置凭证。`harness deploy` 属于控制面操作，需要 AK/SK；[SSO 登录](/zh/agentkit-cli/commands/auth)目前仅用于调用（`invoke`）已部署的运行时。凭证配置见[快速开始](/zh/agentkit-cli/quickstart)的「鉴权」一节。
 </Note>
 
 <Steps>
@@ -41,7 +41,7 @@ harness 路径适合无需自定义代码的场景：智能体的模型、工具
     ```
   </Step>
   <Step title="调用运行时">
-    按名称调用刚部署的运行时，CLI 会自动解析端点与鉴权。
+    按名称调用刚部署的运行时，CLI 会自动解析端点与鉴权。调用属于数据面操作，两种凭证均可使用：AK/SK，或先经 `agentkit login` 完成 SSO 登录后得到的 STS 凭证。
 
     ```bash
     agentkit invoke my-harness -m "你好，介绍一下你自己"

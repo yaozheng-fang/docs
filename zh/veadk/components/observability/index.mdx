@@ -14,7 +14,7 @@ span 是一次可被追踪的执行单元，记录名称、起止时间、属性
 
 ### 追踪器 `OpentelemetryTracer`
 
-`OpentelemetryTracer` 是统一的追踪入口，位于 `veadk.tracing.telemetry.opentelemetry_tracer`。它持有一组导出器，在初始化时向全局 `TracerProvider` 注册各导出器的 span 处理器，并自动附加一个内存导出器用于本地留存与落盘。
+`OpentelemetryTracer` 是统一的追踪入口。它持有一组导出器，初始化时将每个导出器接入追踪管线，并自动附加一个内存导出器用于本地留存与落盘。
 
 ### 导出器 exporter
 
@@ -73,7 +73,7 @@ tracer = OpentelemetryTracer(
 | `exporters` | `list[BaseExporter]` | `[]` | 导出器列表。不允许显式加入 `InMemoryExporter`，否则会校验报错；内存导出器由追踪器自动附加。 |
 
 <Note>
-`InMemoryExporter` 由 `OpentelemetryTracer` 自动管理，并被放在 span 处理器链首位以记录全部 span。请勿手动加入 `exporters` 列表，否则初始化会抛出 `ValueError`。
+`InMemoryExporter` 由 `OpentelemetryTracer` 自动管理，用于记录全部 span。请勿手动加入 `exporters` 列表，否则初始化会报错。
 </Note>
 
 ## 通过环境变量启用导出器

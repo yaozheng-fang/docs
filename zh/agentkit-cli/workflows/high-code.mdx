@@ -5,7 +5,7 @@ title: "高代码智能体"
 高代码路径适合需要自定义逻辑、工具或多智能体编排的场景：你从模板脚手架一个项目，直接编写智能体代码，再由 CLI 在云端构建镜像并部署为运行时。闭环从脚手架开始，经编辑、部署、调用、查看日志，最终回到编辑持续迭代。
 
 <Note>
-  开始前请先完成[鉴权与登录](/zh/agentkit-cli/commands/auth)。编写智能体代码的完整说明见 [VeADK 文档](/zh/veadk/index)。
+  开始前请先配置凭证。`deploy` 属于控制面操作，需要 AK/SK；[SSO 登录](/zh/agentkit-cli/commands/auth)目前仅用于调用（`invoke`）已部署的运行时。凭证配置见[快速开始](/zh/agentkit-cli/quickstart)的「鉴权」一节。编写智能体代码的完整说明见 [VeADK 文档](/zh/veadk/index)。
 </Note>
 
 <Steps>

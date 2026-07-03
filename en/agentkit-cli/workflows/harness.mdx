@@ -6,7 +6,7 @@ tag: "NEW"
 The harness path suits cases that need no custom code: the agent's model, tools, knowledge base, memory, and prompt all live in a single `harness.yaml`, which the CLI builds and deploys as a runtime. The whole loop revolves around that one file — initialize, configure, deploy, invoke, then return to configuration to iterate.
 
 <Note>
-  Complete [authentication](/en/agentkit-cli/commands/auth) first. The CLI signs every Volcengine OpenAPI request and commands fail without credentials.
+  Configure credentials first. `harness deploy` is a control-plane operation and requires AK/SK; [SSO login](/en/agentkit-cli/commands/auth) currently only covers invoking (`invoke`) a deployed runtime. See the Authentication section of the [Quickstart](/en/agentkit-cli/quickstart).
 </Note>
 
 <Steps>
@@ -41,7 +41,7 @@ The harness path suits cases that need no custom code: the agent's model, tools,
     ```
   </Step>
   <Step title="Invoke the runtime">
-    Call the runtime you just deployed by name; the CLI resolves the endpoint and auth automatically.
+    Call the runtime you just deployed by name; the CLI resolves the endpoint and auth automatically. Invocation is a data-plane operation, so either credential type works: AK/SK, or the STS credentials from an `agentkit login` SSO session.
 
     ```bash
     agentkit invoke my-harness -m "Hello, introduce yourself"

@@ -18,6 +18,137 @@ Create a harness directory (`harness.yaml` + `.env.example`) for a Harness.
 agentkit harness init my-harness
 ```
 
+`harness.yaml` is the single source of configuration for a code-free agent; `harness deploy` expands it into the runtime's environment variables. In the generated file, common fields are active and each component's optional params are shown commented-out, grouped by backend — set a component's `type`, then uncomment the params under that backend. The complete file looks like this:
+
+```yaml harness.yaml
+# =============================================================================
+# AgentKit harness configuration (code-free agent).
+#
+# `agentkit harness deploy` converts this file into the runtime's environment
+# variables: top-level fields and `model` are flattened (model.name -> MODEL_NAME,
+# tools -> TOOLS, ...); each component's `type` selects its backend, and the
+# component's other params map to the env vars that backend reads (e.g. viking
+# `project` -> DATABASE_VIKING_PROJECT). Empty values are skipped, so the server
+# falls back to its own defaults.
+#
+# Configure with `agentkit harness set ...` or by editing this file. For a
+# component, uncomment the params under the backend you set as `type`.
+# =============================================================================
+
+# Harness / runtime name (also the knowledgebase & long-term-memory index name).
+#   env: HARNESS_NAME          flag: --name
+harness_name: "my-harness"
+
+# Reasoning model name (Ark auth comes from the runtime's IAM role on deploy).
+#   env: MODEL_NAME            flag: --model-name
+model:
+  name: ""
+
+# Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
+tools: []
+
+# Skill hub names.       env: SKILLS  flag: --skills (comma-separated)
+skills: []
+
+# Agent instruction (empty = server default).
+#   env: SYSTEM_PROMPT         flag: --system-prompt
+system_prompt: ""
+
+# Agent runtime backend: adk (default) | codex.
+#   env: RUNTIME               flag: --runtime
+runtime: adk
+
+# --- Knowledge base ----------------------------------------------------------
+#   type -> env: KNOWLEDGEBASE_TYPE   flag: --knowledgebase-type
+#   "" disables it. Supported: viking | opensearch | redis
+knowledgebase:
+  type: ""
+  # -- viking --      flags: --knowledgebase-project / --knowledgebase-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --knowledgebase-host / -port / -username / -password / -use-ssl
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # use_ssl: true
+  # -- redis --       flags: --knowledgebase-host / -port / -username / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # username: default
+  # password: ""
+  # db: 0
+
+# --- Long-term memory --------------------------------------------------------
+#   type -> env: LONG_TERM_MEMORY_TYPE   flag: --long-term-memory-type
+#   "" disables it. Supported: viking | opensearch | redis | mem0
+long_term_memory:
+  type: ""
+  # -- viking --      flags: --long-term-memory-project / --long-term-memory-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --long-term-memory-host / -port / -username / -password
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # -- redis --       flags: --long-term-memory-host / -port / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # password: ""
+  # db: 0
+  # -- mem0 --        flags: --long-term-memory-api-key / -api-key-id / -project-id / -base-url
+  # api_key: ""
+  # api_key_id: ""
+  # project_id: ""
+  # base_url: https://api.mem0.ai/v1
+
+# --- Short-term memory (session store) ---------------------------------------
+#   type -> env: SHORT_TERM_MEMORY_TYPE   flag: --short-term-memory-type
+#   local (default) | sqlite | mysql | postgresql
+short_term_memory:
+  type: local
+  # -- mysql --       flags: --short-term-memory-host / -user / -password / -database / -charset
+  # host: 1.2.3.4
+  # user: root
+  # password: ""
+  # database: harness
+  # charset: utf8
+  # -- postgresql --  flags: --short-term-memory-host / -port / -user / -password / -database
+  # host: 1.2.3.4
+  # port: 5432
+  # user: postgres
+  # password: ""
+  # database: harness
+
+# --- Authentication (optional) -----------------------------------------------
+# Omit this block to deploy with the default API-key auth (key_auth). Add it to
+# gate the runtime with OAuth2/JWT (custom_jwt): the API gateway then only accepts
+# tokens issued by `discovery_url`'s user pool whose audience is one of
+# `allowed_ids`. Set up the user pool / client in the Volcengine Identity console.
+#   flags: --discovery-url / --allowed-id
+# auth:
+#   discovery_url: "https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com/.well-known/openid-configuration"
+#   allowed_ids: ["<client-id>"]
+```
+
+Field reference:
+
+- **`harness_name`**: the harness and runtime name, also used as the knowledge-base and long-term-memory index name (env `HARNESS_NAME`, flag `--name`).
+- **`model.name`**: the reasoning model; on deploy its Ark auth comes from the runtime's IAM role, so you don't set it here (env `MODEL_NAME`, flag `--model-name`).
+- **`tools`**: built-in tool names (env `TOOLS`, flag `--tools`).
+- **`skills`**: skill-hub names (env `SKILLS`, flag `--skills`).
+- **`system_prompt`**: the agent instruction; empty uses the server default (env `SYSTEM_PROMPT`, flag `--system-prompt`).
+- **`runtime`**: the agent runtime backend, `adk` (default) or `codex` (env `RUNTIME`, flag `--runtime`).
+- **`knowledgebase`**: a knowledge base. An empty `type` disables it; supported backends are `viking`, `opensearch`, `redis` — set `type`, then uncomment that backend's connection params.
+- **`long_term_memory`**: long-term memory. An empty `type` disables it; supported backends are `viking`, `opensearch`, `redis`, `mem0`.
+- **`short_term_memory`**: the session store. `type` is `local` (default), `sqlite`, `mysql`, or `postgresql`.
+- **`auth`** (optional): omit it to use the default API-key auth (`key_auth`); set `discovery_url` and `allowed_ids` to switch to OAuth2/JWT (`custom_jwt`), where the gateway only accepts tokens issued by that user pool whose audience is on the allow-list.
+
+<Note>
+  Expansion: `harness deploy` flattens top-level fields and `model` into environment variables (e.g. `model.name` → `MODEL_NAME`) and maps component params to the `DATABASE_<BACKEND>_*` variables that backend reads; empty values are skipped and the server falls back to its defaults. The `.env.example` written by `harness init` holds only the Volcengine AK/SK needed to deploy — all agent configuration lives in `harness.yaml`.
+</Note>
+
 ## harness set
 
 Set fields in `harness.yaml` (partial update; only the flags you pass are changed). Run with no flags to list the current fields. Fields fall into groups: core (model / tools / skills / prompt / runtime), knowledgebase, long-term-memory, short-term-memory, and auth. When configuring a component, set its `--<comp>-type` first, then its connection parameters.

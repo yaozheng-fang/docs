@@ -14,7 +14,7 @@ A span is a traceable unit of execution that records a name, start/end times, at
 
 ### The tracer `OpentelemetryTracer`
 
-`OpentelemetryTracer` is the unified tracing entry point, located at `veadk.tracing.telemetry.opentelemetry_tracer`. It holds a list of exporters, registers each exporter's span processor with the global `TracerProvider` on initialization, and automatically attaches an in-memory exporter for local retention and dumping.
+`OpentelemetryTracer` is the unified tracing entry point. It holds a list of exporters, wires each one into the tracing pipeline on initialization, and automatically attaches an in-memory exporter for local retention and dumping.
 
 ### exporter
 
@@ -73,7 +73,7 @@ tracer = OpentelemetryTracer(
 | `exporters` | `list[BaseExporter]` | `[]` | List of exporters. `InMemoryExporter` may not be added explicitly, or validation fails; the in-memory exporter is attached automatically. |
 
 <Note>
-`InMemoryExporter` is managed automatically by `OpentelemetryTracer` and placed first in the span-processor chain so it records every span. Do not add it to the `exporters` list manually, or initialization raises `ValueError`.
+`InMemoryExporter` is managed automatically by `OpentelemetryTracer` and records every span. Do not add it to the `exporters` list manually, or initialization fails.
 </Note>
 
 ## Enabling exporters via environment variables

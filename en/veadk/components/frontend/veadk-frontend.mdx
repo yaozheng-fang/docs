@@ -2,12 +2,14 @@
 title: "VeADK Frontend"
 ---
 
-VeADK ships a production-grade React frontend that renders [A2UI](/en/veadk/components/frontend/a2ui) streamed from an agent over the Google ADK API server. `veadk frontend` is a self-contained launcher: in the default mode it serves this React UI and the agent API from a single process on the same origin, so there is no separate backend to deploy and no cross-origin setup.
+VeADK ships a production-grade React frontend — an enterprise agent-application workbench that talks to agents over the Google ADK API server: create, debug, manage, and use agents from the UI. `veadk frontend` is a self-contained launcher: in the default mode it serves this React UI and the agent API from a single process on the same origin, so there is no separate backend to deploy and no cross-origin setup.
 
 ## What it can do
 
-- **Chat**: multi-turn conversations that render streamed A2UI cards, plus thinking, tool calls, token usage and timing.
+- **Create agents**: build an agent from scratch in the UI — conversational, custom, template, and workflow modes — producing a runnable VeADK project (`agent.py`, `requirements.txt`, and so on) that you can preview, edit, and download.
+- **Chat and debug**: multi-turn conversations showing thinking, tool calls, token usage and timing; conversations also render the [A2UI](/en/veadk/components/frontend/a2ui) rich-UI cards an agent returns.
 - **Agent picker**: switch agents from the top-left; hover an agent to see its model and mounted tools.
+- **Skill center**: browse and discover reusable skills to use when creating agents.
 - **Session history**: auto-saved, time-sorted, reopen or delete.
 - **Smart search**: the *Session* source full-text-searches the current agent's history; the *Web* source calls the agent's mounted web-search tool live, using credentials from the server's environment variables.
 - **Add an AgentKit agent**: paste a URL and API key to connect a remote agent over the ADK protocol; it then appears in the picker.
@@ -120,27 +122,9 @@ Google is the same with `OAUTH2_PROVIDER=google`; for any OIDC provider (Keycloa
   Login state is cached: SSO via the `veadk_session` cookie, local mode via `localStorage`. The session itself is created lazily on the first message, not on page load. Logout is a local logout — it clears the session and returns to the login page.
 </Note>
 
-## How it works
+## Rendering flow
 
-<Steps>
-
-<Step>
-`adk/client.ts` calls `/list-apps`, creates a session, and streams `/run_sse`.
-</Step>
-
-<Step>
-`a2ui/extract.ts` pulls A2UI messages out of the `send_a2ui_json_to_client` tool response (`validated_a2ui_json`).
-</Step>
-
-<Step>
-`a2ui/Surface.tsx` applies `createSurface` / `updateComponents` / `updateDataModel` into surface state and renders the root component.
-</Step>
-
-<Step>
-`a2ui/registry.ts` maps each component name to a React renderer; each renderer lives in its own directory under `a2ui/components/<Name>/` and self-registers.
-</Step>
-
-</Steps>
+The frontend talks to the Google ADK API server: it lists available agents, creates a session, and receives the agent's output as a live stream. When the agent returns an A2UI message, the frontend parses its UI instructions, creates and incrementally updates the corresponding surface, then renders the matching React components by type. A registry maps each component type to a renderer, so adding a new component type only requires registering a renderer for it.
 
 ## Adding a custom (enterprise) component
 
@@ -169,7 +153,7 @@ export function RevenueChart({ node, ctx }: ComponentRendererProps) {
 }
 ```
 
-`components/index.ts` imports every `*/index.ts` via `import.meta.glob`, so the new folder is picked up automatically.
+A newly added component directory is discovered and registered automatically, with no central configuration file to edit.
 
 <Note>
   Unknown components with no registered renderer fall back to a collapsible JSON view, so a catalog/renderer mismatch never crashes the UI.
