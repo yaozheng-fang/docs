@@ -33,14 +33,11 @@ flowchart LR
         enabled: true
         app_id: ${FEISHU_APP_ID}
         app_secret: ${FEISHU_APP_SECRET}
-    envs:
-      MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
     ```
   </Step>
   <Step title="导出环境变量">
     ```bash
     export FEISHU_APP_ID=... FEISHU_APP_SECRET=...
-    export MODEL_AGENT_API_KEY=...
     ```
   </Step>
   <Step title="部署">
