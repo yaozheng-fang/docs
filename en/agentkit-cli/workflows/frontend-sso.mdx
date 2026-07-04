@@ -11,7 +11,7 @@ flowchart LR
 ```
 
 <Note>
-  First: complete [authentication](/en/agentkit-cli/commands/auth) (deploy uses AK/SK for the control plane); and in [Agent Identity](https://console.volcengine.com/identity) prepare a **user pool** and a **WEB client**, noting `user_pool_id`, `client_id`, `client_secret`. To sign in with Feishu, configure Feishu as an identity source (third-party federation) on the user pool.
+  First: complete [authentication](/en/agentkit-cli/commands/auth) (deploy uses AK/SK for the control plane); and in [Agent Identity](https://console.volcengine.com/identity) prepare a **user pool** and a **WEB client**, noting `user_pool_id` and `client_id` (the client secret is fetched automatically by the CLI). To sign in with Feishu, configure Feishu as an identity source (third-party federation) on the user pool.
 </Note>
 
 <Steps>
@@ -22,7 +22,7 @@ flowchart LR
     ```
   </Step>
   <Step title="Declare the frontend (edit agentkit.yaml)">
-    Add a `frontend` block. Declare the user pool here only — the runtime's `custom_jwt` gateway auth is **derived from it automatically**, so you don't repeat `auth`. Secrets use `${VAR}` and stay out of the repo:
+    Add a `frontend` block. Declare the user pool here only — the runtime's `custom_jwt` gateway auth is **derived from it automatically**, so you don't repeat `auth`, and the client secret is fetched automatically, so you don't declare it. Values use `${VAR}` and stay out of the repo:
 
     ```yaml .agentkit/agentkit.yaml
     frontend:
@@ -30,14 +30,13 @@ flowchart LR
       oauth2:
         user_pool_id: ${USERPOOL_ID}
         client_id: ${USERPOOL_CLIENT_ID}
-        client_secret: ${USERPOOL_CLIENT_SECRET}
     envs:
       MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
     ```
   </Step>
   <Step title="Export the environment variables">
     ```bash
-    export USERPOOL_ID=... USERPOOL_CLIENT_ID=... USERPOOL_CLIENT_SECRET=...
+    export USERPOOL_ID=... USERPOOL_CLIENT_ID=...
     export MODEL_AGENT_API_KEY=...
     ```
   </Step>
