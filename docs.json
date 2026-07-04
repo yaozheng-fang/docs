@@ -203,7 +203,8 @@
                   "zh/agentkit-cli/commands/sandbox",
                   "zh/agentkit-cli/commands/skill",
                   "zh/agentkit-cli/commands/harness",
-                  "zh/agentkit-cli/commands/auth"
+                  "zh/agentkit-cli/commands/auth",
+                  "zh/agentkit-cli/commands/docs"
                 ]
               }
             ]
@@ -412,7 +413,8 @@
                   "en/agentkit-cli/commands/sandbox",
                   "en/agentkit-cli/commands/skill",
                   "en/agentkit-cli/commands/harness",
-                  "en/agentkit-cli/commands/auth"
+                  "en/agentkit-cli/commands/auth",
+                  "en/agentkit-cli/commands/docs"
                 ]
               }
             ]
