@@ -172,6 +172,8 @@
                 "pages": [
                   "zh/agentkit-cli/workflows/harness",
                   "zh/agentkit-cli/workflows/high-code",
+                  "zh/agentkit-cli/workflows/frontend-sso",
+                  "zh/agentkit-cli/workflows/feishu",
                   "zh/agentkit-cli/workflows/codex-sandbox",
                   "zh/agentkit-cli/workflows/evaluation"
                 ]
@@ -382,6 +384,8 @@
                 "pages": [
                   "en/agentkit-cli/workflows/harness",
                   "en/agentkit-cli/workflows/high-code",
+                  "en/agentkit-cli/workflows/frontend-sso",
+                  "en/agentkit-cli/workflows/feishu",
                   "en/agentkit-cli/workflows/codex-sandbox",
                   "en/agentkit-cli/workflows/evaluation"
                 ]
