@@ -59,4 +59,4 @@ Notes:
 
 - **WebSocket transport**: the proxy dials out to Feishu, so no public callback address and no event-subscription URL are needed.
 - **Credentials**: App ID and Secret use `${VAR}` and are never committed; `agentkit deploy` reuses the same proxy function idempotently — redeploys update rather than create new ones.
-- **Runtime auth**: on the Feishu path the runtime uses `key_auth` (the proxy holds the API key). For web login with per-user identity forwarding, see [Deploy a workbench with SSO login](/en/agentkit-cli/workflows/frontend-sso).
+- **Runtime auth**: on the Feishu path the runtime uses `key_auth` (the proxy holds the API key). For web login with per-user identity forwarding, see [Deploy a frontend with SSO login](/en/agentkit-cli/workflows/frontend-sso).

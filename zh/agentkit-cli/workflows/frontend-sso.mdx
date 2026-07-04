@@ -1,8 +1,8 @@
 ---
-title: "部署带 SSO 登录的前端工作台"
+title: "部署带 SSO 登录的前端"
 ---
 
-给智能体配一个**公网前端工作台**：用户经 Volcengine 用户池 OAuth 登录（用户池可联合飞书等企业身份），登录后在浏览器里与智能体对话。前端部署在 VeFaaS 上、公网可达，自身完成登录；它把**登录用户的 JWT** 转发给运行时，运行时用 `custom_jwt`（同一个用户池）校验——**全程没有共享 API key**，用户身份端到端透传。
+给智能体配一个**公网前端**：用户经 Volcengine 用户池 OAuth 登录（用户池可联合飞书等企业身份），登录后在浏览器里与智能体对话。前端部署在 VeFaaS 上、公网可达，自身完成登录；它把**登录用户的 JWT** 转发给运行时，运行时用 `custom_jwt`（同一个用户池）校验——**全程没有共享 API key**，用户身份端到端透传。
 
 ```mermaid
 flowchart LR
@@ -45,10 +45,10 @@ flowchart LR
     agentkit deploy
     ```
 
-    `agentkit deploy` 全程无需 flag，读 `agentkit.yaml` 依次执行：构建并部署运行时（镜像运行 veADK 工作台，同源提供 UI 与智能体 API，`custom_jwt` 由用户池自动派生），再在 VeFaaS 上部署公网前端 BFF（复用已有 serverless 网关，自动获取客户端 secret、自动登记回调 `<前端地址>/oauth2/callback`）。
+    `agentkit deploy` 全程无需 flag，读 `agentkit.yaml` 依次执行：构建并部署运行时（镜像运行 veADK 前端，同源提供 UI 与智能体 API，`custom_jwt` 由用户池自动派生），再在 VeFaaS 上部署公网前端 BFF（复用已有 serverless 网关，自动获取客户端 secret、自动登记回调 `<前端地址>/oauth2/callback`）。
   </Step>
   <Step title="打开使用">
-    打开输出里的前端地址，浏览器自动跳转用户池登录；登录后进入工作台，即可与智能体对话。前端展示的是登录用户的身份（名字与邮箱）。
+    打开输出里的前端地址，浏览器自动跳转用户池登录；登录后进入前端，即可与智能体对话。前端展示的是登录用户的身份（名字与邮箱）。
   </Step>
 </Steps>
 
@@ -57,6 +57,6 @@ flowchart LR
 - **无共享密钥**：客户端 secret 只保存在前端 BFF 的服务端，浏览器只拿到会话 cookie；调用运行时时由 BFF 注入用户 JWT。
 - **回调自动登记**：`<前端地址>/oauth2/callback` 会被自动加入用户池客户端的回调列表（前端地址在部署后才确定，CLI 会自动回填）。
 - **网关**：前端跑在 serverless 网关上，默认复用账号里已有的 serverless 网关，避免占用网关配额；需要固定时在 `frontend.gateway` 指定。
-- **仅 Python**：工作台界面由 veADK Frontend（`veadk frontend`）提供，当前仅支持 Python 项目。用 `basic-agent` 脚手架出来的智能体已是工作台可发现的布局（agent 定义在包内并暴露 `root_agent`）。
+- **仅 Python**：前端界面由 veADK Frontend（`veadk frontend`）提供，当前仅支持 Python 项目。用 `basic-agent` 脚手架出来的智能体已是 veADK 前端可发现的布局（agent 定义在包内并暴露 `root_agent`）。
 
 只需要机器人渠道、不需要网页登录时，改用[接入飞书机器人](/zh/agentkit-cli/workflows/feishu)。

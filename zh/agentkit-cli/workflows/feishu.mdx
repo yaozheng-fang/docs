@@ -59,4 +59,4 @@ flowchart LR
 
 - **WebSocket 传输**：proxy 主动外连飞书，无需公网回调地址，也无需在飞书里配事件订阅 URL。
 - **凭证**：App ID 与 App Secret 用 `${VAR}`，不写进仓库；`agentkit deploy` 幂等复用同一个 proxy 函数，重复部署只更新、不新建。
-- **运行时鉴权**：飞书链路下运行时用 `key_auth`，由 proxy 持有 API key。若要网页登录并透传用户身份，见[部署带 SSO 登录的前端工作台](/zh/agentkit-cli/workflows/frontend-sso)。
+- **运行时鉴权**：飞书链路下运行时用 `key_auth`，由 proxy 持有 API key。若要网页登录并透传用户身份，见[部署带 SSO 登录的前端](/zh/agentkit-cli/workflows/frontend-sso)。
