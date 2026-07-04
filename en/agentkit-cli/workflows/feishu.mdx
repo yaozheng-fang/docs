@@ -59,4 +59,6 @@ Notes:
 
 - **WebSocket transport**: the proxy dials out to Feishu, so no public callback address and no event-subscription URL are needed.
 - **Credentials**: App ID and Secret use `${VAR}` and are never committed; `agentkit deploy` reuses the same proxy function idempotently — redeploys update rather than create new ones.
+- **Message experience**: incoming messages get an acknowledgement reaction, and the reply streams into a live card; the model's thinking and tool calls are tucked into a separate panel that stays collapsed until you expand it.
+- **Sessions & multi-tenancy**: the Feishu user maps to the runtime user and the Feishu chat maps to the runtime session, isolated per tenant — so one proxy can serve many tenants without their sessions or memory bleeding into each other.
 - **Runtime auth**: on the Feishu path the runtime uses `key_auth` (the proxy holds the API key). For web login with per-user identity forwarding, see [Deploy a frontend with SSO login](/en/agentkit-cli/workflows/frontend-sso).

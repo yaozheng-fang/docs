@@ -85,32 +85,11 @@ envs:
 #     client_id: ${USERPOOL_CLIENT_ID}
 #     client_secret: ${USERPOOL_CLIENT_SECRET}
 
-# ── Network (optional) ───────────────────────────────────
-# network:
-#   enable_public_network: true
-#   enable_private_network: false
-#   vpc:
-#     vpc_id: ${VPC_ID}       # REQUIRED when using a VPC
-#     subnet_ids:
-#       - ${SUBNET_ID}
-#     enable_shared_internet_access: false
-
-# ── TLS / log delivery (optional) ────────────────────────
-# tls:
-#   enable_log: true           # REQUIRED to enable this block
-#   tls_project_id: ${TLS_PROJECT_ID}
-#   tls_topic_id: ${TLS_TOPIC_ID}
-
 # ── Observability (optional) ─────────────────────────────
 # apmplus: true                # enable APMPlus monitoring
 
-# ── Tags (optional) ──────────────────────────────────────
-# tags:
-#   - { key: team, value: ai }
-
 # ── Advanced (optional) ──────────────────────────────────
 # role_name: ""                # IAM role; auto-created when omitted
-# client_token: ""             # idempotency token for create
 
 # ── Infrastructure ───────────────────────────────────────
 # Where the image is built and stored. "Auto" = created & managed for you.
@@ -206,44 +185,17 @@ The `frontend` block deploys a public front door on VeFaaS: OAuth login at the e
 | `frontend.gateway` | Reuse an existing serverless gateway (recommended). |
 | `frontend.oauth2.user_pool_id` | User pool id. |
 | `frontend.oauth2.client_id` | User pool client id. |
-| `frontend.oauth2.client_secret` | User pool client secret. |
-
-## Network
-
-The `network` block controls public/private access and VPC connectivity.
-
-| Field | Description |
-| --- | --- |
-| `enable_public_network` | Whether to enable public access. |
-| `enable_private_network` | Whether to enable private access. |
-| `vpc.vpc_id` | Required when using a VPC. |
-| `vpc.subnet_ids` | Subnet id list. |
-| `vpc.enable_shared_internet_access` | Whether to enable shared internet access. |
-
-## Log delivery
-
-The `tls` block delivers runtime logs to Volcengine's log service. Set `enable_log` to `true` to enable it.
-
-| Field | Description |
-| --- | --- |
-| `enable_log` | Whether to enable log delivery; required to enable this block. |
-| `tls_project_id` | Log project id. |
-| `tls_topic_id` | Log topic id. |
+| `frontend.oauth2.client_secret` | User pool client secret. Optional — auto-fetched from the user-pool client when omitted; set it only if the client exposes no secret or you want to override. |
 
 ## Observability
 
 Set `apmplus` to `true` to enable APMPlus monitoring.
-
-## Tags
-
-`tags` is a list of resource tags, each of the form `{ key: team, value: ai }`.
 
 ## Advanced
 
 | Field | Description |
 | --- | --- |
 | `role_name` | IAM role name; auto-created when omitted. |
-| `client_token` | Idempotency token for the create call. |
 
 ## Infrastructure
 

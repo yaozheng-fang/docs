@@ -85,32 +85,11 @@ envs:
 #     client_id: ${USERPOOL_CLIENT_ID}
 #     client_secret: ${USERPOOL_CLIENT_SECRET}
 
-# ── Network (optional) ───────────────────────────────────
-# network:
-#   enable_public_network: true
-#   enable_private_network: false
-#   vpc:
-#     vpc_id: ${VPC_ID}       # REQUIRED when using a VPC
-#     subnet_ids:
-#       - ${SUBNET_ID}
-#     enable_shared_internet_access: false
-
-# ── TLS / log delivery (optional) ────────────────────────
-# tls:
-#   enable_log: true           # REQUIRED to enable this block
-#   tls_project_id: ${TLS_PROJECT_ID}
-#   tls_topic_id: ${TLS_TOPIC_ID}
-
 # ── Observability (optional) ─────────────────────────────
 # apmplus: true                # enable APMPlus monitoring
 
-# ── Tags (optional) ──────────────────────────────────────
-# tags:
-#   - { key: team, value: ai }
-
 # ── Advanced (optional) ──────────────────────────────────
 # role_name: ""                # IAM role; auto-created when omitted
-# client_token: ""             # idempotency token for create
 
 # ── Infrastructure ───────────────────────────────────────
 # Where the image is built and stored. "Auto" = created & managed for you.
@@ -206,44 +185,17 @@ envs:
 | `frontend.gateway` | 复用已有的 serverless 网关（推荐）。 |
 | `frontend.oauth2.user_pool_id` | 用户池 ID。 |
 | `frontend.oauth2.client_id` | 用户池客户端 ID。 |
-| `frontend.oauth2.client_secret` | 用户池客户端密钥。 |
-
-## 网络
-
-`network` 块控制公/私网访问与 VPC 接入。
-
-| 字段 | 说明 |
-| --- | --- |
-| `enable_public_network` | 是否开启公网访问。 |
-| `enable_private_network` | 是否开启私网访问。 |
-| `vpc.vpc_id` | 使用 VPC 时必填。 |
-| `vpc.subnet_ids` | 子网 ID 列表。 |
-| `vpc.enable_shared_internet_access` | 是否开启共享公网访问。 |
-
-## 日志投递
-
-`tls` 块把运行时日志投递到火山引擎日志服务。启用需将 `enable_log` 设为 `true`。
-
-| 字段 | 说明 |
-| --- | --- |
-| `enable_log` | 是否启用日志投递，启用该块必填。 |
-| `tls_project_id` | 日志项目 ID。 |
-| `tls_topic_id` | 日志主题 ID。 |
+| `frontend.oauth2.client_secret` | 用户池客户端密钥。可选 —— 省略时 CLI 自动从用户池客户端获取，仅在客户端未暴露 secret 或需覆盖时设置。 |
 
 ## 可观测
 
 `apmplus` 设为 `true` 时启用 APMPlus 监控。
-
-## 标签
-
-`tags` 为资源标签列表，每项形如 `{ key: team, value: ai }`。
 
 ## 高级选项
 
 | 字段 | 说明 |
 | --- | --- |
 | `role_name` | IAM 角色名称，省略时自动创建。 |
-| `client_token` | 创建操作的幂等 token。 |
 
 ## 基础设施
 
