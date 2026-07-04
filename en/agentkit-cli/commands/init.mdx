@@ -41,7 +41,7 @@ Add the following under the repository's Settings → Secrets and variables → 
 
 ### Inject runtime environment variables
 
-Environment variables the agent runtime needs (such as a model API key) are added as repository secrets with an `AK_` prefix. `agentkit deploy` strips the prefix and injects them into the runtime at deploy time — for example, the repository secret `AK_OPENAI_API_KEY` becomes the runtime environment variable `OPENAI_API_KEY`. `VOLCENGINE_*` are deploy credentials and are not injected into the runtime. To add a runtime variable, add the corresponding `AK_` secret in the repository; no workflow edits are required.
+Environment variables the agent runtime needs (such as a model API key) are declared in `agentkit.yaml`'s `envs`, with values referenced from the environment via `${VAR}` (see [Build & deploy · Environment variables](/en/agentkit-cli/commands/deploy#environment-variables)). In CI, add those variables as repository secrets and export them into the environment of the deploy step — e.g. declaring `MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}` means adding a same-named `MODEL_AGENT_API_KEY` secret. `VOLCENGINE_*` are deploy credentials and are not injected into the runtime. To add a variable, add a `${VAR}` line in `agentkit.yaml` plus the matching repository secret; no workflow edits are required.
 
 <Note>
   Single-line values can be added directly; multi-line values need GitHub Actions' multi-line secret form.

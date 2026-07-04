@@ -41,7 +41,7 @@ agentkit init my-agent --language python --template default --yes
 
 ### 注入运行时环境变量
 
-智能体运行时所需的环境变量（如模型 API Key），以 `AK_` 前缀添加为仓库 Secret 即可。`agentkit deploy` 会在部署时去掉前缀并注入运行时——例如仓库 Secret `AK_OPENAI_API_KEY` 会成为运行时的环境变量 `OPENAI_API_KEY`。`VOLCENGINE_*` 作为部署凭证，不会注入运行时。新增运行时变量只需在仓库添加对应的 `AK_` Secret，无需改动工作流。
+智能体运行时所需的环境变量（如模型 API Key）在 `agentkit.yaml` 的 `envs` 里声明，值用 `${VAR}` 引用环境（详见[构建与部署 · 环境变量](/zh/agentkit-cli/commands/deploy#环境变量)）。在 CI 里把这些变量加为仓库 Secret，并在工作流的部署步骤中导出到环境即可——例如声明 `MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}`，就在仓库加一个同名 Secret `MODEL_AGENT_API_KEY`。`VOLCENGINE_*` 作为部署凭证，不会注入运行时。新增变量在 `agentkit.yaml` 里加一行 `${VAR}` + 仓库对应 Secret 即可，无需改动工作流。
 
 <Note>
   单行值可直接添加；多行值需按 GitHub Actions 的多行 Secret 写法处理。

@@ -163,6 +163,7 @@
                 "pages": [
                   "zh/agentkit-cli/index",
                   "zh/agentkit-cli/quickstart",
+                  "zh/agentkit-cli/agentkit-yaml",
                   "zh/agentkit-cli/commands/upgrade",
                   "zh/agentkit-cli/commands/tree"
                 ]
@@ -375,6 +376,7 @@
                 "pages": [
                   "en/agentkit-cli/index",
                   "en/agentkit-cli/quickstart",
+                  "en/agentkit-cli/agentkit-yaml",
                   "en/agentkit-cli/commands/upgrade",
                   "en/agentkit-cli/commands/tree"
                 ]
