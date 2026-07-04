@@ -57,7 +57,7 @@ agentkit tool show t-12345678
 | `--json <jsonString>` | 以 JSON 对象形式提供的额外字段，合并进请求体。 | — |
 
 ```bash
-agentkit tool create --name my-tool --tool-type code --image-url registry/my-tool:latest --port 8080
+agentkit tool create --name my-tool --tool-type code --cpu 1000 --memory 2048
 ```
 
 ## tool update
