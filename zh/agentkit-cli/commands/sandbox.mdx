@@ -6,9 +6,9 @@ tag: "NEW"
 `sandbox` 命令组用于操作沙箱：在沙箱会话中运行命令、打开交互式终端、传输文件、预览 Web、注入订阅凭据，以及管理会话。一个沙箱本质上是一个 `code` 类型的工具。
 
 <Note>
-各子命令共有一组会话与工具相关标志：`-s, --session <id>`（会话 ID，存在则复用，否则新建）、`--tool-id <id>`（沙箱工具 ID）、`--type <type>`（沙箱类型 `code` \| `skill`，默认 `code`）、`--auto-create`（无可用沙箱工具时自动创建）、`-r, --region <region>`（Volcengine 区域）、`-p, --project <name>`（AgentKit 项目，默认 `default`）。下方表格逐命令完整列出。
+各子命令共有一组会话与工具相关标志：`-s, --session <id>`（会话 ID，存在则复用，否则新建）、`--tool-id <id>`（沙箱工具 ID）、`--type <type>`（沙箱类型 `code` \| `skill`，默认 `code`）、`--auto-create`（始终新建一个沙箱工具，即使项目内已有）、`-r, --region <region>`（Volcengine 区域）、`-p, --project <name>`（AgentKit 项目，默认 `default`）。下方表格逐命令完整列出。
 
-未传 `--tool-id` 时，CLI 会在项目内查找该类型的沙箱工具：**恰好一个时自动选用；存在多个时命令会失败并要求显式传入 `--tool-id`**；一个都没有时需配合 `--auto-create` 自动创建。项目内已有多个 `code` 工具属常见情况，此时务必用 `agentkit tool list` 查到目标 ID 后通过 `--tool-id` 指定。
+未传 `--tool-id` 且未加 `--auto-create` 时，CLI 会在项目内查找该类型的沙箱工具：**恰好一个时自动选用；存在多个时命令会失败并要求显式传入 `--tool-id`**；一个都没有时需加 `--auto-create`。加上 `--auto-create` 则始终新建一个全新工具——即使项目内已有——并等待其就绪后再使用。项目内已有多个 `code` 工具属常见情况，此时务必用 `agentkit tool list` 查到目标 ID 后通过 `--tool-id` 指定。
 </Note>
 
 ## sandbox run
@@ -25,10 +25,11 @@ tag: "NEW"
 | `--model-provider <provider>` | 模型提供方 | 无 |
 | `--cpu <milli>` | `--auto-create` 时的 CPU（毫核） | 无 |
 | `--memory <mb>` | `--auto-create` 时的内存（MB） | 无 |
+| `--timeout <seconds>` | 命令中止前的最长等待秒数；`0` 表示不限制 | `30` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
 | `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -36,7 +37,9 @@ tag: "NEW"
 agentkit sandbox run "ls -la" --session my-session
 ```
 
-## sandbox shell
+一次性的 `run` 会等待命令执行结束，因此交互式程序——编辑器、REPL，或不带参数直接运行的 `codex`——会一直阻塞直至超时。交互场景请改用 `agentkit sandbox attach`；对确需长时间运行的非交互任务，可调大 `--timeout` 或将其设为 `0`。
+
+## sandbox attach
 
 在沙箱会话中打开交互式终端（按 Ctrl-] 脱离）。
 
@@ -53,12 +56,12 @@ agentkit sandbox run "ls -la" --session my-session
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
 | `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
 ```bash
-agentkit sandbox shell --tmux --session my-session
+agentkit sandbox attach --tmux --session my-session
 ```
 
 ## sandbox cp
@@ -73,7 +76,7 @@ agentkit sandbox shell --tmux --session my-session
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
 | `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -91,7 +94,7 @@ agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
 | `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -105,13 +108,13 @@ agentkit sandbox web --session my-session
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--provider <provider>` | `codex` \| `claude` | 无 |
+| `--provider <provider>` | `codex` \| `claude` | `codex` |
 | `--auth-file <path>` | 使用指定的本地凭据文件 | 无 |
 | `--codex-home <dir>` | 本地 codex home | `$CODEX_HOME` 或 `~/.codex` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
 | `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 无沙箱工具时自动创建 | `false` |
+| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 

@@ -26,13 +26,13 @@ Before you start, make sure your Volcengine access keys are configured — the `
     Open the sandbox session's interactive terminal and run `codex` there to develop:
 
     ```bash
-    agentkit sandbox shell --session dev --tmux
+    agentkit sandbox attach --session dev --tmux
     ```
 
     `--session dev` names the session; reuse the same name in later commands to return to the same environment. `--tmux` attaches a persistent terminal session so reconnecting after a drop keeps your progress (press Ctrl-] to detach). To bring existing local code into the sandbox, upload it before attaching:
 
     ```bash
-    agentkit sandbox shell --session dev --src-dir ./my-app --dst-dir my-app
+    agentkit sandbox attach --session dev --src-dir ./my-app --dst-dir my-app
     ```
 
     The model used by the sandbox's coding agent can be set with `--model-name`, `--model-api-key`, and `--model-provider`.

@@ -6,9 +6,9 @@ tag: "NEW"
 The `sandbox` command group operates a sandbox: run commands in a sandbox session, open an interactive terminal, transfer files, open a web preview, inject subscription credentials, and manage sessions. A sandbox is a `code` tool.
 
 <Note>
-Most subcommands share a common set of session and tool flags: `-s, --session <id>` (session id, reused if it exists, else generated), `--tool-id <id>` (sandbox tool id), `--type <type>` (sandbox type `code` \| `skill`, default `code`), `--auto-create` (create a sandbox tool if none exists), `-r, --region <region>` (Volcengine region), and `-p, --project <name>` (AgentKit project, default `default`). Each command's full flag set is listed below.
+Most subcommands share a common set of session and tool flags: `-s, --session <id>` (session id, reused if it exists, else generated), `--tool-id <id>` (sandbox tool id), `--type <type>` (sandbox type `code` \| `skill`, default `code`), `--auto-create` (always create a new sandbox tool, even if some already exist), `-r, --region <region>` (Volcengine region), and `-p, --project <name>` (AgentKit project, default `default`). Each command's full flag set is listed below.
 
-When `--tool-id` is omitted, the CLI looks for a sandbox tool of the requested type in the project: **exactly one is used automatically; when several exist the command fails and asks you to pass `--tool-id`**; when none exist it needs `--auto-create`. Having several `code` tools in a project is common, so run `agentkit tool list` to find the target id and pass it via `--tool-id`.
+When `--tool-id` is omitted and `--auto-create` is not set, the CLI looks for a sandbox tool of the requested type in the project: **exactly one is used automatically; when several exist the command fails and asks you to pass `--tool-id`**; when none exist you need `--auto-create`. Passing `--auto-create` always provisions a brand-new tool—even when the project already has some—and waits for it to become ready before use. Having several `code` tools in a project is common, so run `agentkit tool list` to find the target id and pass it via `--tool-id`.
 </Note>
 
 ## sandbox run
@@ -25,10 +25,11 @@ Run a command in a sandbox session and print its output.
 | `--model-provider <provider>` | Model provider | None |
 | `--cpu <milli>` | CPU milli-cores when `--auto-create` | None |
 | `--memory <mb>` | Memory MB when `--auto-create` | None |
+| `--timeout <seconds>` | Max seconds to wait for the command before aborting; `0` disables the limit | `30` |
 | `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
 | `--tool-id <id>` | Sandbox tool id. Auto-resolved when omitted: used automatically if the project has exactly one tool of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
 | `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
-| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `--auto-create` | Always create a new sandbox tool, even if some already exist | `false` |
 | `-r, --region <region>` | Volcengine region | None |
 | `-p, --project <name>` | AgentKit project | `default` |
 
@@ -36,7 +37,9 @@ Run a command in a sandbox session and print its output.
 agentkit sandbox run "ls -la" --session my-session
 ```
 
-## sandbox shell
+A one-shot `run` waits for the command to finish, so an interactive program—an editor, a REPL, or `codex` launched with no arguments—would block until the timeout elapses. Open an interactive session with `agentkit sandbox attach` instead, or raise `--timeout` (or set it to `0`) for long-running non-interactive jobs.
+
+## sandbox attach
 
 Open an interactive terminal in a sandbox session (Ctrl-] to detach).
 
@@ -53,12 +56,12 @@ Open an interactive terminal in a sandbox session (Ctrl-] to detach).
 | `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
 | `--tool-id <id>` | Sandbox tool id. Auto-resolved when omitted: used automatically if the project has exactly one tool of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
 | `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
-| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `--auto-create` | Always create a new sandbox tool, even if some already exist | `false` |
 | `-r, --region <region>` | Volcengine region | None |
 | `-p, --project <name>` | AgentKit project | `default` |
 
 ```bash
-agentkit sandbox shell --tmux --session my-session
+agentkit sandbox attach --tmux --session my-session
 ```
 
 ## sandbox cp
@@ -73,7 +76,7 @@ Copy files to/from a sandbox session — prefix the remote side with `:`.
 | `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
 | `--tool-id <id>` | Sandbox tool id. Auto-resolved when omitted: used automatically if the project has exactly one tool of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
 | `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
-| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `--auto-create` | Always create a new sandbox tool, even if some already exist | `false` |
 | `-r, --region <region>` | Volcengine region | None |
 | `-p, --project <name>` | AgentKit project | `default` |
 
@@ -91,7 +94,7 @@ Open the sandbox web preview in a browser.
 | `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
 | `--tool-id <id>` | Sandbox tool id. Auto-resolved when omitted: used automatically if the project has exactly one tool of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
 | `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
-| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `--auto-create` | Always create a new sandbox tool, even if some already exist | `false` |
 | `-r, --region <region>` | Volcengine region | None |
 | `-p, --project <name>` | AgentKit project | `default` |
 
@@ -105,13 +108,13 @@ Inject your local codex/claude subscription into a sandbox session.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `--provider <provider>` | `codex` \| `claude` | None |
+| `--provider <provider>` | `codex` \| `claude` | `codex` |
 | `--auth-file <path>` | Use a specific local credential file | None |
 | `--codex-home <dir>` | Local codex home | `$CODEX_HOME` or `~/.codex` |
 | `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
 | `--tool-id <id>` | Sandbox tool id. Auto-resolved when omitted: used automatically if the project has exactly one tool of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
 | `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
-| `--auto-create` | Create a sandbox tool if none exists | `false` |
+| `--auto-create` | Always create a new sandbox tool, even if some already exist | `false` |
 | `-r, --region <region>` | Volcengine region | None |
 | `-p, --project <name>` | AgentKit project | `default` |
 
