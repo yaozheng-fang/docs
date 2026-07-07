@@ -11,7 +11,7 @@ List all memory collections.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `-r, --region <region>` | Volcengine region. | auto-detect |
-| `-p, --project <name>` | Project name. | — |
+| `-p, --project <name>` | Project name. | default |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
@@ -40,7 +40,7 @@ Create a memory collection.
 | --- | --- | --- |
 | `--name <name>` | Memory collection name. | — |
 | `--description <text>` | Description. | — |
-| `-p, --project <name>` | Project name. | — |
+| `-p, --project <name>` | Project name. | default |
 | `--provider-type <type>` | Provider type (`MEM0` \| `VIKINGDB_MEMORY`). | — |
 | `-r, --region <region>` | Volcengine region. | from env |
 | `--json <jsonString>` | JSON object merged into the request body (for nested fields such as `LongTermConfiguration`, `VpcConfig`, `Tags`). | — |

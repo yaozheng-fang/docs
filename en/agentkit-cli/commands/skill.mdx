@@ -11,7 +11,7 @@ List skills.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `-r, --region <region>` | Volcengine region | None |
-| `-p, --project <name>` | Project name | None |
+| `-p, --project <name>` | Project name | default |
 | `--json` | Output raw JSON | `false` |
 
 ```bash
@@ -67,7 +67,8 @@ Delete a skill.
 | --- | --- | --- |
 | `<id>` | Skill id (required) | None |
 | `-r, --region <region>` | Volcengine region | None |
+| `-y, --yes` | Skip the confirmation prompt | `false` |
 
 ```bash
-agentkit skill delete sk-xxxxxxxx
+agentkit skill delete sk-xxxxxxxx --yes
 ```

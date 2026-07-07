@@ -11,7 +11,7 @@ title: "管理平台技能"
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | 项目名称 | 无 |
+| `-p, --project <name>` | 项目名称 | default |
 | `--json` | 输出原始 JSON | `false` |
 
 ```bash
@@ -67,7 +67,8 @@ agentkit skill spaces
 | --- | --- | --- |
 | `<id>` | 技能 ID（必填） | 无 |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
+| `-y, --yes` | 跳过确认提示 | `false` |
 
 ```bash
-agentkit skill delete sk-xxxxxxxx
+agentkit skill delete sk-xxxxxxxx --yes
 ```

@@ -5,7 +5,7 @@ title: "Manage datasets"
 The `eval dataset` command group manages evaluation sets: list, show, create, and delete datasets, and add or remove cases within a dataset. A dataset is the data source for an experiment; its fields (such as `input` and `reference_output`) are mapped to the target and the evaluator during [`eval run`](/en/agentkit-cli/commands/eval/run).
 
 <Note>
-These subcommands are also available as top-level aliases, so the `eval` prefix may be omitted: `agentkit eval dataset list` is equivalent to `agentkit dataset list`. The examples below use the shorter `agentkit dataset ...` form. All subcommands share `-p, --project <name>` (project name, default `default`) and `--json` (output raw JSON).
+These subcommands are also available as top-level aliases, so the `eval` prefix may be omitted: `agentkit eval dataset list` is equivalent to `agentkit dataset list`. The examples below use the shorter `agentkit dataset ...` form. All subcommands share `-p, --project <name>` (project name, default `default`) and `-r, --region <region>` (Volcengine region; default auto-detect, or from env for `create`). Most also accept `--json` (output raw JSON); `dataset delete` does not.
 </Note>
 
 ## dataset list

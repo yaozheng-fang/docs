@@ -13,10 +13,15 @@ Run the full deployment pipeline (config → build → apply). The top-level opt
 | `-n, --name <name>` | Runtime/app name (config). | — |
 | `-r, --region <region>` | Volcengine region (config). | — |
 | `-p, --project <name>` | AgentKit project (config). | — |
+| `--im-feishu` | Deploy a Feishu bot proxy to VeFaaS after the runtime deploy. | `false` |
+| `--im-feishu-app-id <id>` | Feishu app id for the proxy. | — |
+| `--im-feishu-app-secret <secret>` | Feishu app secret for the proxy. | — |
 
 ```bash
 agentkit deploy --name my-agent --region cn-beijing --project demo
 ```
+
+IM channels are normally configured in `agentkit.yaml` under the `im` block (both Feishu and WeCom); see [agentkit.yaml](/en/agentkit-cli/agentkit-yaml). The `--im-feishu*` flags are a convenience for deploying a Feishu proxy without editing the file.
 
 ## deploy config
 
@@ -25,8 +30,8 @@ Scaffold the `.agentkit/` directory, generating `agentkit.yaml` and a `Dockerfil
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `-n, --name <name>` | Runtime/app name. | — |
-| `-r, --region <region>` | Volcengine region. | — |
-| `-p, --project <name>` | AgentKit project. | — |
+| `-r, --region <region>` | Volcengine region. | cn-beijing |
+| `-p, --project <name>` | AgentKit project. | default |
 | `-f, --force` | Overwrite existing generated files. | `false` |
 
 ```bash

@@ -71,6 +71,13 @@ envs:
 #     enabled: true
 #     app_id: ${FEISHU_APP_ID}
 #     app_secret: ${FEISHU_APP_SECRET}
+#   wecom:
+#     enabled: true
+#     connection_mode: websocket
+#     bot_id: ${WECOM_BOT_ID}
+#     secret: ${WECOM_BOT_SECRET}
+#     websocket_url: ${WECOM_WEBSOCKET_URL:-wss://openws.work.weixin.qq.com}
+#     send_thinking_message: true
 
 # ── Frontend BFF (optional) ──────────────────────────────
 # Public VeFaaS front door: OAuth login at the edge, then reverse-proxy to the
@@ -167,13 +174,26 @@ All optional — specify the model the runtime uses and the platform resources i
 
 ## IM channels
 
-The `im` block deploys a bot proxy to VeFaaS after the runtime to connect a messaging channel. Provide credentials via `${VAR}`. Feishu is supported today:
+The `im` block deploys a bot proxy to VeFaaS after the runtime to connect a messaging channel. Provide credentials via `${VAR}`. Feishu and WeCom are supported; enable either or both.
+
+### Feishu
 
 | Field | Description |
 | --- | --- |
 | `im.feishu.enabled` | Whether to enable the Feishu channel. |
 | `im.feishu.app_id` | Feishu app App ID. |
 | `im.feishu.app_secret` | Feishu app App Secret. |
+
+### WeCom
+
+| Field | Description |
+| --- | --- |
+| `im.wecom.enabled` | Whether to enable the WeCom channel. |
+| `im.wecom.connection_mode` | Connection mode. `websocket` is the default and the only value supported today. |
+| `im.wecom.bot_id` | WeCom bot id. |
+| `im.wecom.secret` | WeCom bot secret. |
+| `im.wecom.websocket_url` | WeCom WebSocket endpoint. Defaults to `wss://openws.work.weixin.qq.com`. |
+| `im.wecom.send_thinking_message` | Whether to send an interim "thinking" message while the agent is working. Defaults to `true`. |
 
 ## Frontend
 

@@ -71,6 +71,13 @@ envs:
 #     enabled: true
 #     app_id: ${FEISHU_APP_ID}
 #     app_secret: ${FEISHU_APP_SECRET}
+#   wecom:
+#     enabled: true
+#     connection_mode: websocket
+#     bot_id: ${WECOM_BOT_ID}
+#     secret: ${WECOM_BOT_SECRET}
+#     websocket_url: ${WECOM_WEBSOCKET_URL:-wss://openws.work.weixin.qq.com}
+#     send_thinking_message: true
 
 # ── Frontend BFF (optional) ──────────────────────────────
 # Public VeFaaS front door: OAuth login at the edge, then reverse-proxy to the
@@ -167,13 +174,26 @@ envs:
 
 ## 消息渠道
 
-`im` 块用于在运行时之后向 VeFaaS 部署一个机器人代理，把消息渠道接入运行时。凭据用 `${VAR}` 提供。目前支持飞书：
+`im` 块用于在运行时之后向 VeFaaS 部署一个机器人代理，把消息渠道接入运行时。凭据用 `${VAR}` 提供。目前支持飞书与企业微信，可任选其一或同时启用。
+
+### 飞书
 
 | 字段 | 说明 |
 | --- | --- |
 | `im.feishu.enabled` | 是否启用飞书渠道。 |
 | `im.feishu.app_id` | 飞书应用 App ID。 |
 | `im.feishu.app_secret` | 飞书应用 App Secret。 |
+
+### 企业微信
+
+| 字段 | 说明 |
+| --- | --- |
+| `im.wecom.enabled` | 是否启用企业微信渠道。 |
+| `im.wecom.connection_mode` | 连接模式。`websocket` 为默认值，也是目前唯一支持的取值。 |
+| `im.wecom.bot_id` | 企业微信机器人 ID。 |
+| `im.wecom.secret` | 企业微信机器人密钥。 |
+| `im.wecom.websocket_url` | 企业微信 WebSocket 接入地址，默认 `wss://openws.work.weixin.qq.com`。 |
+| `im.wecom.send_thinking_message` | 智能体处理期间是否先发送一条“思考中”的过渡消息，默认 `true`。 |
 
 ## 前端
 

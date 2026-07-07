@@ -11,7 +11,7 @@ title: "管理记忆库"
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
-| `-p, --project <name>` | 项目名称。 | — |
+| `-p, --project <name>` | 项目名称。 | default |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
@@ -40,7 +40,7 @@ agentkit memory show m-12345678
 | --- | --- | --- |
 | `--name <name>` | 记忆库名称。 | — |
 | `--description <text>` | 描述。 | — |
-| `-p, --project <name>` | 项目名称。 | — |
+| `-p, --project <name>` | 项目名称。 | default |
 | `--provider-type <type>` | 提供方类型（`MEM0` \| `VIKINGDB_MEMORY`）。 | — |
 | `-r, --region <region>` | Volcengine 区域。 | 来自环境变量 |
 | `--json <jsonString>` | 合并进请求体的 JSON 对象（用于 `LongTermConfiguration`、`VpcConfig`、`Tags` 等嵌套字段）。 | — |

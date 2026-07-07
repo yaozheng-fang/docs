@@ -5,7 +5,7 @@ title: "管理评测集"
 `eval dataset` 命令组用于管理评测集：列出、查看、创建、删除评测集，以及为评测集增删用例。评测集是实验的数据来源，其字段（如 `input`、`reference_output`）会在 [`eval run`](/zh/agentkit-cli/commands/eval/run) 中被映射到目标与评估器。
 
 <Note>
-这些子命令同时提供顶层别名，`eval` 前缀可省略：`agentkit eval dataset list` 等价于 `agentkit dataset list`。下文示例使用较短的 `agentkit dataset ...` 形式。所有子命令共享 `-p, --project <name>`（项目名称，默认 `default`）与 `--json`（输出原始 JSON）。
+这些子命令同时提供顶层别名，`eval` 前缀可省略：`agentkit eval dataset list` 等价于 `agentkit dataset list`。下文示例使用较短的 `agentkit dataset ...` 形式。所有子命令共享 `-p, --project <name>`（项目名称，默认 `default`）与 `-r, --region <region>`（Volcengine 区域；默认自动检测，`create` 则来自环境变量）。多数子命令还支持 `--json`（输出原始 JSON），但 `dataset delete` 除外。
 </Note>
 
 ## dataset list
