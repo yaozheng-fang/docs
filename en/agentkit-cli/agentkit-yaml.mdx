@@ -73,11 +73,12 @@ envs:
 #     app_secret: ${FEISHU_APP_SECRET}
 #   wecom:
 #     enabled: true
-#     connection_mode: websocket
 #     bot_id: ${WECOM_BOT_ID}
-#     secret: ${WECOM_BOT_SECRET}
-#     websocket_url: ${WECOM_WEBSOCKET_URL:-wss://openws.work.weixin.qq.com}
-#     send_thinking_message: true
+#     bot_secret: ${WECOM_BOT_SECRET}
+#   dingtalk:
+#     enabled: true
+#     client_id: ${DINGTALK_CLIENT_ID}
+#     client_secret: ${DINGTALK_CLIENT_SECRET}
 
 # ── Frontend BFF (optional) ──────────────────────────────
 # Public VeFaaS front door: OAuth login at the edge, then reverse-proxy to the
@@ -174,7 +175,7 @@ All optional — specify the model the runtime uses and the platform resources i
 
 ## IM channels
 
-The `im` block deploys a bot proxy to VeFaaS after the runtime to connect a messaging channel. Provide credentials via `${VAR}`. Feishu and WeCom are supported; enable either or both.
+The `im` block deploys a bot proxy to VeFaaS after the runtime to connect a messaging channel. Provide credentials via `${VAR}`. Feishu, WeCom, and DingTalk are supported; enable any combination.
 
 ### Feishu
 
@@ -189,11 +190,18 @@ The `im` block deploys a bot proxy to VeFaaS after the runtime to connect a mess
 | Field | Description |
 | --- | --- |
 | `im.wecom.enabled` | Whether to enable the WeCom channel. |
-| `im.wecom.connection_mode` | Connection mode. `websocket` is the default and the only value supported today. |
 | `im.wecom.bot_id` | WeCom bot id. |
-| `im.wecom.secret` | WeCom bot secret. |
-| `im.wecom.websocket_url` | WeCom WebSocket endpoint. Defaults to `wss://openws.work.weixin.qq.com`. |
-| `im.wecom.send_thinking_message` | Whether to send an interim "thinking" message while the agent is working. Defaults to `true`. |
+| `im.wecom.bot_secret` | WeCom bot secret. |
+
+The WeCom proxy connects over WebSocket. The endpoint (`websocket_url`, default `wss://openws.work.weixin.qq.com`) and whether to send an interim "thinking" message (`send_thinking_message`, default `true`) can also be set but are rarely needed.
+
+### DingTalk
+
+| Field | Description |
+| --- | --- |
+| `im.dingtalk.enabled` | Whether to enable the DingTalk channel. |
+| `im.dingtalk.client_id` | DingTalk app Client ID (AppKey). |
+| `im.dingtalk.client_secret` | DingTalk app Client Secret (AppSecret). |
 
 ## Frontend
 

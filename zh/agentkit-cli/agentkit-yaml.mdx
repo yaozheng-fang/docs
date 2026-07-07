@@ -73,11 +73,12 @@ envs:
 #     app_secret: ${FEISHU_APP_SECRET}
 #   wecom:
 #     enabled: true
-#     connection_mode: websocket
 #     bot_id: ${WECOM_BOT_ID}
-#     secret: ${WECOM_BOT_SECRET}
-#     websocket_url: ${WECOM_WEBSOCKET_URL:-wss://openws.work.weixin.qq.com}
-#     send_thinking_message: true
+#     bot_secret: ${WECOM_BOT_SECRET}
+#   dingtalk:
+#     enabled: true
+#     client_id: ${DINGTALK_CLIENT_ID}
+#     client_secret: ${DINGTALK_CLIENT_SECRET}
 
 # ── Frontend BFF (optional) ──────────────────────────────
 # Public VeFaaS front door: OAuth login at the edge, then reverse-proxy to the
@@ -174,7 +175,7 @@ envs:
 
 ## 消息渠道
 
-`im` 块用于在运行时之后向 VeFaaS 部署一个机器人代理，把消息渠道接入运行时。凭据用 `${VAR}` 提供。目前支持飞书与企业微信，可任选其一或同时启用。
+`im` 块用于在运行时之后向 VeFaaS 部署一个机器人代理，把消息渠道接入运行时。凭据用 `${VAR}` 提供。目前支持飞书、企业微信与钉钉，可任意组合启用。
 
 ### 飞书
 
@@ -189,11 +190,18 @@ envs:
 | 字段 | 说明 |
 | --- | --- |
 | `im.wecom.enabled` | 是否启用企业微信渠道。 |
-| `im.wecom.connection_mode` | 连接模式。`websocket` 为默认值，也是目前唯一支持的取值。 |
 | `im.wecom.bot_id` | 企业微信机器人 ID。 |
-| `im.wecom.secret` | 企业微信机器人密钥。 |
-| `im.wecom.websocket_url` | 企业微信 WebSocket 接入地址，默认 `wss://openws.work.weixin.qq.com`。 |
-| `im.wecom.send_thinking_message` | 智能体处理期间是否先发送一条“思考中”的过渡消息，默认 `true`。 |
+| `im.wecom.bot_secret` | 企业微信机器人密钥。 |
+
+企业微信代理通过 WebSocket 连接。接入地址（`websocket_url`，默认 `wss://openws.work.weixin.qq.com`）以及是否发送“思考中”过渡消息（`send_thinking_message`，默认 `true`）也可设置，但通常无需改动。
+
+### 钉钉
+
+| 字段 | 说明 |
+| --- | --- |
+| `im.dingtalk.enabled` | 是否启用钉钉渠道。 |
+| `im.dingtalk.client_id` | 钉钉应用 Client ID（AppKey）。 |
+| `im.dingtalk.client_secret` | 钉钉应用 Client Secret（AppSecret）。 |
 
 ## 前端
 
