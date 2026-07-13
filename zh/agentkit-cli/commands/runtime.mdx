@@ -81,6 +81,20 @@ agentkit destroy my-agent --yes
 agentkit runtime logs my-agent --limit 200
 ```
 
+## runtime attach
+
+进入运行时某个运行中实例的交互式终端，与控制台的实例终端一致。按 Ctrl-] 脱离，脱离后实例继续运行。当运行时已缩容至零、没有实例时，会先自动拉起一个实例再接入；使用 `custom_jwt` 鉴权的运行时无法在缺少 token 时自动拉起，请先 `agentkit invoke` 一次。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
+| `-i, --instance <name>` | 要接入的实例；省略时选用一个就绪实例，存在多个时会提示选择。 | 自动解析 |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+
+```bash
+agentkit runtime attach my-agent
+```
+
 ## runtime versions
 
 列出运行时的版本历史。

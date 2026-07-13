@@ -190,6 +190,7 @@
                   "zh/agentkit-cli/commands/init",
                   "zh/agentkit-cli/commands/deploy",
                   "zh/agentkit-cli/commands/invoke",
+                  "zh/agentkit-cli/commands/migrate",
                   {
                     "group": "评测",
                     "pages": [
@@ -403,6 +404,7 @@
                   "en/agentkit-cli/commands/init",
                   "en/agentkit-cli/commands/deploy",
                   "en/agentkit-cli/commands/invoke",
+                  "en/agentkit-cli/commands/migrate",
                   {
                     "group": "Evaluation",
                     "pages": [

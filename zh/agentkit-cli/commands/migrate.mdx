@@ -1,0 +1,39 @@
+---
+title: "迁移已有智能体"
+---
+
+`migrate` 命令将已有的 LangChain、LangGraph 或 ADK 智能体封装为 AgentKit 应用：生成通过 AgentKit 智能体服务对外提供服务所需的文件，而无需重写原有智能体。命令会打印本次迁移计划——新建或更新的文件、依赖变更、以及可能的告警——便于在部署前审阅。加 `--dry-run` 只打印计划、不写入任何文件。
+
+## migrate
+
+将已有智能体封装为 AgentKit 应用。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[project-dir]` | 源项目目录。 | 当前目录 |
+| `--framework <name>` | 源框架：`langchain` \| `langgraph` \| `adk`。必填。 | — |
+| `--entry <file.py:object>` | 要封装的 Python 对象，例如 `agent.py:agent`。必填。 | — |
+| `-n, --name <name>` | AgentKit 应用名称。 | 项目目录名 |
+| `-o, --output <dir>` | 生成文件的写入目录。 | 项目根目录 |
+| `--input-key <key>` | 读取用户输入所用的自定义 LangChain dict / LangGraph state 字段；标准 LangGraph messages 可省略。 | — |
+| `--compat <profile>` | 额外暴露服务兼容路由：`none` \| `langserve` \| `fastapi-mount` \| `langgraph-agent-server`。 | `none` |
+| `--compat-prefix <path>` | 将兼容路由挂载到此路径。 | 取决于所选 profile |
+| `--legacy-app <file.py:app>` | 要挂载的已有 FastAPI 应用；仅在 `--compat fastapi-mount` 时有效。 | — |
+| `--dry-run` | 只显示迁移计划，不写入任何文件。 | `false` |
+| `-f, --force` | 生成文件已存在时覆盖。 | `false` |
+| `--json` | 以 JSON 打印迁移计划。 | `false` |
+
+```bash
+# LangChain 智能体 → AgentKit 应用
+agentkit migrate . --framework langchain --entry agent.py:agent --name support-agent
+
+# 仅预览计划，不写入任何文件
+agentkit migrate . --framework langgraph --entry graph.py:agent --input-key question --dry-run
+
+# 在 AgentKit 应用之外继续保留已有的 LangServe 或 FastAPI 服务
+agentkit migrate . --framework langchain --entry agent.py:agent --compat langserve
+agentkit migrate . --framework langchain --entry agent.py:agent --compat fastapi-mount --legacy-app api.py:app
+
+# ADK 智能体
+agentkit migrate . --framework adk --entry agent.py:root_agent
+```

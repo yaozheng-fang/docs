@@ -1,0 +1,39 @@
+---
+title: "Migrate an existing agent"
+---
+
+The `migrate` command wraps an existing LangChain, LangGraph, or ADK agent as an AgentKit app: it generates the files needed to serve the agent through AgentKit's agent server, without rewriting the agent itself. The command prints the migration plan — the files it creates or updates, the dependency changes it makes, and any warnings — so the result is reviewable before deploying. Add `--dry-run` to print the plan without writing any files.
+
+## migrate
+
+Wrap an existing agent as an AgentKit app.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[project-dir]` | Source project directory. | current directory |
+| `--framework <name>` | Source framework: `langchain` \| `langgraph` \| `adk`. Required. | — |
+| `--entry <file.py:object>` | Python object to wrap, e.g. `agent.py:agent`. Required. | — |
+| `-n, --name <name>` | AgentKit app name. | project directory name |
+| `-o, --output <dir>` | Directory to write generated files into. | project root |
+| `--input-key <key>` | Custom LangChain dict / LangGraph state field to read the user input from; omit for standard LangGraph messages. | — |
+| `--compat <profile>` | Also expose compatibility serving routes: `none` \| `langserve` \| `fastapi-mount` \| `langgraph-agent-server`. | `none` |
+| `--compat-prefix <path>` | Mount the compatibility routes at this path. | depends on profile |
+| `--legacy-app <file.py:app>` | Existing FastAPI app to mount; only valid with `--compat fastapi-mount`. | — |
+| `--dry-run` | Show the migration plan without writing any files. | `false` |
+| `-f, --force` | Overwrite generated files when they already exist. | `false` |
+| `--json` | Print the migration plan as JSON. | `false` |
+
+```bash
+# LangChain agent → AgentKit app
+agentkit migrate . --framework langchain --entry agent.py:agent --name support-agent
+
+# Preview the plan only, writing nothing
+agentkit migrate . --framework langgraph --entry graph.py:agent --input-key question --dry-run
+
+# Keep an existing LangServe or FastAPI surface alongside the AgentKit app
+agentkit migrate . --framework langchain --entry agent.py:agent --compat langserve
+agentkit migrate . --framework langchain --entry agent.py:agent --compat fastapi-mount --legacy-app api.py:app
+
+# ADK agent
+agentkit migrate . --framework adk --entry agent.py:root_agent
+```
