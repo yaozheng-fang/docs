@@ -35,9 +35,12 @@ flowchart LR
         app_secret: ${FEISHU_APP_SECRET}
     ```
   </Step>
-  <Step title="Export the environment variables">
-    ```bash
-    export FEISHU_APP_ID=... FEISHU_APP_SECRET=...
+  <Step title="Fill in the environment variables">
+    Put the values in `.env` — the CLI loads it automatically on deploy:
+
+    ```bash .env
+    FEISHU_APP_ID=...
+    FEISHU_APP_SECRET=...
     ```
   </Step>
   <Step title="Deploy">

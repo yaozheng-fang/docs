@@ -12,14 +12,14 @@ Before you start, make sure your Volcengine access keys are configured — the `
 ## End-to-end flow
 
 <Steps>
-  <Step title="Create a sandbox tool">
-    A sandbox is a `code` tool. If the project does not have one yet, create it first:
+  <Step title="Create a sandbox">
+    A sandbox is a `code` environment. If the project does not have one yet, create it first:
 
     ```bash
-    agentkit tool create --tool-type code --name dev-sandbox
+    agentkit sandbox create --type code --name dev-sandbox
     ```
 
-    The command returns the tool id. Later sandbox commands resolve the `code` tool within the project automatically: the sole one is used when there is exactly one, and `--tool-id` is required when there are several (find it with `agentkit tool list`). You can also skip this step and add `--auto-create` on the first sandbox command to create one on the fly.
+    The command returns the sandbox id. Later sandbox commands resolve the `code` sandbox within the project automatically: the sole one is used when there is exactly one, and `--tool-id` is required when there are several (find it with `agentkit sandbox list`). You can also skip this step and add `--auto-create` on the first sandbox command to create one on the fly.
   </Step>
 
   <Step title="Develop with Codex inside the sandbox">
@@ -88,5 +88,5 @@ agentkit sandbox run "codex exec 'add unit tests to the project'" --session dev
 ## Practical guidance
 
 - **Reuse the same session**: keep a fixed `--session` name throughout a development session to preserve the environment and progress; use `agentkit sandbox sessions` to list active sessions and `agentkit sandbox logs <session>` to troubleshoot.
-- **Name the sandbox tool explicitly**: when the project has more than one `code` tool, commands require an explicit `--tool-id`; find the target id with `agentkit tool list` first.
+- **Name the sandbox explicitly**: when the project has more than one `code` sandbox, commands require an explicit `--tool-id`; find the target id with `agentkit sandbox list` first.
 - **Use `--tmux` for long tasks**: for interactive development, add `--tmux` so a network drop does not lose the session.

@@ -3,13 +3,102 @@ title: "使用沙箱"
 tag: "NEW"
 ---
 
-`sandbox` 命令组用于操作沙箱：在沙箱会话中运行命令、打开交互式终端、传输文件、预览 Web、注入订阅凭据，以及管理会话。一个沙箱本质上是一个 `code` 类型的工具。
+沙箱是一个隔离的 `code` 或 `skill` 环境。`sandbox` 命令组既管理沙箱的完整生命周期——创建、列出、查看、更新、删除——也提供对沙箱的操作：在会话中运行命令、打开交互式终端、传输文件、预览 Web、注入订阅凭据，以及管理会话。
 
 <Note>
-各子命令共有一组会话与工具相关标志：`-s, --session <id>`（会话 ID，存在则复用，否则新建）、`--tool-id <id>`（沙箱工具 ID）、`--type <type>`（沙箱类型 `code` \| `skill`，默认 `code`）、`--auto-create`（始终新建一个沙箱工具，即使项目内已有）、`-r, --region <region>`（Volcengine 区域）、`-p, --project <name>`（AgentKit 项目，默认 `default`）。下方表格逐命令完整列出。
+操作类子命令（run / attach / cp / web / login / sessions / logs / rm）共有一组会话与沙箱相关标志：`-s, --session <id>`（会话 ID，存在则复用，否则新建）、`--tool-id <id>`（沙箱 ID）、`--type <type>`（沙箱类型 `code` \| `skill`，默认 `code`）、`--auto-create`（始终新建一个沙箱，即使项目内已有）、`-r, --region <region>`（Volcengine 区域）、`-p, --project <name>`（AgentKit 项目，默认 `default`）。下方表格逐命令完整列出。
 
-未传 `--tool-id` 且未加 `--auto-create` 时，CLI 会在项目内查找该类型的沙箱工具：**恰好一个时自动选用；存在多个时命令会失败并要求显式传入 `--tool-id`**；一个都没有时需加 `--auto-create`。加上 `--auto-create` 则始终新建一个全新工具——即使项目内已有——并等待其就绪后再使用。项目内已有多个 `code` 工具属常见情况，此时务必用 `agentkit tool list` 查到目标 ID 后通过 `--tool-id` 指定。
+未传 `--tool-id` 且未加 `--auto-create` 时，CLI 会在项目内查找该类型的沙箱：**恰好一个时自动选用；存在多个时命令会失败并要求显式传入 `--tool-id`**；一个都没有时需加 `--auto-create`。加上 `--auto-create` 则始终新建一个全新沙箱——即使项目内已有——并等待其就绪后再使用。项目内已有多个 `code` 沙箱属常见情况，此时可用 `agentkit sandbox list` 查到目标 ID 后通过 `--tool-id` 指定。
 </Note>
+
+## sandbox create
+
+创建一个沙箱（`code` 或 `skill` 环境）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--name <name>` | 沙箱名称（必填）。 | — |
+| `--type <type>` | 沙箱类型：`code` \| `skill`。 | `code` |
+| `-r, --region <region>` | Volcengine 区域。 | 取自环境 |
+| `--description <text>` | 描述。 | — |
+| `--command <command>` | 容器启动命令。 | — |
+| `--image-url <url>` | 容器镜像地址。 | — |
+| `--port <port>` | 容器端口。 | — |
+| `-p, --project <name>` | 项目名。 | `default` |
+| `--role-name <role>` | IAM 角色名。 | — |
+| `--apmplus` | 启用 APMPlus。 | — |
+| `--cpu <milli>` | CPU（毫核）。 | — |
+| `--memory <mb>` | 内存（MB）。 | — |
+| `--enable-security` | 启用安全沙箱。 | — |
+| `--enable-tos` | 将 TOS 挂载进沙箱。 | — |
+| `--env <KEY=VALUE>` | 环境变量（可重复）。 | — |
+| `--json <jsonString>` | 以 JSON 对象形式提供的额外字段，合并进请求体。 | — |
+
+```bash
+agentkit sandbox create --name dev-sandbox --type code --cpu 1000 --memory 2048
+```
+
+## sandbox list
+
+列出项目内的沙箱（`code` 与 `skill` 环境）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
+| `-p, --project <name>` | 项目名。 | `default` |
+| `--type <type>` | 按沙箱类型过滤：`code` \| `skill`。 | — |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit sandbox list --type code
+```
+
+## sandbox show
+
+查看某个沙箱的详情。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 沙箱 ID，如 `t-xxxxxxxx`（必填）。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit sandbox show t-12345678
+```
+
+## sandbox update
+
+更新某个沙箱的配置。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 沙箱 ID，如 `t-xxxxxxxx`（必填）。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
+| `--description <text>` | 描述。 | — |
+| `--command <command>` | 容器启动命令。 | — |
+| `--image-url <url>` | 容器镜像地址。 | — |
+| `--port <port>` | 容器端口。 | — |
+| `--apmplus` | 启用 APMPlus。 | — |
+| `--json <jsonString>` | 以 JSON 对象形式提供的额外字段，合并进请求体。 | — |
+
+```bash
+agentkit sandbox update t-12345678 --description "开发沙箱" --port 9090
+```
+
+## sandbox delete
+
+删除一个沙箱——即环境本身。若只需删除单个会话，请改用 [`sandbox rm`](#sandbox-rm)。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 沙箱 ID，如 `t-xxxxxxxx`（必填）。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
+| `-y, --yes` | 跳过确认提示。 | `false` |
+
+```bash
+agentkit sandbox delete t-12345678 --yes
+```
 
 ## sandbox run
 
@@ -27,9 +116,9 @@ tag: "NEW"
 | `--memory <mb>` | `--auto-create` 时的内存（MB） | 无 |
 | `--timeout <seconds>` | 命令中止前的最长等待秒数；`0` 表示不限制 | `30` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
+| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -54,9 +143,9 @@ agentkit sandbox run "ls -la" --session my-session
 | `--model-api-key <key>` | 模型 API key | 无 |
 | `--model-provider <provider>` | 模型提供方 | 无 |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
+| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -74,9 +163,9 @@ agentkit sandbox attach --tmux --session my-session
 | `<dst>` | 目标路径（远端一侧以 `:` 前缀，必填） | 无 |
 | `--overwrite` | 下载时覆盖已存在的本地文件 | `false` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
+| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -92,9 +181,9 @@ agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
 | --- | --- | --- |
 | `--no-open` | 仅打印 URL，不打开浏览器 | `false` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
+| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -112,9 +201,9 @@ agentkit sandbox web --session my-session
 | `--auth-file <path>` | 使用指定的本地凭据文件 | 无 |
 | `--codex-home <dir>` | 本地 codex home | `$CODEX_HOME` 或 `~/.codex` |
 | `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱工具，即使项目内已有 | `false` |
+| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
@@ -128,7 +217,7 @@ agentkit sandbox login --provider claude --session my-session
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
@@ -145,7 +234,7 @@ agentkit sandbox sessions
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `[session]` | 会话 ID | 无 |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
 | `--tail <n>` | 最大日志行数 | 无 |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
@@ -158,14 +247,14 @@ agentkit sandbox logs my-session --tail 100
 
 ## sandbox rm
 
-停止并删除一个沙箱会话（或使用 `--all` 删除全部）。
+停止并删除一个沙箱会话（或使用 `--all` 删除全部）。若要删除沙箱环境本身，请使用 [`sandbox delete`](#sandbox-delete)。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `[session]` | 会话 ID | 无 |
-| `--tool-id <id>` | 沙箱工具 ID。省略时自动解析：项目内该类型工具唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
+| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
 | `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--all` | 删除该工具上的所有会话 | `false` |
+| `--all` | 删除该沙箱上的所有会话 | `false` |
 | `-y, --yes` | 跳过确认 | `false` |
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |

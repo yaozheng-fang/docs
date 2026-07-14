@@ -11,6 +11,8 @@ Secrets are not written in plaintext; instead, reference the deploy environment 
 - `${VAR:?message}` — required; fail with `message` when unset;
 - `$$` — a literal `$`.
 
+The CLI loads the project's `.env` (from the working directory) before resolving these, so it is enough to put the values in `.env` — no manual `export` is needed. Variables already set in your shell take precedence, and `.env` is never uploaded to the runtime.
+
 ## Full example
 
 ```yaml .agentkit/agentkit.yaml

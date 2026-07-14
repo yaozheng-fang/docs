@@ -32,9 +32,12 @@ flowchart LR
         client_id: ${USERPOOL_CLIENT_ID}
     ```
   </Step>
-  <Step title="导出环境变量">
-    ```bash
-    export USERPOOL_ID=... USERPOOL_CLIENT_ID=...
+  <Step title="填写环境变量">
+    将取值写入 `.env`，部署时 CLI 会自动加载：
+
+    ```bash .env
+    USERPOOL_ID=...
+    USERPOOL_CLIENT_ID=...
     ```
   </Step>
   <Step title="部署">

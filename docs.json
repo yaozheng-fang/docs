@@ -189,6 +189,7 @@
                   "zh/agentkit-cli/commands",
                   "zh/agentkit-cli/commands/init",
                   "zh/agentkit-cli/commands/deploy",
+                  "zh/agentkit-cli/commands/destroy",
                   "zh/agentkit-cli/commands/invoke",
                   "zh/agentkit-cli/commands/migrate",
                   {
@@ -203,7 +204,6 @@
                   "zh/agentkit-cli/commands/runtime",
                   "zh/agentkit-cli/commands/knowledge",
                   "zh/agentkit-cli/commands/memory",
-                  "zh/agentkit-cli/commands/tool",
                   "zh/agentkit-cli/commands/sandbox",
                   "zh/agentkit-cli/commands/skill",
                   "zh/agentkit-cli/commands/harness",
@@ -403,6 +403,7 @@
                   "en/agentkit-cli/commands",
                   "en/agentkit-cli/commands/init",
                   "en/agentkit-cli/commands/deploy",
+                  "en/agentkit-cli/commands/destroy",
                   "en/agentkit-cli/commands/invoke",
                   "en/agentkit-cli/commands/migrate",
                   {
@@ -417,7 +418,6 @@
                   "en/agentkit-cli/commands/runtime",
                   "en/agentkit-cli/commands/knowledge",
                   "en/agentkit-cli/commands/memory",
-                  "en/agentkit-cli/commands/tool",
                   "en/agentkit-cli/commands/sandbox",
                   "en/agentkit-cli/commands/skill",
                   "en/agentkit-cli/commands/harness",

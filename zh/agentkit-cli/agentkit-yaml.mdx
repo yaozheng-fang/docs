@@ -11,6 +11,8 @@ title: "agentkit.yaml"
 - `${VAR:?message}` —— 必填，未设置时以 `message` 报错；
 - `$$` —— 表示字面量 `$`。
 
+CLI 在解析前会先加载项目目录下的 `.env`，因此把取值写入 `.env` 即可，无需手动 `export`。已在 shell 中设置的变量优先级更高；`.env` 不会被上传到运行时。
+
 ## 完整示例
 
 ```yaml .agentkit/agentkit.yaml

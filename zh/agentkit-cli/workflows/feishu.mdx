@@ -35,9 +35,12 @@ flowchart LR
         app_secret: ${FEISHU_APP_SECRET}
     ```
   </Step>
-  <Step title="导出环境变量">
-    ```bash
-    export FEISHU_APP_ID=... FEISHU_APP_SECRET=...
+  <Step title="填写环境变量">
+    将取值写入 `.env`，部署时 CLI 会自动加载：
+
+    ```bash .env
+    FEISHU_APP_ID=...
+    FEISHU_APP_SECRET=...
     ```
   </Step>
   <Step title="部署">

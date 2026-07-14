@@ -32,9 +32,12 @@ flowchart LR
         client_id: ${USERPOOL_CLIENT_ID}
     ```
   </Step>
-  <Step title="Export the environment variables">
-    ```bash
-    export USERPOOL_ID=... USERPOOL_CLIENT_ID=...
+  <Step title="Fill in the environment variables">
+    Put the values in `.env` — the CLI loads it automatically on deploy:
+
+    ```bash .env
+    USERPOOL_ID=...
+    USERPOOL_CLIENT_ID=...
     ```
   </Step>
   <Step title="Deploy">
