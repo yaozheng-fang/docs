@@ -1,0 +1,45 @@
+/* =========================================================================
+   AgentKit docs — navbar customizations
+   Uses Mintlify's official custom-CSS mechanism (any .css in the content dir
+   is auto-injected). Targets Mintlify internal selectors, which the docs note
+   are "subject to change" — may need small adjustments on major upgrades.
+   ========================================================================= */
+
+/* 1) Reorder the top switchers to:  Logo / Product / Version / Language.
+   The topbar left area is a flex row: [logo] [box: Version, Language] [Product].
+   Push the Version/Language box to AFTER the Product button (order:1) while the
+   logo (order:0, first in DOM) and Product (order:0) keep their spots — giving
+   logo, product, version, language. */
+div:has(> #localization-select-trigger) {
+  order: 1;
+}
+
+/* 2) Move the search box to the far right of the navbar, just left of the
+   theme-toggle icon. The search section is normally a centered flex-1 block;
+   make it compact and give it margin-left:auto so it (and the theme toggle
+   that follows it in the DOM) are pushed to the right edge. */
+div:has(> #search-bar-entry) {
+  flex: 0 0 auto;
+  width: 16rem;
+  margin-left: auto;
+}
+#search-bar-entry {
+  width: 16rem;
+}
+
+/* The theme-toggle section is the sibling right after the search section.
+   Cancel its own auto-margin/grow so it sits snug against the search box
+   instead of leaving a gap. */
+div:has(> #search-bar-entry) + div {
+  flex: 0 0 auto;
+  margin-left: 0;
+}
+
+/* 3) Lock the navbar logo to a consistent size across products / route changes.
+   The logo SVG has an intrinsic 150x28 size; pin height (h-7 = 1.75rem) and let
+   width scale, so switching products can never flash a differently-sized logo. */
+.nav-logo {
+  height: 1.75rem !important;
+  width: auto !important;
+  max-height: 1.75rem;
+}
