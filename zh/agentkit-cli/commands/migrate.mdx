@@ -1,6 +1,5 @@
 ---
 title: "迁移已有智能体"
-description: "将 LangChain、LangGraph、ADK、Strands 或 Bedrock AgentCore 应用迁移为 AgentKit 应用。"
 ---
 
 `migrate` 命令将已有的 LangChain、LangGraph、ADK、Strands 或 Bedrock AgentCore 智能体封装为 AgentKit 应用：生成通过 AgentKit 智能体服务对外提供服务所需的文件，而无需重写原有智能体。命令会打印本次迁移计划——新建或更新的文件、依赖变更以及可能的告警——便于在部署前审阅。加 `--dry-run` 只打印计划、不写入任何文件。

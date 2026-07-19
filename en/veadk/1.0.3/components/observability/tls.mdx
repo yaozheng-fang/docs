@@ -1,0 +1,108 @@
+---
+title: "TLS log service"
+---
+
+`TLSExporter` reports span data to the Volcengine TLS log service over OTLP (HTTP). Data is organized by TLS topic, which suits centralized storage, long-term retention, and cross-service trace analysis.
+
+## When to use
+
+- You want your agent's execution traces stored centrally in the Volcengine TLS log service;
+- You need long-term retention and compliance/audit trails for trace data;
+- You want to observe traces with TLS alerting and analysis capabilities.
+
+## Usage
+
+Connecting to TLS is usually two steps: create a log project and tracing instance with the `VeTLS` client, then report data with `TLSExporter`.
+
+```python
+import asyncio
+from os import getenv
+
+from veadk import Agent, Runner
+from veadk.integrations.ve_tls.ve_tls import VeTLS
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.demo_tools import get_city_weather
+from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter, TLSExporterConfig
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+# Create a log project and tracing instance
+ve_tls_client = VeTLS()
+log_project_id = ve_tls_client.create_log_project("veadk_demo")
+
+trace_instance_name = getenv("OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME")
+trace_instance = ve_tls_client.create_tracing_instance(
+    log_project_id, trace_instance_name
+)
+
+# Report tracing data with TLSExporter
+tls_exporter = TLSExporter(
+    config=TLSExporterConfig(
+        topic_id=trace_instance.get("TraceTopicId", trace_instance_name),
+    )
+)
+tracer = OpentelemetryTracer(exporters=[tls_exporter])
+
+agent = Agent(tools=[get_city_weather], tracers=[tracer])
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="session_id_demo"))
+```
+
+When `config` is omitted, `topic_id` fetches the tracing topic ID automatically by default:
+
+```python
+from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
+
+exporter = TLSExporter()
+```
+
+## Parameters
+
+### Constructor parameters
+
+`TLSExporter` carries its connection parameters in the `config` field of type `TLSExporterConfig`; when omitted, each field is read automatically from the corresponding environment variable.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `config` | `TLSExporterConfig` | Read from environment variables | TLS connection and authentication config. |
+| `resource_attributes` | `dict` | `{}` | Resource attributes attached to spans. |
+| `headers` | `dict` | `{}` | Extra request headers; the exporter merges in the TLS auth headers for topic, credentials, and region automatically. |
+
+### TLS connection config
+
+`config` is a `TLSExporterConfig`; each field defaults from `TLSConfig` and Volcengine credentials, with the following environment variables:
+
+| Config | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `endpoint` | `OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT` | `str` | `https://tls-cn-beijing.volces.com:4318/v1/traces` | TLS OTLP endpoint (HTTP). |
+| `region` | `OBSERVABILITY_OPENTELEMETRY_TLS_REGION` | `str` | `cn-beijing` | Region where the TLS service is deployed. |
+| `topic_id` | `OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME` | `str` | Fetches the tracing topic ID automatically when unset | TLS tracing topic ID for organizing log data. |
+| `access_key` | `VOLCENGINE_ACCESS_KEY` | `str` | Read from Volcengine credentials | Volcengine access key. |
+| `secret_key` | `VOLCENGINE_SECRET_KEY` | `str` | Read from Volcengine credentials | Volcengine secret key. |
+
+<Note>
+When `topic_id` is not provided via `OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME`, the exporter calls `VeTLS` to fetch the tracing topic ID automatically, so valid Volcengine credentials (`VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`) are required.
+</Note>
+
+## Environment variables
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT="https://tls-cn-beijing.volces.com:4318/v1/traces"
+export OBSERVABILITY_OPENTELEMETRY_TLS_REGION="cn-beijing"
+export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME="your-tls-trace-topic"
+
+# Volcengine credentials
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+```
+
+You can also let `Agent` attach the TLS exporter automatically from an environment variable, without constructing it explicitly:
+
+```bash
+export ENABLE_TLS=true
+```
+
+<Tip>
+With `ENABLE_TLS=true`, `Agent` creates an `OpentelemetryTracer` and attaches `TLSExporter` automatically, even when the agent provides no `tracers`.
+</Tip>

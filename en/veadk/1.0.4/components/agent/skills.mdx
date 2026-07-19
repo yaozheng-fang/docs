@@ -1,0 +1,128 @@
+---
+title: "Skills"
+---
+
+A skill is a reusable prompt package that injects specific domain knowledge,
+procedures, and scripts into an agent. Skills are Google ADK–compatible: load
+local skills through ADK's `SkillToolset`, and connect cloud skill spaces
+through VeADK's `VeSkillRegistry`.
+
+## Local skills
+
+Load a local skill directory with ADK's `load_skill_from_dir` and pass it as a
+standard toolset to the agent:
+
+```python
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent
+
+skill = load_skill_from_dir("/abs/path/to/skills/kb-skill")
+agent = Agent(tools=[SkillToolset(skills=[skill])])
+```
+
+Skill loading, prompt injection, and tool exposure are all handled by ADK; the
+tools visible to the model include `list_skills`, `load_skill`,
+`load_skill_resource`, and `run_skill_script`. If a skill runs scripts from
+`scripts/`, configure a suitable `code_executor` on the `SkillToolset` or the
+agent — VeADK does not create a local code executor by default.
+
+## Cloud skill spaces
+
+Connect a cloud skill space through `VeSkillRegistry`, then hand it to
+`SkillToolset`:
+
+```python
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent
+from veadk.skills import VeSkillRegistry
+
+registry = VeSkillRegistry(skill_source_id=skill_space_id)
+agent = Agent(tools=[SkillToolset(registry=registry)])
+```
+
+This does not download every skill up front: `search_skills` fetches the remote
+skill list in real time, and `get_skill` downloads and loads a specific skill on
+demand; when the remote version changes, the new version is re-downloaded.
+
+## Harness skills center
+
+In VeADK 1.0.4, Harness can load both Skill Hub skills and AgentKit skills-center spaces. A plain name or slug in `skills` identifies a Skill Hub skill; the `space:` prefix identifies a skills-center space ID.
+
+The skills center requires Volcengine credentials that can read the space and its object-storage content. For local runs, set `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`, plus `VOLCENGINE_SESSION_TOKEN` for temporary credentials. On VeFaaS, the bound IAM role can provide temporary credentials instead.
+
+```bash
+cd my-harness
+veadk harness add \
+  --skills "data-visualization-cloud,space:ss-example"
+```
+
+The resulting `harness.yaml` stores the sources as a list:
+
+```yaml
+skills:
+  - data-visualization-cloud
+  - space:ss-example
+```
+
+Harness downloads and loads the base skills during startup. `space:ss-example` loads every skill in that space and combines them with Skill Hub skills in one `SkillToolset`. You can also add a space for one invocation:
+
+```bash
+veadk harness invoke \
+  --name research-agent \
+  --message "Prepare a research report" \
+  --skills "space:ss-example"
+```
+
+Invocation-level `--skills` adds skills on top of the base Harness configuration without changing `harness.yaml`. If any skill cannot be downloaded, lacks a valid `SKILL.md`, or violates the ADK skill format, Harness stops that load instead of continuing with a partial skill set.
+
+## Skill directory layout
+
+A local skill is a directory containing a `SKILL.md` file, and may include
+`references/`, `assets/`, and `scripts/` subdirectories:
+
+```
+skills/
+└── kb-skill/
+    ├── SKILL.md
+    ├── references/
+    ├── assets/
+    └── scripts/
+```
+
+`SKILL.md` must declare `name` and `description` in frontmatter, and the
+directory name must match `name`:
+
+```markdown SKILL.md
+---
+name: kb-skill
+description: A skill that queries the knowledge base and composes an answer.
+---
+
+Body...
+```
+
+## Legacy local entry (deprecated)
+
+VeADK's old `Agent(skills=..., skills_mode="local")` local entry still works but
+is deprecated; migrate to `SkillToolset` above. The `skills_sandbox` and
+`aio_sandbox` modes are unaffected and used as before:
+
+| Mode | Description |
+| --- | --- |
+| `local` | Deprecated. Loads local skills via VeADK's old path; migrate to ADK `SkillToolset`. |
+| `skills_sandbox` | Skill hosted in a cloud skill space, executed in a sandbox via the `execute_skills` tool. |
+| `aio_sandbox` | All-in-one sandbox mode, for AgentKit-hosted tool runtimes. |
+
+Sandbox mode example:
+
+```python
+from veadk import Agent
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+agent = Agent(
+    skills=[skill_space_id],
+    skills_mode="skills_sandbox",
+    tools=[execute_skills],
+)
+```

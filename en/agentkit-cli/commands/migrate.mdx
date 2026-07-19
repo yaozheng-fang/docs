@@ -1,6 +1,5 @@
 ---
 title: "Migrate an existing agent"
-description: "Migrate a LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore application to AgentKit."
 ---
 
 The `migrate` command wraps an existing LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore agent as an AgentKit app. It generates the files needed to serve the agent through AgentKit's agent server without rewriting the agent itself. The command prints the migration plan—the files it creates or updates, dependency changes, and warnings—so you can review the result before deployment. Add `--dry-run` to print the plan without writing any files.

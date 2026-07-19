@@ -1,0 +1,71 @@
+---
+title: "Web search"
+tag: "Function tool"
+---
+
+## Overview
+
+Tool identifier `web_search`.
+
+`web_search` lets the agent run web-wide searches via the Unified Information Search API. See the [API docs](https://www.volcengine.com/docs/85508/1650263).
+
+Import path: `from veadk.tools.builtin_tools.web_search import web_search`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure Volcengine AK / SK, or use a temporary StsToken issued via Volcengine IAM.
+2. Configure the API key for the agent's reasoning model.
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `VOLCENGINE_ACCESS_KEY`: Volcengine AccessKey
+- `VOLCENGINE_SECRET_KEY`: Volcengine SecretKey
+
+Or configure in `config.yaml`:
+
+```yaml title="config.yaml"
+model:
+  agent:
+    provider: openai
+    name: doubao-seed-1-8-251228
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: your-api-key-here
+volcengine:
+  # used by Viking DB, web_search, and other tools
+  access_key: your-access-key-here
+  secret_key: your-secret-key-here
+```
+
+## Usage
+
+```python title="examples/tools/web_search/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.web_search import web_search
+
+agent = Agent(
+    name="web_search_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="An agent that answers questions with web search.",
+    instruction="You are a helpful assistant. Use the web_search tool when you need fresh information.",
+    tools=[web_search],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("What's the weather in Hangzhou today?")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

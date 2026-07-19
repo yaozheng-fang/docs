@@ -1,0 +1,56 @@
+---
+title: "结构化输出"
+---
+
+将一个 Pydantic 模型传入 `output_schema`，智能体的回答会严格匹配该模型的结构，适合信息抽取、分类等需要直接解析结果的场景。
+
+## 定义 schema 并创建智能体
+
+```python
+from pydantic import BaseModel, Field
+from veadk import Agent
+
+class Ticket(BaseModel):
+    summary: str = Field(description="问题的一句话摘要。")
+    category: str = Field(description="billing、bug、feature_request 或 other 之一。")
+    priority: str = Field(description="low、medium 或 high 之一。")
+
+agent = Agent(
+    name="ticket_extractor",
+    instruction="从用户消息中抽取一张工单。",
+    output_schema=Ticket,
+)
+```
+
+## 解析返回结果
+
+`run` 返回的是符合该 schema 的 JSON 字符串，可直接用 Pydantic 解析：
+
+```python
+from veadk import Runner
+
+raw = await Runner(agent=agent, app_name="structured_output").run(
+    messages="账单页面一打开就闪退，已经第三次了，请尽快处理。",
+    session_id="demo-session",
+)
+ticket = Ticket.model_validate_json(raw)
+```
+
+## 使用方舟原生结构化输出
+
+在上述基础上设置 `enable_responses=True`，VeADK 会改用火山方舟的 Responses 接口，将 `output_schema` 转换为方舟原生的 `json_schema`（`strict: true`），由模型侧强制约束输出。相比默认方式（依赖提示词引导模型生成 JSON），这种方式更为可靠。
+
+```python
+agent = Agent(
+    name="ticket_extractor",
+    instruction="从用户消息中抽取一张工单。",
+    output_schema=Ticket,
+    enable_responses=True,
+)
+```
+
+该方式依赖方舟的 Responses 接口，因此需使用方舟模型。
+
+<Warning>
+  设置 `output_schema` 后，智能体只返回结构化结果，无法调用工具或转交给子智能体。
+</Warning>

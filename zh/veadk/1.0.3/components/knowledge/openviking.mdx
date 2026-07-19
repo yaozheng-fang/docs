@@ -1,0 +1,91 @@
+---
+title: "使用 OpenViking 存储"
+---
+
+`openviking` 后端把知识文件和文本作为 OpenViking 资源管理。OpenViking 负责解析与索引资源，因此不需要在 VeADK 中配置 embedding 模型。每个 `KnowledgeBase.index` 默认映射到 `viking://resources/{index}/`。
+
+## 前置条件
+
+准备可访问的 OpenViking 服务和 API Key。`openviking-sdk>=0.1.3` 已包含在 VeADK 1.0.3 的基础依赖中。
+
+```bash
+export DATABASE_OPENVIKING_URL="https://openviking.example.com"
+export DATABASE_OPENVIKING_API_KEY="${OPENVIKING_API_KEY}"
+```
+
+## 使用示例
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+knowledgebase = KnowledgeBase(
+    backend="openviking",
+    index="product_docs",
+    top_k=5,
+)
+
+knowledgebase.add_from_files(["docs/faq.md", "docs/product-guide.pdf"])
+
+for entry in knowledgebase.search("如何重置密码？"):
+    print(entry.content)
+    print(entry.metadata.get("uri"))
+```
+
+默认情况下，导入操作会等待 OpenViking 完成处理；检索结果会根据资源 URI 读取正文或概览。若只需要搜索结果中的摘要，可设置 `DATABASE_OPENVIKING_HYDRATE_RESULTS=false`。
+
+## 后端参数
+
+通过 `KnowledgeBase(backend="openviking", backend_config={...})` 传入参数。配置项同时支持表中的 `DATABASE_OPENVIKING_*` 环境变量；URL、API Key、account、user、actor peer ID 与目标 URI 还兼容同名的 `OPENVIKING_*` 环境变量。
+
+| 参数 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `index` | 无 | `str` | 必填 | 知识库名称，必须为非空字符串。通常通过 `KnowledgeBase.index` 传入。 |
+| `url` | `DATABASE_OPENVIKING_URL` | `str \| None` | `None` | OpenViking 服务地址。 |
+| `api_key` | `DATABASE_OPENVIKING_API_KEY` | `str \| None` | `None` | OpenViking API Key。 |
+| `account` | `DATABASE_OPENVIKING_ACCOUNT` | `str \| None` | `None` | OpenViking account 标识。 |
+| `user` | `DATABASE_OPENVIKING_USER` | `str \| None` | `None` | OpenViking user 标识。 |
+| `actor_peer_id` | `DATABASE_OPENVIKING_ACTOR_PEER_ID` | `str \| None` | `None` | 发起操作的 peer 标识。 |
+| `target_uri` | `DATABASE_OPENVIKING_TARGET_URI` | `str \| None` | `viking://resources/{index}/` | 资源导入与检索的默认范围。 |
+| `wait` | `DATABASE_OPENVIKING_WAIT` | `bool` | `True` | 导入资源时是否等待处理完成。 |
+| `import_timeout` | `DATABASE_OPENVIKING_IMPORT_TIMEOUT` | `float \| None` | `300` | 等待资源导入的超时时间，单位为秒；通过 `backend_config` 传入 `None` 时不显式限制。 |
+| `hydrate_results` | `DATABASE_OPENVIKING_HYDRATE_RESULTS` | `bool` | `True` | 是否根据 URI 读取命中资源的正文或概览。关闭后直接使用检索摘要。 |
+| `read_limit` | `DATABASE_OPENVIKING_READ_LIMIT` | `int` | `200` | 读取叶子资源正文时传给 OpenViking 的读取上限。 |
+| `score_threshold` | `DATABASE_OPENVIKING_SCORE_THRESHOLD` | `float \| None` | `None` | 检索结果的最低相关性分数。 |
+| `use_context_search` | `DATABASE_OPENVIKING_USE_CONTEXT_SEARCH` | `bool` | `False` | 是否使用带会话上下文的 `search`；关闭时使用 `find`。 |
+
+## 导入参数
+
+`add_from_directory(directory, **kwargs)` 支持以下覆盖项：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `target_uri` | `str` | 后端的 `target_uri` | 导入目标目录。 |
+| `wait` | `bool` | 后端的 `wait` | 是否等待处理完成。 |
+| `timeout` | `float \| None` | 后端的 `import_timeout` | 导入超时时间。 |
+| `strict` | `bool` | `False` | 是否采用严格导入模式。 |
+| `ignore_dirs` | `list[str] \| None` | `None` | 忽略的目录。 |
+| `include` | `list[str] \| None` | `None` | 只导入匹配的路径。 |
+| `exclude` | `list[str] \| None` | `None` | 排除匹配的路径。 |
+| `directly_upload_media` | `bool` | `True` | 是否直接上传媒体文件。 |
+| `preserve_structure` | `bool` | `True` | 是否保留目录结构。 |
+| `watch_interval` | `int` | `0` | 目录监听间隔；`0` 表示不持续监听。 |
+| `args` | `dict \| None` | `None` | 传给 OpenViking 资源解析器的附加参数。 |
+| `telemetry` | `bool` | `False` | 是否为本次导入启用 OpenViking telemetry。 |
+
+`add_from_files(files, **kwargs)` 支持 `target_uri`、`wait`、`timeout`、`strict`、`directly_upload_media` 和 `telemetry`，并额外支持 `reason` 与 `instruction` 两个字符串参数，用于说明导入原因和处理指令。
+
+## 检索参数
+
+`search(query, top_k, **kwargs)` 支持以下覆盖项：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `target_uri` | `str` | 后端的 `target_uri` | 本次检索的资源范围。 |
+| `score_threshold` | `float \| None` | 后端的 `score_threshold` | 最低相关性分数。 |
+| `use_context_search` | `bool` | 后端的 `use_context_search` | 是否使用带会话上下文的检索。 |
+| `filter` | `dict \| None` | `None` | OpenViking 过滤条件。 |
+| `context_type` | `str \| None` | `None` | 要检索的上下文类型。 |
+| `tags` | `list[str] \| None` | `None` | 资源标签过滤条件。 |
+| `telemetry` | `bool` | `False` | 是否为本次检索启用 OpenViking telemetry。 |
+| `session` | `dict \| None` | `None` | 使用上下文检索时传入的会话内容。 |
+| `session_id` | `str \| None` | `None` | 使用上下文检索时传入的会话标识。 |

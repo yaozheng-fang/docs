@@ -9,10 +9,10 @@ title: "Installation"
 
 ## Install from PyPI
 
-Install the core package from [PyPI](https://pypi.org/project/veadk-python/):
+Install VeADK 1.0.5 from [PyPI](https://pypi.org/project/veadk-python/):
 
 ```bash
-pip install veadk-python
+pip install "veadk-python==1.0.5"
 ```
 
 ## Optional dependency groups
@@ -30,21 +30,24 @@ pip install "veadk-python[extensions]"
 | `database` | Redis, MySQL, Viking DB, mem0, and other storage backends |
 | `eval` | Evaluation via DeepEval and Google ADK |
 | `a2ui` | A2UI (agent-driven UI) |
-| `pdf` | PDF page rendering |
+| `harness` | Harness servers and the Headroom integration |
+| `pdf` | Backward-compatible install alias; PDF rendering dependencies are installed by default in 1.0.5 |
+
+The `speech` and `cli` extras remain available for compatibility with existing install commands but add no dependencies in 1.0.5.
 
 ## Build from source
 
 To develop against the source, build with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-git clone https://github.com/volcengine/veadk-python.git
+git clone --branch 1.0.5 --depth 1 https://github.com/volcengine/veadk-python.git
 cd veadk-python
 
 # Create a Python 3.12 virtual environment
 uv venv --python 3.12
 
 # Install dependencies (add --extra <name> or --all-extras for extras)
-uv sync
+uv sync --all-extras
 
 # Install VeADK in editable mode
 uv pip install -e .

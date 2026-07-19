@@ -2,4 +2,37 @@
 title: "概述"
 ---
 
-本页概述 VeADK 及其核心组件。
+VeADK 是面向 Python 研发人员的智能体开发框架。它兼容 Google ADK 的智能体与运行机制，并提供火山方舟模型、AgentKit、记忆、知识库、可观测、安全和企业前端等集成，让同一套智能体代码可以从本地开发延伸到云端运行。
+
+当前文档对应 VeADK `1.0.5`。
+
+## 适用场景
+
+- 使用 Python 构建能够调用工具、访问知识库或保留用户记忆的智能体；
+- 复用 Google ADK 的 `Agent`、`Runner`、Session 与多智能体能力，同时接入火山引擎服务；
+- 在本地调试后，将智能体部署到 AgentKit 或 VeFaaS；
+- 为智能体增加追踪、身份认证、内容安全、飞书渠道或企业前端。
+
+## 核心组件
+
+| 组件 | 作用 |
+| --- | --- |
+| `Agent` | 定义模型、指令、工具、技能、知识库、记忆与执行运行时。 |
+| `Runner` | 执行智能体，管理事件流、用户、应用与会话隔离。 |
+| 短期会话 | 保存同一会话中的消息与状态，支持内存、SQLite、MySQL 和 PostgreSQL。 |
+| 长期记忆 | 跨会话保存用户事实与偏好，支持 VikingDB、Mem0、OpenViking 等后端。 |
+| 知识库 | 导入并检索外部资料，支持托管服务与多种向量存储。 |
+| 工具与技能 | 连接函数、MCP 服务、火山引擎能力和可复用技能。 |
+| 可观测与安全 | 上报调用链路，并提供入站认证、出站凭据和内容安全能力。 |
+
+## 使用路径
+
+| 目标 | 文档 |
+| --- | --- |
+| 安装并运行第一个智能体 | [快速开始](/zh/veadk/get-started/quickstart) |
+| 配置模型与执行后端 | [模型](/zh/veadk/components/agent/model)、[运行时](/zh/veadk/components/agent/runtime) |
+| 添加外部能力 | [工具](/zh/veadk/components/tools) |
+| 保存会话与用户信息 | [短期会话](/zh/veadk/components/session)、[长期记忆](/zh/veadk/components/memory) |
+| 使用企业资料回答问题 | [知识库](/zh/veadk/components/knowledge) |
+| 构建可视化应用 | [前端](/zh/veadk/components/frontend) |
+| 查看本版本变化 | [更新日志](/zh/veadk/changelog) |

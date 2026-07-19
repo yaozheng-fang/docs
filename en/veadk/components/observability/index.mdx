@@ -6,6 +6,8 @@ Observability records the full execution path of an agent so you can understand 
 
 VeADK tracing follows the [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) generative-AI semantic conventions, with field names aligned to standard span attributes. Trace data can therefore be imported directly into any OpenTelemetry-compatible system for analysis and visualization.
 
+Runtime logs use Python's standard `logging` package. See [Application logging](/en/veadk/components/observability/logging) for levels, formatting, and trace correlation.
+
 ## Core concepts
 
 ### span

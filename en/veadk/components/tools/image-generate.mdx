@@ -30,7 +30,7 @@ Environment variables:
 ```yaml title="config.yaml"
 model:
   image:
-    name: doubao-seedream-4-0-250828
+    name: doubao-seedream-5-0-260128
     api_base: https://ark.cn-beijing.volces.com/api/v3/
     api_key: your-api-key-here
 ```
@@ -46,7 +46,7 @@ from veadk.tools.builtin_tools.image_generate import image_generate
 
 agent = Agent(
     name="image_generate_agent",
-    model_name="doubao-seed-1-8-251228",
+    model_name="doubao-seed-2-1-pro-260628",
     description="Generate images on demand.",
     instruction="You are an image-generation expert. Call image_generate to create images for the user.",
     tools=[image_generate],

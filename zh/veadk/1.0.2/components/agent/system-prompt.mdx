@@ -1,0 +1,50 @@
+---
+title: "系统提示词"
+---
+
+智能体的系统提示词通过 `instruction` 参数设置，用于约束模型的行为、语气与回答方式。
+
+## 设置 instruction
+
+最简单的形式是传入一段字符串：
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    name="assistant",
+    instruction="你是一个专业的客服助手，用简洁、礼貌的中文回答用户问题。",
+)
+```
+
+## 动态提示词
+
+当提示词需要随运行时上下文变化时，有两种方式。
+
+**占位符**：在字符串中使用 `{变量名}`，运行时会用会话状态（session state）中的同名值填充。
+
+```python
+agent = Agent(
+    instruction="你正在服务用户 {user_name}，请用简洁、礼貌的中文回答。",
+)
+```
+
+**InstructionProvider**：传入一个函数，它接收运行时上下文并返回提示词字符串，可据此读取会话状态自行拼装。该函数也可以写成异步函数（`async def`）。
+
+```python
+from google.adk.agents.readonly_context import ReadonlyContext
+from veadk import Agent
+
+def build_instruction(ctx: ReadonlyContext) -> str:
+    user_name = ctx.state.get("user_name", "用户")
+    return f"你正在服务 {user_name}，请用简洁、礼貌的中文回答。"
+
+agent = Agent(instruction=build_instruction)
+```
+
+`ctx` 还可访问 `user_id`、`user_content`、`session` 等；会话状态由会话与工具在运行过程中写入。
+
+## instruction 与 description 的区别
+
+- `instruction`：系统提示词，指导模型如何思考与回答。
+- `description`：对智能体能力的简短描述，主要用于多智能体协作场景下的路由与选择，不作为系统提示词直接影响回答。

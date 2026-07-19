@@ -1,5 +1,5 @@
 ---
-title: "PostgreSQL (postgresql)"
+title: "Use PostgreSQL storage"
 ---
 
 The `postgresql` backend stores sessions in a PostgreSQL database, backed by Google ADK's `DatabaseSessionService`. Multiple agent instances can connect to the same database for shared, distributed persistence.
@@ -48,6 +48,7 @@ stm = ShortTermMemory(
             user="veadk",
             password="secret",
             database="veadk_sessions",
+            schema="support_agent",
         )
     },
 )
@@ -85,6 +86,7 @@ database:
     user:
     password:
     database:
+    schema: support_agent
 ```
 
 | Field | Env var | Type | Default | Description |
@@ -94,8 +96,11 @@ database:
 | `user` | `DATABASE_POSTGRESQL_USER` | `str` | `""` | Username. |
 | `password` | `DATABASE_POSTGRESQL_PASSWORD` | `str` | `""` | Password. |
 | `database` | `DATABASE_POSTGRESQL_DATABASE` | `str` | `""` | Database name. |
+| `schema` | `DATABASE_POSTGRESQL_SCHEMA` | `str` | `""` | Optional PostgreSQL schema. VeADK creates it when needed and keeps session tables inside it. Added in 1.0.2. |
 | `secret_token` | `DATABASE_POSTGRESQL_SECRET_TOKEN` | `str` | `""` | STS token for PostgreSQL auth; not supported yet. |
 
 <Note>
 VeADK auto-selects the sync or async PostgreSQL driver based on the Google ADK version: ADK ≥ 1.19.0 uses the async `postgresql+asyncpg://`, otherwise the sync `postgresql://`. Special characters in the username and password are URL-encoded automatically (`urllib.parse.quote_plus`). You can [provision PostgreSQL on Volcengine](https://www.volcengine.com/product/rds-pg).
 </Note>
+
+Use `schema` when several VeADK deployments share a database but must keep separate session tables. Schema names may contain letters, digits, and underscores and cannot start with a digit.

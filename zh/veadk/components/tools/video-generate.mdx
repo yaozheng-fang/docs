@@ -32,7 +32,7 @@ tag: "函数工具"
 ```yaml title="config.yaml"
 model:
   video:
-    name: doubao-seedance-1-0-pro-250528
+    name: doubao-seedance-2-0-260128
     api_base: https://ark.cn-beijing.volces.com/api/v3/
     api_key: your-api-key-here
 ```
@@ -49,7 +49,7 @@ from veadk.tools.builtin_tools.video_generate import video_generate
 
 agent = Agent(
     name="video_generate_agent",
-    model_name="doubao-seed-1-8-251228",
+    model_name="doubao-seed-2-1-pro-260628",
     description="An expert in creating images and videos.",
     instruction=(
         "先用 image_generate 生成首帧和尾帧，再用 video_generate 合成视频，"

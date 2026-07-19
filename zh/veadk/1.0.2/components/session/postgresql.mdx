@@ -1,0 +1,105 @@
+---
+title: "使用 PostgreSQL 存储"
+---
+
+`postgresql` 后端把会话存储到 PostgreSQL 数据库，底层使用 Google ADK 的 `DatabaseSessionService`。多个智能体实例可连接同一数据库，实现会话共享与分布式持久化。
+
+## 何时使用
+
+- 生产环境、多实例或分布式部署；
+- 团队已使用 PostgreSQL 作为统一存储。
+
+## 使用示例
+
+连接信息通过 `config.yaml`（或对应环境变量）提供，不要把密码写进代码。
+
+```python
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+
+stm = ShortTermMemory(backend="postgresql")  # 连接信息来自 config.yaml / 环境变量
+
+agent = Agent(name="demo")
+runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+```
+
+如需透传连接池等 SQLAlchemy 驱动参数，可使用 `db_kwargs`：
+
+```python
+stm = ShortTermMemory(
+    backend="postgresql",
+    db_kwargs={"pool_size": 10, "pool_recycle": 3600},
+)
+```
+
+也可以用 `backend_configs` 在代码中直接注入 `PostgreSqlConfig`，覆盖环境变量：
+
+```python
+from veadk.configs.database_configs import PostgreSqlConfig
+
+stm = ShortTermMemory(
+    backend="postgresql",
+    backend_configs={
+        "postgresql_config": PostgreSqlConfig(
+            host="127.0.0.1",
+            port=5432,
+            user="veadk",
+            password="secret",
+            database="veadk_sessions",
+            schema="customer_service",
+        )
+    },
+)
+```
+
+## 参数
+
+### ShortTermMemory 构造参数（postgresql 场景）
+
+| 参数 | 类型 | 默认值 | 对 postgresql 是否生效 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `backend` | `str` | `"local"` | 生效 | 设为 `"postgresql"` 选择本后端。 |
+| `backend_configs` | `dict` | `{}` | 生效 | PostgreSQL 后端配置。可包含 `postgresql_config`（一个 `PostgreSqlConfig` 实例）以覆盖默认从环境变量读取的配置。 |
+| `db_kwargs` | `dict` | `{}` | 生效 | 透传给底层 `DatabaseSessionService`（即 SQLAlchemy 引擎），常用于连接池设置，如 `pool_size`、`pool_recycle`、`pool_pre_ping` 等。 |
+| `db_url` | `str` | `""` | 生效（覆盖） | 直接给出连接串。一旦设置，将忽略 `backend` 与 `backend_configs`，直接用 `db_url` + `db_kwargs` 构造 `DatabaseSessionService`。 |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 不生效 | 仅 `sqlite` 使用。 |
+| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 读取会话后触发的回调，入参为加载到的 `Session`。 |
+
+### PostgreSqlConfig 字段与环境变量
+
+配置类 `PostgreSqlConfig` 的环境变量前缀为 `DATABASE_POSTGRESQL_`。
+
+```yaml config.yaml
+database:
+  postgresql:
+    host:       # 主机或 IP
+    port: 5432
+    user:
+    password:
+    database:
+    schema:     # 可选，用于隔离本部署的会话表
+```
+
+| 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `host` | `DATABASE_POSTGRESQL_HOST` | `str` | `""` | 数据库主机或 IP。 |
+| `port` | `DATABASE_POSTGRESQL_PORT` | `int` | `5432` | 端口。 |
+| `user` | `DATABASE_POSTGRESQL_USER` | `str` | `""` | 用户名。 |
+| `password` | `DATABASE_POSTGRESQL_PASSWORD` | `str` | `""` | 密码。 |
+| `database` | `DATABASE_POSTGRESQL_DATABASE` | `str` | `""` | 数据库名。 |
+| `schema` | `DATABASE_POSTGRESQL_SCHEMA` | `str` | `""` | 可选的 PostgreSQL schema。设置后，VeADK 会在该 schema 中创建并访问短期会话表；为空时使用数据库默认的 `search_path`。 |
+| `secret_token` | `DATABASE_POSTGRESQL_SECRET_TOKEN` | `str` | `""` | PostgreSQL 鉴权用的 STS 临时令牌，暂未支持。 |
+
+## 使用 schema 隔离会话表
+
+多个应用可以连接同一个 PostgreSQL 数据库，并为每个部署设置不同的 `DATABASE_POSTGRESQL_SCHEMA`。VeADK 会在 schema 不存在时创建它，并把当前连接的 `search_path` 固定到该 schema，避免不同部署共用同一组会话表。
+
+```bash
+export DATABASE_POSTGRESQL_SCHEMA="customer_service"
+```
+
+schema 名称必须以字母或下划线开头，且只能包含字母、数字和下划线。数据库用户需要具有创建 schema 和表的权限。
+
+<Note>
+VeADK 会根据 Google ADK 版本自动选择同步或异步 PostgreSQL 驱动：ADK ≥ 1.19.0 使用异步的 `postgresql+asyncpg://`，否则使用同步的 `postgresql://`。用户名与密码中的特殊字符会被自动 URL 编码（`urllib.parse.quote_plus`）。可在火山引擎[开通 PostgreSQL 数据库](https://www.volcengine.com/product/rds-pg)。
+</Note>

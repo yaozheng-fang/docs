@@ -6,6 +6,8 @@ title: "概述"
 
 VeADK 的追踪能力遵循 [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) 生成式 AI 语义规范，字段命名与标准 span 属性对齐，因此追踪数据可直接导入任意兼容 OpenTelemetry 的系统进行分析和可视化。
 
+运行日志使用 Python 标准库 `logging`，级别、格式与追踪关联方式见[应用日志](/zh/veadk/components/observability/logging)。
+
 ## 核心概念
 
 ### span

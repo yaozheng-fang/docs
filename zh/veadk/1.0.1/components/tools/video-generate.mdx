@@ -1,0 +1,71 @@
+---
+title: "视频生成"
+tag: "函数工具"
+---
+
+## 功能说明
+
+对应工具标识 `video_generate`。
+
+`video_generate` 根据文本描述生成视频。下面的示例先用 `image_generate` 生成首帧与尾帧，再合成视频。
+
+导入路径：`from veadk.tools.builtin_tools.video_generate import video_generate`
+
+## 环境变量与前提
+
+<Warning>
+附加要求：
+
+配置可调用视频生成模型的 API Key。可使用 `MODEL_VIDEO_API_KEY` 单独设置；未设置时依次使用 `MODEL_AGENT_API_KEY` 和当前运行环境中的火山方舟凭证。示例同时调用 `image_generate`，因此还需确保相同凭证可调用图像生成模型，或单独设置 `MODEL_IMAGE_API_KEY`。
+</Warning>
+
+环境变量：
+
+- `MODEL_VIDEO_API_KEY`：视频生成 API Key；默认沿用智能体模型凭证
+- `MODEL_VIDEO_API_BASE`：视频生成接口地址，默认 `https://ark.cn-beijing.volces.com/api/v3/`
+- `MODEL_VIDEO_NAME`：视频生成模型名称，默认 `doubao-seedance-2-0-260128`
+- `MODEL_IMAGE_API_KEY`：示例中图像生成工具使用的 API Key；默认沿用智能体模型凭证
+- `MODEL_IMAGE_NAME`：示例中图像生成工具使用的模型名称，默认 `doubao-seedream-5-0-260128`
+
+`config.yaml` 配置项：
+
+```yaml title="config.yaml"
+model:
+  video:
+    name: doubao-seedance-2-0-260128
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: your-api-key-here
+```
+
+## 使用方法
+
+```python title="examples/tools/video_generate/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.image_generate import image_generate
+from veadk.tools.builtin_tools.video_generate import video_generate
+
+agent = Agent(
+    name="video_generate_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="An expert in creating images and videos.",
+    instruction=(
+        "先用 image_generate 生成首帧和尾帧，再用 video_generate 合成视频，"
+        "最后返回视频的绝对路径并简述视频内容。"
+    ),
+    tools=[image_generate, video_generate],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("生成一只小狗，再生成它飞上天空的画面，最终合成一个视频")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

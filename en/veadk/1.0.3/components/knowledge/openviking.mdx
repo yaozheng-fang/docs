@@ -1,0 +1,105 @@
+---
+title: "Store knowledge in OpenViking"
+---
+
+The `openviking` backend manages knowledge files and text as OpenViking
+resources. OpenViking parses and indexes the resources, so VeADK does not need
+an embedding model for this backend. Each `KnowledgeBase.index` maps to
+`viking://resources/{index}/` by default.
+
+## Prerequisites
+
+Prepare a reachable OpenViking service and an API key. VeADK 1.0.3 includes
+`openviking-sdk>=0.1.3` in its base dependencies.
+
+```bash
+export DATABASE_OPENVIKING_URL="https://openviking.example.com"
+export DATABASE_OPENVIKING_API_KEY="${OPENVIKING_API_KEY}"
+```
+
+## Example
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+knowledgebase = KnowledgeBase(
+    backend="openviking",
+    index="product_docs",
+    top_k=5,
+)
+
+knowledgebase.add_from_files(["docs/faq.md", "docs/product-guide.pdf"])
+
+for entry in knowledgebase.search("How do I reset my password?"):
+    print(entry.content)
+    print(entry.metadata.get("uri"))
+```
+
+By default, imports wait for OpenViking to finish processing, and search results
+are hydrated by reading the matching resource body or overview. Set
+`DATABASE_OPENVIKING_HYDRATE_RESULTS=false` if the search result abstracts are
+sufficient.
+
+## Backend parameters
+
+Pass parameters through
+`KnowledgeBase(backend="openviking", backend_config={...})`. The parameters also
+support the `DATABASE_OPENVIKING_*` environment variables below. The URL, API
+key, account, user, actor peer ID, and target URI also accept matching
+`OPENVIKING_*` aliases.
+
+| Parameter | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `index` | None | `str` | Required | Non-empty knowledge-base name, usually passed as `KnowledgeBase.index`. |
+| `url` | `DATABASE_OPENVIKING_URL` | `str \| None` | `None` | OpenViking service URL. |
+| `api_key` | `DATABASE_OPENVIKING_API_KEY` | `str \| None` | `None` | OpenViking API key. |
+| `account` | `DATABASE_OPENVIKING_ACCOUNT` | `str \| None` | `None` | OpenViking account identifier. |
+| `user` | `DATABASE_OPENVIKING_USER` | `str \| None` | `None` | OpenViking user identifier. |
+| `actor_peer_id` | `DATABASE_OPENVIKING_ACTOR_PEER_ID` | `str \| None` | `None` | Peer identifier that performs the operation. |
+| `target_uri` | `DATABASE_OPENVIKING_TARGET_URI` | `str \| None` | `viking://resources/{index}/` | Default scope for resource imports and searches. |
+| `wait` | `DATABASE_OPENVIKING_WAIT` | `bool` | `True` | Whether imports wait for processing to finish. |
+| `import_timeout` | `DATABASE_OPENVIKING_IMPORT_TIMEOUT` | `float \| None` | `300` | Import wait timeout in seconds. Passing `None` through `backend_config` omits an explicit limit. |
+| `hydrate_results` | `DATABASE_OPENVIKING_HYDRATE_RESULTS` | `bool` | `True` | Read the body or overview for each matching URI. When disabled, use the search abstract directly. |
+| `read_limit` | `DATABASE_OPENVIKING_READ_LIMIT` | `int` | `200` | Read limit passed to OpenViking when hydrating a leaf resource. |
+| `score_threshold` | `DATABASE_OPENVIKING_SCORE_THRESHOLD` | `float \| None` | `None` | Minimum relevance score. |
+| `use_context_search` | `DATABASE_OPENVIKING_USE_CONTEXT_SEARCH` | `bool` | `False` | Use contextual `search` instead of `find`. |
+
+## Import parameters
+
+`add_from_directory(directory, **kwargs)` accepts these per-call overrides:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `target_uri` | `str` | Backend `target_uri` | Import destination. |
+| `wait` | `bool` | Backend `wait` | Wait for processing to finish. |
+| `timeout` | `float \| None` | Backend `import_timeout` | Import timeout. |
+| `strict` | `bool` | `False` | Use strict import mode. |
+| `ignore_dirs` | `list[str] \| None` | `None` | Directories to ignore. |
+| `include` | `list[str] \| None` | `None` | Import only matching paths. |
+| `exclude` | `list[str] \| None` | `None` | Exclude matching paths. |
+| `directly_upload_media` | `bool` | `True` | Upload media files directly. |
+| `preserve_structure` | `bool` | `True` | Preserve the directory structure. |
+| `watch_interval` | `int` | `0` | Directory watch interval; `0` disables continuous watching. |
+| `args` | `dict \| None` | `None` | Additional OpenViking resource-parser arguments. |
+| `telemetry` | `bool` | `False` | Enable OpenViking telemetry for this import. |
+
+`add_from_files(files, **kwargs)` accepts `target_uri`, `wait`, `timeout`,
+`strict`, `directly_upload_media`, and `telemetry`. It also accepts the string
+parameters `reason` and `instruction` to describe the import reason and
+processing instruction.
+
+## Search parameters
+
+`search(query, top_k, **kwargs)` accepts these per-call overrides:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `target_uri` | `str` | Backend `target_uri` | Resource scope for this search. |
+| `score_threshold` | `float \| None` | Backend `score_threshold` | Minimum relevance score. |
+| `use_context_search` | `bool` | Backend `use_context_search` | Use contextual search. |
+| `filter` | `dict \| None` | `None` | OpenViking filter. |
+| `context_type` | `str \| None` | `None` | Context type to retrieve. |
+| `tags` | `list[str] \| None` | `None` | Resource tag filter. |
+| `telemetry` | `bool` | `False` | Enable OpenViking telemetry for this search. |
+| `session` | `dict \| None` | `None` | Session content for contextual search. |
+| `session_id` | `str \| None` | `None` | Session identifier for contextual search. |

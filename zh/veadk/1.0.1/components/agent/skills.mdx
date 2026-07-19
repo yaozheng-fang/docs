@@ -1,0 +1,121 @@
+---
+title: "技能"
+---
+
+技能是可复用的提示词包，用于为智能体提供特定领域的知识、操作流程和脚本。VeADK 1.0.1 推荐通过 Google ADK 的 `SkillToolset` 接入本地或云端技能；原有的 `Agent(skills=..., skills_mode="local")` 入口仍可使用，但已废弃。`skills_sandbox` 与 `aio_sandbox` 模式不受影响。
+
+## 使用本地技能
+
+使用 ADK 的 `load_skill_from_dir` 加载技能目录，再将 `SkillToolset` 传给 VeADK 智能体：
+
+```python
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent
+
+skill = load_skill_from_dir("/abs/path/to/skills/kb-skill")
+agent = Agent(tools=[SkillToolset(skills=[skill])])
+```
+
+ADK 负责加载技能、向模型提供提示词以及公开 `list_skills`、`load_skill`、`load_skill_resource` 和 `run_skill_script` 工具。若技能需要运行 `scripts/` 中的脚本，应在 `SkillToolset` 或智能体上配置代码执行器；VeADK 不会自动创建本地代码执行器。
+
+<Warning>
+  技能脚本可以访问代码执行器提供的文件和运行环境。仅加载可信技能，并按实际需求限制代码执行器的权限。
+</Warning>
+
+## 使用云端技能
+
+VeADK 1.0.1 新增 `VeSkillRegistry`，可将 SkillHub 或技能空间中的技能作为 ADK 技能注册表使用：
+
+```python
+import os
+
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent
+from veadk.skills import VeSkillRegistry
+
+registry = VeSkillRegistry(
+    skill_source_id=os.environ["AGENTKIT_SKILL_SOURCE_ID"],
+)
+agent = Agent(tools=[SkillToolset(registry=registry)])
+```
+
+`search_skills` 会读取远端技能列表，`get_skill` 会在需要某项技能时下载并加载对应版本。该方式不会在初始化时下载全部技能。
+
+| `VeSkillRegistry` 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `skill_source_id` | `str` | 必填 | 单个 SkillHub 或技能空间标识；不能传入空字符串或以逗号分隔的多个标识。 |
+| `cache_dir` | `pathlib.Path \| None` | `None` | 已下载技能版本的本地缓存目录；为 `None` 时使用默认缓存目录。 |
+
+## 技能目录
+
+一个 ADK 本地技能由独立目录构成，必须包含 `SKILL.md`，并可包含引用资料、资源和脚本：
+
+```text
+skills/
+└── kb-skill/
+    ├── SKILL.md
+    ├── references/
+    ├── assets/
+    └── scripts/
+```
+
+`SKILL.md` 的 frontmatter 必须提供 `name` 与 `description`，且目录名应与 `name` 一致：
+
+```markdown title="skills/kb-skill/SKILL.md"
+---
+name: kb-skill
+description: 查询知识库并整理答案。
+---
+
+按照下列步骤查询知识库并组织回答……
+```
+
+## 兼容旧技能入口
+
+旧入口支持以下模式：
+
+| 模式 | 说明 |
+| --- | --- |
+| `local` | 已废弃。由 VeADK 从本地技能根目录加载和执行技能；本地场景应迁移到 ADK `SkillToolset`。 |
+| `skills_sandbox` | 从云端技能空间加载技能，通过 `execute_skills` 在沙箱中执行。 |
+| `aio_sandbox` | 在 AgentKit All-in-one 工具运行时中执行技能。 |
+
+未设置 `skills_mode` 时，VeADK 会根据运行环境选择模式：本地运行使用 `local`；AgentKit 工具运行时根据工具类型使用 `skills_sandbox` 或 `aio_sandbox`。
+
+本地兼容示例：
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    skills=["/abs/path/to/skills"],
+    skills_mode="local",
+    enable_skills_checklist=True,
+    enable_dynamic_load_skills=True,
+)
+```
+
+沙箱兼容示例：
+
+```python
+import os
+
+from veadk import Agent
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+agent = Agent(
+    skills=[os.environ["AGENTKIT_SKILL_SPACE_ID"]],
+    skills_mode="skills_sandbox",
+    tools=[execute_skills],
+)
+```
+
+## 旧入口参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `skills` | `list[str]` | `[]` | 本地技能根目录或云端技能空间标识列表。用于本地加载时，该入口已废弃。 |
+| `skills_mode` | `"local" \| "skills_sandbox" \| "aio_sandbox" \| None` | `None` | 技能运行模式；为 `None` 时根据运行环境选择。 |
+| `enable_skills_checklist` | `bool` | `False` | 是否为旧入口中包含检查清单的技能启用逐项状态跟踪。 |
+| `enable_dynamic_load_skills` | `bool` | `False` | 是否在运行期间检查并重新加载旧入口中的技能。 |

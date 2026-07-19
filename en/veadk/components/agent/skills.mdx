@@ -45,6 +45,37 @@ This does not download every skill up front: `search_skills` fetches the remote
 skill list in real time, and `get_skill` downloads and loads a specific skill on
 demand; when the remote version changes, the new version is re-downloaded.
 
+## Harness skills center
+
+Harness can load both Skill Hub skills and AgentKit skills-center spaces. A plain name or slug in `skills` identifies a Skill Hub skill; the `space:` prefix identifies a skills-center space ID.
+
+The skills center requires Volcengine credentials that can read the space and its object-storage content. For local runs, set `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`, plus `VOLCENGINE_SESSION_TOKEN` for temporary credentials. On VeFaaS, the bound IAM role can provide temporary credentials instead.
+
+```bash
+cd my-harness
+veadk harness add \
+  --skills "data-visualization-cloud,space:ss-example"
+```
+
+The resulting `harness.yaml` stores the sources as a list:
+
+```yaml
+skills:
+  - data-visualization-cloud
+  - space:ss-example
+```
+
+Harness downloads and loads the base skills during startup. `space:ss-example` loads every skill in that space and combines them with Skill Hub skills in one `SkillToolset`. You can also add a space for one invocation:
+
+```bash
+veadk harness invoke \
+  --name research-agent \
+  --message "Prepare a research report" \
+  --skills "space:ss-example"
+```
+
+Invocation-level `--skills` adds skills on top of the base Harness configuration without changing `harness.yaml`. If any skill cannot be downloaded, lacks a valid `SKILL.md`, or violates the ADK skill format, Harness stops that load instead of continuing with a partial skill set.
+
 ## Skill directory layout
 
 A local skill is a directory containing a `SKILL.md` file, and may include

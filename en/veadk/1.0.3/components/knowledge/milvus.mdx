@@ -1,0 +1,84 @@
+---
+title: "Store knowledge in Milvus"
+---
+
+The `milvus` backend embeds knowledge chunks and stores them in a Milvus
+collection. Use it when you already operate Milvus and need persistent knowledge
+shared by multiple agent instances. `KnowledgeBase.index` maps to the Milvus
+collection name.
+
+## Prerequisites
+
+Install the extra that contains the Milvus and LlamaIndex integrations, and
+prepare a reachable Milvus instance:
+
+```bash
+pip install "veadk-python[extensions]"
+```
+
+The Milvus backend requires an embedding model. The following environment
+variables configure both Milvus and the embedding model:
+
+```bash
+export DATABASE_MILVUS_URI="http://127.0.0.1:19530"
+export DATABASE_MILVUS_TOKEN="${MILVUS_TOKEN}"
+export MODEL_EMBEDDING_NAME="doubao-embedding-text-240715"
+export MODEL_EMBEDDING_DIM="2560"
+export MODEL_EMBEDDING_API_KEY="${ARK_API_KEY}"
+```
+
+Instead of `DATABASE_MILVUS_TOKEN`, you can set `DATABASE_MILVUS_USER` and
+`DATABASE_MILVUS_PASSWORD`. A token takes precedence over the username and
+password pair.
+
+## Example
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+knowledgebase = KnowledgeBase(
+    backend="milvus",
+    index="company_faq",
+    top_k=3,
+)
+
+knowledgebase.add_from_text(
+    [
+        "The standard annual leave allowance is 15 days.",
+        "With manager approval, employees may work remotely up to two days a week.",
+    ]
+)
+
+for entry in knowledgebase.search("How many remote-work days are allowed?"):
+    print(entry.content)
+```
+
+## Parameters
+
+Pass backend parameters through
+`KnowledgeBase(backend="milvus", backend_config={...})`. Without
+`backend_config`, VeADK reads the connection from environment variables and uses
+the global embedding configuration.
+
+| Parameter | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `index` | None | `str` | Required | Milvus collection name. It must start with a letter or underscore, contain only letters, digits, and underscores, and be at most 255 characters. Usually passed as `KnowledgeBase.index`. |
+| `milvus_config.uri` | `DATABASE_MILVUS_URI` | `str` | `""` | Milvus service URI, or a local file path supported by Milvus Lite. Required. |
+| `milvus_config.token` | `DATABASE_MILVUS_TOKEN` | `str` | `""` | Milvus token. Takes precedence over username and password. |
+| `milvus_config.user` | `DATABASE_MILVUS_USER` | `str` | `""` | Milvus username, used with `password`. |
+| `milvus_config.password` | `DATABASE_MILVUS_PASSWORD` | `str` | `""` | Milvus password, used with `user`. |
+| `milvus_config.db_name` | `DATABASE_MILVUS_DB_NAME` | `str` | `"default"` | Milvus database name. |
+| `milvus_config.overwrite` | `DATABASE_MILVUS_OVERWRITE` | `bool` | `False` | Whether initialization overwrites a collection with the same name. |
+| `milvus_config.timeout` | `DATABASE_MILVUS_TIMEOUT` | `float \| None` | `None` | Milvus request timeout in seconds. |
+| `milvus_config.output_fields` | `DATABASE_MILVUS_OUTPUT_FIELDS` | `list[str] \| str` | `[]` | Additional fields returned during retrieval. The environment variable accepts a comma-separated string or a JSON array string. |
+| `embedding_config` | `MODEL_EMBEDDING_*` | `EmbeddingModelConfig` | Global embedding config | Embedding model name, dimension, API base, and API key. |
+
+<Warning>
+  `DATABASE_MILVUS_OVERWRITE=true` overwrites a collection with the same name
+  during initialization and may remove existing knowledge. Enable it only when
+  that data does not need to be retained.
+</Warning>
+
+In addition to `search(query, top_k)`, this backend supports `add_from_text`,
+`add_from_files`, and `add_from_directory`. File and directory imports split
+content by file type before storing it in the collection.

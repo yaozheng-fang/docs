@@ -25,3 +25,7 @@ toolset = MCPToolset(
 
 agent = Agent(tools=[toolset])
 ```
+
+## Automatic reconnection after a dropped session
+
+When an MCP Server restarts, scales down, or expires a session and the connection becomes invalid, VeADK removes the stale cached session, reconnects, and retries the current tool discovery or invocation once. If that retry also fails, the error is returned to the caller. Explicitly cancelled tasks are not retried.

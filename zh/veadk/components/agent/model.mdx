@@ -2,7 +2,7 @@
 title: "模型"
 ---
 
-智能体默认使用全局配置的模型，即通过环境变量或 `config.yaml` 设置的模型（参见[快速开始](/zh/veadk/get-started/quickstart)）。也可以在创建智能体时为其单独指定模型。
+智能体默认使用全局配置的模型，即通过环境变量或 `config.yaml` 设置的模型（参见[快速开始](/zh/veadk/get-started/quickstart)）。VeADK 1.0.5 的默认推理模型为 `doubao-seed-2-1-pro-260628`。也可以在创建智能体时为其单独指定模型。
 
 ## 为单个智能体指定模型
 
@@ -12,12 +12,22 @@ title: "模型"
 from veadk import Agent
 
 agent = Agent(
-    model_name="doubao-seed-1-6-250615",
+    model_name="doubao-seed-2-1-pro-260628",
     model_provider="openai",
 )
 ```
 
 未显式传入时，`model_provider`、`model_api_base`、`model_api_key` 均沿用全局配置。
+
+### 按名称解析 API Key
+
+除直接设置 `MODEL_AGENT_API_KEY` 外，还可以设置 `MODEL_AGENT_API_KEY_NAME`，让 VeADK 按名称获取火山方舟 API Key。显式提供的 Key 始终优先：
+
+```bash
+export MODEL_AGENT_API_KEY_NAME="production-key"
+```
+
+创建智能体时也可传入 `model_api_key_name`。该能力从 VeADK 1.0.2 开始提供。
 
 ## 配置回退模型
 
@@ -25,9 +35,11 @@ agent = Agent(
 
 ```python
 agent = Agent(
-    model_name=["doubao-seed-1-6-250615", "doubao-seed-1-8-251228"],
+    model_name=["doubao-seed-2-1-pro-260628", "deepseek-r1-250528"],
 )
 ```
+
+回退模型同时适用于默认模型接口与 `enable_responses=True` 的 Responses API。
 
 ## Responses API
 
@@ -75,6 +87,28 @@ message = types.UserContent(
 ```
 
 视频还可在 `FileData` 中附带 `video_metadata`，用 `fps` 控制抽帧频率（默认 1，可在 0.2–5 之间调整）。
+
+### 配置方舟上下文管理
+
+启用 Responses API 时，可通过 `model_extra_config` 传入方舟支持的 `context_management` 配置。以下示例会清理较早的思维内容，仅保留最近一个思维轮次：
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    enable_responses=True,
+    model_extra_config={
+        "context_management": {
+            "edits": [
+                {
+                    "type": "clear_thinking",
+                    "keep": {"type": "thinking_turns", "value": 1},
+                }
+            ]
+        }
+    },
+)
+```
 
 ### 上下文缓存
 

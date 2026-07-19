@@ -22,7 +22,7 @@ knowledgebase = KnowledgeBase(backend="local", index="company_faq")
 
 agent = Agent(
     name="kb_agent",
-    model_name="doubao-seed-1-8-251228",
+    model_name="doubao-seed-2-1-pro-260628",
     instruction="回答用户问题时，在需要的地方检索知识库。",
     knowledgebase=knowledgebase,  # 传入后自动挂载 load_knowledgebase
 )

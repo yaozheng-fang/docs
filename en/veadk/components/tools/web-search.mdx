@@ -32,7 +32,7 @@ Or configure in `config.yaml`:
 model:
   agent:
     provider: openai
-    name: doubao-seed-1-8-251228
+    name: doubao-seed-2-1-pro-260628
     api_base: https://ark.cn-beijing.volces.com/api/v3/
     api_key: your-api-key-here
 volcengine:
@@ -52,7 +52,7 @@ from veadk.tools.builtin_tools.web_search import web_search
 
 agent = Agent(
     name="web_search_agent",
-    model_name="doubao-seed-1-8-251228",
+    model_name="doubao-seed-2-1-pro-260628",
     description="An agent that answers questions with web search.",
     instruction="You are a helpful assistant. Use the web_search tool when you need fresh information.",
     tools=[web_search],

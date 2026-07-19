@@ -1,0 +1,104 @@
+---
+title: "Store knowledge in Milvus"
+---
+
+The `milvus` backend embeds knowledge chunks and stores them in a Milvus collection. Use it when you already operate Milvus or need local persistence through Milvus Lite. The VeADK `index` maps to the Milvus collection name.
+
+## Prerequisites
+
+Install the VeADK extensions and configure an embedding model:
+
+```bash
+pip install "veadk-python[extensions]"
+```
+
+A remote deployment also requires a Milvus URI and credentials. For local validation, point `DATABASE_MILVUS_URI` to a Milvus Lite database file.
+
+## Use Milvus Lite
+
+```bash
+export DATABASE_MILVUS_URI="./data/company_faq.db"
+export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
+```
+
+```python
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(backend="milvus", index="company_faq")
+kb.add_from_text("The standard annual leave allowance is 15 days per year.")
+
+agent = Agent(
+    name="company_assistant",
+    instruction="Use the knowledge base for company policy questions.",
+    knowledgebase=kb,
+)
+```
+
+The first run creates data in `./data/company_faq.db`. Later processes using the same file and collection name can retrieve the stored content.
+
+## Connect to remote Milvus
+
+```bash
+export DATABASE_MILVUS_URI="https://milvus.example.com:19530"
+export DATABASE_MILVUS_TOKEN="your-milvus-token"
+export DATABASE_MILVUS_DB_NAME="default"
+export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
+```
+
+You can also pass the public configuration object:
+
+```python
+from veadk.configs.database_configs import MilvusConfig
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="milvus",
+    backend_config={
+        "index": "company_faq",
+        "milvus_config": MilvusConfig(
+            uri="https://milvus.example.com:19530",
+            token="your-milvus-token",
+            db_name="default",
+        ),
+    },
+)
+```
+
+Inject credentials through environment variables or a secret manager. Do not commit real tokens to source control.
+
+## Parameters
+
+### Constructor parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | None | Milvus collection name. It must start with a letter or underscore, contain only letters, digits, and underscores, and be no longer than 255 characters. |
+| `milvus_config` | `MilvusConfig` | Read from `DATABASE_MILVUS_*` | Milvus connection and collection configuration. |
+| `embedding_config` | `EmbeddingModelConfig` | Read from `MODEL_EMBEDDING_*` | Embedding model configuration. |
+
+### Milvus configuration
+
+| Setting | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `uri` | `DATABASE_MILVUS_URI` | `str` | `""` | A Milvus Lite file path or remote Milvus URI. Required. |
+| `token` | `DATABASE_MILVUS_TOKEN` | `str` | `""` | Authentication token. Takes precedence over user and password. |
+| `user` | `DATABASE_MILVUS_USER` | `str` | `""` | Username; used only with `password` when `token` is unset. |
+| `password` | `DATABASE_MILVUS_PASSWORD` | `str` | `""` | Password; used only with `user` when `token` is unset. |
+| `db_name` | `DATABASE_MILVUS_DB_NAME` | `str` | `default` | Database name. |
+| `overwrite` | `DATABASE_MILVUS_OVERWRITE` | `bool` | `false` | Whether initialization replaces an existing collection with the same name. |
+| `timeout` | `DATABASE_MILVUS_TIMEOUT` | `float \| None` | `None` | Connection and request timeout, in the unit expected by the Milvus client. |
+| `output_fields` | `DATABASE_MILVUS_OUTPUT_FIELDS` | `list[str] \| str` | `[]` | Additional fields returned during retrieval. The environment variable accepts a comma-separated value or JSON string array. |
+
+<Warning>
+  Setting `DATABASE_MILVUS_OVERWRITE=true` replaces the collection and its data. Use it only when the data can be rebuilt.
+</Warning>
+
+### Embedding configuration
+
+| Setting | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | Embedding model name. |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | Vector dimension; it must match the model output. |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | Embedding service endpoint. |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | Falls back to `MODEL_AGENT_API_KEY` or an automatically acquired Ark token | Embedding service credential. |

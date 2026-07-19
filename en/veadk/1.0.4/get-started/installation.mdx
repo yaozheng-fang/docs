@@ -1,0 +1,54 @@
+---
+title: "Installation"
+---
+
+## Prerequisites
+
+- Python 3.10 or later.
+- A Volcengine Ark API key for calling models, created in the [Ark console](https://console.volcengine.com/ark).
+
+## Install from PyPI
+
+Install the core package from [PyPI](https://pypi.org/project/veadk-python/):
+
+```bash
+pip install "veadk-python==1.0.4"
+```
+
+## Optional dependency groups
+
+VeADK provides optional dependency groups (extras) for on-demand capabilities,
+installed individually as needed:
+
+```bash
+pip install "veadk-python[extensions]==1.0.4"
+```
+
+| Extra | Purpose |
+| --- | --- |
+| `extensions` | Feishu channel, Cozeloop, LlamaIndex, and related integrations |
+| `database` | Redis, MySQL, Viking DB, mem0, and other storage backends |
+| `eval` | Evaluation via DeepEval and Google ADK |
+| `a2ui` | A2UI (agent-driven UI) |
+| `pdf` | PDF page rendering |
+
+## Build from source
+
+To develop against the source, build with [uv](https://docs.astral.sh/uv/):
+
+```bash
+git clone --branch 1.0.4 --depth 1 https://github.com/volcengine/veadk-python.git
+cd veadk-python
+
+# Create a Python 3.12 virtual environment
+uv venv --python 3.12
+
+# Install dependencies (add --extra <name> or --all-extras for extras)
+uv sync
+
+# Install VeADK in editable mode
+uv pip install -e .
+```
+
+Once installed, continue to the [Quickstart](/en/veadk/1.0.4/get-started/quickstart) to
+run your first agent.

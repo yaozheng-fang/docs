@@ -70,7 +70,7 @@ def calculator(
 
 agent = Agent(
     name="computing_agent",
-    model_name="doubao-seed-1-8-251228",
+    model_name="doubao-seed-2-1-pro-260628",
     instruction="Use the `calculator` tool to perform the calculation the user asks for.",
     tools=[calculator],
 )
@@ -109,7 +109,7 @@ def message_checker(user_message: str, tool_context: ToolContext) -> str:
 
 agent = Agent(
     name="context_agent",
-    model_name="doubao-seed-1-8-251228",
+    model_name="doubao-seed-2-1-pro-260628",
     instruction="Use message_checker to check the user message, then show the checked result.",
     tools=[message_checker],
 )
@@ -161,7 +161,7 @@ long_running_tool = LongRunningFunctionTool(func=big_data_processing)
 
 agent = Agent(
     name="long_running_tool_agent",
-    model_name="doubao-seed-1-8-251228",
+    model_name="doubao-seed-2-1-pro-260628",
     instruction="Use long_running_tool to process big data.",
     tools=[long_running_tool],
 )

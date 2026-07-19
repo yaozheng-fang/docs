@@ -23,12 +23,12 @@ VeADK tools are grouped by how they connect and what they do.
 
 | Category | Description | Docs |
 | :--- | :--- | :--- |
-| Built-in tools | Native function tools VeADK ships ready to use (web search, image / video generation, code sandboxes, and more) | [Built-in tools](/en/veadk/components/tools/builtin) |
-| Built-in MCP tools | Tool sets connected over MCP (Model Context Protocol) — Feishu / Lark, the LAS data lake, Video-on-Demand (VOD), MCP Router, Supabase | [Built-in MCP tools](/en/veadk/components/tools/builtin-mcp) |
+| Built-in tools | Pre-packaged function tools for web search, image and video generation, code sandboxes, and more | [Web search](/en/veadk/components/tools/web-search) |
+| Built-in MCP tools | MCP toolsets for Feishu, LAS, VOD, MCP Router, Supabase, and more | [Feishu tools](/en/veadk/components/tools/lark) |
 | Custom tools | Wrap any Python function as a tool to extend the agent | [Custom tools](/en/veadk/components/tools/custom-function) |
-| System tools | Retrieval tools the framework mounts automatically from the agent's configuration (knowledge base, long-term memory) | [System tools](/en/veadk/components/tools/system-tools) |
-| Guardrail tool | Callback-based content-safety review that blocks unsafe input and output | [Guardrail tool](/en/veadk/components/tools/guardrail) |
-| Feishu Channel extension | Bridge inbound Feishu bot messages into the `Runner` | [Feishu Channel extension](/en/veadk/components/tools/feishu-channel) |
+| System tools | Knowledge-base and long-term-memory retrieval tools mounted automatically from agent configuration | [Load a knowledge base](/en/veadk/components/tools/load-knowledgebase) |
+| Content safety | Callback-based checks that block unsafe input and output | [Content safety](/en/veadk/components/security/content-safety) |
+| Feishu Channel extension | Bridge inbound Feishu bot messages into the `Runner` | [Feishu Channel extension](/en/veadk/components/extensions/feishu-channel) |
 
 <Note>
 Built-in tools and built-in MCP tools mostly depend on Volcengine services — enable the corresponding service and configure authentication (AK/SK, API keys) before use. System tools are managed by the framework and need not be added to the `tools` list manually.

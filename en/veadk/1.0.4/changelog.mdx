@@ -1,0 +1,16 @@
+---
+title: "Changelog"
+---
+
+VeADK 1.0.4 was released on July 14, 2026. The table lists user-visible changes from 1.0.3.
+
+| Module | Change details | Link |
+| :--- | :--- | :--- |
+| Studio | Added `veadk studio`, a focused workbench for agent creation and management. It supports intelligent, custom, and template creation; the workflow entry is marked as coming soon. AgentKit deployment progress is reported by stage. | [Studio agent workbench](/en/veadk/1.0.4/components/frontend/studio) |
+| Agent management | Added an AgentKit runtime management view to Frontend and Studio. It lists workbench deployments for the current user, exposes control-plane and primary-agent details, and can delete runtimes. | [Studio agent workbench](/en/veadk/1.0.4/components/frontend/studio) |
+| VeFaaS deployment | Added `veadk studio deploy` to deploy Studio to VeFaaS with VeIdentity login and create or reuse a Serverless API Gateway and IAM role. | [Studio deployment](/en/veadk/1.0.4/components/frontend/studio) |
+| VeADK Frontend | Added agent topology and transfer-path visualization. Project deployment now reports live build-image, deploy, and publish stages. | [VeADK Frontend](/en/veadk/1.0.4/components/frontend/veadk-frontend) |
+| Harness skills | Harness `skills` accepts `space:<skill-space-id>` to load an entire AgentKit skills-center space alongside Skill Hub names or slugs. | [Skills](/en/veadk/1.0.4/components/agent/skills) |
+| Frontend security | Removed the action that directly executed browser-submitted code; restricted the AgentKit proxy protocol, host, and credential requirements; and confined deployment and static-file paths. | [VeADK Frontend](/en/veadk/1.0.4/components/frontend/veadk-frontend) |
+| Logging | Migrated logging to Python's standard `logging` package while retaining trace-ID correlation. Non-interactive output no longer contains color escapes, and streaming reasoning is no longer logged token by token. | [Application logging](/en/veadk/1.0.4/components/observability/logging) |
+| Storage configuration | Expanded Milvus and OpenViking environment and configuration examples. Version 1.0.4 continues to provide the Milvus knowledge, OpenViking knowledge, and OpenViking long-term memory backends introduced in 1.0.3. | [Milvus](/en/veadk/1.0.4/components/knowledge/milvus) · [OpenViking knowledge](/en/veadk/1.0.4/components/knowledge/openviking) · [OpenViking memory](/en/veadk/1.0.4/components/memory/openviking) |

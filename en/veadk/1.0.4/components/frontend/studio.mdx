@@ -1,0 +1,110 @@
+---
+title: "Studio agent workbench"
+---
+
+VeADK Studio is a workbench for creating and managing agents. It uses the same service as VeADK Frontend, but hides chat, search, session history, and the skill center and opens directly on the Add Agent page.
+
+Studio can generate a project through an intelligent flow, custom configuration, or a template. You can preview and edit generated files, download the project as a ZIP, or deploy it to AgentKit. The workflow entry is marked as coming soon and cannot be selected. Deployment progress is presented in build-image, deploy, and publish stages.
+
+## Start locally
+
+Run the command from the parent directory of your agent applications:
+
+```bash
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+
+veadk studio --agents-dir ./agents --open
+```
+
+`--open` opens `http://127.0.0.1:8000` after the service is ready. Without it, Studio starts the service without opening a browser.
+
+Volcengine credentials are used for models, cloud-resource queries, and AgentKit deployment from the workbench. In production, provide them through environment variables or a secret manager rather than project files.
+
+## Create an agent
+
+1. On Add Agent, select the intelligent, custom, or template path. The workflow entry is not available.
+2. Configure the model, instruction, tools, skills, memory, and knowledge base. Multi-agent projects can also use sequential, parallel, loop, or A2A nodes.
+3. Review the generated files and download a ZIP if you need to work offline.
+4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
+
+The online Test Run action for generated projects was removed in 1.0.4. To validate code before deployment, download it and run tests in a controlled local development environment.
+
+## Manage agents
+
+Manage Agents lists AgentKit runtimes deployed through this workbench by the signed-in user. The list is filtered by the user identity recorded during deployment and exposes:
+
+- Runtime name, ID, status, region, and creation time;
+- Model, description, project, version, resources, and update time;
+- Bound Memory, Tool, Knowledge, and MCP Toolset identifiers;
+- Runtime environment variables and primary-agent information.
+
+The data-plane API key is not stored in the browser. The management page therefore shows primary-agent information available from the control plane and does not use data-plane credentials to load the complete sub-agent tree.
+
+<Warning>
+  Delete permanently removes the corresponding AgentKit runtime. Confirm that it no longer serves traffic and back up required data and configuration before proceeding.
+</Warning>
+
+The management page can display runtime environment-variable values. Restrict Studio to authorized users and avoid storing plaintext secrets in ordinary environment variables; prefer the platform's secret-management features.
+
+## `veadk studio` options
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--agents-dir` | `str` | `.` | Parent directory of agent applications. Each child directory with `agent.py` exposing `root_agent` is an app. |
+| `--frontend-dir` | `str \| None` | Bundled UI, then `./frontend/dist` | Override the built Studio UI directory. |
+| `--host` | `str` | `127.0.0.1` | Bind address. |
+| `--port` | `int` | `8000` | Bind port. |
+| `--dev` | Boolean flag | `false` | Serve only the API and allow CORS from the Vite development server at `http://localhost:5173`. |
+| `--oauth2-user-pool` | `str \| None` | `None` | VeIdentity user-pool name. Combine with a client name or UID to enable SSO. |
+| `--oauth2-user-pool-client` | `str \| None` | `None` | VeIdentity user-pool client name. |
+| `--oauth2-user-pool-uid` | `str \| None` | `OAUTH2_USER_POOL_ID` | Select the VeIdentity user pool by UID. |
+| `--oauth2-user-pool-client-uid` | `str \| None` | `OAUTH2_USER_POOL_CLIENT_ID` | Select the user-pool client by UID. |
+| `--oauth2-redirect-uri` | `str \| None` | `OAUTH2_REDIRECT_URI`, otherwise `http://{host}:{port}/oauth2/callback` | OAuth2 callback. Public deployments require an externally reachable URL. |
+| `--oauth2-provider` | `str \| None` | `OAUTH2_PROVIDER`; defaults to `veidentity` with a pool | SSO provider identifier. |
+| `--oauth2-provider-label` | `str \| None` | `OAUTH2_PROVIDER_LABEL` | Login-button label. |
+| `--auth-mode` | `frontend \| gateway` | `frontend` | `frontend` handles login in Studio; `gateway` trusts JWT identity forwarded by an upstream gateway. It also reads `VEADK_FRONTEND_AUTH_MODE`. |
+| `--open` / `--no-open` | `bool` | `--no-open` | Open the default browser when ready. Ignored in development mode. |
+
+## Deploy to VeFaaS
+
+`veadk studio deploy` deploys Studio as a VeFaaS application protected by VeIdentity login. It creates or reuses a Serverless API Gateway. Unless you pass an IAM role, it also creates or reuses `VeADKFrontendServiceRole` and `VeADKFrontendPolicy`. After deployment, the command registers the public callback with the user-pool client and updates the application configuration.
+
+<Warning>
+  This operation creates or changes VeFaaS, API Gateway, IAM, and VeIdentity resources. It can incur charges and affect production access. The default role has broad permissions to create and manage AgentKit runtimes and related cloud resources. Have an administrator review the scope before production deployment; pass `--iam-role` to use a preconfigured, narrower role.
+</Warning>
+
+Prepare the user-pool UID, user-pool client UID, and suitable Volcengine credentials, then run:
+
+```bash
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+
+veadk studio deploy \
+  --user-pool-id "your-user-pool-id" \
+  --allowed-client-id "your-user-pool-client-id" \
+  --vefaas-app-name "veadk-studio" \
+  --veadk-version "1.0.4"
+```
+
+On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
+
+The deployer's long-lived access and secret keys are not written to the VeFaaS application environment. Deployed Studio uses temporary credentials from its bound IAM role.
+
+### Deployment options
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--user-pool-id` | `str` | Required | VeIdentity user-pool UID used for Studio login. |
+| `--allowed-client-id` | `str` | Required | User-pool client UID used for login. |
+| `--client-secret` | `str` | `""` | Supply only if the secret cannot be read from the client UID. Direct arguments can enter shell history, so omit it when lookup is available. |
+| `--vefaas-app-name` | `str` | Required | VeFaaS application name, 4–64 characters containing letters, digits, and hyphens, but no underscores. |
+| `--region` | `str` | `cn-beijing` | Region for VeFaaS, API Gateway, and related resources. |
+| `--iam-role` | `str \| None` | `None` | Existing IAM role TRN for the function. If omitted, the default role is created or reused. |
+| `--gateway-name` | `str` | `""` | Serverless API Gateway name. If omitted, an existing gateway is reused or a gateway is created when none exists. |
+| `--gateway-service-name` | `str` | `""` | Gateway service name; leave empty for automatic configuration. |
+| `--gateway-upstream-name` | `str` | `""` | Gateway upstream name; leave empty for automatic configuration. |
+| `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used during deployment. Prefer the environment variable. |
+| `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. Prefer the environment variable. |
+| `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.4` to reproduce this version. |
+| `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |

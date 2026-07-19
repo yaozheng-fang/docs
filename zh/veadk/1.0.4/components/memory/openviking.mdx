@@ -1,0 +1,109 @@
+---
+title: "使用 OpenViking 存储"
+---
+
+`openviking` 后端将会话提交给 OpenViking，由服务提取用户相关的实体、事件和偏好，并在后续会话中按用户检索。它会同时保留用户消息和智能体回复，以便 OpenViking 从完整对话中生成记忆。
+
+## 前提条件
+
+- 可访问的 OpenViking HTTP 服务；
+- 该服务签发的 service owner API Key；
+- VeADK 1.0.4 已包含所需的 `openviking-sdk` 依赖。
+
+<Warning>
+  启用自动保存后，会话内容会发送到配置的 OpenViking 服务。请在写入前确认用户授权、数据范围、访问控制和保留策略。
+</Warning>
+
+## 配置长期记忆
+
+```bash
+export DATABASE_OPENVIKING_URL="https://openviking.example.com"
+export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
+```
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+memory = LongTermMemory(
+    backend="openviking",
+    app_name="personal_assistant",
+    top_k=5,
+)
+
+agent = Agent(
+    name="personal_assistant",
+    instruction="需要回忆用户信息时，使用 `load_memory` 工具检索长期记忆。",
+    long_term_memory=memory,
+    auto_save_session=True,
+)
+```
+
+同一 `user_id` 的新会话可以检索之前提交的记忆。`app_name` 用于隔离应用，默认 peer 标识直接使用 `user_id`。
+
+## 参数
+
+### `LongTermMemory` 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `backend` | `str` | `opensearch` | 使用 OpenViking 时设为 `openviking`。 |
+| `backend_config` | `dict` | `{}` | OpenViking 后端的显式配置。 |
+| `top_k` | `int` | `5` | 每次检索返回的记忆数量。 |
+| `index` | `str` | `""` | 应用隔离标识；为空时使用 `app_name`，两者均为空时使用 `default_app`。 |
+| `app_name` | `str` | `""` | 应用名称，也是 `index` 的回退值。 |
+| `user_id` | `str` | `""` | 已废弃，仅为兼容旧代码保留。运行时用户以会话或 `Runner` 的 `user_id` 为准。 |
+
+### OpenViking 后端参数
+
+| 参数 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `index` | — | `str` | 由 `LongTermMemory` 传入 | 应用隔离标识，不能为空。 |
+| `url` | `DATABASE_OPENVIKING_URL` | `str` | `""` | OpenViking HTTP 服务地址。必须配置。 |
+| `api_key` | `DATABASE_OPENVIKING_API_KEY` | `str` | `""` | service owner API Key。必须配置。 |
+| `peer_id_resolver` | — | `Callable[[str, str], str] \| None` | 直接返回 `user_id` | 根据 `app_name` 和 `user_id` 生成 OpenViking peer 标识。 |
+| `timeout` | — | `float` | `30` | OpenViking 客户端请求超时时间，单位为秒。 |
+| `openviking_config` | `DATABASE_OPENVIKING_*` | `OpenVikingConfig` | 从环境变量读取 | 包含 `url` 和 `api_key` 的连接配置；显式的同名参数优先。 |
+
+显式配置示例：
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+memory = LongTermMemory(
+    backend="openviking",
+    backend_config={
+        "index": "personal_assistant",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "timeout": 45,
+    },
+)
+```
+
+生产环境应通过环境变量或密钥管理服务注入 `api_key`。
+
+## 自定义用户映射
+
+默认情况下，OpenViking peer 标识等于 VeADK 的 `user_id`。多租户应用可以提供 `peer_id_resolver`，把租户和用户组合成单个安全标识：
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+
+def resolve_peer_id(app_name: str, user_id: str) -> str:
+    return f"{app_name}-{user_id}"
+
+
+memory = LongTermMemory(
+    backend="openviking",
+    backend_config={
+        "index": "personal_assistant",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "peer_id_resolver": resolve_peer_id,
+    },
+)
+```
+
+返回值不能为空，只能包含字母、数字、点、下划线、`@` 和连字符，且不能为 `.` 或 `..`。

@@ -1,0 +1,108 @@
+---
+title: "Skills"
+---
+
+Skills are reusable prompt packages that provide an agent with domain knowledge, procedures, and scripts. VeADK 1.0.0 first loads each skill's name and description, then reads its full content when the skill is needed to limit context usage.
+
+VeADK 1.0.0 supports three execution modes:
+
+| Mode | Description |
+| --- | --- |
+| `local` | Loads skills from a local directory and executes them locally. |
+| `skills_sandbox` | Loads skills from a cloud Skill Space and executes them in a sandbox through `execute_skills`. |
+| `aio_sandbox` | Executes skills in an AgentKit All-in-one tool runtime. |
+
+If `skills_mode` is unset, VeADK selects a mode from the runtime environment: local runs use `local`; an AgentKit tool runtime uses `skills_sandbox` or `aio_sandbox` according to its tool type.
+
+## Skill directory
+
+A local path in `skills` must point to a skills root. Each child directory represents one skill and contains `SKILL.md`:
+
+```text
+skills/
+└── kb-skill/
+    ├── SKILL.md
+    ├── references/
+    ├── assets/
+    └── scripts/
+```
+
+The `SKILL.md` frontmatter must define `name` and `description`, and `name` should match the directory name:
+
+```markdown title="skills/kb-skill/SKILL.md"
+---
+name: kb-skill
+description: Query the knowledge base and compose an answer.
+---
+
+Follow these steps to query the knowledge base and compose an answer...
+```
+
+## Use local skills
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    skills=["/abs/path/to/skills"],
+    skills_mode="local",
+)
+```
+
+Local mode adds skill metadata to the system prompt and provides the supporting tools needed to read, edit, and execute skill resources. Skill scripts can access local files and the shell environment, so load only trusted skill directories.
+
+## Use a cloud Skill Space
+
+Pass the Skill Space identifier through `skills`, select `skills_sandbox`, and add `execute_skills`:
+
+```python
+import os
+
+from veadk import Agent
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+agent = Agent(
+    skills=[os.environ["AGENTKIT_SKILL_SPACE_ID"]],
+    skills_mode="skills_sandbox",
+    tools=[execute_skills],
+)
+```
+
+Configure credentials that can access the Skill Space and AgentKit tool runtime before running the agent.
+
+## Enable a skill checklist
+
+A skill definition can include a checklist. With `enable_skills_checklist=True`, VeADK initializes its items when execution begins and prompts the model to update each item through `update_check_list`:
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    skills=["/abs/path/to/skills"],
+    skills_mode="local",
+    enable_skills_checklist=True,
+)
+```
+
+## Load skills dynamically
+
+With `enable_dynamic_load_skills=True`, VeADK checks and reloads skill configuration while the agent is running:
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    skills=["/abs/path/to/skills"],
+    skills_mode="local",
+    enable_dynamic_load_skills=True,
+)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `skills` | `list[str]` | `[]` | Local skills-root paths or cloud Skill Space identifiers. |
+| `skills_mode` | `"local" \| "skills_sandbox" \| "aio_sandbox" \| None` | `None` | Execution mode; when `None`, VeADK selects it from the runtime environment. |
+| `enable_skills_checklist` | `bool` | `False` | Tracks each item for skills that define a checklist. |
+| `enable_dynamic_load_skills` | `bool` | `False` | Checks and reloads skills while the agent is running. |

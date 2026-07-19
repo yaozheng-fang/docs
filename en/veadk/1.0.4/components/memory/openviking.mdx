@@ -1,0 +1,109 @@
+---
+title: "Store memory in OpenViking"
+---
+
+The `openviking` backend submits sessions to OpenViking, which extracts user-related entities, events, and preferences for retrieval in later sessions. It includes both user messages and agent responses so OpenViking can derive memory from the complete conversation.
+
+## Prerequisites
+
+- A reachable OpenViking HTTP service;
+- A service owner API key issued by that service;
+- VeADK 1.0.4 already includes the required `openviking-sdk` dependency.
+
+<Warning>
+  When automatic saving is enabled, session content is sent to the configured OpenViking service. Confirm user consent, data scope, access controls, and retention policy before writing conversations.
+</Warning>
+
+## Configure long-term memory
+
+```bash
+export DATABASE_OPENVIKING_URL="https://openviking.example.com"
+export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
+```
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+memory = LongTermMemory(
+    backend="openviking",
+    app_name="personal_assistant",
+    top_k=5,
+)
+
+agent = Agent(
+    name="personal_assistant",
+    instruction="Use `load_memory` when previous user information is relevant.",
+    long_term_memory=memory,
+    auto_save_session=True,
+)
+```
+
+A new session with the same `user_id` can retrieve memories committed by earlier sessions. `app_name` scopes the application, and the default peer identifier is the `user_id` itself.
+
+## Parameters
+
+### `LongTermMemory` parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `backend` | `str` | `opensearch` | Set to `openviking` for this backend. |
+| `backend_config` | `dict` | `{}` | Explicit OpenViking backend configuration. |
+| `top_k` | `int` | `5` | Number of memories returned by each search. |
+| `index` | `str` | `""` | Application scope. It falls back to `app_name`, then `default_app`. |
+| `app_name` | `str` | `""` | Application name and fallback for `index`. |
+| `user_id` | `str` | `""` | Deprecated and retained for compatibility. Runtime users come from the session or `Runner.user_id`. |
+
+### OpenViking backend parameters
+
+| Parameter | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `index` | — | `str` | Supplied by `LongTermMemory` | Non-empty application scope. |
+| `url` | `DATABASE_OPENVIKING_URL` | `str` | `""` | OpenViking HTTP service URL. Required. |
+| `api_key` | `DATABASE_OPENVIKING_API_KEY` | `str` | `""` | Service owner API key. Required. |
+| `peer_id_resolver` | — | `Callable[[str, str], str] \| None` | Returns `user_id` | Builds the OpenViking peer identifier from `app_name` and `user_id`. |
+| `timeout` | — | `float` | `30` | OpenViking client request timeout in seconds. |
+| `openviking_config` | `DATABASE_OPENVIKING_*` | `OpenVikingConfig` | Read from environment | Connection configuration containing `url` and `api_key`; explicit same-name parameters take precedence. |
+
+Explicit configuration example:
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+memory = LongTermMemory(
+    backend="openviking",
+    backend_config={
+        "index": "personal_assistant",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "timeout": 45,
+    },
+)
+```
+
+In production, inject `api_key` through environment variables or a secret manager.
+
+## Customize user mapping
+
+By default, the OpenViking peer identifier equals the VeADK `user_id`. A multitenant application can provide `peer_id_resolver` to combine tenant and user values into one safe identifier:
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+
+def resolve_peer_id(app_name: str, user_id: str) -> str:
+    return f"{app_name}-{user_id}"
+
+
+memory = LongTermMemory(
+    backend="openviking",
+    backend_config={
+        "index": "personal_assistant",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "peer_id_resolver": resolve_peer_id,
+    },
+)
+```
+
+The result cannot be empty. It may contain letters, digits, dots, underscores, `@`, and hyphens, and cannot be `.` or `..`.

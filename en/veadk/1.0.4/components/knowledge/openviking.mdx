@@ -1,0 +1,98 @@
+---
+title: "Store knowledge in OpenViking"
+---
+
+The `openviking` backend maps a VeADK knowledge base to an OpenViking resource directory. OpenViking performs document parsing, indexing, and retrieval, so no local embedding model is required. The default target is `viking://resources/{index}/`.
+
+## Prerequisites
+
+- A reachable OpenViking HTTP service;
+- A service owner API key issued by that service;
+- VeADK 1.0.4 already includes the required `openviking-sdk` dependency.
+
+<Warning>
+  Imported documents are sent to the configured OpenViking service. Before processing personal, business, or other sensitive data, verify that the deployment location, access controls, and retention policy meet your requirements.
+</Warning>
+
+## Configure and import documents
+
+```bash
+export DATABASE_OPENVIKING_URL="https://openviking.example.com"
+export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
+```
+
+```python
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(backend="openviking", index="company_faq")
+kb.add_from_directory("./company_docs")
+
+agent = Agent(
+    name="company_assistant",
+    instruction="Use the knowledge base for company policy questions.",
+    knowledgebase=kb,
+)
+```
+
+By default, `add_from_directory` waits up to 300 seconds for parsing and indexing to finish. You can then verify retrieval directly:
+
+```python
+for entry in kb.search("annual leave policy", top_k=3):
+    print(entry.content)
+    print(entry.metadata.get("uri"), entry.metadata.get("score"))
+```
+
+## Constructor parameters
+
+| Parameter | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `index` | — | `str` | None | Knowledge base identifier used to form the default resource directory. It cannot be empty. |
+| `url` | `DATABASE_OPENVIKING_URL` | `str \| None` | `None` | OpenViking HTTP service URL. `OPENVIKING_URL` is also accepted. |
+| `api_key` | `DATABASE_OPENVIKING_API_KEY` | `str \| None` | `None` | Service owner API key. `OPENVIKING_API_KEY` is also accepted. |
+| `account` | `DATABASE_OPENVIKING_ACCOUNT` | `str \| None` | `None` | Account for multitenant or trusted-gateway deployments. `OPENVIKING_ACCOUNT` is also accepted. |
+| `user` | `DATABASE_OPENVIKING_USER` | `str \| None` | `None` | User for multitenant or trusted-gateway deployments. `OPENVIKING_USER` is also accepted. |
+| `actor_peer_id` | `DATABASE_OPENVIKING_ACTOR_PEER_ID` | `str \| None` | `None` | Calling agent or peer identifier. `OPENVIKING_ACTOR_PEER_ID` is also accepted. |
+| `target_uri` | `DATABASE_OPENVIKING_TARGET_URI` | `str \| None` | `viking://resources/{index}/` | Resource directory used for import and retrieval. `OPENVIKING_TARGET_URI` is also accepted. |
+| `wait` | `DATABASE_OPENVIKING_WAIT` | `bool` | `true` | Whether import waits for parsing and indexing. |
+| `import_timeout` | `DATABASE_OPENVIKING_IMPORT_TIMEOUT` | `float \| None` | `300` | Import wait timeout in seconds. |
+| `hydrate_results` | `DATABASE_OPENVIKING_HYDRATE_RESULTS` | `bool` | `true` | Whether to read resource content or overview after a match. When disabled, the search abstract is returned. |
+| `read_limit` | `DATABASE_OPENVIKING_READ_LIMIT` | `int` | `200` | Maximum number of lines read from a leaf resource. |
+| `score_threshold` | `DATABASE_OPENVIKING_SCORE_THRESHOLD` | `float \| None` | `None` | Minimum retrieval score. |
+| `use_context_search` | `DATABASE_OPENVIKING_USE_CONTEXT_SEARCH` | `bool` | `false` | Whether to use session-aware context search instead of regular resource retrieval. |
+
+You can also pass settings through `backend_config`:
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="openviking",
+    backend_config={
+        "index": "company_faq",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "target_uri": "viking://resources/company_faq/",
+        "score_threshold": 0.3,
+    },
+)
+```
+
+In production, inject `api_key` through environment variables or a secret manager.
+
+## Per-operation overrides
+
+Constructor settings define the defaults. The following keyword arguments can override them for a single import or search.
+
+| Method | Parameters | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `add_from_directory` | `target_uri`, `wait`, `timeout` | Instance settings | Override the target, wait behavior, and timeout. |
+| `add_from_directory` | `strict`, `directly_upload_media`, `preserve_structure`, `telemetry` | `false`, `true`, `true`, `false` | Control strict mode, media upload, directory preservation, and telemetry. |
+| `add_from_directory` | `ignore_dirs`, `include`, `exclude`, `args` | `None` | Filter directories and files and pass additional import arguments. |
+| `add_from_directory` | `watch_interval` | `0` | Directory watch interval; `0` disables continuous watching. |
+| `add_from_files` | `target_uri`, `wait`, `timeout` | Instance settings | Override the target, wait behavior, and timeout. |
+| `add_from_files` | `strict`, `reason`, `instruction`, `directly_upload_media`, `telemetry` | `false`, `""`, `""`, `true`, `false` | Control individual file imports. |
+| `search` | `target_uri`, `score_threshold`, `use_context_search` | Instance settings | Override retrieval scope, score threshold, and search mode. |
+| `search` | `filter`, `context_type`, `tags` | `None` | Pass retrieval filters to OpenViking. |
+| `search` | `session`, `session_id` | `None` | Supply session context when context search is enabled. |
+| `search` | `telemetry` | `false` | Enable OpenViking telemetry for this search. |

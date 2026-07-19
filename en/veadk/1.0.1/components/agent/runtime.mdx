@@ -1,0 +1,111 @@
+---
+title: "Runtime"
+---
+
+The runtime determines how an agent's inner loop runs — how each turn calls the
+model, interprets intent, and invokes tools. The default runtime is built on
+Google ADK's execution flow and works out of the box; you can also switch the
+execution backend or inject shared processing logic into the flow, without
+changing the agent itself.
+
+## Default runtime
+
+The ADK runtime is the default and needs no extra configuration:
+
+```python
+from veadk import Agent
+
+agent = Agent(name="assistant")  # uses the ADK runtime by default
+```
+
+## Switch the execution backend
+
+Use `runtime` to select the inner-loop execution backend:
+
+Install the Codex Python SDK before selecting the Codex runtime:
+
+```bash
+pip install openai-codex
+```
+
+<Warning>
+  The Codex runtime in VeADK 1.0.1 allows command execution, host file access, and network access by default, without interactive approval. Run trusted tasks in an isolated environment and restrict the credentials and data available to the process.
+</Warning>
+
+```python
+agent = Agent(name="assistant", runtime="codex")
+```
+
+| Value | Description |
+| --- | --- |
+| `adk` (default) | Google ADK's built-in execution flow; suitable for most cases. |
+| `codex` | Runs the agent's inner loop with the Codex SDK; requires `openai-codex`. |
+
+### Skills and tools in the Codex runtime
+
+VeADK 1.0.1 makes skills loaded through ADK `SkillToolset` or the legacy `skills` entry point available to the Codex runtime. The runtime can also call an agent's function and MCP tools:
+
+```python
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioServerParameters
+from veadk import Agent
+
+mcp_tools = MCPToolset(
+    connection_params=StdioServerParameters(
+        command="python",
+        args=["mcp_server.py"],
+    )
+)
+
+agent = Agent(runtime="codex", tools=[mcp_tools])
+```
+
+The MCP server process and its tools receive the permissions allowed by the current environment. Connect only trusted servers and restrict their access to files, networks, and credentials.
+
+### Codex backend requests
+
+| Environment variable | Default | Description |
+| --- | --- | --- |
+| `CODEX_SHIM_NUM_RETRIES` | `2` | Retry count for rate limits, server errors, overload, and timeouts; values below `0` are treated as `0`. |
+| `CODEX_SHIM_TIMEOUT` | `0` | Per-request backend timeout in seconds; `0` does not add a timeout. |
+
+## Request processing
+
+Without touching business logic, you can inject shared cross-cutting processing
+into each run. Pass a processor to `run_processor`, for example to enforce login
+via identity authentication:
+
+```python
+from veadk import Agent
+from veadk.integrations.ve_identity import AuthRequestProcessor
+
+agent = Agent(name="assistant", run_processor=AuthRequestProcessor())
+```
+
+When unset, the default processor is used and behavior is unchanged. VeADK ships
+`AuthRequestProcessor` as a ready-made implementation for identity authentication.
+
+### Custom processors
+
+Every processor subclasses the abstract base `BaseRunProcessor` and implements
+its `process_run(runner, message)` method. That method returns a decorator
+wrapping the run's event stream, letting you:
+
+- inject logic **before and after** the whole run (auth, logging, monitoring);
+- **intercept, rewrite, or inject** events produced during the run;
+- build control logic such as retries on top of that.
+
+```python
+from veadk.processors.base_run_processor import BaseRunProcessor
+
+class LoggingProcessor(BaseRunProcessor):
+    def process_run(self, runner, message, **kwargs):
+        def decorator(event_generator):
+            async def wrapper():
+                # Before: record start, validate, ...
+                async for event in event_generator():
+                    yield event  # intercept or rewrite events here
+                # After: summarize, report, ...
+            return wrapper
+        return decorator
+```

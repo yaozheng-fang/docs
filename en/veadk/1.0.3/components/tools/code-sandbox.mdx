@@ -1,0 +1,101 @@
+---
+title: "Code sandboxes"
+tag: "Function tool"
+---
+
+## Overview
+
+VeADK provides a set of tools that run tasks remotely in an [AgentKit sandbox](https://console.volcengine.com/agentkit):
+
+| Tool | Description |
+| :--- | :--- |
+| `run_code` | Execute arbitrary code — good for computation, data processing, and so on |
+| `execute_skills` | Run an `agent.py` workflow in a prebuilt skills sandbox |
+| `coding` | Run a code-generation workflow in an OpenCode sandbox |
+| `run_sandbox_agent` | Run `agent.py` in a remote sandbox under any `tool_id` |
+
+Import paths:
+
+- `from veadk.tools.builtin_tools.run_code import run_code`
+- `from veadk.tools.builtin_tools.execute_skills import execute_skills`
+- `from veadk.tools.builtin_tools.coding import coding`
+- `from veadk.tools.builtin_tools.run_sandbox_agent import run_sandbox_agent`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure Volcengine AK / SK.
+2. Configure the API key for the agent's reasoning model.
+3. Configure the AgentKit Tool ID (see below).
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`: Volcengine AK / SK
+- `AGENTKIT_TOOL_ID`: default AgentKit sandbox ID, used as the fallback for all sandbox tools
+- `AGENTKIT_TOOL_ID_SCRIPT`: sandbox ID dedicated to `run_code`; falls back to `AGENTKIT_TOOL_ID`
+- `AGENTKIT_TOOL_ID_SKILLS`: sandbox ID dedicated to `execute_skills`; falls back to `AGENTKIT_TOOL_ID`
+- `AGENTKIT_TOOL_ID_OPENCODE`: sandbox ID dedicated to `coding`; falls back to `AGENTKIT_TOOL_ID`
+- `AGENTKIT_TOOL_HOST`: endpoint for calling AgentKit Tools
+- `AGENTKIT_TOOL_SERVICE_CODE`: service code for calling AgentKit Tools
+
+`config.yaml` keys:
+
+```yaml title="config.yaml"
+agentkit:
+  tool_id: your-default-tool-id
+  tool_id_script: your-script-tool-id
+  tool_id_skills: your-skills-tool-id
+  tool_id_opencode: your-opencode-tool-id
+```
+
+Creating a sandbox:
+
+<Steps>
+
+<Step title="Create a sandbox tool">
+Create a sandbox tool in the console: give it a name (e.g. `AIO_Sandbox_xxxx`) and choose the "all-in-one tool set" type, which includes Browser, Terminal, and Code runtimes.
+</Step>
+
+<Step title="Obtain the sandbox ID">
+After creation, obtain the sandbox ID from the console (looks like `t-ye8dj82xxxxx`) and fill it into the environment variables or `config.yaml` above.
+</Step>
+
+</Steps>
+
+## Usage
+
+```python title="examples/tools/run_code/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.run_code import run_code
+from veadk.tools.builtin_tools.web_search import web_search
+
+agent = Agent(
+    name="data_analysis_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="A data analysis agent for the stock market.",
+    instruction=(
+        "You are a senior engineer running code in a sandbox. Use web_search to find "
+        "company operating data, use libraries such as akshare to download stock data, "
+        "and install missing dependencies from within the sandbox via code."
+    ),
+    tools=[run_code, web_search],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("Analyze the recent stock price trend of Sungrow Power")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

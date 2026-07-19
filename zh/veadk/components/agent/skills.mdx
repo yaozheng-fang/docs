@@ -34,6 +34,37 @@ agent = Agent(tools=[SkillToolset(registry=registry)])
 
 该方式不会在初始化时全量下载技能：`search_skills` 实时拉取远端技能列表，`get_skill` 在需要某个技能时按需下载并加载；远端版本变化后会按新版本重新下载。
 
+## Harness 技能中心
+
+Harness 可以同时加载 Skill Hub 技能和 AgentKit 技能中心的技能空间。`skills` 中的普通名称或 slug 表示 Skill Hub 技能；`space:` 前缀表示技能中心的技能空间 ID。
+
+技能中心需要可读取该技能空间及其对象存储内容的火山引擎凭证。本地运行时设置 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`，使用临时凭证时同时设置 `VOLCENGINE_SESSION_TOKEN`；VeFaaS 中也可以使用绑定 IAM Role 的临时凭证。
+
+```bash
+cd my-harness
+veadk harness add \
+  --skills "data-visualization-cloud,space:ss-example"
+```
+
+生成的 `harness.yaml` 使用列表保存技能来源：
+
+```yaml
+skills:
+  - data-visualization-cloud
+  - space:ss-example
+```
+
+Harness 启动时会下载并加载基础配置中的技能。`space:ss-example` 会加载该技能空间中的全部技能，并与 Skill Hub 技能组成一个 `SkillToolset`。调用时也可以临时增加技能空间：
+
+```bash
+veadk harness invoke \
+  --name research-agent \
+  --message "整理一份研究报告" \
+  --skills "space:ss-example"
+```
+
+调用级 `--skills` 在基础 Harness 配置上增加本次所需技能，不会修改 `harness.yaml`。如果任一技能无法下载、缺少有效的 `SKILL.md` 或不符合 ADK 技能格式，Harness 会终止本次加载，不会以不完整的技能集合继续运行。
+
 ## 技能目录结构
 
 一个本地技能由独立目录构成，包含一个 `SKILL.md` 文件，并可包含 `references/`、`assets/`、`scripts/` 等子目录：

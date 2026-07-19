@@ -1,0 +1,58 @@
+---
+title: "Application logging"
+---
+
+VeADK 1.0.4 uses Python's standard `logging` package for runtime logs and no longer depends on Loguru. VeADK loggers live under the `veadk` namespace and write to standard output by default, which works with container platforms and log collectors.
+
+## Set the log level
+
+Set `LOGGING_LEVEL` before importing VeADK. Its default is `DEBUG`.
+
+```bash
+export LOGGING_LEVEL=INFO
+python app.py
+```
+
+Use standard Python logging levels, including `DEBUG`, `INFO`, `WARNING`, `ERROR`, and `CRITICAL`.
+
+## Log format
+
+Each record contains the time, level, call location, and message:
+
+```text
+2026-07-14 10:30:00 | INFO | runner.py:180 - Event output: request completed
+```
+
+When code runs inside a recording OpenTelemetry span, VeADK adds `trace_id` so you can correlate a request between logs and traces:
+
+```text
+2026-07-14 10:30:00 | INFO | runner.py:180 | trace_id=0123456789abcdef - Event output: request completed
+```
+
+Interactive terminals use colors for the time, level, and location. Redirected or collected standard output does not contain ANSI color escape sequences.
+
+## Integrate application logs
+
+Your application can use standard-library loggers and control the `veadk` namespace independently:
+
+```python
+import logging
+
+from veadk import Agent
+
+logging.getLogger("veadk").setLevel(logging.INFO)
+app_logger = logging.getLogger("company_assistant")
+
+agent = Agent(name="company_assistant")
+app_logger.info("Agent initialized")
+```
+
+The VeADK handler does not propagate to the Python root logger, which prevents duplicate output when the root logger is configured separately. To send VeADK records to a custom backend, attach a standard `logging` handler to `logging.getLogger("veadk")`.
+
+## Streaming output logs
+
+During streaming execution, `Runner` does not log each partial chunk. Reasoning is logged once when a complete section finishes, while final answers, tool calls, and tool results are recorded as complete events. Events are still streamed unchanged to the caller; this behavior only reduces token-by-token log noise.
+
+<Warning>
+  `DEBUG` records can contain model output, reasoning, tool arguments, and tool results. When production traffic contains sensitive data, set `LOGGING_LEVEL` to `INFO` or higher and apply suitable access and retention controls to collected logs.
+</Warning>

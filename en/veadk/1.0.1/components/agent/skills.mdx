@@ -1,0 +1,121 @@
+---
+title: "Skills"
+---
+
+Skills are reusable prompt packages that provide an agent with domain knowledge, procedures, and scripts. VeADK 1.0.1 recommends Google ADK's `SkillToolset` for local and cloud skills. The existing `Agent(skills=..., skills_mode="local")` entry point remains available but is deprecated. The `skills_sandbox` and `aio_sandbox` modes are unchanged.
+
+## Use local skills
+
+Load a skill directory with ADK's `load_skill_from_dir`, then pass a `SkillToolset` to the VeADK agent:
+
+```python
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent
+
+skill = load_skill_from_dir("/abs/path/to/skills/kb-skill")
+agent = Agent(tools=[SkillToolset(skills=[skill])])
+```
+
+ADK loads the skill, provides its prompt to the model, and exposes the `list_skills`, `load_skill`, `load_skill_resource`, and `run_skill_script` tools. If a skill runs files under `scripts/`, configure a code executor on the `SkillToolset` or agent. VeADK does not create a local code executor automatically.
+
+<Warning>
+  Skill scripts can access the files and runtime exposed by the code executor. Load only trusted skills and restrict the executor to the permissions they need.
+</Warning>
+
+## Use cloud skills
+
+VeADK 1.0.1 adds `VeSkillRegistry`, which exposes skills from SkillHub or a Skill Space through the ADK registry interface:
+
+```python
+import os
+
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent
+from veadk.skills import VeSkillRegistry
+
+registry = VeSkillRegistry(
+    skill_source_id=os.environ["AGENTKIT_SKILL_SOURCE_ID"],
+)
+agent = Agent(tools=[SkillToolset(registry=registry)])
+```
+
+`search_skills` retrieves the remote skill list, while `get_skill` downloads and loads a specific version when requested. This approach does not download every skill at initialization.
+
+| `VeSkillRegistry` parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `skill_source_id` | `str` | Required | One SkillHub or Skill Space identifier; an empty value or comma-separated identifiers are not accepted. |
+| `cache_dir` | `pathlib.Path \| None` | `None` | Local cache for downloaded skill versions; `None` uses the default cache directory. |
+
+## Skill directory
+
+An ADK local skill has its own directory. It must contain `SKILL.md` and can also include references, assets, and scripts:
+
+```text
+skills/
+└── kb-skill/
+    ├── SKILL.md
+    ├── references/
+    ├── assets/
+    └── scripts/
+```
+
+The `SKILL.md` frontmatter must define `name` and `description`, and the directory name should match `name`:
+
+```markdown title="skills/kb-skill/SKILL.md"
+---
+name: kb-skill
+description: Query the knowledge base and compose an answer.
+---
+
+Follow these steps to query the knowledge base and compose an answer...
+```
+
+## Legacy entry-point compatibility
+
+The legacy entry point supports these modes:
+
+| Mode | Description |
+| --- | --- |
+| `local` | Deprecated. VeADK loads and executes skills from a local skills root; migrate local use cases to ADK `SkillToolset`. |
+| `skills_sandbox` | Loads skills from a cloud Skill Space and executes them in a sandbox through `execute_skills`. |
+| `aio_sandbox` | Executes skills in an AgentKit All-in-one tool runtime. |
+
+If `skills_mode` is unset, VeADK selects a mode from the runtime environment: local runs use `local`; an AgentKit tool runtime uses `skills_sandbox` or `aio_sandbox` according to its tool type.
+
+Legacy local example:
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    skills=["/abs/path/to/skills"],
+    skills_mode="local",
+    enable_skills_checklist=True,
+    enable_dynamic_load_skills=True,
+)
+```
+
+Legacy sandbox example:
+
+```python
+import os
+
+from veadk import Agent
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+agent = Agent(
+    skills=[os.environ["AGENTKIT_SKILL_SPACE_ID"]],
+    skills_mode="skills_sandbox",
+    tools=[execute_skills],
+)
+```
+
+## Legacy parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `skills` | `list[str]` | `[]` | Local skills-root paths or cloud Skill Space identifiers. The local-loading entry point is deprecated. |
+| `skills_mode` | `"local" \| "skills_sandbox" \| "aio_sandbox" \| None` | `None` | Execution mode; when `None`, VeADK selects it from the runtime environment. |
+| `enable_skills_checklist` | `bool` | `False` | Tracks checklist items for skills loaded through the legacy entry point. |
+| `enable_dynamic_load_skills` | `bool` | `False` | Checks and reloads legacy skills while the agent is running. |

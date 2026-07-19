@@ -1,0 +1,74 @@
+---
+title: "Video generation"
+tag: "Function tool"
+---
+
+## Overview
+
+Tool identifier `video_generate`.
+
+`video_generate` generates videos from text. The example below first uses `image_generate` to create a first and last frame, then composes a video.
+
+Import path: `from veadk.tools.builtin_tools.video_generate import video_generate`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+Configure an API key that can call the video-generation model. Set `MODEL_VIDEO_API_KEY` for a separate key; otherwise the tool uses `MODEL_AGENT_API_KEY`, then the Volcengine credentials available to the process. The example also calls `image_generate`, so the same credentials must be able to call the image model, or set `MODEL_IMAGE_API_KEY` separately.
+</Warning>
+
+Environment variables:
+
+- `MODEL_VIDEO_API_KEY`: video-generation API key; defaults to the agent model credentials
+- `MODEL_VIDEO_API_BASE`: video-generation endpoint; defaults to `https://ark.cn-beijing.volces.com/api/v3/`
+- `MODEL_VIDEO_NAME`: video-generation model; defaults to `doubao-seedance-2-0-260128`
+- `MODEL_IMAGE_API_KEY`: image-generation key used by the example; defaults to the agent model credentials
+- `MODEL_IMAGE_NAME`: image-generation model used by the example; defaults to `doubao-seedream-5-0-260128`
+
+`config.yaml` keys:
+
+```yaml title="config.yaml"
+model:
+  video:
+    name: doubao-seedance-2-0-260128
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: your-api-key-here
+```
+
+## Usage
+
+```python title="examples/tools/video_generate/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.image_generate import image_generate
+from veadk.tools.builtin_tools.video_generate import video_generate
+
+agent = Agent(
+    name="video_generate_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="An expert in creating images and videos.",
+    instruction=(
+        "First use image_generate to create a first frame and a last frame, then use "
+        "video_generate to compose a video. Finally return the absolute path of the "
+        "video and briefly summarize its content."
+    ),
+    tools=[image_generate, video_generate],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "Generate a puppy, then a scene of it flying into the sky, and finally compose a video"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

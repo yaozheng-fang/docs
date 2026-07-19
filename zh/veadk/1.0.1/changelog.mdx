@@ -1,0 +1,20 @@
+---
+title: "变更记录"
+---
+
+VeADK 1.0.1 发布于 2026 年 7 月 7 日，主要新增 Harness、A2A 注册和 ADK 技能集成，并增强 Codex 运行时与 Frontend。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Codex 运行时 | 随包提供沙箱、网络访问与操作审核的默认配置：允许完整主机与网络访问，且不要求交互式确认。 | [PR #629](https://github.com/volcengine/veadk-python/pull/629) |
+| Harness | 新增 VeADK Harness 扩展，可为每轮调用准备上下文、压缩大体积工具结果并验证最终回答；同时支持在初始化时应用智能体描述。 | [PR #625](https://github.com/volcengine/veadk-python/pull/625)、[PR #633](https://github.com/volcengine/veadk-python/pull/633) |
+| A2A | 新增 Harness A2A 注册能力并修正注册行为。 | [PR #631](https://github.com/volcengine/veadk-python/pull/631)、[PR #632](https://github.com/volcengine/veadk-python/pull/632) |
+| A2A | A2A 调用支持 OAuth 认证。 | [PR #635](https://github.com/volcengine/veadk-python/pull/635) |
+| Codex 运行时 | 对临时后端错误提供可配置重试，并恢复经 Responses 适配层使用网页搜索的能力。 | [PR #637](https://github.com/volcengine/veadk-python/pull/637) |
+| 技能 | 新增与 Google ADK `SkillToolset` 配合使用的 `VeSkillRegistry`，支持 SkillHub 与技能空间；本地技能推荐迁移到 ADK `SkillToolset`，旧的 `Agent(skills=..., skills_mode="local")` 入口保持兼容但已废弃。 | [PR #634](https://github.com/volcengine/veadk-python/pull/634) |
+| VeADK Frontend | 新增网关认证模式，并在创建智能体时提示缺失的火山引擎访问凭证。 | [PR #638](https://github.com/volcengine/veadk-python/pull/638) |
+| Codex 运行时 | 支持将智能体技能传递给 Codex 运行时。 | [PR #640](https://github.com/volcengine/veadk-python/pull/640) |
+| Codex 运行时 | 支持在 Codex 运行时中调用智能体的 MCP 工具和函数工具。 | [PR #641](https://github.com/volcengine/veadk-python/pull/641) |
+| 示例 | 新增同时使用本地技能和 MCP 工具的 Codex 运行时示例。 | [PR #642](https://github.com/volcengine/veadk-python/pull/642) |
+
+完整发布信息参见 [VeADK 1.0.1 Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.1)。

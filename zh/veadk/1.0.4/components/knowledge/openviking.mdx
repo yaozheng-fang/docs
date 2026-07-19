@@ -1,0 +1,98 @@
+---
+title: "使用 OpenViking 存储"
+---
+
+`openviking` 后端把 VeADK 知识库映射到 OpenViking 资源目录。文档解析、索引和检索由 OpenViking 服务完成，因此不需要配置本地 embedding 模型。默认目标目录为 `viking://resources/{index}/`。
+
+## 前提条件
+
+- 可访问的 OpenViking HTTP 服务；
+- 该服务签发的 service owner API Key；
+- VeADK 1.0.4 已包含所需的 `openviking-sdk` 依赖。
+
+<Warning>
+  导入的文档会发送到配置的 OpenViking 服务。处理包含个人信息、业务数据或其他敏感内容的文档前，请确认服务部署位置、访问权限和数据保留策略符合要求。
+</Warning>
+
+## 配置并导入文档
+
+```bash
+export DATABASE_OPENVIKING_URL="https://openviking.example.com"
+export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
+```
+
+```python
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(backend="openviking", index="company_faq")
+kb.add_from_directory("./company_docs")
+
+agent = Agent(
+    name="company_assistant",
+    instruction="优先使用知识库回答公司制度相关问题。",
+    knowledgebase=kb,
+)
+```
+
+`add_from_directory` 默认等待 OpenViking 完成解析与索引，最长等待 300 秒。导入完成后可以直接验证检索：
+
+```python
+for entry in kb.search("年假政策", top_k=3):
+    print(entry.content)
+    print(entry.metadata.get("uri"), entry.metadata.get("score"))
+```
+
+## 构造参数
+
+| 参数 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `index` | — | `str` | 无 | 知识库标识，用于生成默认资源目录；不能为空。 |
+| `url` | `DATABASE_OPENVIKING_URL` | `str \| None` | `None` | OpenViking HTTP 服务地址。也兼容 `OPENVIKING_URL`。 |
+| `api_key` | `DATABASE_OPENVIKING_API_KEY` | `str \| None` | `None` | service owner API Key。也兼容 `OPENVIKING_API_KEY`。 |
+| `account` | `DATABASE_OPENVIKING_ACCOUNT` | `str \| None` | `None` | 多租户或可信网关场景中的账号。也兼容 `OPENVIKING_ACCOUNT`。 |
+| `user` | `DATABASE_OPENVIKING_USER` | `str \| None` | `None` | 多租户或可信网关场景中的用户。也兼容 `OPENVIKING_USER`。 |
+| `actor_peer_id` | `DATABASE_OPENVIKING_ACTOR_PEER_ID` | `str \| None` | `None` | 调用方智能体或 peer 标识。也兼容 `OPENVIKING_ACTOR_PEER_ID`。 |
+| `target_uri` | `DATABASE_OPENVIKING_TARGET_URI` | `str \| None` | `viking://resources/{index}/` | 导入与检索使用的资源目录。也兼容 `OPENVIKING_TARGET_URI`。 |
+| `wait` | `DATABASE_OPENVIKING_WAIT` | `bool` | `true` | 导入时是否等待解析与索引完成。 |
+| `import_timeout` | `DATABASE_OPENVIKING_IMPORT_TIMEOUT` | `float \| None` | `300` | 等待导入完成的超时时间，单位为秒。 |
+| `hydrate_results` | `DATABASE_OPENVIKING_HYDRATE_RESULTS` | `bool` | `true` | 检索命中后是否读取资源正文或概览；关闭时使用搜索结果摘要。 |
+| `read_limit` | `DATABASE_OPENVIKING_READ_LIMIT` | `int` | `200` | 读取叶子资源正文时的最大行数。 |
+| `score_threshold` | `DATABASE_OPENVIKING_SCORE_THRESHOLD` | `float \| None` | `None` | 检索最低得分阈值。 |
+| `use_context_search` | `DATABASE_OPENVIKING_USE_CONTEXT_SEARCH` | `bool` | `false` | 是否使用支持会话上下文的搜索方式；默认使用普通资源检索。 |
+
+也可以通过 `backend_config` 显式传入参数：
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="openviking",
+    backend_config={
+        "index": "company_faq",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "target_uri": "viking://resources/company_faq/",
+        "score_threshold": 0.3,
+    },
+)
+```
+
+生产环境应通过环境变量或密钥管理服务注入 `api_key`。
+
+## 操作级覆盖参数
+
+构造参数提供默认行为；下列参数可以在单次导入或检索中通过关键字参数覆盖。
+
+| 方法 | 参数 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `add_from_directory` | `target_uri`、`wait`、`timeout` | 使用实例配置 | 覆盖目标目录、等待行为与超时时间。 |
+| `add_from_directory` | `strict`、`directly_upload_media`、`preserve_structure`、`telemetry` | `false`、`true`、`true`、`false` | 控制严格模式、媒体上传、目录结构保留与遥测。 |
+| `add_from_directory` | `ignore_dirs`、`include`、`exclude`、`args` | `None` | 控制目录和文件筛选，并传递额外导入参数。 |
+| `add_from_directory` | `watch_interval` | `0` | 目录监听间隔；`0` 表示不持续监听。 |
+| `add_from_files` | `target_uri`、`wait`、`timeout` | 使用实例配置 | 覆盖目标目录、等待行为与超时时间。 |
+| `add_from_files` | `strict`、`reason`、`instruction`、`directly_upload_media`、`telemetry` | `false`、`""`、`""`、`true`、`false` | 控制单文件导入行为。 |
+| `search` | `target_uri`、`score_threshold`、`use_context_search` | 使用实例配置 | 覆盖检索范围、阈值与搜索方式。 |
+| `search` | `filter`、`context_type`、`tags` | `None` | 向 OpenViking 传递检索过滤条件。 |
+| `search` | `session`、`session_id` | `None` | 使用上下文搜索时提供会话信息。 |
+| `search` | `telemetry` | `false` | 是否为本次检索启用 OpenViking 遥测。 |

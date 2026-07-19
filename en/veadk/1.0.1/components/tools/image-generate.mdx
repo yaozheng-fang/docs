@@ -1,0 +1,71 @@
+---
+title: "Image generation"
+tag: "Function tool"
+---
+
+## Overview
+
+Tool identifier `image_generate`.
+
+`image_generate` generates images from text. For image-to-image editing, see `image_edit`.
+
+Import path: `from veadk.tools.builtin_tools.image_generate import image_generate`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+Configure an API key that can call the image-generation model. Set `MODEL_IMAGE_API_KEY` for a separate key; otherwise the tool uses `MODEL_AGENT_API_KEY`, then the Volcengine credentials available to the process.
+</Warning>
+
+Environment variables:
+
+- `MODEL_IMAGE_API_KEY`: image-generation API key; defaults to the agent model credentials
+- `MODEL_IMAGE_API_BASE`: image-generation endpoint; defaults to `https://ark.cn-beijing.volces.com/api/v3/`
+- `MODEL_IMAGE_NAME`: image-generation model; defaults to `doubao-seedream-5-0-260128`
+
+`config.yaml` keys:
+
+```yaml title="config.yaml"
+model:
+  image:
+    name: doubao-seedream-5-0-260128
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: your-api-key-here
+```
+
+## Usage
+
+```python title="examples/tools/image_generate/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.image_generate import image_generate
+
+agent = Agent(
+    name="image_generate_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="Generate images on demand.",
+    instruction="You are an image-generation expert. Call image_generate to create images for the user.",
+    tools=[image_generate],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("Generate a cute kitten")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Notes
+
+<Note>
+`image_generate` is the canonical import name. `from veadk.tools.builtin_tools.generate_image import image_generate` still works, but the `generate_image` module is deprecated — use `image_generate` instead.
+</Note>

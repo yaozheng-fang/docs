@@ -1,0 +1,58 @@
+---
+title: "Cloud-phone operation"
+tag: "Function tool"
+---
+
+## Overview
+
+Tool identifier `mobile_run`.
+
+`create_mobile_use_tool()` returns a tool that lets the agent complete operation tasks on a cloud phone.
+
+Import path: `from veadk.tools.builtin_tools.mobile_run import create_mobile_use_tool`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Purchase the cloud-phone service on Volcengine and order a pod.
+2. Configure the cloud-phone environment as needed (install apps, sign in, and so on).
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `TOOL_MOBILE_USE_TOOL_ID`: cloud-phone instance ID, in the form `product_id-pod_id`
+- `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`: Volcengine AK / SK
+
+The `tool_id` is in the form `product_id-pod_id`; obtain it from the instance-management page of the cloud-phone console.
+
+## Usage
+
+```python title="examples/tools/mobile_run/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.mobile_run import create_mobile_use_tool
+
+agent = Agent(
+    name="mobile_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="An agent that operates a cloud phone.",
+    instruction="Use the mobile tool to complete tasks on the cloud phone.",
+    tools=[create_mobile_use_tool()],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run('Open the shopping app and search for "headphones"')
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

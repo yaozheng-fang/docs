@@ -9,10 +9,10 @@ title: "安装"
 
 ## 从 PyPI 安装
 
-从 [PyPI](https://pypi.org/project/veadk-python/) 安装核心包：
+从 [PyPI](https://pypi.org/project/veadk-python/) 安装 VeADK 1.0.5：
 
 ```bash
-pip install veadk-python
+pip install "veadk-python==1.0.5"
 ```
 
 ## 可选依赖组
@@ -29,21 +29,24 @@ pip install "veadk-python[extensions]"
 | `database` | Redis、MySQL、Viking DB、mem0 等存储后端 |
 | `eval` | 基于 DeepEval 与 Google ADK 的评测 |
 | `a2ui` | A2UI（智能体驱动的界面） |
-| `pdf` | PDF 页面渲染 |
+| `harness` | Harness 服务与 Headroom 集成 |
+| `pdf` | 向后兼容的安装别名；1.0.5 已默认安装 PDF 页面渲染依赖 |
+
+`speech` 与 `cli` 依赖组为兼容已有安装命令而保留，在 1.0.5 中不会增加额外依赖。
 
 ## 从源码构建
 
 如需基于源码开发，可使用 [uv](https://docs.astral.sh/uv/) 构建：
 
 ```bash
-git clone https://github.com/volcengine/veadk-python.git
+git clone --branch 1.0.5 --depth 1 https://github.com/volcengine/veadk-python.git
 cd veadk-python
 
 # 创建 Python 3.12 虚拟环境
 uv venv --python 3.12
 
 # 安装依赖（如需可选依赖组，使用 --extra <name> 或 --all-extras）
-uv sync
+uv sync --all-extras
 
 # 以可编辑模式安装 VeADK
 uv pip install -e .

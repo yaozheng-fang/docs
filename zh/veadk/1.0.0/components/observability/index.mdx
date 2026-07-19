@@ -1,0 +1,115 @@
+---
+title: "概述"
+---
+
+可观测通过对智能体执行过程的全链路记录，帮助你理解智能体的内部行为、定位问题、分析性能并持续优化。VeADK 内置的追踪能力会把每一次请求——从接收用户输入，到模型推理、工具调用、记忆与知识库读写，再到生成响应——记录为结构化的 span 数据，并通过导出器上报至火山引擎或第三方平台进行观测与分析。
+
+VeADK 的追踪能力遵循 [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) 生成式 AI 语义规范，字段命名与标准 span 属性对齐，因此追踪数据可直接导入任意兼容 OpenTelemetry 的系统进行分析和可视化。
+
+## 核心概念
+
+### span
+
+span 是一次可被追踪的执行单元，记录名称、起止时间、属性以及父子关系。VeADK 会为一次完整请求生成一棵 span 树，覆盖智能体运行、模型调用、工具执行等节点，并遵循生成式 AI 语义规范标注 `gen_ai.operation.name`、`gen_ai.span.kind` 等属性。
+
+### 追踪器 `OpentelemetryTracer`
+
+`OpentelemetryTracer` 是统一的追踪入口。它持有一组导出器，初始化时将每个导出器接入追踪管线，并自动附加一个内存导出器用于本地留存与落盘。
+
+### 导出器 exporter
+
+导出器负责把 span 数据发送到具体的后端平台。每个导出器对应一个后端，可单独或组合使用。VeADK 内置以下导出器：
+
+| 导出器 | 类 | 目标平台 | 文档 |
+| :--- | :--- | :--- | :--- |
+| APMPlus | `APMPlusExporter` | 火山引擎 APMPlus，追踪与指标 | [APMPlus](/zh/veadk/1.0.0/components/observability/apmplus) |
+| Cozeloop | `CozeloopExporter` | Cozeloop，链路观测与评测 | [Cozeloop](/zh/veadk/1.0.0/components/observability/cozeloop) |
+| TLS | `TLSExporter` | 火山引擎日志服务 TLS | [TLS 日志服务](/zh/veadk/1.0.0/components/observability/tls) |
+| 内存 | `InMemoryExporter` | 进程内存，本地调试与落盘 | [内存导出器](/zh/veadk/1.0.0/components/observability/inmemory) |
+
+## 给智能体挂载追踪器
+
+追踪能力通过 `Agent` 的 `tracers` 字段接入。构造对应后端的导出器，交给 `OpentelemetryTracer`，再把追踪器挂到智能体上即可：
+
+```python
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.demo_tools import get_city_weather
+from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+exporters = [APMPlusExporter()]
+tracer = OpentelemetryTracer(exporters=exporters)
+
+agent = Agent(tools=[get_city_weather], tracers=[tracer])
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_id_demo"))
+```
+
+一个追踪器可以同时挂多个导出器，将同一份 span 数据上报到多个平台：
+
+```python
+from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
+from veadk.tracing.telemetry.exporters.cozeloop_exporter import CozeloopExporter
+from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer(
+    exporters=[APMPlusExporter(), CozeloopExporter(), TLSExporter()]
+)
+```
+
+### 追踪器参数
+
+`OpentelemetryTracer` 接受以下字段：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | `veadk_opentelemetry_tracer` | 追踪器标识，用于日志与落盘文件命名。 |
+| `exporters` | `list[BaseExporter]` | `[]` | 导出器列表。不允许显式加入 `InMemoryExporter`，否则会校验报错；内存导出器由追踪器自动附加。 |
+
+<Note>
+`InMemoryExporter` 由 `OpentelemetryTracer` 自动管理，用于记录全部 span。请勿手动加入 `exporters` 列表，否则初始化会报错。
+</Note>
+
+## 通过环境变量启用导出器
+
+除显式构造导出器外，`Agent` 会根据以下环境变量在运行时自动挂载对应导出器（值为 `true` 时启用）。若智能体未显式提供 `tracers`，会自动创建一个 `OpentelemetryTracer`：
+
+| 环境变量 | 启用的导出器 |
+| :--- | :--- |
+| `ENABLE_APMPLUS` | `APMPlusExporter` |
+| `ENABLE_COZELOOP` | `CozeloopExporter` |
+| `ENABLE_TLS` | `TLSExporter` |
+
+<Tip>
+三个环境变量均为 `false`（默认）时，`Agent` 不会创建追踪器；此时若需要追踪，请显式构造 `OpentelemetryTracer` 并通过 `tracers` 传入。
+</Tip>
+
+## 内容追踪
+
+默认情况下，span 会记录智能体、模型与工具的输入输出内容。在涉及敏感数据的场景中，可关闭内容采集，仅保留非内容的 span 结构与耗时信息。该行为由 `OpenTelemetryConfig.trace_content` 控制。
+
+| 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | 是否将提示词、补全与工具输入输出内容写入 span。设为 `false` 时仅保留非内容追踪信息。 |
+
+```bash
+# 关闭内容采集
+export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
+```
+
+## 本地落盘
+
+`OpentelemetryTracer` 内置的内存导出器会按 `session_id` 留存 span，可调用 `dump` 将当前会话的 span 导出为本地 JSON 文件，用于离线分析：
+
+```python
+path = tracer.dump(user_id="user-1", session_id="session_id_demo")
+print(f"trace 已写入 {path}")
+```
+
+导出的 JSON 包含每个 span 的名称、`span_id`、`trace_id`、起止时间、属性以及父 span 关系。更多细节参见[内存导出器](/zh/veadk/1.0.0/components/observability/inmemory)。

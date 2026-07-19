@@ -31,7 +31,7 @@ The fields of `KnowledgeBase` are common to all backends:
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `backend` | `"local" \| "opensearch" \| "redis" \| "tos_vector" \| "viking" \| "context_search"` or a backend instance | `"local"` | Selects the backend implementation; a `BaseKnowledgebaseBackend` instance may also be passed directly. |
+| `backend` | `"local" \| "opensearch" \| "redis" \| "milvus" \| "tos_vector" \| "viking" \| "context_search" \| "openviking"` or a backend instance | `"local"` | Selects the backend implementation; a `BaseKnowledgebaseBackend` instance may also be passed directly. |
 | `backend_config` | `dict` | `{}` | Config passed to the backend constructor. When non-empty, the backend is instantiated directly from it, in which case `index` must be provided within the config. |
 | `top_k` | `int` | `10` | Number of most-similar snippets returned during retrieval. Can be overridden per call in `search`. |
 | `app_name` | `str` | `""` | Application name. Used as the fallback for `index` when it is empty. |
@@ -42,21 +42,23 @@ The fields of `KnowledgeBase` are common to all backends:
 | `query_with_user_profile` | `bool` | `False` | Whether to incorporate the user profile during retrieval. This requires the Viking backend. |
 
 <Note>
-Vector backends (`local`, `opensearch`, `redis`, `tos_vector`) embed the knowledge text and require the extensions dependency `pip install "veadk-python[extensions]"` plus an embedding model configured (env prefix `MODEL_EMBEDDING_`, falling back to `MODEL_AGENT_API_KEY`). `viking` and `context_search` are managed services that embed on the server side, so no local embedding is needed.
+Vector backends (`local`, `opensearch`, `redis`, `milvus`, and `tos_vector`) embed knowledge text locally and require the extensions extra plus an embedding model. `viking`, `context_search`, and `openviking` process resources server-side and do not need a local embedding model.
 </Note>
 
 ## Choosing a backend
 
-Use `local` for debugging; for production prefer the managed `viking` or `context_search`. If you already run a vector store, choose `opensearch`, `redis`, or `tos_vector`.
+Use `local` for development. Choose `viking`, `context_search`, or `openviking` for managed retrieval, or `opensearch`, `redis`, `milvus`, or `tos_vector` when you already operate a vector store.
 
 | Backend | Storage | Dependencies | Use case | Docs |
 | :--- | :--- | :--- | :--- | :--- |
 | `local` | In-memory vector index | `extensions` + embedding | Local debugging (data lost on exit) | [Local](/en/veadk/components/knowledge/local) |
 | `opensearch` | OpenSearch vector store | OpenSearch + `extensions` + embedding | Self-hosted vector search | [OpenSearch](/en/veadk/components/knowledge/opensearch) |
 | `redis` | Redis vector store | Redis (RediSearch) + `extensions` + embedding | Low-latency self-hosted vector search | [Redis](/en/veadk/components/knowledge/redis) |
+| `milvus` | Milvus collection | Milvus + `extensions` + embedding | Self-hosted or managed Milvus | [Milvus](/en/veadk/components/knowledge/milvus) |
 | `tos_vector` | TOS vector bucket | Volcengine account + `extensions` + embedding | Volcengine object-storage vector store | [TOS Vector](/en/veadk/components/knowledge/tos-vector) |
 | `viking` | VikingDB knowledge base (managed) | Volcengine account | Recommended for production | [VikingDB](/en/veadk/components/knowledge/viking) |
 | `context_search` | Context Search (managed) | Volcengine account | Recommended for production | [Context Search](/en/veadk/components/knowledge/context-search) |
+| `openviking` | OpenViking resource tree | OpenViking service | Server-side resource processing and retrieval | [OpenViking](/en/veadk/components/knowledge/openviking) |
 
 ## Binding to an agent
 

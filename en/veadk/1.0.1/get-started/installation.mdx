@@ -1,0 +1,55 @@
+---
+title: "Installation"
+---
+
+## Prerequisites
+
+- Python 3.10 or later.
+- A Volcengine Ark API key for model calls, available from the [Volcengine Ark console](https://console.volcengine.com/ark).
+
+## Install from PyPI
+
+Install the VeADK version that matches this documentation:
+
+```bash
+pip install "veadk-python==1.0.1"
+```
+
+## Optional dependency groups
+
+Install only the groups required by your application. Multiple groups can share one pair of brackets, for example `veadk-python[extensions,harness]==1.0.1`.
+
+| Group | Included capabilities |
+| --- | --- |
+| `extensions` | Redis, Cozeloop, LlamaIndex, OpenSearch, and Feishu integrations. |
+| `database` | Redis, MySQL, VikingDB, and mem0 storage backends. |
+| `eval` | DeepEval and Google ADK evaluation dependencies. |
+| `a2ui` | A2UI support. |
+| `pdf` | PDF page rendering and PNG encoding. |
+| `harness` | Context-headroom management for Harness. |
+
+For example, install the Harness dependencies:
+
+```bash
+pip install "veadk-python[harness]==1.0.1"
+```
+
+The `speech` and `cli` groups are compatibility placeholders in 1.0.1 and do not add dependencies.
+
+## Install from source
+
+To develop against the 1.0.1 source, create an environment and install with [uv](https://docs.astral.sh/uv/):
+
+```bash
+git clone https://github.com/volcengine/veadk-python.git
+cd veadk-python
+git checkout 1.0.1
+
+uv venv --python 3.12
+uv sync
+uv pip install -e .
+```
+
+Add `--extra <name>` to `uv sync` for a specific optional group, or use `--all-extras` for every group.
+
+After installation, follow the [quickstart](/en/veadk/1.0.1/get-started/quickstart) to run your first agent.

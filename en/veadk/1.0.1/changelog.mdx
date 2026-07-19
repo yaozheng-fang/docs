@@ -1,0 +1,20 @@
+---
+title: "Changelog"
+---
+
+VeADK 1.0.1 was released on July 7, 2026. It adds Harness, A2A registration, and ADK skill integration, with updates to the Codex runtime and VeADK Frontend.
+
+| Module | Change details | Link |
+| --- | --- | --- |
+| Codex runtime | Ships sandbox, network, and review defaults that allow full host and network access without interactive approval. | [PR #629](https://github.com/volcengine/veadk-python/pull/629) |
+| Harness | Adds the VeADK Harness extension to prepare context for each turn, compact large tool results, and verify final answers; Harness initialization also applies the agent description. | [PR #625](https://github.com/volcengine/veadk-python/pull/625), [PR #633](https://github.com/volcengine/veadk-python/pull/633) |
+| A2A | Adds Harness A2A registration and corrects its registration behavior. | [PR #631](https://github.com/volcengine/veadk-python/pull/631), [PR #632](https://github.com/volcengine/veadk-python/pull/632) |
+| A2A | Adds OAuth authentication to A2A calls. | [PR #635](https://github.com/volcengine/veadk-python/pull/635) |
+| Codex runtime | Adds configurable retries for transient backend errors and restores web search through the Responses shim. | [PR #637](https://github.com/volcengine/veadk-python/pull/637) |
+| Skills | Adds `VeSkillRegistry` for using SkillHub and Skill Space sources with Google ADK `SkillToolset`; local skills should migrate to ADK `SkillToolset`, while the legacy `Agent(skills=..., skills_mode="local")` entry point remains compatible but is deprecated. | [PR #634](https://github.com/volcengine/veadk-python/pull/634) |
+| VeADK Frontend | Adds gateway authentication mode and a missing-Volcengine-credentials notice during agent creation. | [PR #638](https://github.com/volcengine/veadk-python/pull/638) |
+| Codex runtime | Passes agent skills through to the Codex runtime. | [PR #640](https://github.com/volcengine/veadk-python/pull/640) |
+| Codex runtime | Executes an agent's MCP and function tools through the Codex runtime. | [PR #641](https://github.com/volcengine/veadk-python/pull/641) |
+| Examples | Adds a Codex-runtime example that combines a local skill with an MCP tool. | [PR #642](https://github.com/volcengine/veadk-python/pull/642) |
+
+See the [VeADK 1.0.1 release](https://github.com/volcengine/veadk-python/releases/tag/1.0.1) for the complete published record.

@@ -1,0 +1,75 @@
+---
+title: "视频云 MCP"
+tag: "MCP 工具"
+---
+
+## 功能说明
+
+`vod_tools`（`from veadk.tools.builtin_tools.vod import vod_tools`）通过火山引擎视频云 MCP 进行视频剪辑处理，详见 [VOD MCP Server](https://github.com/volcengine/mcp-server/blob/main/server/mcp_server_vod/README_zh.md)。
+
+## 环境变量与前提
+
+<Warning>
+附加要求：
+
+1. 配置火山引擎 AK / SK；
+2. （可选）通过 `TOOL_VOD_GROUPS` 选择能力组：`edit`、`intelligent_slicing`、`intelligent_matting`、`subtitle_processing`、`audio_processing`、`video_enhancement`、`upload`、`video_play`；多个用逗号连接，未配置时默认 `edit,video_play`；
+3. （可选）`TOOL_VOD_TIMEOUT` 工具连接超时时长，默认 10 秒；
+4. 视频云工具不支持创建 Space，请先在控制台创建[视频云空间](https://console.volcengine.com/vod/region:vod+cn-north-1/overview/)。
+</Warning>
+
+环境变量：
+
+- `VOLCENGINE_ACCESS_KEY`：火山引擎 AccessKey
+- `VOLCENGINE_SECRET_KEY`：火山引擎 SecretKey
+- `TOOL_VOD_GROUPS`（可选）：能力组
+- `TOOL_VOD_TIMEOUT`（可选）：连接超时时长，默认 10.0 秒
+
+或在 `config.yaml` 中配置：
+
+```yaml title="config.yaml"
+volcengine:
+  access_key: your-access-key-here
+  secret_key: your-secret-key-here
+tool:
+  vod:
+    groups: edit,video_play
+    timeout: 10.0
+```
+
+## 使用方法
+
+```python title="examples/tools/vod/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.vod import vod_tools
+
+agent = Agent(
+    name="vod_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="A video editing assistant.",
+    instruction="Use vod_tools to edit and process videos.",
+    tools=[vod_tools],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "将这两个视频合并：<your-url1>, <your-url2>，space_name 为 <your-space-name>"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 额外说明
+
+<Note>
+有些视频编辑任务耗时较长，会直接返回一个 `task_id`。可以继续向智能体询问任务是否完成，从而获取后续结果。
+</Note>

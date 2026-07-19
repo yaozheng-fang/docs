@@ -1,0 +1,19 @@
+---
+title: "概述"
+---
+
+VeADK 提供两个前端：面向本地调试的 **VeADK Web**，以及面向生产的企业级智能体应用前端 **VeADK Frontend**。
+
+## VeADK Web 与 VeADK Frontend
+
+**VeADK Web** 继承自 Google ADK Web，是一个零前端代码的可视化调试界面，可在浏览器中与智能体对话并观察其执行过程，适合本地开发与排查；用法详见 [VeADK Web](/zh/veadk/1.0.4/components/frontend/veadk-web)。
+
+**VeADK Frontend** 是一个可定制的生产级 React 应用，也是一个企业级智能体工作台：在界面中通过智能对话、自定义或模板创建智能体并生成可运行的 VeADK 项目；工作流入口显示为「敬请期待」，暂不可用。它还支持与智能体对话和调试、浏览技能中心、接入远程 AgentKit 智能体、全文与联网搜索、查看调用链路及登录鉴权。它与 `veadk frontend` 启动的同一进程通信，无需单独部署后端；命令与构建方式详见 [VeADK Frontend](/zh/veadk/1.0.4/components/frontend/veadk-frontend)。
+
+## Studio
+
+[Studio 智能体工作台](/zh/veadk/1.0.4/components/frontend/studio) 使用相同的界面和服务，但只保留创建与管理智能体的功能。它可以在本地运行，也可以通过 `veadk studio deploy` 部署到 VeFaaS，并使用 VeIdentity 保护访问。
+
+## A2UI
+
+[A2UI](/zh/veadk/1.0.4/components/frontend/a2ui) 是 VeADK Frontend 诸多能力中的富界面渲染部分：让智能体在对话中除纯文本外，还能返回卡片、表单、行列布局等由原生组件渲染的富交互界面。创建智能体时设置 `enable_a2ui=True` 即可启用，企业还可在内置组件之外扩展自定义组件。

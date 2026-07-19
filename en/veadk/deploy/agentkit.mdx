@@ -1,0 +1,58 @@
+---
+title: "Deploy to AgentKit"
+---
+
+VeADK can deploy a local agent as an AgentKit Runtime. Version 1.0.5 provides shared AgentKit application infrastructure for conversation endpoints, health checks, agent topology, the built-in Web UI, short-term session defaults, and an optional Feishu lifecycle.
+
+## Prerequisites
+
+- Install `veadk-python==1.0.5`.
+- Sign in or configure Volcengine access credentials.
+- Export an importable `root_agent` from the project.
+- Do not commit `.env`, API keys, or access credentials to source control.
+
+## Create the application
+
+Studio-generated projects call `create_agentkit_app`. Manually created projects can use the same entry point:
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "Customer support"},
+)
+```
+
+The application exposes AgentKit conversation APIs and these public endpoints:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `/ping` | Health check. |
+| `/web/agent-info/{app_name}` | Agent metadata. |
+| `/web/agent-graph` | Agent topology. |
+| `/` | Built-in Web UI. |
+
+## Initialize and deploy
+
+Run these commands in the project directory:
+
+```bash
+veadk agentkit init
+veadk agentkit config
+veadk agentkit launch
+```
+
+After deployment, inspect the Runtime and invoke it:
+
+```bash
+veadk agentkit status
+veadk agentkit invoke -m "Describe your capabilities"
+```
+
+`veadk agentkit` uses the same project configuration and workflows as AgentKit CLI. See the [AgentKit CLI documentation](/en/agentkit-cli) for complete commands, flags, and destructive-operation guidance.
+
+<Warning>
+  Destroying a Runtime removes its cloud execution resources. Before running `veadk agentkit destroy`, verify the project, region, and Runtime identifier and retain any logs or data you need.
+</Warning>
