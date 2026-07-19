@@ -1,8 +1,9 @@
 ---
 title: "迁移已有智能体"
+description: "将 LangChain、LangGraph、ADK、Strands 或 Bedrock AgentCore 应用迁移为 AgentKit 应用。"
 ---
 
-`migrate` 命令将已有的 LangChain、LangGraph 或 ADK 智能体封装为 AgentKit 应用：生成通过 AgentKit 智能体服务对外提供服务所需的文件，而无需重写原有智能体。命令会打印本次迁移计划——新建或更新的文件、依赖变更、以及可能的告警——便于在部署前审阅。加 `--dry-run` 只打印计划、不写入任何文件。
+`migrate` 命令将已有的 LangChain、LangGraph、ADK、Strands 或 Bedrock AgentCore 智能体封装为 AgentKit 应用：生成通过 AgentKit 智能体服务对外提供服务所需的文件，而无需重写原有智能体。命令会打印本次迁移计划——新建或更新的文件、依赖变更以及可能的告警——便于在部署前审阅。加 `--dry-run` 只打印计划、不写入任何文件。
 
 ## migrate
 
@@ -11,14 +12,21 @@ title: "迁移已有智能体"
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `[project-dir]` | 源项目目录。 | 当前目录 |
-| `--framework <name>` | 源框架：`langchain` \| `langgraph` \| `adk`。必填。 | — |
-| `--entry <file.py:object>` | 要封装的 Python 对象，例如 `agent.py:agent`。必填。 | — |
+| `--framework <name>` | 源框架：`langchain` \| `langgraph` \| `adk` \| `strands` \| `agentcore`。必填。 | — |
+| `--entry <file.py:object\|langgraph.json[:graph_id]>` | 要封装的 Python 对象；使用 LangGraph Server 模式时也可指定 `langgraph.json` 与可选的图 ID。必填。 | — |
 | `-n, --name <name>` | AgentKit 应用名称。 | 项目目录名 |
 | `-o, --output <dir>` | 生成文件的写入目录。 | 项目根目录 |
 | `--input-key <key>` | 读取用户输入所用的自定义 LangChain dict / LangGraph state 字段；标准 LangGraph messages 可省略。 | — |
-| `--compat <profile>` | 额外暴露服务兼容路由：`none` \| `langserve` \| `fastapi-mount` \| `langgraph-agent-server`。 | `none` |
+| `--stream-node <node>` | 指定向 `/run_sse` 输出事件的 LangGraph 节点。可重复传入。 | — |
+| `--compat <profile>` | 额外暴露服务兼容路由：`langserve` \| `fastapi-mount`。 | 不启用 |
 | `--compat-prefix <path>` | 将兼容路由挂载到此路径。 | 取决于所选 profile |
 | `--legacy-app <file.py:app>` | 要挂载的已有 FastAPI 应用；仅在 `--compat fastapi-mount` 时有效。 | — |
+| `--model-id <id>` | 启用目标模型替换，并指定火山方舟模型 ID。 | — |
+| `--model-base-url <url>` | 目标模型替换使用的火山方舟或 OpenAI 兼容 Base URL。 | — |
+| `--model-api-key-env <name>` | 保存火山方舟 API Key 的环境变量名称。 | — |
+| `--server-mode <mode>` | 保留 LangGraph Server 应用；当前仅支持 `langgraph`。省略时生成默认 AgentKit 应用。 | — |
+| `--allow-blocking` | 在 LangGraph Server 模式下放宽阻塞 I/O 检查。 | `false` |
+| `--verify` | 导入生成的应用并执行本地端点检查。 | `false` |
 | `--dry-run` | 只显示迁移计划，不写入任何文件。 | `false` |
 | `-f, --force` | 生成文件已存在时覆盖。 | `false` |
 | `--json` | 以 JSON 打印迁移计划。 | `false` |
@@ -30,10 +38,30 @@ agentkit migrate . --framework langchain --entry agent.py:agent --name support-a
 # 仅预览计划，不写入任何文件
 agentkit migrate . --framework langgraph --entry graph.py:agent --input-key question --dry-run
 
+# 指定由 /run_sse 输出事件的 LangGraph 节点，并验证生成结果
+agentkit migrate . --framework langgraph --entry graph.py:agent --stream-node chatbot --verify
+
 # 在 AgentKit 应用之外继续保留已有的 LangServe 或 FastAPI 服务
 agentkit migrate . --framework langchain --entry agent.py:agent --compat langserve
 agentkit migrate . --framework langchain --entry agent.py:agent --compat fastapi-mount --legacy-app api.py:app
 
+# 保留 LangGraph Server 原生路由
+agentkit migrate . \
+  --framework langgraph \
+  --server-mode langgraph \
+  --entry langgraph.json:lead_agent \
+  --allow-blocking
+
+# 将目标模型替换为火山方舟模型；API Key 从指定的环境变量读取
+agentkit migrate . \
+  --framework agentcore \
+  --entry deploy/agentcore/app.py:app \
+  --model-id doubao-seed-2-1-pro \
+  --model-api-key-env MODEL_AGENT_API_KEY
+
 # ADK 智能体
 agentkit migrate . --framework adk --entry agent.py:root_agent
+
+# Strands 智能体
+agentkit migrate . --framework strands --entry agent.py:build_agent
 ```

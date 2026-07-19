@@ -1,8 +1,9 @@
 ---
 title: "概述"
+description: "了解 AgentKit CLI 支持的智能体开发、部署与云资源管理能力。"
 ---
 
-`agentkit` 是 AgentKit 的命令行工具，面向智能体的开发与运维：从脚手架项目、构建并部署运行时，到调用已部署的智能体，再到管理其依赖的工具、知识库、记忆、沙箱、技能与评测——智能体的完整生命周期都在终端完成。
+`agentkit` 是 AgentKit 的命令行工具，面向智能体的开发与运维：从脚手架项目、构建并部署运行时，到调用已部署的智能体，再到管理其依赖的 MCP 服务、知识库、记忆、沙箱、技能与评测，均可在终端完成。
 
 <CardGroup cols={2}>
   <Card title="快速开始" icon="rocket" href="/zh/agentkit-cli/quickstart">
@@ -22,20 +23,24 @@ title: "概述"
 | `runtime` | 已部署的运行时（list、show、logs、versions、release、update、delete） |
 | `knowledge` (`kb`) | 知识库 |
 | `memory` (`mem`) | 记忆库 |
-| `tool` | 工具（MCP server、代码环境、技能等） |
 | `harness` | 由 `harness.yaml` 定义的 Harness |
-| `sandbox` | 在沙箱中运行命令并管理会话 |
-| `skill` | AgentKit 技能平台上的技能 |
 | `invoke` | 调用已部署的运行时 |
 | `auth` | SSO 登录、登出、身份，以及登录 profile |
-| `onboard` | 把内置技能装进本地 coding agent |
-| `eval dataset` | 评测数据集及其用例（`eval` 前缀可省略） |
+| `onboard` | 将内置技能安装到本地编码智能体 |
+| `eval` | 评测集、评估器与评测实验 |
+| `migrate` | 将已有的智能体应用迁移为 AgentKit 应用 |
+| `mcp service` | MCP 服务的创建、查询与删除 |
+| `sandbox` | 在沙箱中运行命令并管理会话 |
+| `skill` | AgentKit 技能平台上的技能 |
 | `destroy` | 删除已部署的运行时 |
+| `upgrade` | 检查并升级 AgentKit CLI |
 | `tree` | 打印完整命令树 |
+| `docs` | 打开或输出 AgentKit CLI 文档地址 |
 
 ## 约定
 
 - `agentkit` 也可以用 `ak` 调用。
+- `login`、`logout`、`whoami` 可直接作为顶层命令使用，也可以写成 `auth login`、`auth logout`、`auth whoami`。
 - `knowledge` 的别名为 `kb` 和 `knowledgebase`，`memory` 的别名为 `mem`，
   `eval` 前缀可省略（`agentkit dataset …` 等价于 `agentkit eval dataset …`）。
 - 大多数读命令支持 `--json`；region 默认自动探测，可用 `-r, --region` 指定。

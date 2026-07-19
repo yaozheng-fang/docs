@@ -179,7 +179,7 @@
             "product": "AgentKit CLI",
             "versions": [
               {
-                "version": "preview",
+                "version": "0.46.6",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -229,6 +229,7 @@
                       "zh/agentkit-cli/commands/runtime",
                       "zh/agentkit-cli/commands/knowledge",
                       "zh/agentkit-cli/commands/memory",
+                      "zh/agentkit-cli/commands/mcp",
                       "zh/agentkit-cli/commands/sandbox",
                       "zh/agentkit-cli/commands/skill",
                       "zh/agentkit-cli/commands/harness",
@@ -413,7 +414,7 @@
             "product": "AgentKit CLI",
             "versions": [
               {
-                "version": "preview",
+                "version": "0.46.6",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -463,6 +464,7 @@
                       "en/agentkit-cli/commands/runtime",
                       "en/agentkit-cli/commands/knowledge",
                       "en/agentkit-cli/commands/memory",
+                      "en/agentkit-cli/commands/mcp",
                       "en/agentkit-cli/commands/sandbox",
                       "en/agentkit-cli/commands/skill",
                       "en/agentkit-cli/commands/harness",

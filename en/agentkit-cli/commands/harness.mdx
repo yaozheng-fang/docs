@@ -1,5 +1,6 @@
 ---
 title: "Harness"
+description: "Configure, debug, and deploy a code-free agent with Harness."
 ---
 
 The `harness` command group creates an agent without writing any application code: initialize a `harness.yaml`, set its fields, then deploy it directly as a runtime.
@@ -204,6 +205,21 @@ agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
 <Tip>
 Only the flags you pass are changed. To configure a component, set its `--<comp>-type` first, then supply its connection parameters.
 </Tip>
+
+## harness dev
+
+Start the Harness service locally from `harness.yaml` for development and debugging. By default, it listens on `127.0.0.1:8000`. Set a different host explicitly if other devices need to access it.
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `-p, --port <port>` | Port to listen on. | `8000` |
+| `--host <host>` | Host address to bind. | `127.0.0.1` |
+| `--reload` | Restart when the service code changes. | `false` |
+| `--python <bin>` | Python interpreter used to start the service. | `python3` |
+
+```bash
+agentkit harness dev --reload --port 8000
+```
 
 ## harness deploy
 

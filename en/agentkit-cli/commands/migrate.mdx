@@ -1,8 +1,9 @@
 ---
 title: "Migrate an existing agent"
+description: "Migrate a LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore application to AgentKit."
 ---
 
-The `migrate` command wraps an existing LangChain, LangGraph, or ADK agent as an AgentKit app: it generates the files needed to serve the agent through AgentKit's agent server, without rewriting the agent itself. The command prints the migration plan — the files it creates or updates, the dependency changes it makes, and any warnings — so the result is reviewable before deploying. Add `--dry-run` to print the plan without writing any files.
+The `migrate` command wraps an existing LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore agent as an AgentKit app. It generates the files needed to serve the agent through AgentKit's agent server without rewriting the agent itself. The command prints the migration plan—the files it creates or updates, dependency changes, and warnings—so you can review the result before deployment. Add `--dry-run` to print the plan without writing any files.
 
 ## migrate
 
@@ -11,14 +12,21 @@ Wrap an existing agent as an AgentKit app.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `[project-dir]` | Source project directory. | current directory |
-| `--framework <name>` | Source framework: `langchain` \| `langgraph` \| `adk`. Required. | — |
-| `--entry <file.py:object>` | Python object to wrap, e.g. `agent.py:agent`. Required. | — |
+| `--framework <name>` | Source framework: `langchain` \| `langgraph` \| `adk` \| `strands` \| `agentcore`. Required. | — |
+| `--entry <file.py:object\|langgraph.json[:graph_id]>` | Python object to wrap. In LangGraph Server mode, this can instead identify `langgraph.json` and an optional graph ID. Required. | — |
 | `-n, --name <name>` | AgentKit app name. | project directory name |
 | `-o, --output <dir>` | Directory to write generated files into. | project root |
 | `--input-key <key>` | Custom LangChain dict / LangGraph state field to read the user input from; omit for standard LangGraph messages. | — |
-| `--compat <profile>` | Also expose compatibility serving routes: `none` \| `langserve` \| `fastapi-mount` \| `langgraph-agent-server`. | `none` |
+| `--stream-node <node>` | LangGraph node whose events are streamed from `/run_sse`. Repeatable. | — |
+| `--compat <profile>` | Also expose compatibility serving routes: `langserve` \| `fastapi-mount`. | disabled |
 | `--compat-prefix <path>` | Mount the compatibility routes at this path. | depends on profile |
 | `--legacy-app <file.py:app>` | Existing FastAPI app to mount; only valid with `--compat fastapi-mount`. | — |
+| `--model-id <id>` | Enable target-model replacement with the specified Ark model ID. | — |
+| `--model-base-url <url>` | Ark or OpenAI-compatible base URL used for target-model replacement. | — |
+| `--model-api-key-env <name>` | Name of the environment variable that contains the Ark API key. | — |
+| `--server-mode <mode>` | Preserve a LangGraph Server app; currently only `langgraph` is supported. Omit for the default AgentKit app. | — |
+| `--allow-blocking` | Relax blocking I/O detection in LangGraph Server mode. | `false` |
+| `--verify` | Import the generated app and run local endpoint checks. | `false` |
 | `--dry-run` | Show the migration plan without writing any files. | `false` |
 | `-f, --force` | Overwrite generated files when they already exist. | `false` |
 | `--json` | Print the migration plan as JSON. | `false` |
@@ -30,10 +38,30 @@ agentkit migrate . --framework langchain --entry agent.py:agent --name support-a
 # Preview the plan only, writing nothing
 agentkit migrate . --framework langgraph --entry graph.py:agent --input-key question --dry-run
 
+# Select a LangGraph node to stream through /run_sse and verify the output
+agentkit migrate . --framework langgraph --entry graph.py:agent --stream-node chatbot --verify
+
 # Keep an existing LangServe or FastAPI surface alongside the AgentKit app
 agentkit migrate . --framework langchain --entry agent.py:agent --compat langserve
 agentkit migrate . --framework langchain --entry agent.py:agent --compat fastapi-mount --legacy-app api.py:app
 
+# Preserve native LangGraph Server routes
+agentkit migrate . \
+  --framework langgraph \
+  --server-mode langgraph \
+  --entry langgraph.json:lead_agent \
+  --allow-blocking
+
+# Replace the target model with an Ark model; read the API key from the named variable
+agentkit migrate . \
+  --framework agentcore \
+  --entry deploy/agentcore/app.py:app \
+  --model-id doubao-seed-2-1-pro \
+  --model-api-key-env MODEL_AGENT_API_KEY
+
 # ADK agent
 agentkit migrate . --framework adk --entry agent.py:root_agent
+
+# Strands agent
+agentkit migrate . --framework strands --entry agent.py:build_agent
 ```

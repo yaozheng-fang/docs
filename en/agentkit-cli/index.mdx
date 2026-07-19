@@ -1,11 +1,12 @@
 ---
 title: "Overview"
+description: "Learn how AgentKit CLI supports agent development, deployment, and cloud resource management."
 ---
 
 `agentkit` is the command-line tool for AgentKit, built around the full
 lifecycle of an agent: scaffold a project, build and deploy its runtime, invoke
-the deployed agent, and manage the tools, knowledge bases, memory, sandboxes,
-skills, and evaluation it relies on — all from your terminal.
+the deployed agent, and manage the MCP services, knowledge bases, memory,
+sandboxes, skills, and evaluation it relies on — all from your terminal.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/en/agentkit-cli/quickstart">
@@ -25,20 +26,25 @@ skills, and evaluation it relies on — all from your terminal.
 | `runtime` | deployed runtimes (list, show, logs, versions, release, update, delete) |
 | `knowledge` (`kb`) | knowledge bases |
 | `memory` (`mem`) | memory collections |
-| `tool` | tools (MCP servers, code environments, skills) |
 | `harness` | Harness defined by a `harness.yaml` |
-| `sandbox` | run commands and manage sessions in a sandbox |
-| `skill` | skills on the AgentKit skill platform |
 | `invoke` | call a deployed runtime |
 | `auth` | SSO login, logout, whoami, and login profiles |
 | `onboard` | install bundled skills into local coding agents |
-| `eval dataset` | evaluation datasets and their cases (`eval` prefix optional) |
+| `eval` | evaluation datasets, evaluators, and experiments |
+| `migrate` | migrate an existing agent application to AgentKit |
+| `mcp service` | create, inspect, and delete MCP services |
+| `sandbox` | run commands and manage sessions in a sandbox |
+| `skill` | skills on the AgentKit skill platform |
 | `destroy` | delete a deployed runtime |
+| `upgrade` | check for and install AgentKit CLI updates |
 | `tree` | print the command tree |
+| `docs` | open or print the AgentKit CLI documentation URL |
 
 ## Conventions
 
 - `agentkit` may also be invoked as `ak`.
+- `login`, `logout`, and `whoami` are available as top-level commands and as
+  `auth login`, `auth logout`, and `auth whoami`.
 - `knowledge` has aliases `kb` and `knowledgebase`, `memory` has alias `mem`,
   and the `eval` prefix is optional (`agentkit dataset …` is equivalent to
   `agentkit eval dataset …`).

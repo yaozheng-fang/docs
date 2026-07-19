@@ -1,0 +1,134 @@
+---
+title: "管理 MCP 服务"
+description: "使用 AgentKit CLI 创建、查询和删除 AgentKit MCP 服务。"
+---
+
+`mcp service` 命令组用于管理 AgentKit MCP 服务。MCP 服务把容器化的 MCP Server 部署为 AgentKit 云资源，并提供网络与鉴权配置。当前版本支持查询、创建和删除服务；创建时仅支持 `custom-private` 后端与 MCP 协议。
+
+## 命令概览
+
+| 命令 | 说明 |
+| --- | --- |
+| `agentkit mcp service list` | 列出 MCP 服务 |
+| `agentkit mcp service show <service>` | 按名称或 ID 查看 MCP 服务 |
+| `agentkit mcp service create` | 从容器镜像创建 MCP 服务 |
+| `agentkit mcp service delete <service>` | 删除 MCP 服务 |
+
+## mcp service list
+
+列出指定项目中的 MCP 服务。未指定区域时，CLI 自动探测区域；使用 `--json` 可获得原始 JSON，便于脚本处理。
+
+| 标志 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-r, --region <region>` | 火山引擎区域。 | 自动探测 |
+| `-p, --project <name>` | AgentKit 项目名称。 | `default` |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit mcp service list --project default
+```
+
+## mcp service show
+
+查看一个 MCP 服务的状态、后端类型、协议、访问路径、项目和标签等信息。`<service>` 可以是服务名称或 ID；按名称查询时，名称在项目中必须唯一。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<service>` | MCP 服务名称或 ID。必填。 | — |
+| `-r, --region <region>` | 火山引擎区域。 | 自动探测 |
+| `-p, --project <name>` | AgentKit 项目名称，用于按名称解析服务。 | `default` |
+| `--json` | 输出原始 JSON，包括网络、鉴权和后端配置。 | `false` |
+
+```bash
+agentkit mcp service show customer-tools
+```
+
+## mcp service create
+
+从容器镜像创建 MCP 服务。开始前请准备可由 AgentKit 拉取的镜像，并确认镜像中的启动命令会运行 MCP Server。创建成功后，命令输出服务名称和 ID。
+
+<Note>
+当前仅能使用 `custom-private` 后端和 `mcp` 协议。`--backend-type` 会识别其它预留值，但创建时会拒绝尚未支持的后端。
+</Note>
+
+| 标志 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--name <name>` | MCP 服务名称。必填。 | — |
+| `--description <text>` | 服务说明。 | — |
+| `-p, --project <name>` | AgentKit 项目名称。 | `default` |
+| `-r, --region <region>` | 火山引擎区域。 | 环境变量配置 |
+| `--client-token <token>` | 保证重复请求幂等的客户端令牌。 | — |
+| `--backend-type <type>` | 后端类型。可选值为 `custom-private`、`custom-public`、`function`、`domain`、`ecs`、`vke`；当前仅支持 `custom-private`。 | `custom-private` |
+| `--image-url <url>` | `custom-private` 后端使用的容器镜像地址。必填。 | — |
+| `--command <cmd>` | 容器启动命令。 | `./run.sh` |
+| `--env <key=value>` | 容器环境变量。可重复传入，键不能重复。 | 空 |
+| `--enable-apmplus` | 启用 APMPlus 与日志服务。 | `true` |
+| `--no-enable-apmplus` | 关闭 APMPlus 与日志服务。 | — |
+| `--network <mode>` | 网络模式：`public`、`private` 或 `hybrid`。 | `public` |
+| `--vpc-id <id>` | 私网或混合网络使用的 VPC ID。 | — |
+| `--subnet-id <id>` | 私网或混合网络使用的子网 ID。 | — |
+| `--inbound-auth <type>` | 入站鉴权方式：`api-key` 或 `custom-jwt`。 | `api-key` |
+| `--inbound-api-key-name <name>` | 入站 API Key 名称。使用 `api-key` 时必填，可重复传入 1–5 次。 | 空 |
+| `--inbound-api-key <key>` | 入站 API Key 值。可省略；传入时必须与名称一一对应。 | 空 |
+| `--inbound-api-key-param <name>` | 传递入站 API Key 的 Header 名称。 | `Authorization` |
+| `--inbound-discovery-url <url>` | `custom-jwt` 使用的 OIDC Discovery URL。 | — |
+| `--inbound-allowed-client <id>` | `custom-jwt` 允许的客户端 ID。至少传入一次，可重复。 | 空 |
+| `--outbound-credential-provider <name>` | 出站 OAuth2 用户联合身份使用的凭证提供方名称。 | — |
+| `--tag <key=value>` | 自定义标签。可重复传入，键不能重复。 | 空 |
+| `--path <path>` | MCP 服务访问路径。 | `/mcp` |
+| `--protocol <type>` | 协议类型；当前仅支持 `mcp`。 | `mcp` |
+
+以下示例创建一个使用公网与 API Key 入站鉴权的服务：
+
+```bash
+agentkit mcp service create \
+  --name customer-tools \
+  --image-url cr-cn-beijing.volces.com/agentkit/customer-tools:latest \
+  --inbound-api-key-name primary-key \
+  --env LOG_LEVEL=INFO \
+  --tag team=customer-service
+```
+
+### 配置网络
+
+`public` 网络不能同时设置 VPC 或子网。`private` 和 `hybrid` 均要求同时提供 `--vpc-id` 与 `--subnet-id`；`hybrid` 同时启用公网和私网访问。
+
+```bash
+agentkit mcp service create \
+  --name internal-tools \
+  --image-url cr-cn-beijing.volces.com/agentkit/internal-tools:latest \
+  --network private \
+  --vpc-id vpc-xxxxxxxx \
+  --subnet-id subnet-xxxxxxxx \
+  --inbound-api-key-name internal-key
+```
+
+### 配置自定义 JWT
+
+使用 `custom-jwt` 时，必须提供 OIDC Discovery URL 和至少一个允许的客户端 ID，且不能再传入 API Key 相关标志。
+
+```bash
+agentkit mcp service create \
+  --name jwt-protected-tools \
+  --image-url cr-cn-beijing.volces.com/agentkit/jwt-tools:latest \
+  --inbound-auth custom-jwt \
+  --inbound-discovery-url https://identity.example.com/.well-known/openid-configuration \
+  --inbound-allowed-client web-client
+```
+
+## mcp service delete
+
+<Warning>
+删除 MCP 服务后无法恢复。确认名称或 ID、项目和区域无误后再执行；自动化脚本使用 `--yes` 时不会出现二次确认。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<service>` | MCP 服务名称或 ID。必填。 | — |
+| `-r, --region <region>` | 火山引擎区域。 | 自动探测 |
+| `-p, --project <name>` | AgentKit 项目名称，用于按名称解析服务。 | `default` |
+| `-y, --yes` | 跳过删除确认。 | `false` |
+
+```bash
+agentkit mcp service delete customer-tools
+```

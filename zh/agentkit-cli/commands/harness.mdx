@@ -1,5 +1,6 @@
 ---
 title: "Harness"
+description: "使用 Harness 配置、调试并部署无代码智能体。"
 ---
 
 `harness` 命令组用于以无代码方式创建智能体：先初始化一个 `harness.yaml`，再逐项设置字段，最后直接部署为运行时，无需编写任何应用代码。
@@ -204,6 +205,21 @@ agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
 <Tip>
 只有显式传入的标志会被修改。若要配置某个组件，请先设置它的 `--<组件>-type`，再补充其连接参数。
 </Tip>
+
+## harness dev
+
+根据当前目录的 `harness.yaml` 在本地启动 Harness 服务，用于开发和调试。默认监听本机的 `127.0.0.1:8000`；如需从其它设备访问，可显式修改监听地址。
+
+| 标志 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-p, --port <port>` | 服务监听端口。 | `8000` |
+| `--host <host>` | 服务监听地址。 | `127.0.0.1` |
+| `--reload` | 服务代码变化时自动重启。 | `false` |
+| `--python <bin>` | 启动服务使用的 Python 解释器。 | `python3` |
+
+```bash
+agentkit harness dev --reload --port 8000
+```
 
 ## harness deploy
 
