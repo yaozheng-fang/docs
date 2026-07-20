@@ -1,264 +1,376 @@
 ---
 title: "使用沙箱"
-tag: "NEW"
 ---
 
-沙箱是一个隔离的 `code` 或 `skill` 环境。`sandbox` 命令组既管理沙箱的完整生命周期——创建、列出、查看、更新、删除——也提供对沙箱的操作：在会话中运行命令、打开交互式终端、传输文件、预览 Web、注入订阅凭据，以及管理会话。
+`sandbox` 命令组用于创建和使用 AgentKit 沙箱工具。沙箱工具可以是内置的 `CodeEnv`、`SkillEnv`，也可以是自定义镜像对应的 `Private` 工具；会话建立在工具之上，用于执行命令、调用 A2A 智能体、打开 Web 预览、传输文件或注入本地模型登录凭据。
 
-<Note>
-操作类子命令（run / attach / cp / web / login / sessions / logs / rm）共有一组会话与沙箱相关标志：`-s, --session <id>`（会话 ID，存在则复用，否则新建）、`--tool-id <id>`（沙箱 ID）、`--type <type>`（沙箱类型 `code` \| `skill`，默认 `code`）、`--auto-create`（始终新建一个沙箱，即使项目内已有）、`-r, --region <region>`（Volcengine 区域）、`-p, --project <name>`（AgentKit 项目，默认 `default`）。下方表格逐命令完整列出。
+<Warning>
+管理沙箱工具需要完成 AgentKit 云端鉴权。可先运行 `agentkit login <address>`，或按部署环境设置 `VOLCENGINE_AGENTKIT_ACCESS_KEY` / `VOLCENGINE_AGENTKIT_SECRET_KEY`、`VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` 等 AK/SK 环境变量。涉及 TOS 挂载或自定义镜像构建时，还需要可访问 TOS 与容器镜像仓库的权限。
+</Warning>
 
-未传 `--tool-id` 且未加 `--auto-create` 时，CLI 会在项目内查找该类型的沙箱：**恰好一个时自动选用；存在多个时命令会失败并要求显式传入 `--tool-id`**；一个都没有时需加 `--auto-create`。加上 `--auto-create` 则始终新建一个全新沙箱——即使项目内已有——并等待其就绪后再使用。项目内已有多个 `code` 沙箱属常见情况，此时可用 `agentkit sandbox list` 查到目标 ID 后通过 `--tool-id` 指定。
-</Note>
+## 工具解析与本地配置
+
+多数操作命令会解析一个沙箱工具。解析顺序为：命令行的 `--tool-id` 或 `--tool-name`、环境变量 `AGENTKIT_SANDBOX_TOOL_ID`、本地缓存的工具记录、云端第一个处于 Ready 状态且类型匹配的工具。若仍未找到可用工具，`exec`、`shell`、`web` 等命令会在支持的鉴权方式下按当前配置自动创建工具并等待就绪。
+
+本地配置文件位于 `.agentkit/sandbox.yaml`。`sandbox create`、`sandbox build` 与自动创建工具时会写入常用的工具标识；`sandbox config` 可集中设置模型、网络、TOS、会话等默认值。命令行显式传入的选项优先级高于本地配置。
+
+常用配置键：
+
+| 配置键 | 类型 | 说明 |
+| --- | --- | --- |
+| `region` | string | AgentKit 区域。 |
+| `tool-type` | `CodeEnv` \| `SkillEnv` \| `Private` | 默认沙箱工具类型。 |
+| `tool-id` | string | 默认沙箱工具 ID。 |
+| `tool-name` | string | 默认沙箱工具名称。 |
+| `cpu` | `2` \| `4` \| `8` \| `16` | 创建工具时的 vCPU 数。 |
+| `tos-bucket` | string | 创建工具时挂载的 TOS 桶名称。 |
+| `tos-mount` | string | TOS 在沙箱内的挂载路径。 |
+| `image-url` | string | `Private` 工具使用的自定义镜像地址。 |
+| `enable-snapshot` | boolean | 创建工具时启用快照能力。 |
+| `websearch-apikey` | string | 注入到沙箱的 Web 搜索 API Key。 |
+| `network-public` | boolean | 是否启用公网访问。 |
+| `network-private` | boolean | 是否启用私有 VPC 网络。 |
+| `network-shared-internet` | boolean | 私有网络下是否启用共享公网出口。 |
+| `network-vpc-id` | string | 私有网络使用的 VPC ID。 |
+| `network-subnet-ids` | string[] | 私有网络使用的子网 ID，可用逗号分隔或 JSON 数组。 |
+| `session-id` | string | 默认用户会话 ID。 |
+| `ttl` | number | 会话 TTL，单位为秒。 |
+| `git-config` | string | `exec` / `shell` 注入 Git 身份时使用的来源。 |
+| `model-name` | string | 注入沙箱的模型名称。 |
+| `model-provider` | string | 模型提供方。 |
+| `model-base-url` | string | 模型 API Base URL。 |
+| `model-api-key` | string | 模型 API Key，`config --list` 会脱敏显示。 |
+
+## sandbox init
+
+初始化自定义沙箱镜像构建文件，在当前目录创建 `Dockerfile`。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-f, --force` | 覆盖已存在的 `Dockerfile`。 | `false` |
+
+```bash
+agentkit sandbox init
+```
+
+## sandbox config
+
+设置、删除或查看 `.agentkit/sandbox.yaml` 中的沙箱默认配置。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--set <KEY=VALUE>` | 设置配置项，可重复传入。 | — |
+| `--unset <KEY>` | 删除配置项，可重复传入。 | — |
+| `--list` | 列出合并默认值后的当前配置，密钥字段会脱敏。 | `false` |
+
+```bash
+agentkit sandbox config --set tool-type=CodeEnv --set cpu=4 --set model-provider=model_square
+agentkit sandbox config --set model-api-key="$MODEL_API_KEY"
+agentkit sandbox config --list
+```
 
 ## sandbox create
 
-创建一个沙箱（`code` 或 `skill` 环境）。
+创建一个沙箱工具并等待其达到 Ready 状态。创建成功后，CLI 会将工具 ID 与工具名称写入 `.agentkit/sandbox.yaml`，供后续命令复用。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--name <name>` | 沙箱名称（必填）。 | — |
-| `--type <type>` | 沙箱类型：`code` \| `skill`。 | `code` |
-| `-r, --region <region>` | Volcengine 区域。 | 取自环境 |
-| `--description <text>` | 描述。 | — |
-| `--command <command>` | 容器启动命令。 | — |
-| `--image-url <url>` | 容器镜像地址。 | — |
-| `--port <port>` | 容器端口。 | — |
-| `-p, --project <name>` | 项目名。 | `default` |
-| `--role-name <role>` | IAM 角色名。 | — |
-| `--apmplus` | 启用 APMPlus。 | — |
-| `--cpu <milli>` | CPU（毫核）。 | — |
-| `--memory <mb>` | 内存（MB）。 | — |
-| `--enable-security` | 启用安全沙箱。 | — |
-| `--enable-tos` | 将 TOS 挂载进沙箱。 | — |
-| `--env <KEY=VALUE>` | 环境变量（可重复）。 | — |
-| `--json <jsonString>` | 以 JSON 对象形式提供的额外字段，合并进请求体。 | — |
+| `--tool-type <type>` | 工具类型：`CodeEnv`、`SkillEnv` 或 `Private`。 | `CodeEnv` |
+| `--tool-name <name>` | 工具名称；省略时自动生成。 | 自动生成 |
+| `--tos-bucket <bucket>` | 挂载到沙箱的 TOS 桶。 | — |
+| `--tos-mount <path>` | TOS 在沙箱内的挂载路径。 | `/home/gem/workspace` |
+| `--cpu <count>` | vCPU 数，只能为 `2`、`4`、`8`、`16`。内存按每 vCPU 2048 MB 配置。 | `4` |
+| `--model-name <name>` | 注入沙箱的模型名称。 | — |
+| `--model-api-key <key>` | 注入沙箱的模型 API Key。 | `MODEL_API_KEY` |
+| `--model-provider <provider>` | 模型提供方。 | 按云厂商自动选择 |
+| `--model-base-url <url>` | 模型 API Base URL；非内置方舟地址需同时指定 `--model-provider`。 | — |
+| `--websearch-apikey <key>` | 注入 `WEB_SEARCH_API_KEY`。 | — |
+| `--image-url <url>` | 自定义镜像地址；`--tool-type Private` 时必填。 | — |
+| `--enable-snapshot` | 启用快照能力。 | `false` |
+| `--network-public` | 启用公网访问。 | `true` |
+| `--no-network-public` | 禁用公网访问。 | — |
+| `--network-private` | 启用私有 VPC 网络。 | `false` |
+| `--no-network-private` | 禁用私有 VPC 网络。 | — |
+| `--network-shared-internet` | 在私有网络下启用共享公网出口。 | `false` |
+| `--no-network-shared-internet` | 禁用共享公网出口。 | — |
+| `--network-vpc-id <id>` | 私有网络使用的 VPC ID。 | — |
+| `--network-subnet-ids <ids>` | 逗号分隔的子网 ID。 | — |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
+| `--json` | 输出 JSON。 | `false` |
 
 ```bash
-agentkit sandbox create --name dev-sandbox --type code --cpu 1000 --memory 2048
+agentkit sandbox create --tool-type CodeEnv --tool-name dev-code --cpu 4 --model-api-key "$MODEL_API_KEY"
 ```
 
-## sandbox list
-
-列出项目内的沙箱（`code` 与 `skill` 环境）。
-
-| 标志/参数 | 说明 | 默认值 |
-| --- | --- | --- |
-| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
-| `-p, --project <name>` | 项目名。 | `default` |
-| `--type <type>` | 按沙箱类型过滤：`code` \| `skill`。 | — |
-| `--json` | 输出原始 JSON。 | `false` |
-
 ```bash
-agentkit sandbox list --type code
+agentkit sandbox create --tool-type Private --tool-name custom-code --image-url cr.example.com/agentkit/sandbox:latest
 ```
 
-## sandbox show
+## sandbox build
 
-查看某个沙箱的详情。
+在云端 Code Pipeline 中构建自定义沙箱镜像，将镜像推送到容器镜像仓库，并把生成的镜像地址写入 `.agentkit/sandbox.yaml` 的 `image-url`。构建完成后可用 `sandbox create --tool-type Private` 创建使用该镜像的工具。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<id>` | 沙箱 ID，如 `t-xxxxxxxx`（必填）。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
-| `--json` | 输出原始 JSON。 | `false` |
+| `--dockerfile <path>` | Dockerfile 路径，相对于 `--project-dir`。 | `Dockerfile` |
+| `--image-name <name>` | 容器镜像名称，对应镜像仓库 repo。 | `agentkit-custom-sandbox-image` |
+| `--repo <name>` | 容器镜像名称，与 `--image-name` 等价。 | `agentkit-custom-sandbox-image` |
+| `--tag <tag>` | 镜像标签；可使用 `{{timestamp}}`。 | `{{timestamp}}` |
+| `--namespace <name>` | 容器镜像仓库命名空间。 | `agentkit` |
+| `--project-dir <path>` | 打包为构建上下文的项目目录。 | 当前目录 |
+| `-r, --region <region>` | AgentKit 区域。 | `VOLCENGINE_REGION` 或 `cn-beijing` |
 
 ```bash
-agentkit sandbox show t-12345678
+agentkit sandbox build --dockerfile Dockerfile --image-name custom-code --tag dev
+agentkit sandbox create --tool-type Private --tool-name custom-code
 ```
 
-## sandbox update
+可用 `AGENTKIT_BUILD_TIMEOUT_MS` 调整云端构建等待超时时间。
 
-更新某个沙箱的配置。
+## sandbox exec
+
+打开沙箱终端并可选执行初始命令，适合交互式任务。若传入 `--mode tmux`，CLI 会附加到同名 tmux 会话，不存在时创建。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<id>` | 沙箱 ID，如 `t-xxxxxxxx`（必填）。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
-| `--description <text>` | 描述。 | — |
-| `--command <command>` | 容器启动命令。 | — |
-| `--image-url <url>` | 容器镜像地址。 | — |
-| `--port <port>` | 容器端口。 | — |
-| `--apmplus` | 启用 APMPlus。 | — |
-| `--json <jsonString>` | 以 JSON 对象形式提供的额外字段，合并进请求体。 | — |
+| `-s, --session-id <id>` | 用户会话 ID。 | 配置或自动生成 |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `--tool-id <id>` | 沙箱工具 ID。 | 自动解析 |
+| `--tool-name <name>` | 沙箱工具名称。 | 自动解析 |
+| `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
+| `--command <cmd>` | 连接终端后执行的初始命令。 | — |
+| `--mode <mode>` | 执行模式；当前支持 `tmux`。 | — |
+| `--shell-id <id>` | 重新连接远端终端 shell。 | — |
+| `--copy <sourceAndDestination...>` | 执行前复制本地 `SOURCE` 到沙箱 `DESTINATION`，以成对参数传入，可重复。 | — |
+| `--git-config <source>` | 注入 Git 身份，值为 `local` 或 INI/TOML/JSON 文件路径。 | 配置 |
+| `--model-name <name>` | 本次会话使用的模型名称。 | 配置 |
+| `--model-api-key <key>` | 本次会话使用的模型 API Key。 | `MODEL_API_KEY` 或配置 |
+| `--model-provider <provider>` | 本次会话使用的模型提供方。 | 配置 |
+| `--model-base-url <url>` | 本次会话使用的模型 API Base URL。 | 配置 |
+| `--disable-websearch-apikey` | 将本次会话的 `WEB_SEARCH_API_KEY` 置空。 | `false` |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
 
 ```bash
-agentkit sandbox update t-12345678 --description "开发沙箱" --port 9090
+agentkit sandbox exec --session-id dev --command "codex" --mode tmux
 ```
 
-## sandbox delete
+```bash
+agentkit sandbox exec --session-id dev --copy ./README.md sandbox:/home/gem/README.md --command "ls /home/gem"
+```
 
-删除一个沙箱——即环境本身。若只需删除单个会话，请改用 [`sandbox rm`](#sandbox-rm)。
+## sandbox shell
+
+在沙箱会话中执行一个非交互式命令，并以 JSON 输出结果。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<id>` | 沙箱 ID，如 `t-xxxxxxxx`（必填）。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
-| `-y, --yes` | 跳过确认提示。 | `false` |
+| `-s, --session-id <id>` | 用户会话 ID。 | 配置或自动生成 |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `--tool-id <id>` | 沙箱工具 ID。 | 自动解析 |
+| `--tool-name <name>` | 沙箱工具名称。 | 自动解析 |
+| `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
+| `--command <cmd>` | 要执行的命令，必填。 | 无（必填） |
+| `--exec-dir <dir>` | 命令执行目录。 | — |
+| `--copy <sourceAndDestination...>` | 执行前复制本地 `SOURCE` 到沙箱 `DESTINATION`，以成对参数传入，可重复。 | — |
+| `--git-config <source>` | 注入 Git 身份，值为 `local` 或 INI/TOML/JSON 文件路径。 | 配置 |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
 
 ```bash
-agentkit sandbox delete t-12345678 --yes
+agentkit sandbox shell --session-id dev --command "python --version"
+```
+
+## sandbox invoke
+
+通过沙箱端点上的 A2A 接口调用 `SkillEnv` 或兼容 A2A 的沙箱智能体。默认会等待任务结束并输出 JSON；传入 `--async` 时只创建任务并立即返回，可之后用 `--task-id` 轮询。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-s, --session-id <id>` | 用户会话 ID。 | 配置或自动生成 |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `--prompt <prompt>` | 发送给沙箱智能体的提示词；未传 `--task-id` 时必填。 | — |
+| `--tool-id <id>` | 沙箱工具 ID。 | 自动解析 |
+| `--tool-name <name>` | 沙箱工具名称。 | 自动解析 |
+| `--tool-type <type>` | 沙箱工具类型。 | `SkillEnv` |
+| `--async` | 创建 A2A 任务后立即返回。 | `false` |
+| `--task-id <id>` | 轮询已有 A2A 任务。 | — |
+| `--ttl <seconds>` | 沙箱会话 TTL，单位为秒。 | 配置 |
+| `--model-name <name>` | 注入为 `MODEL_AGENT_NAME`。 | 环境或配置 |
+| `--model-provider <provider>` | 注入为 `MODEL_AGENT_PROVIDER`。 | 环境或配置 |
+| `--model-base-url <url>` | 注入为 `MODEL_AGENT_API_BASE`。 | 环境或配置 |
+| `--model-api-key <key>` | 注入为 `MODEL_AGENT_API_KEY`。 | 环境或配置 |
+| `--timeout <seconds>` | 等待任务完成的最长秒数。 | `1200` |
+| `--interval <seconds>` | 轮询间隔秒数。 | `2` |
+| `--history-length <count>` | 请求的 A2A 任务历史长度。 | `20` |
+| `--a2a-path <path>` | 沙箱端点上的 A2A JSON-RPC 路径。 | `/a2a` |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
+
+```bash
+agentkit sandbox invoke --tool-type SkillEnv --session-id dev --prompt "总结当前项目"
+```
+
+```bash
+agentkit sandbox invoke --task-id task-xxxxxxxx --timeout 300
 ```
 
 ## sandbox run
 
-在沙箱会话中运行命令并打印其输出。
+读取 `agentkit-sandbox-run.yaml`，把其中的条目转换为多条 `sandbox exec` 命令。该命令适合一次打开多个沙箱终端或在非 macOS 环境中顺序执行单个命令。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<command>` | 要运行的命令（必填） | 无 |
-| `--json` | 打印原始结果（`{ output, ... }`） | `false` |
-| `--cwd <dir>` | 运行时的工作目录 | 无 |
-| `--model-name <name>` | 沙箱编码智能体所用的模型 | 无 |
-| `--model-api-key <key>` | 模型 API key | 无 |
-| `--model-provider <provider>` | 模型提供方 | 无 |
-| `--cpu <milli>` | `--auto-create` 时的 CPU（毫核） | 无 |
-| `--memory <mb>` | `--auto-create` 时的内存（MB） | 无 |
-| `--timeout <seconds>` | 命令中止前的最长等待秒数；`0` 表示不限制 | `30` |
-| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `-f, --config <path>` | 工作流 YAML 文件。 | `agentkit-sandbox-run.yaml` |
+| `--terminal <count>` | 要打开或执行的条目数量。 | `1` |
+| `--dry-run` | 只打印将执行的 `sandbox exec` 命令。 | `false` |
 
-```bash
-agentkit sandbox run "ls -la" --session my-session
+```yaml title="agentkit-sandbox-run.yaml"
+exec:
+  - name: test
+    session_id: dev
+    cwd: .
+    copy:
+      - ["./README.md", "sandbox:/home/gem/README.md"]
+    command: npm test
+  - name: inspect
+    session_id: dev
+    command: ls -la /home/gem
 ```
 
-一次性的 `run` 会等待命令执行结束，因此交互式程序——编辑器、REPL，或不带参数直接运行的 `codex`——会一直阻塞直至超时。交互场景请改用 `agentkit sandbox attach`；对确需长时间运行的非交互任务，可调大 `--timeout` 或将其设为 `0`。
-
-## sandbox attach
-
-在沙箱会话中打开交互式终端（按 Ctrl-] 脱离）。
-
-| 标志/参数 | 说明 | 默认值 |
-| --- | --- | --- |
-| `--tmux` | 附加或创建一个持久化 tmux 会话 | `false` |
-| `--command <cmd>` | 附加后先执行的初始命令 | 无 |
-| `--workspace <dir>` | 沙箱工作区根目录 | 无 |
-| `--src-dir <path>` | 附加前要上传的本地文件/目录 | 无 |
-| `--dst-dir <dir>` | `--src-dir` 的远端目标目录（位于 `--workspace` 下） | 无 |
-| `--model-name <name>` | 沙箱编码智能体所用的模型 | 无 |
-| `--model-api-key <key>` | 模型 API key | 无 |
-| `--model-provider <provider>` | 模型提供方 | 无 |
-| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
-
 ```bash
-agentkit sandbox attach --tmux --session my-session
+agentkit sandbox run --terminal 2
+agentkit sandbox run --dry-run
 ```
 
-## sandbox cp
+条目可使用 `exec`、`execs`、`tabs` 或 `commands` 作为顶层键；每个条目可写 `command`、`session_id`、`tool_id`、`tool_type`、`mode`、`shell_id`、`git_config`、`model_name`、`model_api_key`、`model_provider`、`model_base_url`、`cwd` / `workdir`、`copy` / `copies`。也可用 `args` 或 `argv` 直接写入传给 `sandbox exec` 的原始参数。
 
-在本地与沙箱会话之间复制文件，用 `:` 前缀标记远端一侧。
+## sandbox list
+
+列出本地缓存的沙箱会话记录，或查询某个会话。该命令读取本地缓存，不等价于云端工具列表。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `<src>` | 源路径（远端一侧以 `:` 前缀，必填） | 无 |
-| `<dst>` | 目标路径（远端一侧以 `:` 前缀，必填） | 无 |
-| `--overwrite` | 下载时覆盖已存在的本地文件 | `false` |
-| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `-s, --session-id <id>` | 要查询的用户会话 ID。 | — |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `--tool-id <id>` | 按沙箱工具 ID 过滤本地会话。 | — |
 
 ```bash
-agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
+agentkit sandbox list
+agentkit sandbox list --tool-id tool-xxxxxxxx
+```
+
+## sandbox delete
+
+删除沙箱工具，或删除指定工具下的用户会话。删除工具时必须通过 `--tool-id` 或 `--tool-name` 精确指定一个目标；删除会话时传入 `--session-id`。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tool-id <id>` | 沙箱工具 ID。 | — |
+| `--tool-name <name>` | 沙箱工具名称；若匹配多个工具会要求改用 `--tool-id`。 | — |
+| `-s, --session-id <id>` | 要删除的用户会话 ID。 | — |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
+| `--force` | 跳过确认提示。 | `false` |
+
+```bash
+agentkit sandbox delete --tool-id tool-xxxxxxxx --force
+agentkit sandbox delete --tool-id tool-xxxxxxxx --session-id dev --force
 ```
 
 ## sandbox web
 
-在浏览器中打开沙箱的 Web 预览。
+获取沙箱会话的 Web 预览地址，并默认在浏览器中打开。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--no-open` | 仅打印 URL，不打开浏览器 | `false` |
-| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `-s, --session-id <id>` | 用户会话 ID。 | 配置或自动生成 |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `--tool-id <id>` | 沙箱工具 ID。 | 自动解析 |
+| `--tool-name <name>` | 沙箱工具名称。 | 自动解析 |
+| `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
+| `--no-open` | 只打印 URL，不打开浏览器。 | `false` |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
 
 ```bash
-agentkit sandbox web --session my-session
+agentkit sandbox web --session-id dev --no-open
 ```
 
-## sandbox login
+## sandbox mount
 
-将本地的 codex/claude 订阅凭据注入到沙箱会话中。
+用 TosBrowser 打开当前沙箱会话挂载的 TOS 目录。该命令要求目标工具已配置 TOS 挂载，并且本地存在可用于 OAuth 的 AgentKit 登录配置。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--provider <provider>` | `codex` \| `claude` | `codex` |
-| `--auth-file <path>` | 使用指定的本地凭据文件 | 无 |
-| `--codex-home <dir>` | 本地 codex home | `$CODEX_HOME` 或 `~/.codex` |
-| `-s, --session <id>` | 会话 ID（存在则复用，否则生成） | 无 |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--auto-create` | 始终新建一个沙箱，即使项目内已有 | `false` |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `-s, --session-id <id>` | 要挂载的用户会话 ID，必填。 | 无（必填） |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `--oauth-url <url>` | 指定用于选择本地登录 profile 的 OAuth 地址。 | 当前登录 profile |
+| `--tool-id <id>` | 沙箱工具 ID。 | 自动解析 |
+| `--tool-name <name>` | 沙箱工具名称。 | 自动解析 |
+| `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
 
 ```bash
-agentkit sandbox login --provider claude --session my-session
+agentkit sandbox mount --tool-id tool-xxxxxxxx --session-id dev
 ```
 
-## sandbox sessions
+## sandbox codex-login
 
-列出活跃的沙箱会话。
+将本地 Codex 或 Claude 的 OAuth 登录凭据注入沙箱会话。该命令只注入订阅登录凭据；本地 API Key 不会被注入。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
-| `--json` | 输出原始 JSON | `false` |
+| `-s, --session-id <id>` | 要注入的用户会话 ID。 | 配置或自动生成 |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `-p, --provider <provider>` | 要注入的订阅：`codex` 或 `claude`。 | `codex` |
+| `--auth-file <path>` | 指定本地凭据文件。 | — |
+| `--codex-home <path>` | 本地 Codex home。 | `$CODEX_HOME` 或 `~/.codex` |
+| `--login` | 本地缺少 Codex 凭据时先运行 `codex login`。 | `true` |
+| `--no-login` | 本地缺少 Codex 凭据时不自动登录。 | — |
+| `--tool-id <id>` | 沙箱工具 ID。 | 自动解析 |
+| `--tool-name <name>` | 沙箱工具名称。 | 自动解析 |
+| `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
+| `--dry-run` | 只打印脱敏后的注入动作，不创建会话。 | `false` |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
 
 ```bash
-agentkit sandbox sessions
+agentkit sandbox codex-login --session-id dev --provider codex
+agentkit sandbox exec --session-id dev --command "codex" --mode tmux
 ```
 
-## sandbox logs
+## sandbox model-login
 
-显示某个沙箱会话的日志。
+`model-login` 与 `codex-login` 提供相同能力和选项，可用于语义更通用的模型登录注入。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `[session]` | 会话 ID | 无 |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--tail <n>` | 最大日志行数 | 无 |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
-| `--json` | 输出原始 JSON | `false` |
+| `-s, --session-id <id>` | 要注入的用户会话 ID。 | 配置或自动生成 |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `-p, --provider <provider>` | 要注入的订阅：`codex` 或 `claude`。 | `codex` |
+| `--auth-file <path>` | 指定本地凭据文件。 | — |
+| `--codex-home <path>` | 本地 Codex home。 | `$CODEX_HOME` 或 `~/.codex` |
+| `--login` | 本地缺少 Codex 凭据时先运行 `codex login`。 | `true` |
+| `--no-login` | 本地缺少 Codex 凭据时不自动登录。 | — |
+| `--tool-id <id>` | 沙箱工具 ID。 | 自动解析 |
+| `--tool-name <name>` | 沙箱工具名称。 | 自动解析 |
+| `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
+| `--dry-run` | 只打印脱敏后的注入动作，不创建会话。 | `false` |
+| `-r, --region <region>` | AgentKit 区域。 | 自动探测 |
 
 ```bash
-agentkit sandbox logs my-session --tail 100
+agentkit sandbox model-login --session-id dev --provider claude
 ```
 
-## sandbox rm
+## sandbox scp
 
-停止并删除一个沙箱会话（或使用 `--all` 删除全部）。若要删除沙箱环境本身，请使用 [`sandbox delete`](#sandbox-delete)。
+在本地与已有沙箱会话之间复制单个文件或目录。源路径和目标路径必须恰好有一侧以 `sandbox:` 开头；相对的沙箱路径会解析到 `/home/gem` 下。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `[session]` | 会话 ID | 无 |
-| `--tool-id <id>` | 沙箱 ID。省略时自动解析：项目内该类型沙箱唯一则自动选用，**存在多个时必须指定**，一个都没有时需配合 `--auto-create` | 自动解析 |
-| `--type <type>` | 沙箱类型：`code` \| `skill` | `code` |
-| `--all` | 删除该沙箱上的所有会话 | `false` |
-| `-y, --yes` | 跳过确认 | `false` |
-| `-r, --region <region>` | Volcengine 区域 | 无 |
-| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `<source>` | 源路径；沙箱路径使用 `sandbox:` 前缀。 | 无（必填） |
+| `<destination>` | 目标路径；沙箱路径使用 `sandbox:` 前缀。 | 无（必填） |
+| `-s, --session-id <id>` | 用于传输的用户会话 ID，必填。 | 无（必填） |
+| `--sid <id>` | `--session-id` 的别名。 | — |
+| `--tool-id <id>` | 用于区分本地缓存会话的沙箱工具 ID。 | — |
 
 ```bash
-agentkit sandbox rm my-session -y
+agentkit sandbox scp ./README.md sandbox:/home/gem/README.md --session-id dev
+agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id dev
 ```
