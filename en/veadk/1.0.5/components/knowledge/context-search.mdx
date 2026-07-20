@@ -1,0 +1,96 @@
+---
+title: "Context Search (context_search)"
+---
+
+The `context_search` backend is implemented by `ContextSearchBackend` and integrates with the managed Volcengine Context Search service. Files are uploaded to TOS (object storage) via pre-signed URLs, then registered into a Context Search RAG scene; splitting, embedding, and retrieval all run server-side, so **no local embedding is required**.
+
+## When to use
+
+- You need a managed semantic-search service without maintaining a vector store yourself;
+- You have created a RAG scene and a search engine in Volcengine Context Search.
+
+## Prerequisites
+
+- A Volcengine account with a Context Search RAG scene whose scene ID is a numeric string;
+- The search engine's Endpoint and API Key (required for retrieval).
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+# index is the Context Search scene ID (Scene Id), a numeric string
+kb = KnowledgeBase(backend="context_search", index="123456789")
+kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+
+agent = Agent(
+    name="demo",
+    instruction="Answer the user; when needed, use the `load_knowledgebase` tool to search the knowledge base.",
+    knowledgebase=kb,
+)
+```
+
+You can also pass credentials and engine info explicitly via `backend_config`:
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="context_search",
+    index="123456789",
+    backend_config={
+        "index": "123456789",
+        "volcengine_access_key": "your-ak",
+        "volcengine_secret_key": "your-sk",
+        "context_search_project": "default",
+        "context_search_engine_endpoint": "https://your-engine-endpoint",
+        "context_search_engine_apikey": "your-engine-apikey",
+    },
+)
+```
+
+## Parameters
+
+### Constructor parameters
+
+`ContextSearchBackend` accepts the following fields:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | No default; provided by `KnowledgeBase` | Scene ID (Scene Id), a numeric string; used as the scene ID when `context_search_engine_id` is empty. |
+| `volcengine_access_key` | `str \| None` | Read from env var `VOLCENGINE_ACCESS_KEY` | Volcengine access key (AK). |
+| `volcengine_secret_key` | `str \| None` | Read from env var `VOLCENGINE_SECRET_KEY` | Volcengine secret key (SK). |
+| `volcengine_session_token` | `str \| None` | Read from env var `VOLCENGINE_SESSION_TOKEN` | STS temporary-credential token. |
+| `context_search_region` | `str \| None` | Read from env var `DATABASE_CONTEXT_SEARCH_REGION`; defaults to `cn-beijing` (`ap-southeast-1` under `byteplus`) | Service region. |
+| `context_search_project` | `str \| None` | Read from env var `DATABASE_CONTEXT_SEARCH_PROJECT`; defaults to `default` | Context Search project name. |
+| `context_search_engine_id` | `str \| None` | Read from env var `DATABASE_CONTEXT_SEARCH_ENGINE_ID` | Search engine ID; when set, takes precedence as the scene ID. |
+| `context_search_engine_endpoint` | `str \| None` | Read from env var `DATABASE_CONTEXT_SEARCH_ENGINE_ENDPOINT` | Search engine endpoint, required for retrieval. |
+| `context_search_engine_apikey` | `str \| None` | Read from env var `DATABASE_CONTEXT_SEARCH_ENGINE_APIKEY` | Search engine API key, required for retrieval. |
+| `context_search_service` | `str` | `ctxsearch` | Service identifier. |
+| `context_search_version` | `str` | `2025-09-01` | API version. |
+| `context_search_host` | `str` | `ctxsearch.volcengineapi.com` | API host. Replaced with `byteplusapi.com` under `byteplus`. |
+| `context_search_scheme` | `str` | `https` | Request scheme. |
+
+## Environment variables
+
+```bash
+# Volcengine credentials
+export VOLCENGINE_ACCESS_KEY="your-ak"
+export VOLCENGINE_SECRET_KEY="your-sk"
+
+# Context Search
+export DATABASE_CONTEXT_SEARCH_PROJECT="default"
+export DATABASE_CONTEXT_SEARCH_REGION="cn-beijing"
+export DATABASE_CONTEXT_SEARCH_ENGINE_ID="your-engine-id"
+export DATABASE_CONTEXT_SEARCH_ENGINE_ENDPOINT="https://your-engine-endpoint"
+export DATABASE_CONTEXT_SEARCH_ENGINE_APIKEY="your-engine-apikey"
+```
+
+<Note>
+Embedding and retrieval both run server-side in Context Search, so this backend requires no embedding model configuration. Ingestion is asynchronous: after files are uploaded, wait for server-side indexing to complete before searching.
+</Note>
+
+<Warning>
+`index` (the scene ID) must be a numeric string, otherwise a `ValueError` is raised; initialization also calls `GetScene` to verify the scene exists. Before retrieval, `context_search_engine_endpoint` and `context_search_engine_apikey` must be set, otherwise `search` fails.
+</Warning>

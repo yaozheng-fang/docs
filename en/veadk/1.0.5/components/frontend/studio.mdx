@@ -2,9 +2,9 @@
 title: "Studio agent workbench"
 ---
 
-VeADK Studio 1.0.6 uses the same service and complete UI as VeADK Frontend. It enables chat, search, session history, the skill center, and agent creation, testing, deployment, and management, and opens on the chat view by default.
+VeADK Studio 1.0.5 uses the same service and complete UI as VeADK Frontend. It enables chat, search, session history, the skill center, and agent creation, testing, deployment, and management, and opens on the chat view by default.
 
-In VeADK 1.0.6, custom configuration is the available project-creation flow; intelligent, template, and workflow entries are marked as coming soon and cannot be selected. You can preview and edit generated files, run them in a temporary test process, download a ZIP, or deploy to AgentKit. This version also adds cloud Runtime selection, multiple skill sources, multimodal conversations, and centralized deployment task status and retries.
+In VeADK 1.0.5, custom configuration is the available project-creation flow; intelligent, template, and workflow entries are marked as coming soon and cannot be selected. You can preview and edit generated files, run them in a temporary test process, download a ZIP, or deploy to AgentKit. This version also adds cloud Runtime selection, multiple skill sources, multimodal conversations, and centralized deployment task status and retries.
 
 ## Start locally
 
@@ -87,7 +87,7 @@ veadk studio deploy \
   --user-pool-id "your-user-pool-id" \
   --allowed-client-id "your-user-pool-client-id" \
   --vefaas-app-name "veadk-studio" \
-  --veadk-version "1.0.6"
+  --veadk-version "1.0.5"
 ```
 
 On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
@@ -102,16 +102,12 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 | `--allowed-client-id` | `str` | Required | User-pool client UID used for login. |
 | `--client-secret` | `str` | `""` | Supply only if the secret cannot be read from the client UID. Direct arguments can enter shell history, so omit it when lookup is available. |
 | `--vefaas-app-name` | `str` | Required | VeFaaS application name, 4–64 characters containing letters, digits, and hyphens, but no underscores. |
-| `--region` | `cn-beijing \| cn-shanghai` | `cn-beijing` | Region for VeFaaS, API Gateway, and related resources; one of `cn-beijing` or `cn-shanghai`. |
-| `--project` | `str` | `default` | Volcengine project the VeFaaS function belongs to. |
+| `--region` | `str` | `cn-beijing` | Region for VeFaaS, API Gateway, and related resources. |
 | `--iam-role` | `str \| None` | `None` | Existing IAM role TRN for the function. If omitted, the default role is created or reused. |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway name. If omitted, an existing gateway is reused or a gateway is created when none exists. |
 | `--gateway-service-name` | `str` | `""` | Gateway service name; leave empty for automatic configuration. |
 | `--gateway-upstream-name` | `str` | `""` | Gateway upstream name; leave empty for automatic configuration. |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used during deployment. Prefer the environment variable. |
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. Prefer the environment variable. |
-| `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.6` to reproduce this version. |
+| `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.5` to reproduce this version. |
 | `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |
-<Note>
-During deployment the command searches the `cn-beijing` and `cn-shanghai` regions for the VeIdentity user-pool client and uses the region where it is found for login callbacks and Identity operations (written to the runtime environment as `VEIDENTITY_REGION`). If the user-pool region differs from the `--region` deployment region, a warning is printed and the Identity region is used.
-</Note>

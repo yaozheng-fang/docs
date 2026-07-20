@@ -1,0 +1,58 @@
+---
+title: "应用日志"
+---
+
+VeADK 1.0.5 使用 Python 标准库 `logging` 输出运行日志，不再依赖 Loguru。VeADK 自身的 logger 位于 `veadk` 命名空间，默认写入标准输出，便于被容器平台和日志采集器收集。
+
+## 设置日志级别
+
+通过 `LOGGING_LEVEL` 环境变量设置 VeADK 日志级别。该变量应在导入 VeADK 前设置，默认值为 `DEBUG`。
+
+```bash
+export LOGGING_LEVEL=INFO
+python app.py
+```
+
+可使用 Python `logging` 支持的标准级别，包括 `DEBUG`、`INFO`、`WARNING`、`ERROR` 和 `CRITICAL`。
+
+## 日志格式
+
+每条日志包含时间、级别、调用位置和消息：
+
+```text
+2026-07-14 10:30:00 | INFO | runner.py:180 - Event output: request completed
+```
+
+当代码运行在正在记录的 OpenTelemetry span 中时，日志会自动增加 `trace_id`，便于在日志系统和链路追踪系统之间关联同一次请求：
+
+```text
+2026-07-14 10:30:00 | INFO | runner.py:180 | trace_id=0123456789abcdef - Event output: request completed
+```
+
+在交互式终端中，时间、级别和调用位置使用颜色区分；标准输出被重定向或采集时，不会写入 ANSI 颜色转义序列。
+
+## 与应用日志集成
+
+应用可以使用标准库 logger 输出自己的日志，并单独控制 `veadk` 命名空间的级别：
+
+```python
+import logging
+
+from veadk import Agent
+
+logging.getLogger("veadk").setLevel(logging.INFO)
+app_logger = logging.getLogger("company_assistant")
+
+agent = Agent(name="company_assistant")
+app_logger.info("Agent initialized")
+```
+
+VeADK 的 handler 不向 Python 根 logger 传播，因此修改根 logger 不会重复输出 VeADK 日志。需要把 VeADK 日志发送到自定义后端时，可以按标准 `logging` 用法为 `logging.getLogger("veadk")` 添加 handler。
+
+## 流式输出日志
+
+`Runner` 在流式执行中不会逐个输出中间的 partial chunk。思考内容会在一个完整片段结束时记录一次，最终回答、工具调用和工具结果也按完整事件记录。事件仍会原样流式返回给调用方；该行为只减少日志中的逐 token 噪声。
+
+<Warning>
+  `DEBUG` 日志可能包含模型输出、思考内容、工具参数和工具结果。在生产环境处理敏感数据时，应将 `LOGGING_LEVEL` 设为 `INFO` 或更高，并按组织要求配置日志访问权限和保留周期。
+</Warning>

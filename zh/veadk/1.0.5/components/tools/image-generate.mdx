@@ -1,0 +1,71 @@
+---
+title: "图像生成"
+tag: "函数工具"
+---
+
+## 功能说明
+
+对应工具标识 `image_generate`。
+
+`image_generate` 根据文本描述生成图片。图生图编辑见 `image_edit`。
+
+导入路径：`from veadk.tools.builtin_tools.image_generate import image_generate`
+
+## 环境变量与前提
+
+<Warning>
+附加要求：
+
+1. 配置用于智能体推理模型的 API Key；
+2. 配置用于图像生成的模型名称（`MODEL_IMAGE_NAME`）。
+</Warning>
+
+环境变量：
+
+- `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
+- `MODEL_IMAGE_NAME`：图像生成模型名称
+
+`config.yaml` 配置项：
+
+```yaml title="config.yaml"
+model:
+  image:
+    name: doubao-seedream-5-0-260128
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: your-api-key-here
+```
+
+## 使用方法
+
+```python title="examples/tools/image_generate/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.image_generate import image_generate
+
+agent = Agent(
+    name="image_generate_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="根据需求生成图片。",
+    instruction="你是一个图片生成专家，根据用户的需求调用 image_generate 工具生成图片。",
+    tools=[image_generate],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("生成一只可爱的小猫")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 额外说明
+
+<Note>
+`image_generate` 是规范导入名。`from veadk.tools.builtin_tools.generate_image import image_generate` 仍可用，但 `generate_image` 模块已废弃，请改用 `image_generate`。
+</Note>

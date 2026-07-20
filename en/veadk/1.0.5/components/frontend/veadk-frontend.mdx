@@ -1,0 +1,228 @@
+---
+title: "VeADK Frontend"
+---
+
+VeADK ships a production-grade React frontend — an enterprise agent-application workbench that talks to agents over the Google ADK API server: create, debug, manage, and use agents from the UI. `veadk frontend` is a self-contained launcher: in the default mode it serves this React UI and the agent API from a single process on the same origin, so there is no separate backend to deploy and no cross-origin setup.
+
+## What it can do
+
+- **Create agents**: custom configuration is the available project-creation flow, producing a runnable VeADK project (`agent.py`, `requirements.txt`, and so on) that you can preview, edit, and download. Intelligent, template, and workflow entries are marked as coming soon and cannot be selected.
+- **Multimodal messages**: upload images, TXT, Markdown, PDF, and video; both user attachments and model-returned media can be previewed and restored from history.
+- **Chat and debug**: multi-turn conversations showing thinking, tool calls, token usage and timing; conversations also render the [A2UI](/en/veadk/components/frontend/a2ui) rich-UI cards an agent returns.
+- **Agent picker**: switch agents from the top-left; hover an agent to see its model and mounted tools.
+- **Skills and sub-agents**: type `/` to select a mounted skill or `@` to delegate the turn to an eligible sub-agent.
+- **Skill center**: select skills from Skill Hub, a local upload, or an AgentKit SkillSpace while creating an agent.
+- **Session history**: auto-saved, time-sorted, reopen or delete.
+- **Smart search**: the *Session* source full-text-searches the current agent's history; the *Web* source calls the agent's mounted web-search tool live, using credentials from the server's environment variables.
+- **Add an AgentKit agent**: paste a URL and API key to connect a remote agent over the ADK protocol; it then appears in the picker.
+- **Studio deployment**: inspect generated code, configure the region, channel, network, and environment variables, deploy to AgentKit, and monitor the task from the same workbench.
+- **Tracing**: view the call flame graph for the current session.
+- **Login**: SSO or a local username.
+
+## Complete tool OAuth authorization
+
+When an MCP or another tool needs OAuth credentials, Frontend displays an authorization card in the conversation. Starting authorization opens the identity provider in a new window. After the callback returns to Frontend, the current tool call resumes automatically without resending the message. If the page cannot capture the callback automatically, the UI asks for the complete callback URL.
+
+The callback URL registered with the identity provider must match the tool configuration and point to an address that reaches the current Frontend. If the browser blocks the authorization window, allow pop-ups for the site and retry.
+
+## Run
+
+Build the UI once, then serve the UI and the agent API together from a single process.
+
+<Steps>
+
+<Step title="Build the UI">
+
+```bash
+cd frontend && npm install && npm run build
+```
+
+The build output is served as the UI by `veadk frontend`. When VeADK is installed via pip, a built UI is already bundled in the package, so you can run it directly.
+
+</Step>
+
+<Step title="Launch">
+
+```bash
+veadk frontend --agents-dir examples
+# open http://127.0.0.1:8000
+```
+
+</Step>
+
+</Steps>
+
+### Dev mode (hot reload)
+
+Use `--vite` to serve only the API and allow CORS from the Vite dev server (`http://localhost:5173`). Add `--dev` to load local agents instead of cloud AgentKit runtimes.
+
+```bash
+veadk frontend --dev --vite --agents-dir examples   # API only, CORS for Vite
+cd frontend && npm run dev                    # http://localhost:5173, proxies API
+```
+
+## The `veadk frontend` command
+
+| Option | Default | Description |
+| :-- | :-- | :-- |
+| `--agents-dir` | `.` | Directory of agent apps; each subdirectory exposes a `root_agent`. |
+| `--frontend-dir` | packaged build, falling back to `./frontend/dist` | Override the built React UI directory. Priority: the explicitly passed directory, then the packaged `veadk/webui`, then `./frontend/dist` relative to the current directory. |
+| `--host` | `127.0.0.1` | Address to bind. |
+| `--port` | `8000` | Port to bind. |
+| `--dev` | off | Load local agents in the picker instead of cloud AgentKit runtimes. |
+| `--vite` | off | Serve the API only and allow the Vite development server through CORS. |
+| `--oauth2-user-pool` | — | VeIdentity User Pool name. Enables SSO when set together with the client. |
+| `--oauth2-user-pool-client` | — | VeIdentity User Pool client name. |
+| `--oauth2-user-pool-uid` | env `OAUTH2_USER_POOL_ID` | Specify the pool by UID instead of name. |
+| `--oauth2-user-pool-client-uid` | env `OAUTH2_USER_POOL_CLIENT_ID` | Specify the client by UID instead of name. |
+| `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | OAuth2 callback URL (env `OAUTH2_REDIRECT_URI`). Set this when deploying behind a public host or runtime. |
+| `--oauth2-provider` | `veidentity` when a user pool is configured | SSO provider id (env `OAUTH2_PROVIDER`). One of `veidentity`, `github`, `google`, or a custom name. |
+| `--oauth2-provider-label` | provider's built-in label | Display label for the login button (env `OAUTH2_PROVIDER_LABEL`). |
+| `--auth-mode` | `frontend` | `frontend` runs OAuth2 in this service; `gateway` trusts a JWT validated and forwarded by an upstream gateway. |
+| `--generated-agent-test-run-ttl` | `1800` | Lifetime in seconds for temporary Studio-generated agent debug processes. |
+| `--open / --no-open` | `--no-open` | Whether to open the system browser after startup; ignored with `--vite`. |
+
+<Note>
+  If the built UI directory is missing, the command asks you to run `npm run build`. Use `--vite` while developing the React frontend, optionally with `--dev` for local agents.
+</Note>
+
+## Multimodal attachments and storage
+
+The composer accepts PNG, JPEG, WebP, GIF, TXT, Markdown, PDF, MP4, WebM, and QuickTime files. The default per-file limit is 20 MB. PDFs are rendered to page images before model invocation; the required dependencies are installed by default starting in 1.0.5.
+
+Attachment bodies are stored separately from ADK Sessions, while Session Events keep stable references. Local temporary storage is the default; use TOS when media must survive process or host replacement.
+
+| Environment variable | Default | Description |
+| --- | --- | --- |
+| `VEADK_MEDIA_STORAGE` | `local` | Selects `local` or `tos`. |
+| `VEADK_MEDIA_LOCAL_DIR` | `/tmp/veadk-media` | Local media root. |
+| `VEADK_MEDIA_MAX_FILE_BYTES` | `20971520` | Maximum size for one upload or model output. |
+| `VEADK_MEDIA_TOS_PREFIX` | `veadk-media` | TOS object-key prefix. |
+| `DATABASE_TOS_BUCKET` | — | TOS bucket, required for `tos`. |
+| `DATABASE_TOS_REGION` | Derived from the cloud | TOS region. |
+
+```bash
+export VEADK_MEDIA_STORAGE=tos
+export DATABASE_TOS_BUCKET=<bucket>
+export DATABASE_TOS_REGION=cn-beijing
+export VOLCENGINE_ACCESS_KEY=<access-key>
+export VOLCENGINE_SECRET_KEY=<secret-key>
+veadk frontend --agents-dir examples
+```
+
+<Warning>
+  Local mode uses `/tmp`, so files can disappear when the process or host is recycled. Use TOS for durable media and restrict bucket access by user permissions.
+</Warning>
+
+## Use skills and sub-agents
+
+Type `/` in the composer to search skills mounted on the current agent, or `@` to select an eligible sub-agent. Selections appear as removable chips and are not sent as ordinary text. After choosing a sub-agent, the skill list switches to the target agent's own skills.
+
+## Deploy with Studio
+
+`veadk studio` launches a UI focused on creating and managing agents. Before deployment, review the generated source and configure the region, message channel, network, and environment variables; Studio then creates an AgentKit Runtime.
+
+```bash
+veadk studio --host 127.0.0.1 --port 8000
+```
+
+`veadk studio deploy` deploys Studio itself to VeFaaS. Without `--iam-role`, the command creates or reuses the default service role and attaches read-only policies required to inspect model, logging, tracing, knowledge, memory, and identity resources. When you pass a custom role, the command does not alter its policies.
+
+## Authentication
+
+Sessions and memory are scoped by the ADK `user_id`, which comes from the signed-in user. On startup the command loads a `.env` file from the current directory or its parents, so the environment variables below can be placed in `.env`.
+
+**SSO** — enable by passing the pool and client. The UI shows a login page and redirects through the identity provider, then uses the user identifier returned by the userinfo endpoint as the `user_id`. The pool and client can be given either by name or by UID.
+
+```bash
+veadk frontend --agents-dir examples \
+  --oauth2-user-pool <name> --oauth2-user-pool-client <name>
+# or by UID (env OAUTH2_USER_POOL_ID / OAUTH2_USER_POOL_CLIENT_ID)
+# --oauth2-user-pool-uid <id> --oauth2-user-pool-client-uid <id>
+```
+
+Enabling VeIdentity SSO requires the process to have access to Volcengine credentials. The middleware protects the API while exempting the UI shell, `/web/auth-config`, `/favicon.ico`, `/assets`, and `/skillhub`, so the app loads and shows its own login page instead of being bounced to the identity provider. The login button's label and icon are config-driven.
+
+**Third-party / custom OAuth2 (env vars)** — without a VeIdentity user pool, set `OAUTH2_CLIENT_ID` (and the secret) to enable GitHub, Google, or any OIDC login. Endpoints are resolved in this order: a built-in preset (`OAUTH2_PROVIDER=github` or `google`), then OIDC discovery (set `OAUTH2_ISSUER`), then explicit endpoints (`OAUTH2_AUTHORIZE_URL`, etc.).
+
+| Env var | Description |
+| :-- | :-- |
+| `OAUTH2_PROVIDER` | Provider id: `github`, `google`, or a custom name. Drives the login button label and the preset. |
+| `OAUTH2_CLIENT_ID` / `OAUTH2_CLIENT_SECRET` | OAuth2 client credentials. Setting `OAUTH2_CLIENT_ID` enables the generic provider. |
+| `OAUTH2_ISSUER` | OIDC issuer base URL; endpoints are auto-discovered, e.g. `https://accounts.google.com`. |
+| `OAUTH2_AUTHORIZE_URL` / `OAUTH2_TOKEN_URL` / `OAUTH2_USERINFO_URL` | Explicit endpoints for a non-OIDC provider. |
+| `OAUTH2_SCOPE` | Override the requested scopes. |
+| `OAUTH2_PROVIDER_LABEL` | Override the login button text. |
+| `OAUTH2_REDIRECT_URI` | Callback URL. Set this when deploying behind a public host or runtime, and register the same value in your OAuth app; defaults to `http://{host}:{port}/oauth2/callback` locally. |
+
+The GitHub preset only needs the client credentials:
+
+```bash
+export OAUTH2_PROVIDER=github
+export OAUTH2_CLIENT_ID=<github-oauth-client-id>
+export OAUTH2_CLIENT_SECRET=<github-oauth-client-secret>
+export OAUTH2_REDIRECT_URI=http://127.0.0.1:8000/oauth2/callback
+veadk frontend --agents-dir examples
+```
+
+Google is the same with `OAUTH2_PROVIDER=google`; for any OIDC provider (Keycloak, Auth0, Okta, and so on) set `OAUTH2_ISSUER` plus the client credentials. A full example lives at `examples/front_with_sso/`.
+
+When connecting to an AgentKit Runtime protected by `custom_jwt`, the server forwards the OAuth access token already validated for the current session. Its issuer must match the Runtime discovery URL, and the client ID must be included in the Runtime `allowed_clients` list.
+
+<Warning>
+  When deploying to a runtime or public host, the OAuth callback must point at an externally reachable URL: set `OAUTH2_REDIRECT_URI` to the public callback URL and register the same value in your OAuth app. The cookie `Secure` flag is enabled automatically when that URL is HTTPS.
+</Warning>
+
+**No SSO (local username)** — without those flags, the login page asks for a username (letters and digits, up to 16 characters), stored locally and used as the `user_id`. In this case the server always reports an unauthenticated state and an empty provider list, and the app renders its local username login.
+
+<Note>
+  Login state is cached: SSO via the `veadk_session` cookie, local mode via `localStorage`. The session is created lazily on the first message or attachment upload, not on page load. Logout is a local logout — it clears the session and returns to the login page.
+</Note>
+
+## Frontend security restrictions
+
+VeADK Frontend can be deployed on a public endpoint, so it restricts user-controlled addresses and paths:
+
+- The project-creation flow does not execute code submitted by the browser. Test generated code in a controlled local environment before deployment.
+- The remote AgentKit proxy requires an API key and accepts only HTTPS `volceapi.com` hosts.
+- AgentKit deployment files must remain inside the current project directory. Absolute paths and relative paths that escape it are rejected.
+- Static files can be read only from the built UI directory; path traversal cannot read other host files.
+
+These restrictions do not replace authentication. Public deployments should still enable SSO or a trusted upstream gateway and use least-privilege cloud credentials. When you need only creation and management features, use the [Studio agent workbench](/en/veadk/components/frontend/studio).
+
+## Rendering flow
+
+The frontend talks to the Google ADK API server: it lists available agents, creates a session, and receives the agent's output as a live stream. When the agent returns an A2UI message, the frontend parses its UI instructions, creates and incrementally updates the corresponding surface, then renders the matching React components by type. A registry maps each component type to a renderer, so adding a new component type only requires registering a renderer for it.
+
+## Adding a custom (enterprise) component
+
+A custom component has two halves that share one catalog id. For the backend half, see [A2UI](/en/veadk/components/frontend/a2ui#custom-components); the frontend half is below.
+
+**Frontend half** — drop in a new directory; it auto-registers, with no central edit:
+
+```text
+src/a2ui/components/RevenueChart/
+├── RevenueChart.tsx
+└── index.ts
+```
+
+```ts title="src/a2ui/components/RevenueChart/index.ts"
+import { register } from "../../registry";
+import { RevenueChart } from "./RevenueChart";
+register("RevenueChart", RevenueChart);
+```
+
+```tsx title="src/a2ui/components/RevenueChart/RevenueChart.tsx"
+import type { ComponentRendererProps } from "../../registry";
+
+export function RevenueChart({ node, ctx }: ComponentRendererProps) {
+  const series = ctx.resolve(node.series as any);
+  return <div className="corp-chart">{/* render series */}</div>;
+}
+```
+
+A newly added component directory is discovered and registered automatically, with no central configuration file to edit.
+
+<Note>
+  Unknown components with no registered renderer fall back to a collapsible JSON view, so a catalog/renderer mismatch never crashes the UI.
+</Note>

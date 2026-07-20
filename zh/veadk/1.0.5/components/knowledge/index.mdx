@@ -1,0 +1,98 @@
+---
+title: "概述"
+---
+
+知识库（KnowledgeBase）是智能体的外部知识来源，专门存放静态资料（产品文档、FAQ、文章等）。把它挂到智能体上，VeADK 会自动为智能体注入一个检索工具，使其在回答前先到资料中检索相关片段，从而给出更精准、更有依据的回答（RAG）。
+
+## 统一入口：`KnowledgeBase`
+
+无论使用哪种后端，均通过统一的 `veadk.knowledgebase.KnowledgeBase` 接入。它根据 `backend` 选择并初始化底层实现，并对外提供一致的知识注入与检索接口。知识注入支持三种来源：
+
+- 从文件导入：`kb.add_from_files([...])`；
+- 从目录导入：`kb.add_from_directory("./docs")`；
+- 从文本导入：`kb.add_from_text([...])`。
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(backend="local", index="company_faq")
+
+kb.add_from_text(
+    [
+        "公司的标准年假为每年 15 天，入职满一年起享受。",
+        "经主管批准后，员工每周最多可远程办公 2 天。",
+    ]
+)
+```
+
+### 通用参数
+
+`KnowledgeBase` 的字段对所有后端通用：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `backend` | `"local" \| "opensearch" \| "redis" \| "milvus" \| "tos_vector" \| "viking" \| "context_search" \| "openviking"` 或后端实例 | `"local"` | 选择后端实现，也可直接传入一个 `BaseKnowledgebaseBackend` 实例。 |
+| `backend_config` | `dict` | `{}` | 传给后端构造函数的配置。非空时会直接以该配置实例化后端，此时 `index` 需在配置中给出。 |
+| `top_k` | `int` | `10` | 检索时返回最相似的片段数量。`search` 方法可临时覆盖。 |
+| `app_name` | `str` | `""` | 应用名。当 `index` 为空时作为其回退值。 |
+| `index` | `str` | `""` | 知识库索引/集合名。为空时回退到 `app_name`；两者皆空则抛出 `ValueError`。 |
+| `name` | `str` | `user_knowledgebase` | 知识库名称，用于向智能体描述该知识库。 |
+| `description` | `str` | `This knowledgebase stores some user-related information.` | 知识库描述，用于向智能体说明其用途。 |
+| `enable_profile` | `bool` | `False` | 是否启用知识库画像能力。 |
+| `query_with_user_profile` | `bool` | `False` | 是否在检索时结合用户画像。该能力需使用 Viking 后端。 |
+
+<Note>
+向量类后端（`local`、`opensearch`、`redis`、`milvus`、`tos_vector`）会对知识文本做向量化，需要安装扩展依赖并配置 embedding 模型。`viking`、`context_search` 与 `openviking` 在服务端处理资源，无需本地 embedding。
+</Note>
+
+## 选择后端
+
+调试可用 `local`；使用托管检索服务时可选择 `viking`、`context_search` 或 `openviking`；已有向量存储时可选择 `opensearch`、`redis`、`milvus` 或 `tos_vector`。
+
+| 后端 | 存储 | 依赖 | 适用场景 | 文档 |
+| :--- | :--- | :--- | :--- | :--- |
+| `local` | 内存向量索引 | `extensions` + embedding | 本地调试（进程退出后数据丢失） | [本地内存](/zh/veadk/components/knowledge/local) |
+| `opensearch` | OpenSearch 向量库 | OpenSearch + `extensions` + embedding | 自建向量检索 | [OpenSearch](/zh/veadk/components/knowledge/opensearch) |
+| `redis` | Redis 向量库 | Redis(RediSearch) + `extensions` + embedding | 低延迟自建向量检索 | [Redis](/zh/veadk/components/knowledge/redis) |
+| `milvus` | Milvus collection | Milvus + `extensions` + embedding | 自建或托管 Milvus | [Milvus](/zh/veadk/components/knowledge/milvus) |
+| `tos_vector` | TOS 向量桶 | 火山引擎账号 + `extensions` + embedding | 火山引擎对象存储向量库 | [TOS 向量库](/zh/veadk/components/knowledge/tos-vector) |
+| `viking` | VikingDB 知识库（托管） | 火山引擎账号 | 生产推荐 | [VikingDB](/zh/veadk/components/knowledge/viking) |
+| `context_search` | Context Search（托管） | 火山引擎账号 | 生产推荐 | [Context Search](/zh/veadk/components/knowledge/context-search) |
+| `openviking` | OpenViking 资源目录 | OpenViking 服务 | 服务端资源解析与检索 | [OpenViking](/zh/veadk/components/knowledge/openviking) |
+
+## 绑定到智能体
+
+把 `knowledgebase` 传给 `Agent` 后，智能体会**自动获得 `load_knowledgebase` 工具**，在回答问题时自主决定是否检索知识库。
+
+```python
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(backend="local", index="company_faq")
+kb.add_from_text("公司的标准年假为每年 15 天，入职满一年起享受。")
+
+agent = Agent(
+    name="kb_agent",
+    instruction="你是一个知识渊博的助手，请优先利用知识库回答问题。",
+    knowledgebase=kb,
+)
+
+runner = Runner(agent=agent, app_name="company_faq")
+print(asyncio.run(runner.run(messages="年假有多少天？")))
+```
+
+## 直接检索
+
+除了智能体运行时自动检索，也可以直接调用 `search` 做语义搜索，用于调试或自定义 RAG。`top_k` 为 0 时使用构造时设定的值。
+
+```python
+entries = kb.search(query="年假", top_k=3)
+for entry in entries:
+    print(entry.content)
+```
+
+## 自定义后端
+
+所有后端都继承自 `BaseKnowledgebaseBackend`，需实现 `precheck_index_naming`、`add_from_directory`、`add_from_files`、`add_from_text` 与 `search`。要自定义后端，继承该基类实现上述方法，并把实例直接传给 `KnowledgeBase(backend=<实例>)`。

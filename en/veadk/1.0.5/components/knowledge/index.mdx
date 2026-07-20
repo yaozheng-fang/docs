@@ -1,0 +1,98 @@
+---
+title: "Knowledge Base"
+---
+
+A knowledge base (`KnowledgeBase`) is an agent's external source of knowledge — a place to store static material such as product docs, FAQs, and articles. Attach it to an agent and VeADK automatically injects a retrieval tool, so the agent retrieves relevant snippets before answering and produces more accurate, better-grounded responses (RAG).
+
+## Unified entry point: `KnowledgeBase`
+
+Regardless of the backend, everything goes through the unified `veadk.knowledgebase.KnowledgeBase`. It selects and initializes the underlying implementation based on `backend` and exposes a consistent ingestion and retrieval interface. Ingestion supports three sources:
+
+- From files: `kb.add_from_files([...])`;
+- From a directory: `kb.add_from_directory("./docs")`;
+- From text: `kb.add_from_text([...])`.
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(backend="local", index="company_faq")
+
+kb.add_from_text(
+    [
+        "The standard annual leave is 15 days per year, available after one year of service.",
+        "With manager approval, employees may work remotely up to 2 days per week.",
+    ]
+)
+```
+
+### Common parameters
+
+The fields of `KnowledgeBase` are common to all backends:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `backend` | `"local" \| "opensearch" \| "redis" \| "milvus" \| "tos_vector" \| "viking" \| "context_search" \| "openviking"` or a backend instance | `"local"` | Selects the backend implementation; a `BaseKnowledgebaseBackend` instance may also be passed directly. |
+| `backend_config` | `dict` | `{}` | Config passed to the backend constructor. When non-empty, the backend is instantiated directly from it, in which case `index` must be provided within the config. |
+| `top_k` | `int` | `10` | Number of most-similar snippets returned during retrieval. Can be overridden per call in `search`. |
+| `app_name` | `str` | `""` | Application name. Used as the fallback for `index` when it is empty. |
+| `index` | `str` | `""` | Knowledge base index/collection name. Falls back to `app_name` when empty; a `ValueError` is raised if both are empty. |
+| `name` | `str` | `user_knowledgebase` | Knowledge base name, used to describe it to the agent. |
+| `description` | `str` | `This knowledgebase stores some user-related information.` | Knowledge base description, used to explain its purpose to the agent. |
+| `enable_profile` | `bool` | `False` | Whether to enable knowledge base profiling. |
+| `query_with_user_profile` | `bool` | `False` | Whether to incorporate the user profile during retrieval. This requires the Viking backend. |
+
+<Note>
+Vector backends (`local`, `opensearch`, `redis`, `milvus`, and `tos_vector`) embed knowledge text locally and require the extensions extra plus an embedding model. `viking`, `context_search`, and `openviking` process resources server-side and do not need a local embedding model.
+</Note>
+
+## Choosing a backend
+
+Use `local` for development. Choose `viking`, `context_search`, or `openviking` for managed retrieval, or `opensearch`, `redis`, `milvus`, or `tos_vector` when you already operate a vector store.
+
+| Backend | Storage | Dependencies | Use case | Docs |
+| :--- | :--- | :--- | :--- | :--- |
+| `local` | In-memory vector index | `extensions` + embedding | Local debugging (data lost on exit) | [Local](/en/veadk/components/knowledge/local) |
+| `opensearch` | OpenSearch vector store | OpenSearch + `extensions` + embedding | Self-hosted vector search | [OpenSearch](/en/veadk/components/knowledge/opensearch) |
+| `redis` | Redis vector store | Redis (RediSearch) + `extensions` + embedding | Low-latency self-hosted vector search | [Redis](/en/veadk/components/knowledge/redis) |
+| `milvus` | Milvus collection | Milvus + `extensions` + embedding | Self-hosted or managed Milvus | [Milvus](/en/veadk/components/knowledge/milvus) |
+| `tos_vector` | TOS vector bucket | Volcengine account + `extensions` + embedding | Volcengine object-storage vector store | [TOS Vector](/en/veadk/components/knowledge/tos-vector) |
+| `viking` | VikingDB knowledge base (managed) | Volcengine account | Recommended for production | [VikingDB](/en/veadk/components/knowledge/viking) |
+| `context_search` | Context Search (managed) | Volcengine account | Recommended for production | [Context Search](/en/veadk/components/knowledge/context-search) |
+| `openviking` | OpenViking resource tree | OpenViking service | Server-side resource processing and retrieval | [OpenViking](/en/veadk/components/knowledge/openviking) |
+
+## Binding to an agent
+
+Pass `knowledgebase` to `Agent` and the agent **automatically gains a `load_knowledgebase` tool**, deciding on its own whether to search the knowledge base when answering.
+
+```python
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(backend="local", index="company_faq")
+kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+
+agent = Agent(
+    name="kb_agent",
+    instruction="You are a knowledgeable assistant. Prefer the knowledge base when answering.",
+    knowledgebase=kb,
+)
+
+runner = Runner(agent=agent, app_name="company_faq")
+print(asyncio.run(runner.run(messages="How many days of annual leave do I get?")))
+```
+
+## Direct retrieval
+
+Besides automatic retrieval at agent runtime, you can call `search` directly for semantic search, useful for debugging or custom RAG. A `top_k` of 0 uses the value set at construction.
+
+```python
+entries = kb.search(query="annual leave", top_k=3)
+for entry in entries:
+    print(entry.content)
+```
+
+## Custom backends
+
+All backends inherit from `BaseKnowledgebaseBackend` and must implement `precheck_index_naming`, `add_from_directory`, `add_from_files`, `add_from_text`, and `search`. To add a custom backend, subclass this base, implement those methods, and pass the instance directly to `KnowledgeBase(backend=<instance>)`.

@@ -1,0 +1,81 @@
+---
+title: "使用本地内存"
+---
+
+`local` 后端由 `InMemoryLTMBackend` 实现，把长期记忆保存在**当前进程的内存**中。记忆文本先经 embedding 模型向量化，再写入一个基于 llama-index 的内存向量索引，检索时按语义相似度召回。
+
+由于数据仅存在于进程内存，进程退出后即清空，也无法跨进程共享，因此该后端定位为本地开发与调试、快速验证长期记忆的端到端流程，不适用于生产环境。
+
+## 何时使用
+
+- 在本地快速体验长期记忆的完整流程，从写入到跨会话检索；
+- 编写与调试智能体逻辑，暂不引入外部存储；
+- 编写演示或单元测试，无需保留数据。
+
+## 依赖
+
+`local` 后端依赖向量检索能力，需要安装扩展依赖：
+
+```bash
+pip install "veadk-python[extensions]"
+```
+
+## 使用示例
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+# local 后端对 index 命名没有限制
+ltm = LongTermMemory(backend="local", app_name="ltm_demo")
+
+agent = Agent(
+    name="demo",
+    instruction="回答用户问题，必要时用 `load_memory` 工具检索过往对话。",
+    long_term_memory=ltm,
+)
+```
+
+完整跨会话示例见[长期记忆 · 跨会话示例](/zh/veadk/components/memory/index#跨会话示例)。
+
+## 参数
+
+`local` 后端由 `LongTermMemory` 在内部构造。通常只需在 `LongTermMemory` 层传入 `index` 或 `app_name`；如需自定义 embedding，可通过 `backend_config` 传入 `embedding_config`，或直接构造后端实例后传给 `LongTermMemory(backend=<实例>)`。
+
+### 构造参数
+
+`InMemoryLTMBackend` 接受以下字段：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | 无默认，由 `LongTermMemory` 传入 | 记忆索引名。`local` 后端对命名无限制。 |
+| `embedding_config` | `EmbeddingModelConfig` | 自动从 `MODEL_EMBEDDING_*` 环境变量读取 | embedding 模型配置，用于把记忆文本向量化。 |
+
+### embedding 配置
+
+`embedding_config` 为 `EmbeddingModelConfig`，环境变量前缀 `MODEL_EMBEDDING_`：
+
+| 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | embedding 模型名。 |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | embedding 向量维度，需与模型匹配。 |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | embedding 服务的 API 地址。 |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | 依次回退到 `MODEL_AGENT_API_KEY` 或自动获取的 Ark 令牌 | 访问 embedding 服务的密钥。 |
+
+## 环境变量配置
+
+```bash
+# embedding 模型；若不设置将使用默认值，并在缺少 API Key 时复用智能体模型的密钥
+export MODEL_EMBEDDING_NAME="doubao-embedding-vision-250615"
+export MODEL_EMBEDDING_DIM=2048
+export MODEL_EMBEDDING_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
+```
+
+<Note>
+若未单独设置 `MODEL_EMBEDDING_API_KEY`，会依次尝试复用 `MODEL_AGENT_API_KEY`，再回退到自动获取的 Ark 令牌。
+</Note>
+
+<Warning>
+`local` 后端仅将记忆保存在进程内存中，进程退出后数据即丢失，且无法跨进程共享。需要持久化或多实例共享，请改用 [VikingDB](/zh/veadk/components/memory/vikingdb)、[Mem0](/zh/veadk/components/memory/mem0)、[OpenSearch](/zh/veadk/components/memory/opensearch) 或 [Redis](/zh/veadk/components/memory/redis)。
+</Warning>
