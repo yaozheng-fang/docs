@@ -11,6 +11,16 @@
 
 > 完整的写作规范见仓库根目录的 [`SPEC.md`](./SPEC.md)。本节是供 AI 工具自动加载的精简版；两者冲突时以 `SPEC.md` 为准。
 
+## Product-specific specs
+
+When editing product documentation under `productions/<product>/preview/{zh,en}`, read the root [`SPEC.md`](./SPEC.md) first, then read the matching product spec:
+
+- VeADK: [`productions/veadk/veadk_SPEC.md`](./productions/veadk/veadk_SPEC.md)
+- AgentKit CLI: [`productions/agentkit-cli/agentkit-cli_SPEC.md`](./productions/agentkit-cli/agentkit-cli_SPEC.md)
+- API Reference: [`productions/api-reference/api-reference_SPEC.md`](./productions/api-reference/api-reference_SPEC.md)
+
+The root `SPEC.md` has highest priority. Product-specific specs only add directory, page-type, formatting, examples, and verification rules for the corresponding Preview documentation. Do not use `archives` as the source of truth for new Preview content.
+
 ## Terminology
 
 - 正文中的 “agent” 一律译为「智能体」；代码标识符、类名（`Agent`）与配置键（`model.agent`）保持原样。
@@ -28,7 +38,7 @@
 - 避免源码级表述：不暴露内部文件名、内部函数名、私有机制、异常类型或构造参数字面量；以使用者视角描述行为。用户需直接使用的公开 API（类名、构造参数、配置键、环境变量、用户自建文件路径）应保留并写清。
 - 默认不添加「下一步」一类的收尾章节，除非明确要求。
 - 双语站点：中文默认，英文并列；两侧目录结构与页面层级保持一致，改动同步更新。
-- `preview` 用于下一版本的可编辑文档；`archives` 中的已发布版本只做版本事实修正，不随 Preview 自动更新。
+- `preview` 用于下一版本的可编辑文档；`archives` 中的已发布版本禁止做任何形式的变更，不随 Preview 自动更新。
 
 ## Content boundaries
 
