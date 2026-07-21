@@ -103,10 +103,14 @@ veadk studio deploy \
   --user-pool-id "your-user-pool-id" \
   --allowed-client-id "your-user-pool-client-id" \
   --vefaas-app-name "veadk-studio" \
-  --veadk-version "1.0.5"
+  --region "cn-beijing" \
+  --project "default" \
+  --veadk-version "1.0.6"
 ```
 
 部署成功后，终端会输出公网 URL 和 VeFaaS 应用 ID。打开公网 URL 时，Studio 会先跳转到 VeIdentity 完成登录。
+
+`--region` 指定 Studio 的部署地域，默认为 `cn-beijing`，也支持 `cn-shanghai`；VeFaaS、API Gateway 等资源均创建在该地域。部署时还会自动在所部署地域以及北京、上海两个地域之间查找 VeIdentity 用户池与客户端：优先查询部署地域，未命中时跨地域查询另一个地域；跨地域命中时终端会输出 warning 并继续部署。`--project` 指定 VeFaaS 函数所属项目，默认为 `default`。
 
 部署者的长期 AK/SK 不会写入 VeFaaS 应用环境变量。已部署的 Studio 使用绑定 IAM Role 的临时凭证访问火山引擎服务。
 
@@ -118,12 +122,13 @@ veadk studio deploy \
 | `--allowed-client-id` | `str` | 必填 | 用于登录的用户池客户端 UID。 |
 | `--client-secret` | `str` | `""` | 无法通过客户端 UID 读取密钥时显式提供。直接传参可能进入 shell 历史，能够读取时应省略。 |
 | `--vefaas-app-name` | `str` | 必填 | VeFaaS 应用名称，长度 4–64，只能包含字母、数字和连字符，不能包含下划线。 |
-| `--region` | `str` | `cn-beijing` | VeFaaS、API Gateway 和相关资源所在区域。 |
+| `--region` | `cn-beijing \| cn-shanghai` | `cn-beijing` | Studio 部署地域，同时决定 VeFaaS、API Gateway 等资源所在区域。部署时会跨北京、上海查找 VeIdentity 用户池。 |
+| `--project` | `str` | `default` | VeFaaS 函数所属项目。 |
 | `--iam-role` | `str \| None` | `None` | 绑定到函数的既有 IAM Role TRN；省略时创建或复用默认 Role。 |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway 名称；省略时复用已有网关，没有可用网关时创建。 |
 | `--gateway-service-name` | `str` | `""` | 指定网关服务名称；留空时自动配置。 |
 | `--gateway-upstream-name` | `str` | `""` | 指定网关上游名称；留空时自动配置。 |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | 部署用 Access Key。推荐通过环境变量提供。 |
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | 部署用 Secret Key。推荐通过环境变量提供。 |
-| `--veadk-version` | `str` | 最新发布版本 | 写入 VeFaaS 依赖的 `veadk-python` 版本。重现本页行为时显式设为 `1.0.5`。 |
+| `--veadk-version` | `str` | 最新发布版本 | 写入 VeFaaS 依赖的 `veadk-python` 版本。重现本页行为时显式设为 `1.0.6`。 |
 | `--from-source` | `bool` 标志 | `false` | 从当前源码目录构建 wheel 后部署，包含未提交改动；用于验证未发布版本，不应与 `--veadk-version` 的发布版本工作流混用。 |
