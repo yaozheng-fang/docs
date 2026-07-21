@@ -48,6 +48,22 @@ The data-plane API key is not stored in the browser. The management page therefo
 
 The management page can display runtime environment-variable values. Restrict Studio to authorized users and avoid storing plaintext secrets in ordinary environment variables; prefer the platform's secret-management features.
 
+## Select a cloud Runtime
+
+In cloud mode, the agent selector in the chat sidebar lists AgentKit Runtimes that the signed-in user deployed through this workbench, paginated by region. Each Runtime exposes two independent actions:
+
+- **Connect**: makes the Runtime the agent for the current conversation and closes the selector after switching.
+- **Info**: opens a tabbed preview panel that shows the Runtime's capabilities without connecting to it or persisting the selection.
+
+The info panel has two tabs:
+
+- **Agent info**: reads live metadata from the Runtime's deployed Agent Server, including name, model, description, sub-agents, tools, skills, and mounted components (knowledge base, memory, prompt manager, example store, run processor, tracer, toolset, plugin, and so on). This information contains only display-oriented summaries and never returns system prompts, credentials, environment-variable values, or arbitrary serialized objects.
+- **Runtime info**: shows control-plane Runtime detail, including model, description, status, region, resources, version, and environment variables.
+
+<Note>
+  The Runtime info tab can display runtime environment-variable values. Restrict Studio to authorized users and prefer the platform's secret-management features.
+</Note>
+
 ## `veadk studio` options
 
 | Option | Type | Default | Description |

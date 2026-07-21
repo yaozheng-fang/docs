@@ -30,8 +30,8 @@ The application exposes AgentKit conversation APIs and these public endpoints:
 | Endpoint | Purpose |
 | --- | --- |
 | `/ping` | Health check. |
-| `/web/agent-info/{app_name}` | Agent metadata. |
-| `/web/agent-graph` | Agent topology. |
+| `/web/agent-info/{app_name}` | Agent name, description, model, sub-agents, tools, skills, and mounted components. |
+| `/web/agent-graph` | Agent topology; each node includes skills, components, path, and whether it can be selected in a conversation. |
 | `/` | Built-in Web UI. |
 
 ## Initialize and deploy
