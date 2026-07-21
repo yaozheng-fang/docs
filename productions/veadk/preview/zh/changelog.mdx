@@ -2,6 +2,12 @@
 title: "更新日志"
 ---
 
+VeADK 1.0.6 发布于 2026 年 7 月 20 日。本页仅记录相对 1.0.5 的公开用户能力变化；完整提交记录见 [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.6)。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Studio 部署 | `veadk studio deploy` 支持 `cn-shanghai` 部署地域（`--region` 默认仍为 `cn-beijing`），VeFaaS、API Gateway 等资源创建在所选地域；新增 `--project` 指定 VeFaaS 函数所属项目，默认为 `default`。部署时自动跨北京、上海查找 VeIdentity 用户池与客户端，跨地域命中时输出 warning 并继续。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+
 VeADK 1.0.5 发布于 2026 年 7 月 19 日。本页仅记录相对 1.0.4 的公开用户能力变化；完整提交记录见 [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.5)。
 
 | 模块 | 变更细节 | 链接 |
