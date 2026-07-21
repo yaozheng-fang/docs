@@ -1,0 +1,92 @@
+---
+title: "Develop apps in a Codex sandbox"
+tag: "HOT"
+---
+
+An AgentKit sandbox is a cloud `code` tool environment where you can develop applications with a coding agent such as Codex: no local runtime to set up, sessions persist, code transfers both ways, and the app you are building can be viewed through a web preview. For the full options of each sandbox command, see [Use sandboxes](/productions/agentkit-cli/archives/0.46.6/en/commands/sandbox).
+
+<Note>
+Before you start, make sure your Volcengine access keys are configured — the `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` environment variables.
+</Note>
+
+## End-to-end flow
+
+<Steps>
+  <Step title="Create a sandbox">
+    A sandbox is a `code` environment. If the project does not have one yet, create it first:
+
+    ```bash
+    agentkit sandbox create --type code --name dev-sandbox
+    ```
+
+    The command returns the sandbox id. Later sandbox commands resolve the `code` sandbox within the project automatically: the sole one is used when there is exactly one, and `--tool-id` is required when there are several (find it with `agentkit sandbox list`). You can also skip this step and add `--auto-create` on the first sandbox command to create one on the fly.
+  </Step>
+
+  <Step title="Develop with Codex inside the sandbox">
+    Open the sandbox session's interactive terminal and run `codex` there to develop:
+
+    ```bash
+    agentkit sandbox attach --session dev --tmux
+    ```
+
+    `--session dev` names the session; reuse the same name in later commands to return to the same environment. `--tmux` attaches a persistent terminal session so reconnecting after a drop keeps your progress (press Ctrl-] to detach). To bring existing local code into the sandbox, upload it before attaching:
+
+    ```bash
+    agentkit sandbox attach --session dev --src-dir ./my-app --dst-dir my-app
+    ```
+
+    The model used by the sandbox's coding agent can be set with `--model-name`, `--model-api-key`, and `--model-provider`.
+  </Step>
+
+  <Step title="Transfer files between local and sandbox">
+    Prefix the remote side with `:`. Upload and download:
+
+    ```bash
+    # Upload
+    agentkit sandbox cp ./local.txt :/workspace/local.txt --session dev
+
+    # Download
+    agentkit sandbox cp :/workspace/result.json ./result.json --session dev
+    ```
+  </Step>
+
+  <Step title="Preview the app you are building">
+    If you start a web server inside the sandbox, open its web preview to view it:
+
+    ```bash
+    agentkit sandbox web --session dev
+    ```
+  </Step>
+
+  <Step title="Clean up the session">
+    When you are done, stop and delete the session; use `--all` to clear every session on the sandbox tool:
+
+    ```bash
+    agentkit sandbox rm dev -y
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+There are several ways to authenticate Codex inside the sandbox; injecting your local subscription is one of them. If you have logged in locally with `codex login`, you can inject those credentials into the session:
+
+```bash
+agentkit sandbox login --provider codex --session dev
+```
+
+The command reads `~/.codex/auth.json` by default; use `--auth-file` or `--codex-home` to point at another source. Switch `--provider` to `claude` to inject your local Claude subscription instead and use Claude Code in the sandbox.
+</Tip>
+
+## Scripted execution
+
+Besides the interactive terminal, `sandbox run` executes a single command in the session and prints its output, which is convenient for scripts and automated flows:
+
+```bash
+agentkit sandbox run "codex exec 'add unit tests to the project'" --session dev
+```
+
+## Practical guidance
+
+- **Reuse the same session**: keep a fixed `--session` name throughout a development session to preserve the environment and progress; use `agentkit sandbox sessions` to list active sessions and `agentkit sandbox logs <session>` to troubleshoot.
+- **Name the sandbox explicitly**: when the project has more than one `code` sandbox, commands require an explicit `--tool-id`; find the target id with `agentkit sandbox list` first.
+- **Use `--tmux` for long tasks**: for interactive development, add `--tmux` so a network drop does not lose the session.

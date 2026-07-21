@@ -1,0 +1,54 @@
+---
+title: "安装"
+---
+
+## 前置条件
+
+- Python 3.10 或更高版本。
+- 火山方舟 API Key，用于调用模型，可在[火山方舟控制台](https://console.volcengine.com/ark)创建。
+
+## 从 PyPI 安装
+
+安装与本文档对应的 VeADK 版本：
+
+```bash
+pip install "veadk-python==1.0.0"
+```
+
+## 可选依赖组
+
+按实际使用的能力安装可选依赖。多个依赖组可写在同一对方括号中，例如 `veadk-python[extensions,eval]==1.0.0`。
+
+| 依赖组 | 包含的能力 |
+| --- | --- |
+| `extensions` | Redis、Cozeloop、LlamaIndex、OpenSearch 与飞书集成。 |
+| `database` | Redis、MySQL、VikingDB 与 mem0 存储后端。 |
+| `eval` | DeepEval 与 Google ADK 评测依赖。 |
+| `a2ui` | A2UI 支持。 |
+| `pdf` | PDF 页面渲染与 PNG 编码。 |
+
+例如，安装集成能力：
+
+```bash
+pip install "veadk-python[extensions]==1.0.0"
+```
+
+`speech` 与 `cli` 依赖组在 1.0.0 中为兼容性保留，不会安装额外依赖。
+
+## 从源码安装
+
+如需基于 1.0.0 的源码开发，可使用 [uv](https://docs.astral.sh/uv/) 创建环境并安装：
+
+```bash
+git clone https://github.com/volcengine/veadk-python.git
+cd veadk-python
+git checkout 1.0.0
+
+uv venv --python 3.12
+uv sync
+uv pip install -e .
+```
+
+需要可选依赖时，可为 `uv sync` 添加 `--extra <name>`，或使用 `--all-extras` 安装全部依赖组。
+
+安装完成后，进入[快速开始](/productions/veadk/archives/1.0.0/zh/get-started/quickstart)运行第一个智能体。

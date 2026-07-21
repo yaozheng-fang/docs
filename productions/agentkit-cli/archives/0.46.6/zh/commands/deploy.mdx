@@ -1,0 +1,89 @@
+---
+title: "构建与部署"
+---
+
+`deploy` 命令用于构建并将项目部署到 AgentKit，依次执行配置、构建与应用的完整流程。同时，该流程的各个阶段也以独立子命令的形式提供。
+
+## deploy
+
+执行完整的部署流程（config → build → apply）。顶层选项将在配置阶段生效。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 运行时/应用名称（配置阶段）。 | — |
+| `-r, --region <region>` | Volcengine 区域（配置阶段）。 | — |
+| `-p, --project <name>` | AgentKit 项目（配置阶段）。 | — |
+| `--im-feishu` | 运行时部署完成后，向 VeFaaS 部署一个飞书机器人代理。 | `false` |
+| `--im-feishu-app-id <id>` | 代理所用的飞书 app id。 | — |
+| `--im-feishu-app-secret <secret>` | 代理所用的飞书 app secret。 | — |
+
+```bash
+agentkit deploy --name my-agent --region cn-beijing --project demo
+```
+
+消息渠道通常在 `agentkit.yaml` 的 `im` 块中配置（飞书、企业微信与钉钉），详见 [agentkit.yaml](/productions/agentkit-cli/archives/0.46.6/zh/agentkit-yaml)。`--im-feishu*` 这几个标志只是无需改文件、直接部署飞书代理的便捷方式。
+
+## deploy config
+
+脚手架生成 `.agentkit/` 目录，其中包含 `agentkit.yaml` 与 `Dockerfile`。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 运行时/应用名称。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | cn-beijing |
+| `-p, --project <name>` | AgentKit 项目。 | default |
+| `-f, --force` | 覆盖已生成的文件。 | `false` |
+
+```bash
+agentkit deploy config --name my-agent --force
+```
+
+生成的 `agentkit.yaml` 是部署配置的唯一来源，`deploy build` 与 `deploy apply` 都从中读取。完整的文件结构与逐字段说明见 [agentkit.yaml](/productions/agentkit-cli/archives/0.46.6/zh/agentkit-yaml)。
+
+## 容器入口与端口
+
+`deploy` 不涉及入口点配置——运行时如何启动，完全由构建镜像所用的 Dockerfile 决定。模板 Dockerfile 以 `CMD` 指定启动命令：
+
+```dockerfile
+EXPOSE 8000
+CMD ["python", "main.py"]
+```
+
+唯一的硬性约定是：容器内的进程必须监听 `0.0.0.0:8000`，运行时会探测该端口以判断实例是否就绪。要更换启动方式，请修改 Dockerfile 的 `CMD`（或通过 `dockerfile` 字段指向其他文件），而不是向 `deploy` 传参。
+
+## 环境变量
+
+运行时环境变量在 `agentkit.yaml` 的 `envs` 中声明，值用 `${VAR}` 从部署环境引用（语法与字段详解见 [agentkit.yaml · 环境变量](/productions/agentkit-cli/archives/0.46.6/zh/agentkit-yaml#环境变量)）。CLI 在部署时解析这些引用并注入运行时。
+
+本地部署时，把变量导出（或放进本机 `.env`，不提交）后再部署：
+
+```bash
+export MODEL_AGENT_API_KEY=sk-...
+agentkit deploy
+```
+
+持续部署中，把它们配成仓库 Secret，并在工作流里导出到部署任务的环境即可。用于部署鉴权的 `VOLCENGINE_*` 不会注入运行时。
+
+## deploy build
+
+在云端构建镜像并写入构建产物。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit deploy build
+```
+
+## deploy apply
+
+基于最新构建产物创建或更新运行时。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit deploy apply
+```

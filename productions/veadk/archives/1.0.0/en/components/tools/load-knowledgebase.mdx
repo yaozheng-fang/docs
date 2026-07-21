@@ -1,0 +1,37 @@
+---
+title: "Knowledge base retrieval"
+tag: "System tool"
+---
+
+## Overview
+
+Tool identifier `load_knowledgebase`.
+
+System tools are built-in tools that VeADK mounts **automatically** based on the agent's configuration — you don't add them to the `tools` list yourself. When you pass a `knowledgebase` to the agent, VeADK mounts the `load_knowledgebase` tool. The agent decides on its own when to query the knowledge base and which keywords to search with, then uses the retrieved knowledge as context for its answer.
+
+For backend types, initialization, and data ingestion, see the [knowledge base docs](/productions/veadk/archives/1.0.0/en/components/knowledge).
+
+## Usage
+
+```python
+from veadk import Agent, Runner
+from veadk.knowledgebase import KnowledgeBase
+
+# Build a knowledge base (see the knowledge base docs for backends and ingestion)
+knowledgebase = KnowledgeBase(backend="local", index="company_faq")
+
+agent = Agent(
+    name="kb_agent",
+    model_name="doubao-seed-1-8-251228",
+    instruction="When answering, retrieve from the knowledge base where helpful.",
+    knowledgebase=knowledgebase,  # mounts load_knowledgebase automatically
+)
+
+runner = Runner(agent=agent)
+```
+
+## Notes
+
+<Note>
+System tools are managed by the framework: just provide a `knowledgebase` — you don't add `load_knowledgebase` to the `tools` list yourself. The agent decides when to call it based on its instruction and user input.
+</Note>

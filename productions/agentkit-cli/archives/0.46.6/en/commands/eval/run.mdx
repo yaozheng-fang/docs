@@ -1,0 +1,65 @@
+---
+title: "Run an experiment"
+---
+
+`eval run` is the core command that ties the evaluation loop together: it takes an **evaluation dataset** and one or more **evaluators**, and submits an experiment against a **deployed runtime** (the eval target). The dataset, evaluators, and target can all be specified by id or name, and field mapping is done automatically by default.
+
+```bash
+agentkit eval run --dataset qa-set --evaluator relevance --target my-agent
+```
+
+## Flags and arguments
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--dataset <id\|name>` | Evaluation set id or name (required) | None |
+| `--evaluator <id\|name>` | Evaluator id or name, **repeatable** to specify several | None |
+| `--target <runtime name\|id>` | The deployed runtime being evaluated / eval target (required) | None |
+| `--name <name>` | Experiment name | `<dataset>-<timestamp>` |
+| `--concurrency <n>` | Number of cases run concurrently | `5` |
+| `--map <spec>` | Override field mapping (repeatable), syntax below | Automatic |
+| `--dry-run` | Only print the request that would be submitted, without starting an experiment | `false` |
+| `-p, --project <name>` | Project name | `default` |
+| `--json` | Output raw JSON | `false` |
+
+## Automatic field mapping
+
+An experiment has three layers of data to align: **dataset fields** → **target input / output** → **evaluator inputs**. `eval run` connects them automatically by convention:
+
+- The target runtime conventionally uses `user_input` as its input field and `actual_output` as its output field; the dataset's primary input field (such as `input`) is passed to the target's `user_input`.
+- The evaluator field that represents the "model answer" (such as `output`) is supplied by the **target output** `actual_output`; the remaining fields (such as `input`, `reference_output`) are taken from the dataset **by matching name**.
+
+Most scenarios need no manual mapping. When field names differ, use `--map` to override.
+
+### `--map` syntax
+
+| Form | Meaning |
+| --- | --- |
+| `evaluatorField=datasetField` | Evaluator input ← dataset field |
+| `evaluatorField=target:targetOutput` | Evaluator input ← target output field |
+| `target:targetInput=datasetField` | Target input ← dataset field |
+
+```bash
+agentkit eval run --dataset qa-set --evaluator relevance --target my-agent \
+  --map "output=target:actual_output" \
+  --map "target:user_input=question"
+```
+
+## Check with dry-run first
+
+It is strongly recommended to add `--dry-run` before your first run, to confirm the resolved dataset version, target, and field mapping are correct:
+
+```bash
+agentkit eval run --dataset qa-set --evaluator relevance --target my-agent --dry-run
+```
+
+<Note>
+An experiment requires the dataset to have a **committed version**. If the dataset only has an uncommitted draft, `eval run` will **automatically publish a version** before submitting — version management is transparent to you and requires no manual action.
+</Note>
+
+Once submitted successfully it returns an experiment id, which you can track with [`eval experiment get`](/productions/agentkit-cli/archives/0.46.6/en/commands/eval/experiment):
+
+```bash
+agentkit eval run --dataset qa-set --evaluator relevance --target my-agent --json
+# → { "experimentId": "75901...", "name": "qa-set-2026-07-03-12-16-21" }
+```

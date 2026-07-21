@@ -1,0 +1,64 @@
+---
+title: "接入飞书机器人"
+---
+
+把智能体接成**飞书机器人**：`agentkit deploy` 在部署运行时之后，顺带在 VeFaaS 上部署一个飞书 proxy，在飞书与运行时之间桥接。proxy 通过 **WebSocket** 主动连飞书（无需公网回调地址），再用运行时的 `key_auth` 凭据调用运行时。
+
+```mermaid
+flowchart LR
+  A["飞书"] -->|WebSocket| B["飞书 proxy · VeFaaS"]
+  B -->|key_auth| C["运行时"]
+```
+
+<Note>
+  开始前：完成[鉴权与登录](/productions/agentkit-cli/preview/zh/commands/auth)（部署走 AK/SK）。并在[飞书开放平台](https://open.feishu.cn/)创建一个应用，开启**机器人**能力，记下 **App ID** 与 **App Secret**（飞书没有创建应用的开放接口，这一步在控制台手动完成）。
+</Note>
+
+<Steps>
+  <Step title="创建飞书应用">
+    在飞书开放平台建**自建应用**，开启机器人能力，在「凭证与基础信息」拿到 App ID 与 App Secret。
+  </Step>
+  <Step title="脚手架项目">
+    ```bash
+    agentkit init my-agent -L python -t basic-agent
+    cd my-agent
+    ```
+  </Step>
+  <Step title="声明飞书渠道（编辑 agentkit.yaml）">
+    加上 `im.feishu` 块；凭证用 `${VAR}` 从环境取，不落明文：
+
+    ```yaml .agentkit/agentkit.yaml
+    im:
+      feishu:
+        enabled: true
+        app_id: ${FEISHU_APP_ID}
+        app_secret: ${FEISHU_APP_SECRET}
+    ```
+  </Step>
+  <Step title="填写环境变量">
+    将取值写入 `.env`，部署时 CLI 会自动加载：
+
+    ```bash .env
+    FEISHU_APP_ID=...
+    FEISHU_APP_SECRET=...
+    ```
+  </Step>
+  <Step title="部署">
+    ```bash
+    agentkit deploy
+    ```
+
+    无需 flag。`agentkit deploy` 读 `agentkit.yaml`：先构建并部署运行时（`key_auth`），再部署飞书 proxy（WebSocket 传输，不需要配置任何公网回调 URL）。
+  </Step>
+  <Step title="在飞书里对话">
+    在飞书中找到你的机器人，直接发消息即可；proxy 会把消息转给运行时，并把回复发回飞书。
+  </Step>
+</Steps>
+
+要点：
+
+- **WebSocket 传输**：proxy 主动外连飞书，无需公网回调地址，也无需在飞书里配事件订阅 URL。
+- **凭证**：App ID 与 App Secret 用 `${VAR}`，不写进仓库；`agentkit deploy` 幂等复用同一个 proxy 函数，重复部署只更新、不新建。
+- **消息体验**：收到消息即回一个「收到」表情作为确认，回复以流式卡片实时呈现；模型的思考过程与工具调用折叠在单独的面板中，默认收起，需要时展开查看。
+- **会话与多租**：以飞书用户映射运行时的用户、飞书会话映射运行时的会话，并按租户隔离，因此同一个 proxy 可同时服务多个租户，彼此的会话与记忆互不干扰。
+- **运行时鉴权**：飞书链路下运行时用 `key_auth`，由 proxy 持有 API key。若要网页登录并透传用户身份，见[部署带 SSO 登录的前端](/productions/agentkit-cli/preview/zh/workflows/frontend-sso)。

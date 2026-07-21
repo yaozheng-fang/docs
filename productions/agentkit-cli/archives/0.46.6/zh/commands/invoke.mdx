@@ -1,0 +1,25 @@
+---
+title: "调用运行时"
+---
+
+`invoke` 命令按名称或 ID 调用一个已部署的运行时，自动解析其访问端点与鉴权信息后发送消息。
+
+## invoke
+
+调用已部署的运行时（自动解析端点与鉴权）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<runtime>` | 运行时 ID（`r-...`）或名称（必填） | 无 |
+| `-m, --message <text>` | 要发送的用户消息 | 无 |
+| `-r, --region <region>` | Volcengine 区域 | 自动感知 |
+| `--rev <n>` | 要调用的运行时版本 | 当前版本 |
+| `-u, --user <id>` | 用户 ID | `default` |
+| `-s, --session <id>` | 会话 ID | `default` |
+| `--token <jwt>` | Bearer token（用于 custom_jwt 运行时） | 无 |
+| `--path <path>` | 强制指定端点路径 | 自动检测（ADK 用 `/run_sse`，否则用 `/invoke`） |
+| `--json` | 打印完整 JSON 响应 | `false` |
+
+```bash
+agentkit invoke my-agent -m "你好，介绍一下你自己"
+```

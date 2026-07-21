@@ -1,0 +1,65 @@
+---
+title: "SQLite (sqlite)"
+---
+
+The `sqlite` backend persists sessions to a local SQLite file, backed by Google ADK's `DatabaseSessionService`. It needs no external database service, but unlike `local`, sessions are written to disk and therefore survive across processes and restarts.
+
+The backing implementation class is `SQLiteSTMBackend`; `ShortTermMemory` passes `local_database_path` to it as `local_path`.
+
+## When to use
+
+- Single-node deployments that need persistence;
+- Local development where you want to keep past sessions;
+- Small data volumes with no need for distributed access.
+
+## Usage
+
+```python
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+
+stm = ShortTermMemory(
+    backend="sqlite",
+    local_database_path="./short_term_memory.db",  # DB file location
+)
+
+agent = Agent(name="demo")
+runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+```
+
+If the DB file doesn't exist, VeADK creates it automatically (including any parent directories) and resolves the path to an absolute one.
+
+You can also pass a connection string directly via `db_url`, in which case `backend` and `local_database_path` are both ignored:
+
+```python
+stm = ShortTermMemory(db_url="sqlite:///./test.db")
+```
+
+## Parameters
+
+### ShortTermMemory constructor parameters (sqlite)
+
+| Parameter | Type | Default | Effective for sqlite | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `backend` | `str` | `"local"` | Yes | Set to `"sqlite"` to select this backend. The deprecated value `"database"` is also mapped to `sqlite`. |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | Yes | SQLite file path; resolved to an absolute path. The file and parent directories are created if missing. |
+| `db_url` | `str` | `""` | Yes (override) | A connection string such as `sqlite:///./test.db`. Once set, `backend` and `local_database_path` are ignored. |
+| `backend_configs` | `dict` | `{}` | No | Not read by the `sqlite` backend (only `mysql`/`postgresql` use it). |
+| `db_kwargs` | `dict` | `{}` | No | Not forwarded by the `sqlite` backend; effective only with `db_url` or the `mysql`/`postgresql` backends. |
+| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Callback invoked after a session is loaded; receives the loaded `Session`. |
+
+### Backend implementation class parameters (SQLiteSTMBackend)
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `local_path` | `str` | none (required) | Local path to the SQLite file. Passed automatically by `ShortTermMemory` from `local_database_path`; you rarely construct this class directly. |
+
+<Note>
+VeADK picks the connection-string scheme based on the Google ADK version: ADK ≥ 1.19.0 uses the async driver `sqlite+aiosqlite:///<absolute-path>`, otherwise the sync `sqlite:///<absolute-path>`.
+</Note>
+
+## Environment variables
+
+The `sqlite` backend reads no environment variables; all configuration comes from constructor parameters.
+
+Need distributed persistence? Use [MySQL](/productions/veadk/archives/1.0.5/en/components/session/mysql) or [PostgreSQL](/productions/veadk/archives/1.0.5/en/components/session/postgresql).

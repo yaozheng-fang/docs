@@ -1,0 +1,29 @@
+---
+title: "Check for updates"
+---
+
+The `upgrade` command (alias `update`) checks whether the current CLI is behind the latest published version and, when it is, installs the latest version after confirmation.
+
+## upgrade
+
+Check and upgrade the AgentKit CLI to the latest published version. Run without options, it compares versions first and, if a newer one exists, asks whether to install it now.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--check` | Only check; do not install. Prints the available update and the install command | `false` |
+| `--json` | Print the check result as JSON (`{ current, latest, behind }`) | `false` |
+
+```bash
+# Check, then upgrade after confirmation
+agentkit upgrade
+
+# Only check whether a newer version exists
+agentkit update --check
+
+# Print the version comparison as JSON for scripting
+agentkit update --json
+```
+
+<Note>
+The upgrade runs the install script from the official release channel (equivalent to `wget -qO- <release>/install.sh | sh`). If the release channel is unreachable, the check fails; in that case, install manually using the command that `--check` prints.
+</Note>

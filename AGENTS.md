@@ -5,6 +5,7 @@
 - This is a documentation site built on [Mintlify](https://mintlify.com)
 - Pages are MDX files with YAML frontmatter
 - Configuration lives in `docs.json`
+- Product documentation lives under `productions/<product>/`: editable content is in `preview/<language>/`, and released snapshots are in `archives/<version>/<language>/`.
 - Use the Mintlify MCP server, `https://mcp.mintlify.com`, to edit content and settings via MCP
 - Use the Mintlify docs MCP server, `https://www.mintlify.com/docs/mcp`, to query information about using Mintlify via MCP
 
@@ -27,6 +28,7 @@
 - 避免源码级表述：不暴露内部文件名、内部函数名、私有机制、异常类型或构造参数字面量；以使用者视角描述行为。用户需直接使用的公开 API（类名、构造参数、配置键、环境变量、用户自建文件路径）应保留并写清。
 - 默认不添加「下一步」一类的收尾章节，除非明确要求。
 - 双语站点：中文默认，英文并列；两侧目录结构与页面层级保持一致，改动同步更新。
+- `preview` 用于下一版本的可编辑文档；`archives` 中的已发布版本只做版本事实修正，不随 Preview 自动更新。
 
 ## Content boundaries
 

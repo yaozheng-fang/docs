@@ -1,0 +1,27 @@
+---
+title: "Overview"
+---
+
+VeADK's security is built on [Agent Identity](https://console.volcengine.com/identity) — Volcengine's unified identity and permission platform, which handles user authentication, workload identity, third-party credential brokering, and authorization to keep an agent's inbound and outbound operations secure and compliant.
+
+## Two directions
+
+- **[Inbound authentication](/productions/veadk/archives/1.0.1/en/components/security/inbound)**: verify the identity of requests coming into the agent. Supports API keys and OAuth2 (single sign-on and JWT), handled by the API gateway or in-app middleware.
+- **[Outbound authentication](/productions/veadk/archives/1.0.1/en/components/security/outbound)**: credential brokering when the agent calls third-party services. Agent Identity encrypts and stores API keys and OAuth tokens, supports OAuth2 M2M and user federation, keeps credentials out of your code, and rotates and refreshes them automatically.
+
+## Core capabilities
+
+- **User identity management**: user pools, enterprise IdP (SAML/OIDC), and third-party identity federation.
+- **Workload identity management**: assign each agent and tool a unique digital identity with attribute tags.
+- **Third-party credential brokering**: encrypt and store API keys and OAuth tokens, eliminating plaintext credential leaks.
+- **Authorization**: dynamic, attribute- and context-based access control for fine-grained permissions.
+
+## Content safety
+
+Beyond identity and credentials, the [content-safety guardrail](/productions/veadk/archives/1.0.1/en/components/security/content-safety) uses the Volcengine LLM Application Firewall to review an agent's input and output at each stage and block unsafe content.
+
+## Trusted execution
+
+When you need end-to-end trust, [Trusted MCP](/productions/veadk/archives/1.0.1/en/components/security/trusted-mcp) adds component attestation and encrypted communication on top of the standard MCP protocol, combining with confidential computing to build a fully trusted agent.
+
+For activation and detailed configuration, see the [Agent Identity documentation](https://www.volcengine.com/docs/86848/2080920?lang=zh).

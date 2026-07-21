@@ -1,0 +1,84 @@
+---
+title: "Authentication & login"
+---
+
+The `auth` command group handles SSO authentication: log in through the browser and store short-lived STS credentials, clear the session, show the current identity, and manage login profiles. `login`, `logout`, and `whoami` are also available as top-level commands (e.g. `agentkit login`).
+
+## auth login
+
+Authenticate via browser SSO and store short-lived STS credentials.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[address]` | Login address | None |
+| `-p, --profile <name>` | Use a named, pre-seeded profile instead of an address | None |
+| `--duration <seconds>` | Requested STS credential lifetime (seconds) | `3600` |
+| `--no-open` | Don't open a browser — just print the login URL (headless/SSH) | `false` |
+
+```bash
+agentkit auth login
+```
+
+## auth logout
+
+Clear the stored SSO session (refresh token + cached STS credentials).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO profile name | Active profile |
+| `--all` | Clear every profile's session | `false` |
+
+```bash
+agentkit auth logout
+```
+
+## auth whoami
+
+Show the identity behind the current credentials.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO profile name | Active profile |
+
+```bash
+agentkit auth whoami
+```
+
+## auth profile set
+
+Create or update a profile's login coordinates (non-secret).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<name>` | Profile name (required) | None |
+| `--issuer <url>` | OIDC issuer URL | None |
+| `--client-id <id>` | Public OAuth client id | None |
+| `--role-trn <trn>` | STS role TRN | None |
+| `--provider-trn <trn>` | IAM OIDC provider TRN | None |
+| `--region <region>` | Region | `cn-beijing` |
+
+```bash
+agentkit auth profile set my-profile --issuer https://example.com --client-id abc123
+```
+
+## auth profile list
+
+List saved profiles.
+
+This command takes no arguments or options.
+
+```bash
+agentkit auth profile list
+```
+
+## auth profile show
+
+Show a profile's coordinates.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[name]` | Profile name | Active profile |
+
+```bash
+agentkit auth profile show my-profile
+```

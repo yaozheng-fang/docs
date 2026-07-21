@@ -1,0 +1,79 @@
+---
+title: "Manage memory collections"
+---
+
+The `memory` command group manages AgentKit memory collections, covering listing, inspection, creation, update, and deletion. The command is also available under the `mem` alias.
+
+## memory list
+
+List all memory collections.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-p, --project <name>` | Project name. | default |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit memory list --project demo
+```
+
+## memory show
+
+Show details of a memory collection.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Memory id, e.g. `m-xxxxxxxx`. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit memory show m-12345678
+```
+
+## memory create
+
+Create a memory collection.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | Memory collection name. | — |
+| `--description <text>` | Description. | — |
+| `-p, --project <name>` | Project name. | default |
+| `--provider-type <type>` | Provider type (`MEM0` \| `VIKINGDB_MEMORY`). | — |
+| `-r, --region <region>` | Volcengine region. | from env |
+| `--json <jsonString>` | JSON object merged into the request body (for nested fields such as `LongTermConfiguration`, `VpcConfig`, `Tags`). | — |
+
+```bash
+agentkit memory create --name user-mem --provider-type MEM0
+```
+
+## memory update
+
+Update a memory collection.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Memory id, e.g. `m-xxxxxxxx`. Required. | — |
+| `--description <text>` | New description. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--json <jsonString>` | JSON object merged into the request body (for nested fields such as `LongTermConfiguration`, `VpcConfig`). | — |
+
+```bash
+agentkit memory update m-12345678 --description "Updated memory"
+```
+
+## memory delete
+
+Delete a memory collection.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Memory id, e.g. `m-xxxxxxxx`. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-y, --yes` | Skip the confirmation prompt. | `false` |
+
+```bash
+agentkit memory delete m-12345678 --yes
+```

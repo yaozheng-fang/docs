@@ -1,0 +1,120 @@
+---
+title: "评测闭环"
+---
+
+评测把「开发 → 部署 → 评测 → 调优」的闭环补齐：用一份固定的评测集与一个或多个评估器，对已部署的运行时打分，再依据量化结果迭代。本页以一个问答智能体为例，走通从初始化项目到看到评测结果的完整流程。各命令的详细用法见[管理评测集](/productions/agentkit-cli/preview/zh/commands/eval/dataset)、[管理评估器](/productions/agentkit-cli/preview/zh/commands/eval/evaluator)、[运行评测实验](/productions/agentkit-cli/preview/zh/commands/eval/run)与[查看实验与结果](/productions/agentkit-cli/preview/zh/commands/eval/experiment)。
+
+<Note>
+开始前请确认已配置火山引擎访问密钥（环境变量 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`）。评测能力当前处于 Preview 阶段，命令会自动路由到评测服务所在区域，无需指定 `-r/--region`。
+</Note>
+
+## 端到端流程
+
+<Steps>
+  <Step title="初始化并部署智能体">
+    先创建项目并部署，得到一个可评测的目标运行时：
+
+    ```bash
+    agentkit init qa-agent --language python --template default --yes
+    cd qa-agent
+    agentkit deploy --name qa-agent
+    ```
+
+    部署完成后可用 `agentkit invoke qa-agent -m "你好"` 确认运行时可正常响应。
+  </Step>
+
+  <Step title="创建评测集并添加用例">
+    评测集是实验的数据来源。先用 `input` 与 `reference_output` 两个字段创建评测集，再逐条或批量添加用例：
+
+    ```bash
+    agentkit eval dataset create --name qa-set --schema "input,reference_output"
+
+    # 逐条添加
+    agentkit eval dataset add qa-set \
+      --field "input=法国的首都是？" \
+      --field "reference_output=巴黎"
+
+    # 或从 JSON 文件批量添加
+    agentkit eval dataset add qa-set --file cases.json
+    ```
+
+    `cases.json` 为一个由 `{字段: 值}` 组成的数组：
+
+    ```json cases.json
+    [
+      { "input": "法国的首都是？", "reference_output": "巴黎" },
+      { "input": "水的化学式是？", "reference_output": "H2O" }
+    ]
+    ```
+
+    添加后用 `agentkit eval dataset show qa-set` 核对用例。
+  </Step>
+
+  <Step title="创建评估器">
+    评估器是负责打分的评判模型。从预置模板派生，并指定自己的方舟模型端点：
+
+    ```bash
+    # 查看预置模板
+    agentkit eval evaluator templates
+
+    # 从「相关性」模板派生，换成自己的模型端点
+    agentkit eval evaluator create \
+      --name 相关性 \
+      --from-template "相关性" \
+      --model ep-xxxxxxxx
+    ```
+  </Step>
+
+  <Step title="运行实验">
+    将评测集、评估器与目标运行时提交为一次实验。首次运行建议先加 `--dry-run`，确认解析出的评测集版本、目标与字段映射无误：
+
+    ```bash
+    # 先核对
+    agentkit eval run --dataset qa-set --evaluator 相关性 --target qa-agent --dry-run
+
+    # 正式提交
+    agentkit eval run --dataset qa-set --evaluator 相关性 --target qa-agent
+    # → 返回实验 ID，例如 75901...
+    ```
+  </Step>
+
+  <Step title="查看结果">
+    用返回的实验 ID 查看汇总分数与逐条结果：
+
+    ```bash
+    # 状态与加权总分、各评估器平均分
+    agentkit eval experiment get 75901xxxxxxxxxxxxx
+
+    # 逐条结果：每条用例、目标输出与各评估器的分数和理由
+    agentkit eval experiment results 75901xxxxxxxxxxxxx
+    ```
+  </Step>
+
+  <Step title="迭代">
+    根据结果改进智能体的提示词、工具或模型，重新部署后，以相同的评测集与评估器再次运行实验，对比两次的汇总分与逐条结果，判断改动是提升还是回退：
+
+    ```bash
+    agentkit deploy --name qa-agent
+    agentkit eval run --dataset qa-set --evaluator 相关性 --target qa-agent
+    ```
+  </Step>
+</Steps>
+
+## 纳入持续集成
+
+评测命令无需浏览器登录，且均支持 `--json`，可直接编排进 CI 流水线：`eval run` 返回的 `experimentId` 可传给 `eval experiment get` 或 `results`。
+
+```bash
+# 一个可放入 CI 的最小闭环示例
+EXP=$(agentkit eval run --dataset qa-set --evaluator 相关性 --target qa-agent --json | jq -r .experimentId)
+agentkit eval experiment get "$EXP" --json
+```
+
+## 实践建议
+
+- **固定评测集**：以同一份评测集贯穿多次迭代，结果才可横向对比。评测集稳定后再改动智能体。
+- **只放稳定的输入与参考答案**：评测集一般只需 `input` 与 `reference_output`。模型的实际输出由被评测的目标在实验中产生，不应写入评测集。
+- **优先从预置模板派生评估器**：`evaluator templates` 提供了成熟的评分标准，克隆后换成自己的模型端点即可，无需从零编写。
+- **评判模型要足够强**：以 `--model` 指定一个能力足够的方舟端点，能力偏弱的模型打分噪声较大。
+- **多评估器加权**：一次 `eval run` 可传入多个 `--evaluator`，从相关性、完整性等多个维度打分。
+- **确认目标运行时在线**：`--target` 必须指向一个已部署且可响应的运行时，否则用例会执行失败。当结果中用例失败却无实验级错误时，通常是目标运行时未正常响应，而非评测配置问题。

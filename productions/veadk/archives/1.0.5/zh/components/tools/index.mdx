@@ -1,0 +1,35 @@
+---
+title: "概述"
+---
+
+工具（Tool）让智能体在推理之外获得与外部世界交互的能力：网页搜索、代码执行、图像与视频生成、访问第三方服务等。VeADK 把这些能力封装为可直接注册的工具，智能体在运行时根据用户输入与指令**自主决定**是否调用，框架在调用时自动执行并把结果回填到推理过程。
+
+## 为智能体添加工具
+
+无论何种类型的工具，注册方式一致：把工具放进 `Agent` 的 `tools` 列表。
+
+```python
+from veadk import Agent
+from veadk.tools.builtin_tools.web_search import web_search
+
+agent = Agent(tools=[web_search])
+```
+
+注册后，智能体会依据函数签名 / 工具描述、用户输入与自身指令，决定何时调用工具、如何传参。多个工具可同时注册，智能体在推理过程中按需选择。
+
+## 工具类别
+
+VeADK 的工具按接入方式与用途分为以下几类。
+
+| 类别 | 说明 | 文档 |
+| :--- | :--- | :--- |
+| 内置工具 | VeADK 预封装的原生函数工具，包含网页搜索、图像与视频生成、代码沙箱等 | [网页搜索](/productions/veadk/archives/1.0.5/zh/components/tools/web-search) |
+| 内置 MCP 工具 | 基于 MCP 接入飞书、LAS、视频云 VOD、MCP Router、Supabase 等服务 | [飞书工具](/productions/veadk/archives/1.0.5/zh/components/tools/lark) |
+| 自定义工具 | 把任意 Python 函数封装成工具，扩展智能体能力 | [自定义工具](/productions/veadk/archives/1.0.5/zh/components/tools/custom-function) |
+| 系统工具 | 框架根据智能体配置自动挂载知识库与长期记忆检索工具 | [加载知识库](/productions/veadk/archives/1.0.5/zh/components/tools/load-knowledgebase) |
+| 内容安全 | 基于回调审查并拦截不安全的输入与输出 | [内容安全](/productions/veadk/archives/1.0.5/zh/components/security/content-safety) |
+| 飞书 Channel 扩展 | 把飞书机器人的入站消息桥接到 `Runner` | [飞书 Channel 扩展](/productions/veadk/archives/1.0.5/zh/components/extensions/feishu-channel) |
+
+<Note>
+内置工具与内置 MCP 工具多依赖火山引擎相关服务，使用前请开通对应服务并完成 AK/SK、API Key 等鉴权配置；系统工具由框架自动管理，无需手动加入 `tools` 列表。
+</Note>

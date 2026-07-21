@@ -1,0 +1,35 @@
+---
+title: "Overview"
+---
+
+Tools give an agent the ability to interact with the outside world beyond reasoning: web search, code execution, image and video generation, access to third-party services, and more. VeADK packages these capabilities as tools you can register directly. At runtime the agent decides on its own — based on user input and its instruction — whether to call a tool; the framework executes it automatically and feeds the result back into the reasoning process.
+
+## Adding tools to an agent
+
+Whatever the tool type, registration is the same: put the tool in the `Agent`'s `tools` list.
+
+```python
+from veadk import Agent
+from veadk.tools.builtin_tools.web_search import web_search
+
+agent = Agent(tools=[web_search])
+```
+
+Once registered, the agent decides when to call a tool and how to pass arguments, based on the function signature / tool description, the user input, and its instruction. Multiple tools can be registered at once, and the agent picks among them as needed during reasoning.
+
+## Tool categories
+
+VeADK tools are grouped by how they connect and what they do.
+
+| Category | Description | Docs |
+| :--- | :--- | :--- |
+| Built-in tools | Native function tools for web search, image and video generation, code sandboxes, and more | [Web search](/productions/veadk/archives/1.0.0/en/components/tools/web-search) |
+| Built-in MCP tools | MCP toolsets for Feishu, LAS, Video-on-Demand, MCP Router, Supabase, and more | [Feishu / Lark MCP](/productions/veadk/archives/1.0.0/en/components/tools/lark) |
+| Custom tools | Wrap any Python function as a tool to extend the agent | [Custom tools](/productions/veadk/archives/1.0.0/en/components/tools/custom-function) |
+| System tools | Knowledge-base and long-term-memory retrieval tools mounted from the agent configuration | [Knowledge-base retrieval](/productions/veadk/archives/1.0.0/en/components/tools/load-knowledgebase) |
+| Guardrail tool | Callback-based content-safety review that blocks unsafe input and output | [Content-safety guardrail](/productions/veadk/archives/1.0.0/en/components/security/content-safety) |
+| Feishu Channel extension | Bridge inbound Feishu bot messages into the `Runner` | [Feishu Channel extension](/productions/veadk/archives/1.0.0/en/components/extensions/feishu-channel) |
+
+<Note>
+Built-in tools and built-in MCP tools mostly depend on Volcengine services — enable the corresponding service and configure authentication (AK/SK, API keys) before use. System tools are managed by the framework and need not be added to the `tools` list manually.
+</Note>

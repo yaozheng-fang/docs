@@ -1,0 +1,63 @@
+---
+title: "高代码智能体"
+---
+
+高代码路径适合需要自定义逻辑、工具或多智能体编排的场景：你从模板脚手架一个项目，直接编写智能体代码，再由 CLI 在云端构建镜像并部署为运行时。闭环从脚手架开始，经编辑、部署、调用、查看日志，最终回到编辑持续迭代。
+
+<Note>
+  开始前请先配置凭证。`deploy` 属于控制面操作，需要 AK/SK；[SSO 登录](/productions/agentkit-cli/archives/0.46.6/zh/commands/auth)目前仅用于调用（`invoke`）已部署的运行时。凭证配置见[快速开始](/productions/agentkit-cli/archives/0.46.6/zh/quickstart)的「鉴权」一节。编写智能体代码的完整说明见 [VeADK 文档](/productions/veadk/preview/zh/index)。
+</Note>
+
+<Steps>
+  <Step title="脚手架项目">
+    从内置模板创建项目，模板按语言分组。运行 `agentkit init -l` 可先列出全部语言与模板。
+
+    ```bash
+    agentkit init my-agent -L python -t basic-agent
+    cd my-agent
+    ```
+  </Step>
+  <Step title="编辑智能体">
+    修改脚手架生成的代码，调整智能体的指令、工具与编排逻辑。
+
+    <Note>
+      部署的唯一硬性要求是容器监听 `0.0.0.0:8000`，作为运行时的就绪探针。模板已默认满足该要求，通常无需改动。
+    </Note>
+  </Step>
+  <Step title="构建并部署">
+    执行完整部署流程（config → build → apply），在云端构建镜像并创建或更新运行时。
+
+    ```bash
+    agentkit deploy --name my-agent --region cn-beijing
+    ```
+
+    <Tip>
+      需要在脚手架与构建之间检查或手改 `agentkit.yaml`、`Dockerfile` 时，可分步执行 `agentkit deploy config`、`agentkit deploy build`、`agentkit deploy apply`。详见[构建与部署](/productions/agentkit-cli/archives/0.46.6/zh/commands/deploy)。
+    </Tip>
+  </Step>
+  <Step title="调用运行时">
+    按名称调用运行时，验证部署结果。
+
+    ```bash
+    agentkit invoke my-agent -m "你好，介绍一下你自己"
+    ```
+  </Step>
+  <Step title="查看与迭代">
+    运行时行为异常时先看日志；修改代码后重新部署即可发布新版本。
+
+    ```bash
+    agentkit runtime logs my-agent --limit 200
+    agentkit deploy
+    ```
+
+    需要回滚或调整资源时，借助版本与更新命令：查看历史用 `agentkit runtime versions my-agent`，发布指定版本用 `agentkit runtime release my-agent --rev <n>`，调整 CPU 与内存用 `agentkit runtime update my-agent --cpu-milli 1000 --memory-mb 2048 --auto-release`。
+  </Step>
+</Steps>
+
+不再需要该运行时时，将其删除以释放资源：
+
+```bash
+agentkit runtime delete my-agent -y
+```
+
+只需配置、无需编写代码时，改用[使用 Harness](/productions/agentkit-cli/archives/0.46.6/zh/workflows/harness)。

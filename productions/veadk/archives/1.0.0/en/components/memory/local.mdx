@@ -1,0 +1,81 @@
+---
+title: "In-memory (local)"
+---
+
+The `local` backend is implemented by `InMemoryLTMBackend` and keeps long-term memory in **the current process's memory**. Memory text is embedded by an embedding model and written to a llama-index in-memory vector index; retrieval recalls by semantic similarity.
+
+Because the data lives only in process memory, it is cleared when the process exits and cannot be shared across processes. The backend is therefore intended for local development, debugging, and quickly validating the end-to-end long-term memory flow — not for production.
+
+## When to use
+
+- Quickly try the full long-term memory flow locally, from write to cross-session retrieval;
+- Develop and debug agent logic without introducing external storage;
+- Write demos or unit tests where data does not need to persist.
+
+## Dependencies
+
+The `local` backend relies on vector search, which requires the extensions:
+
+```bash
+pip install "veadk-python[extensions]"
+```
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+# The local backend imposes no naming constraints on index
+ltm = LongTermMemory(backend="local", app_name="ltm_demo")
+
+agent = Agent(
+    name="demo",
+    instruction="Answer the user; when needed, use the `load_memory` tool to recall past conversations.",
+    long_term_memory=ltm,
+)
+```
+
+For a full cross-session example, see [Long-term memory · Cross-session example](/productions/veadk/archives/1.0.0/en/components/memory/index#cross-session-example).
+
+## Parameters
+
+The `local` backend is constructed internally by `LongTermMemory`. Usually you only pass `index` or `app_name` at the `LongTermMemory` level; to customize embedding, pass `embedding_config` via `backend_config`, or construct the backend instance directly and pass it as `LongTermMemory(backend=<instance>)`.
+
+### Constructor parameters
+
+`InMemoryLTMBackend` accepts the following fields:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | No default; provided by `LongTermMemory` | Memory index name. The `local` backend imposes no naming constraints. |
+| `embedding_config` | `EmbeddingModelConfig` | Read automatically from `MODEL_EMBEDDING_*` env vars | Embedding model config used to vectorize memory text. |
+
+### Embedding config
+
+`embedding_config` is an `EmbeddingModelConfig` with env prefix `MODEL_EMBEDDING_`:
+
+| Field | Env var | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | Embedding model name. |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | Embedding vector dimension; must match the model. |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | API base of the embedding service. |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | Falls back to `MODEL_AGENT_API_KEY`, then an auto-fetched Ark token | Key for accessing the embedding service. |
+
+## Environment variables
+
+```bash
+# Embedding model; if unset, defaults are used and the agent model's key is reused when no key is set
+export MODEL_EMBEDDING_NAME="doubao-embedding-vision-250615"
+export MODEL_EMBEDDING_DIM=2048
+export MODEL_EMBEDDING_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
+```
+
+<Note>
+If `MODEL_EMBEDDING_API_KEY` is not set separately, VeADK reuses `MODEL_AGENT_API_KEY` and then falls back to an auto-fetched Ark token.
+</Note>
+
+<Warning>
+The `local` backend keeps memory only in process memory; data is lost when the process exits and cannot be shared across processes. For persistence or multi-instance sharing, use [VikingDB](/productions/veadk/archives/1.0.0/en/components/memory/vikingdb), [Mem0](/productions/veadk/archives/1.0.0/en/components/memory/mem0), [OpenSearch](/productions/veadk/archives/1.0.0/en/components/memory/opensearch), or [Redis](/productions/veadk/archives/1.0.0/en/components/memory/redis).
+</Warning>

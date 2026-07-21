@@ -1,0 +1,13 @@
+---
+title: "1.0.3 changelog"
+---
+
+This page lists public changes in VeADK 1.0.3 compared with 1.0.2.
+
+| Module | Change details | Link |
+| :--- | :--- | :--- |
+| Knowledge base | Added the `milvus` backend with Milvus service and Milvus Lite URIs, token or username/password authentication, database selection, initialization overwrite, timeout, and additional output fields. | [Store knowledge in Milvus](/productions/veadk/archives/1.0.3/en/components/knowledge/milvus) |
+| Knowledge base | Added the `openviking` backend for importing files, directories, and text into OpenViking and retrieving and hydrating results by resource URI. | [Store knowledge in OpenViking](/productions/veadk/archives/1.0.3/en/components/knowledge/openviking) |
+| Long-term memory | Added the `openviking` backend to store per-user entity, event, and preference memory while retaining user isolation across sessions. | [Store memory in OpenViking](/productions/veadk/archives/1.0.3/en/components/memory/openviking) |
+| A2A | Calls to downstream agents in the AgentKit A2A Registry can propagate inbound `X-Ve-TIP-Token` and bearer JWT credentials. If a downstream call made with the inbound JWT returns `401`, VeADK can fall back to M2M OAuth2 and retry once. | [Inbound authentication](/productions/veadk/archives/1.0.3/en/components/security/inbound) |
+| Dependencies | Consolidated duplicate dependency declarations, added the OpenViking SDK to the base dependencies, and added Milvus integrations to `extensions`. | [Installation](/productions/veadk/archives/1.0.3/en/get-started/installation) |

@@ -1,0 +1,244 @@
+---
+title: "agentkit.yaml"
+---
+
+`agentkit.yaml` is the single source of deploy configuration. Scaffold a project with `agentkit init` first, then run `agentkit deploy config` to generate it under the project's `.agentkit/` directory; `agentkit deploy`, `deploy build`, and `deploy apply` all read from it — no extra flags required. In the generated file, required and common fields are active; every optional field is shown commented-out with its full shape, so you uncomment and fill it to enable it.
+
+Secrets are not written in plaintext; instead, reference the deploy environment with `${VAR}`, resolved by the CLI at deploy time:
+
+- `${VAR}` — required; the deploy fails if it is unset;
+- `${VAR:-default}` — use the default when unset or empty;
+- `${VAR:?message}` — required; fail with `message` when unset;
+- `$$` — a literal `$`.
+
+The CLI loads the project's `.env` (from the working directory) before resolving these, so it is enough to put the values in `.env` — no manual `export` is needed. Variables already set in your shell take precedence, and `.env` is never uploaded to the runtime.
+
+## Full example
+
+```yaml .agentkit/agentkit.yaml
+# agentkit.yaml — AgentKit deploy configuration (fully yaml-driven).
+#
+# `agentkit deploy` reads everything from this file — no flags required.
+# Secrets are NOT written here in plaintext: reference the deploy environment
+# with ${VAR}. Forms: ${VAR} (required) · ${VAR:-default} · ${VAR:?message} ·
+# $$ for a literal $. Values are resolved by the CLI at deploy time.
+
+# ── Project ──────────────────────────────────────────────
+name: my-agent
+region: cn-beijing              # cn-beijing | cn-shanghai
+project: default
+
+# ── Runtime resources ────────────────────────────────────
+runtime:
+  cpu_milli: 1000              # CPU in milli-cores (1000 = 1 vCPU)
+  memory_mb: 2048              # memory in MB
+  min_instance: 0              # 0 = scale to zero when idle
+  max_instance: 5
+  max_concurrency: 20          # concurrent requests per instance
+
+# ── Build ────────────────────────────────────────────────
+# Defaults to .agentkit/Dockerfile (or ./Dockerfile if present).
+# dockerfile: .agentkit/Dockerfile
+
+# ── Runtime environment variables (injected into the runtime) ────
+# Use ${VAR} for secrets — resolved from the deploy env, never committed here.
+envs:
+  # MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY:?set MODEL_AGENT_API_KEY in your env}
+  # LOG_LEVEL: ${LOG_LEVEL:-info}
+
+# ── Model / associated resources (optional) ──────────────
+# model_agent_name: doubao-seed-1-6-250615
+# knowledge_id: ${KNOWLEDGE_ID}
+# memory_id: ${MEMORY_ID}
+# tool_id: ${TOOL_ID}
+# mcp_toolset_id: ${MCP_TOOLSET_ID}
+
+# ── Gateway auth (optional; pick one type) ───────────────
+# When `frontend` (below) is enabled, this is derived automatically from its
+# userpool — you do NOT need to repeat it here.
+# auth:
+#   type: custom_jwt           # key_auth | custom_jwt
+#   # --- key_auth ---
+#   api_key_name: ""           # auto-created if omitted
+#   api_key_location: header   # header | query
+#   # --- custom_jwt ---
+#   discovery_url: ${USERPOOL_DISCOVERY_URL}
+#   allowed_clients:
+#     - ${USERPOOL_CLIENT_ID}
+
+# ── IM channels (optional) ───────────────────────────────
+# Deploys a bot proxy to VeFaaS after the runtime. Credentials via ${VAR}.
+# im:
+#   feishu:
+#     enabled: true
+#     app_id: ${FEISHU_APP_ID}
+#     app_secret: ${FEISHU_APP_SECRET}
+#   wecom:
+#     enabled: true
+#     bot_id: ${WECOM_BOT_ID}
+#     bot_secret: ${WECOM_BOT_SECRET}
+#   dingtalk:
+#     enabled: true
+#     client_id: ${DINGTALK_CLIENT_ID}
+#     client_secret: ${DINGTALK_CLIENT_SECRET}
+
+# ── Frontend BFF (optional) ──────────────────────────────
+# Public VeFaaS front door: OAuth login at the edge, then reverse-proxy to the
+# runtime forwarding the user's JWT (no shared key). The runtime's gateway auth
+# is auto-set to custom_jwt from this userpool. The callback is auto-registered
+# and OAUTH2_REDIRECT_URI auto-derived — you only declare the userpool here.
+# frontend:
+#   enabled: true
+#   gateway: ${VEFAAS_SERVERLESS_GATEWAY:-}   # reuse an existing serverless gateway (recommended)
+#   oauth2:
+#     user_pool_id: ${USERPOOL_ID}
+#     client_id: ${USERPOOL_CLIENT_ID}
+#     client_secret: ${USERPOOL_CLIENT_SECRET}
+
+# ── Observability (optional) ─────────────────────────────
+# apmplus: true                # enable APMPlus monitoring
+
+# ── Advanced (optional) ──────────────────────────────────
+# role_name: ""                # IAM role; auto-created when omitted
+
+# ── Infrastructure ───────────────────────────────────────
+# Where the image is built and stored. "Auto" = created & managed for you.
+infrastructure:
+  container_registry:          # Volcengine Container Registry (CR)
+    instance_name: Auto        # Auto → agentkit-platform-<account-id>
+    namespace_name: agentkit
+    repo_name: my-agent         # defaults to the app name
+  tos:                         # TOS (build artifacts)
+    bucket_name: Auto          # Auto → agentkit-platform-<account-id>
+    object_prefix: agentkit-builds
+```
+
+## Project
+
+The top-level identifiers, all required.
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `name` | Runtime/app name; the runtime is created or updated idempotently by this name. | — |
+| `region` | Deploy region, `cn-beijing` or `cn-shanghai`. | — |
+| `project` | The AgentKit project it belongs to. | `default` |
+
+## Runtime resources
+
+The `runtime` block configures compute resources and the scaling policy.
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `cpu_milli` | CPU in milli-cores (`1000` = 1 vCPU). | `1000` |
+| `memory_mb` | Memory in MB. | `2048` |
+| `min_instance` | Minimum instances; `0` scales to zero when idle. | `0` |
+| `max_instance` | Maximum instances. | `5` |
+| `max_concurrency` | Concurrent requests per instance. | `20` |
+
+## Environment variables
+
+`envs` declares the environment variables injected into the runtime. To keep secrets out of the repository, reference the deploy environment with `${VAR}` (syntax at the top of this page); the CLI resolves them at deploy time.
+
+```yaml
+envs:
+  MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY:?set MODEL_AGENT_API_KEY in your env}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+```
+
+For how to supply the values, see [Build & deploy · Environment variables](/productions/agentkit-cli/preview/en/commands/deploy#environment-variables): for a local deploy, export the variables or put them in a local `.env`; in continuous deployment, configure them as repository secrets. The `VOLCENGINE_*` deploy credentials are not injected into the runtime.
+
+<Note>
+`${VAR}` replaces the older `AK_`-prefix injection: each variable is now declared explicitly in `envs` and read via `${VAR}`, which is clearer and reviewable. Secrets in the `auth`, `im`, and `frontend` blocks use `${VAR}` the same way.
+</Note>
+
+## Model and associated resources
+
+All optional — specify the model the runtime uses and the platform resources it attaches.
+
+| Field | Description |
+| --- | --- |
+| `model_agent_name` | The model the runtime uses. |
+| `knowledge_id` | Associated knowledge base id. |
+| `memory_id` | Associated memory collection id. |
+| `tool_id` | Associated tool id. |
+| `mcp_toolset_id` | Associated MCP toolset id. |
+
+## Gateway auth
+
+`auth` configures the runtime gateway's authentication, one type of two. When `frontend` (below) is enabled, gateway auth is set to `custom_jwt` automatically from its userpool, so you do not repeat it here.
+
+| Field | Description |
+| --- | --- |
+| `type` | Auth type: `key_auth` (API key) or `custom_jwt` (JWT). |
+| `api_key_name` | API key name for `key_auth`; auto-created if omitted. |
+| `api_key_location` | Key location for `key_auth`: `header` or `query`. |
+| `discovery_url` | OIDC discovery URL for `custom_jwt`; required. |
+| `allowed_clients` | Optional client-id allow-list for `custom_jwt`. |
+
+## IM channels
+
+The `im` block deploys a bot proxy to VeFaaS after the runtime to connect a messaging channel. Provide credentials via `${VAR}`. Feishu, WeCom, and DingTalk are supported; enable any combination.
+
+### Feishu
+
+| Field | Description |
+| --- | --- |
+| `im.feishu.enabled` | Whether to enable the Feishu channel. |
+| `im.feishu.app_id` | Feishu app App ID. |
+| `im.feishu.app_secret` | Feishu app App Secret. |
+
+### WeCom
+
+| Field | Description |
+| --- | --- |
+| `im.wecom.enabled` | Whether to enable the WeCom channel. |
+| `im.wecom.bot_id` | WeCom bot id. |
+| `im.wecom.bot_secret` | WeCom bot secret. |
+
+The WeCom proxy connects over WebSocket. The endpoint (`websocket_url`, default `wss://openws.work.weixin.qq.com`) and whether to send an interim "thinking" message (`send_thinking_message`, default `true`) can also be set but are rarely needed.
+
+### DingTalk
+
+| Field | Description |
+| --- | --- |
+| `im.dingtalk.enabled` | Whether to enable the DingTalk channel. |
+| `im.dingtalk.client_id` | DingTalk app Client ID (AppKey). |
+| `im.dingtalk.client_secret` | DingTalk app Client Secret (AppSecret). |
+
+## Frontend
+
+The `frontend` block deploys a public front door on VeFaaS: OAuth login at the edge, then reverse-proxy to the runtime forwarding the user's JWT (no shared key). Once enabled, the runtime gateway auth is set to `custom_jwt` from this userpool, the callback is auto-registered, and `OAUTH2_REDIRECT_URI` is auto-derived, so you only declare the userpool here.
+
+| Field | Description |
+| --- | --- |
+| `frontend.enabled` | Whether to enable the front door. |
+| `frontend.gateway` | Reuse an existing serverless gateway (recommended). |
+| `frontend.oauth2.user_pool_id` | User pool id. |
+| `frontend.oauth2.client_id` | User pool client id. |
+| `frontend.oauth2.client_secret` | User pool client secret. Optional — auto-fetched from the user-pool client when omitted; set it only if the client exposes no secret or you want to override. |
+
+## Observability
+
+Set `apmplus` to `true` to enable APMPlus monitoring.
+
+## Advanced
+
+| Field | Description |
+| --- | --- |
+| `role_name` | IAM role name; auto-created when omitted. |
+
+## Infrastructure
+
+`infrastructure` specifies where the image is built and stored. `Auto` means the platform creates and manages it for you; replace a value with your own resource to reuse one.
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `container_registry.instance_name` | Container Registry instance. `Auto` → `agentkit-platform-<account-id>`. | `Auto` |
+| `container_registry.namespace_name` | Image namespace. | `agentkit` |
+| `container_registry.repo_name` | Image repository name. | app name |
+| `tos.bucket_name` | Object storage bucket for build artifacts. `Auto` → `agentkit-platform-<account-id>`. | `Auto` |
+| `tos.object_prefix` | Object prefix for build artifacts. | `agentkit-builds` |
+
+## Build
+
+The `dockerfile` field sets the path to the Dockerfile used for the build, defaulting to `.agentkit/Dockerfile` (or `./Dockerfile` if one exists at the project root). For how the container starts and the requirement to listen on `0.0.0.0:8000`, see [Build & deploy · Container entrypoint and port](/productions/agentkit-cli/preview/en/commands/deploy#container-entrypoint-and-port).

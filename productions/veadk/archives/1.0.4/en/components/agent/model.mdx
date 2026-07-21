@@ -1,0 +1,137 @@
+---
+title: "Model"
+---
+
+By default an agent uses the globally configured model — the one set via
+environment variables or `config.yaml` (see the [Quickstart](/productions/veadk/archives/1.0.4/en/get-started/quickstart)).
+You can also set a model per agent when you create it.
+
+## Set the model for a single agent
+
+Override the global default with `model_name` and `model_provider`:
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    model_name="doubao-seed-1-8-251228",
+    model_provider="openai",
+)
+```
+
+When omitted, `model_provider`, `model_api_base`, and `model_api_key` fall back
+to the global configuration.
+
+## Select an Ark API key by name
+
+If the current account has multiple Volcengine Ark API keys, set
+`MODEL_AGENT_API_KEY_NAME` to select one by name. VeADK resolves the key value at
+runtime, so the secret does not need to be stored in a configuration file.
+
+```bash
+export MODEL_AGENT_API_KEY_NAME="production-agent-key"
+```
+
+You can also select a key for one agent with `model_api_key_name`:
+
+```python
+from veadk import Agent
+
+agent = Agent(model_api_key_name="production-agent-key")
+```
+
+VeADK resolves credentials in this order:
+
+1. The key value passed through `Agent(model_api_key=...)`.
+2. The `MODEL_AGENT_API_KEY` environment variable.
+3. The key name passed through `Agent(model_api_key_name=...)` or set in
+   `MODEL_AGENT_API_KEY_NAME`.
+4. An available default Ark API key for the current account.
+
+| Configuration | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `Agent.model_api_key` / `MODEL_AGENT_API_KEY` | `str` | `""` | Supplies the API key value directly and takes precedence over name-based resolution. |
+| `Agent.model_api_key_name` / `MODEL_AGENT_API_KEY_NAME` | `str` | `""` | Selects an existing Ark API key name in the current account. Used only when no key value is supplied. |
+
+## Configure fallback models
+
+`model_name` also accepts a list: the first entry is the primary model and the
+rest are fallbacks, tried in order when the primary model is unavailable.
+
+```python
+agent = Agent(
+    model_name=["doubao-seed-1-8-251228", "deepseek-r1-250528"],
+)
+```
+
+## Responses API
+
+The Responses API is a Volcengine Ark interface with native, efficient context
+management, a simpler I/O format, and stronger tool-calling and multimodal
+capabilities. Once enabled in VeADK, every turn of the agent's conversation goes
+through this interface, giving it native context caching and image, video, and
+document understanding.
+
+### Enable
+
+Set `enable_responses=True` when creating the agent:
+
+```python
+from veadk import Agent
+
+agent = Agent(enable_responses=True)
+```
+
+Enabling the Responses API requires `google-adk>=1.21.0`, and the model must
+support the interface (doubao models after version 0615 support it by default).
+
+### Multimodal input
+
+Beyond text, the Responses API understands images, video, and documents. Pass
+multimodal data with `google.genai.types.FileData`; `file_uri` accepts three
+sources:
+
+- **Local file path**: `file://{local_path}` — uploaded automatically via the Files API.
+- **Files API resource**: `file_id://{file_id}` — for already-uploaded files.
+- **Web URL**: a plain `https://` link, typed by its `mime_type`.
+
+For a local image:
+
+```python
+import os
+from google.genai import types
+from google.genai.types import FileData
+
+local_path = os.path.abspath("example.png")
+message = types.UserContent(
+    parts=[
+        types.Part(text="Describe this image."),
+        types.Part(
+            file_data=FileData(
+                file_uri=f"file://{local_path}",
+                mime_type="image/png",
+            )
+        ),
+    ],
+)
+```
+
+For video, `FileData` may include `video_metadata` with `fps` to control the
+frame-sampling rate (default 1, adjustable between 0.2 and 5).
+
+### Context caching
+
+In Responses API mode, session caching is on by default: the initial context is
+stored and updated each turn, and later requests merge the cached content with
+the new input before calling the model. This significantly reduces repeated-token
+cost in long-context scenarios such as multi-turn conversations and complex tool
+calls.
+
+Cache hits are visible in the returned event's `usage_metadata`, where
+`cached_content_token_count` is the number of tokens served from cache and
+`prompt_token_count` is the total input tokens; the hit rate is their ratio.
+
+<Warning>
+  When the agent sets `output_schema`, that field conflicts with the caching
+  mechanism, so VeADK automatically disables context caching.
+</Warning>

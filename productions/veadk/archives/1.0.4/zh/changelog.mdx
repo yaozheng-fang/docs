@@ -1,0 +1,16 @@
+---
+title: "更新日志"
+---
+
+VeADK 1.0.4 发布于 2026 年 7 月 14 日。以下内容记录相较 1.0.3 的使用者可见变更。
+
+| 模块 | 变更细节 | 链接 |
+| :--- | :--- | :--- |
+| Studio | 新增 `veadk studio`，提供专注于创建和管理智能体的工作台；支持智能生成、自定义和模板创建，工作流入口显示为「敬请期待」；并分阶段展示 AgentKit 部署进度。 | [Studio 智能体工作台](/productions/veadk/archives/1.0.4/zh/components/frontend/studio) |
+| 智能体管理 | Frontend 与 Studio 新增 AgentKit Runtime 管理视图，按当前用户列出由工作台部署的 Runtime，可查看控制面详情、主智能体信息并删除 Runtime。 | [Studio 智能体工作台](/productions/veadk/archives/1.0.4/zh/components/frontend/studio) |
+| VeFaaS 部署 | 新增 `veadk studio deploy`，可将 Studio 部署到 VeFaaS，接入 VeIdentity 登录，并创建或复用 Serverless API Gateway 与 IAM Role。 | [Studio 部署说明](/productions/veadk/archives/1.0.4/zh/components/frontend/studio) |
+| VeADK Frontend | 新增智能体拓扑和转移路径展示；项目部署按构建镜像、部署、发布三个阶段展示实时进度。 | [VeADK Frontend](/productions/veadk/archives/1.0.4/zh/components/frontend/veadk-frontend) |
+| Harness 技能 | Harness 的 `skills` 支持 `space:<技能空间 ID>`，可以加载 AgentKit 技能中心的整个技能空间，并继续与 Skill Hub 名称或 slug 混用。 | [技能](/productions/veadk/archives/1.0.4/zh/components/agent/skills) |
+| 前端安全 | 移除直接执行浏览器提交代码的测试入口；限制 AgentKit 代理的协议、域名与凭证要求；限制部署文件和静态文件的可访问路径。 | [VeADK Frontend](/productions/veadk/archives/1.0.4/zh/components/frontend/veadk-frontend) |
+| 日志 | 日志实现迁移到 Python 标准库 `logging`，保留追踪 ID 关联；非交互式输出不再包含颜色转义序列，流式思考内容不再逐 token 记录。 | [应用日志](/productions/veadk/archives/1.0.4/zh/components/observability/logging) |
+| 存储配置 | 完善 Milvus 与 OpenViking 的环境变量和配置示例；1.0.4 继续提供 1.0.3 已加入的 Milvus 知识库、OpenViking 知识库与 OpenViking 长期记忆后端。 | [Milvus](/productions/veadk/archives/1.0.4/zh/components/knowledge/milvus) · [OpenViking 知识库](/productions/veadk/archives/1.0.4/zh/components/knowledge/openviking) · [OpenViking 长期记忆](/productions/veadk/archives/1.0.4/zh/components/memory/openviking) |

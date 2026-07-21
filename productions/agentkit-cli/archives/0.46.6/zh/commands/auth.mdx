@@ -1,0 +1,84 @@
+---
+title: "鉴权与登录"
+---
+
+`auth` 命令组用于 SSO 鉴权：通过浏览器登录并存储短时 STS 凭据、清除会话、查看当前身份，以及管理登录配置。`login`、`logout`、`whoami` 同时提供为顶层命令（如 `agentkit login`）。
+
+## auth login
+
+通过浏览器 SSO 完成鉴权，并存储短时 STS 凭据。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[address]` | 登录地址 | 无 |
+| `-p, --profile <name>` | 使用预置的命名配置，替代直接传入地址 | 无 |
+| `--duration <seconds>` | 请求的 STS 凭据有效期（秒） | `3600` |
+| `--no-open` | 不打开浏览器，仅打印登录 URL（用于无头环境/SSH） | `false` |
+
+```bash
+agentkit auth login
+```
+
+## auth logout
+
+清除已存储的 SSO 会话（刷新令牌与缓存的 STS 凭据）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO 配置名称 | 当前活跃配置 |
+| `--all` | 清除所有配置的会话 | `false` |
+
+```bash
+agentkit auth logout
+```
+
+## auth whoami
+
+显示当前凭据背后的身份。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO 配置名称 | 当前活跃配置 |
+
+```bash
+agentkit auth whoami
+```
+
+## auth profile set
+
+创建或更新某个配置的登录坐标（非机密信息）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<name>` | 配置名称（必填） | 无 |
+| `--issuer <url>` | OIDC issuer URL | 无 |
+| `--client-id <id>` | 公开的 OAuth client id | 无 |
+| `--role-trn <trn>` | STS role TRN | 无 |
+| `--provider-trn <trn>` | IAM OIDC provider TRN | 无 |
+| `--region <region>` | 区域 | `cn-beijing` |
+
+```bash
+agentkit auth profile set my-profile --issuer https://example.com --client-id abc123
+```
+
+## auth profile list
+
+列出已保存的配置。
+
+该命令不接受任何参数或选项。
+
+```bash
+agentkit auth profile list
+```
+
+## auth profile show
+
+显示某个配置的坐标。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[name]` | 配置名称 | 当前活跃配置 |
+
+```bash
+agentkit auth profile show my-profile
+```

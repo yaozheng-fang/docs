@@ -1,0 +1,160 @@
+---
+title: "VeADK Frontend"
+---
+
+VeADK 自带一个生产级 React 前端——一个面向企业的智能体应用工作台，通过 Google ADK API Server 与智能体通信：在界面中创建、调试、管理智能体，并将其接入使用。`veadk frontend` 是一个自包含的启动器：在默认模式下，它以单个进程同时提供这套 React 界面与智能体 API，两者同源，因此无需单独部署后端，也无需处理跨域配置。
+
+## 功能一览
+
+- **创建智能体**：在界面中通过智能对话、自定义或模板创建智能体，产出可运行的 VeADK 项目（`agent.py`、`requirements.txt` 等），并可在线预览、编辑与下载。工作流入口显示为「敬请期待」，暂不可用。
+- **对话与调试**：与智能体多轮对话，展示思考过程、工具调用、Token 与用时；对话中还会渲染智能体返回的 [A2UI](/productions/veadk/archives/1.0.0/zh/components/frontend/a2ui) 富界面卡片。
+- **智能体选择器**：左上角切换智能体；悬停可查看该智能体的模型与挂载的工具。
+- **技能中心**：浏览并发现可复用的技能，供创建智能体时选用。
+- **历史会话**：自动保存、按时间排序，可重新打开或删除。
+- **智能搜索**：「会话」源在当前智能体的历史消息中做全文检索；「网页」源调用该智能体挂载的联网搜索工具实时检索，使用服务端环境变量里的凭据。
+- **添加 AgentKit 智能体**：填入访问地址与 API Key，按 ADK 协议接入远程智能体，接入后出现在选择器中。
+- **Tracing 观测**：查看本次会话的调用火焰图。
+- **登录**：支持 SSO 或本地用户名。
+
+## 运行
+
+先构建前端，再用一条命令在单个进程中同时提供界面与智能体 API。
+
+<Steps>
+
+<Step title="构建前端">
+
+```bash
+cd frontend && npm install && npm run build
+```
+
+构建产物会作为界面被 `veadk frontend` 提供。使用 pip 安装 VeADK 时，包内已内置一份构建产物，可直接运行。
+
+</Step>
+
+<Step title="启动">
+
+```bash
+veadk frontend --agents-dir examples
+# 打开 http://127.0.0.1:8000
+```
+
+</Step>
+
+</Steps>
+
+### 开发模式（热更新）
+
+开发模式下 `veadk frontend` 只提供智能体 API，并为 Vite 开发服务器（`http://localhost:5173`）放行 CORS；界面则由 Vite 单独以热更新方式运行。
+
+```bash
+veadk frontend --dev --agents-dir examples   # 仅 API，为 Vite 放行 CORS
+cd frontend && npm run dev                    # http://localhost:5173，代理 API
+```
+
+## `veadk frontend` 命令
+
+| 选项 | 默认值 | 说明 |
+| :-- | :-- | :-- |
+| `--agents-dir` | `.` | 智能体应用目录，每个子目录暴露一个 `root_agent`。 |
+| `--frontend-dir` | 包内置构建产物，回退至 `./frontend/dist` | 覆盖已构建 React 界面所在目录。优先使用显式传入的目录，其次为包内置的 `veadk/webui`，最后回退至相对当前目录的 `./frontend/dist`。 |
+| `--host` | `127.0.0.1` | 监听地址。 |
+| `--port` | `8000` | 监听端口。 |
+| `--dev` | 关闭 | 开发模式：仅提供 API，并放行来自 Vite 开发服务器（`http://localhost:5173`）的 CORS。 |
+| `--oauth2-user-pool` | — | VeIdentity 用户池名称。与客户端同时设置后启用 SSO。 |
+| `--oauth2-user-pool-client` | — | VeIdentity 用户池客户端名称。 |
+| `--oauth2-user-pool-uid` | 环境变量 `OAUTH2_USER_POOL_ID` | 用 UID 代替名称指定用户池。 |
+| `--oauth2-user-pool-client-uid` | 环境变量 `OAUTH2_USER_POOL_CLIENT_ID` | 用 UID 代替名称指定客户端。 |
+| `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | OAuth2 回调地址，环境变量 `OAUTH2_REDIRECT_URI`。部署到公网或 runtime 时需设置。 |
+| `--oauth2-provider` | `veidentity`（配置了用户池时） | SSO provider 标识，环境变量 `OAUTH2_PROVIDER`。可取 `veidentity`、`github`、`google` 或自定义名称。 |
+| `--oauth2-provider-label` | provider 内置文案 | 登录按钮的显示文案，环境变量 `OAUTH2_PROVIDER_LABEL`。 |
+
+<Note>
+  非开发模式下，若未找到已构建的界面目录，命令会报错并提示先执行 `npm run build`（或改用 `--dev` 配合 Vite 开发服务器）。
+</Note>
+
+## 认证
+
+会话与记忆按 ADK 的 `user_id` 隔离，该 `user_id` 来自登录用户。命令启动时会先加载当前目录及其上层目录中的 `.env` 文件，因此下述环境变量可写入 `.env`。
+
+**SSO** —— 传入用户池与客户端后启用。前端会展示登录页并跳转到身份提供方，登录后用户信息接口返回的用户标识将作为 `user_id`。用户池与客户端既可用名称指定，也可用 UID 指定。
+
+```bash
+veadk frontend --agents-dir examples \
+  --oauth2-user-pool <名称> --oauth2-user-pool-client <名称>
+# 或用 UID，读环境变量 OAUTH2_USER_POOL_ID / OAUTH2_USER_POOL_CLIENT_ID
+# --oauth2-user-pool-uid <id> --oauth2-user-pool-client-uid <id>
+```
+
+启用 VeIdentity SSO 需要进程能拿到火山引擎凭证。中间件保护 API，同时放行界面外壳、`/web/auth-config`、`/favicon.ico`、`/assets` 与 `/skillhub`，因此应用能加载并展示自己的登录页，而不是被直接重定向到身份提供方。登录按钮的文案与图标由配置驱动。
+
+**第三方 / 自定义 OAuth2（环境变量）** —— 不依赖 VeIdentity 用户池时，只要设置 `OAUTH2_CLIENT_ID`（及密钥），即可接入 GitHub、Google 或任意 OIDC 登录。端点来源按以下顺序确定：内置预设（`OAUTH2_PROVIDER=github` 或 `google`）、OIDC 自动发现（设置 `OAUTH2_ISSUER`）、显式端点（`OAUTH2_AUTHORIZE_URL` 等）。
+
+| 环境变量 | 说明 |
+| :-- | :-- |
+| `OAUTH2_PROVIDER` | provider 标识：`github`、`google` 或自定义名称。决定登录按钮文案与内置预设。 |
+| `OAUTH2_CLIENT_ID` / `OAUTH2_CLIENT_SECRET` | OAuth2 客户端凭据。设置 `OAUTH2_CLIENT_ID` 即启用通用 provider。 |
+| `OAUTH2_ISSUER` | OIDC issuer 基址，端点将自动发现，例如 `https://accounts.google.com`。 |
+| `OAUTH2_AUTHORIZE_URL` / `OAUTH2_TOKEN_URL` / `OAUTH2_USERINFO_URL` | 显式端点，用于非 OIDC provider。 |
+| `OAUTH2_SCOPE` | 覆盖请求的 scope。 |
+| `OAUTH2_PROVIDER_LABEL` | 覆盖登录按钮文案。 |
+| `OAUTH2_REDIRECT_URI` | 回调地址。部署到公网或 runtime 时设为公网回调，并在 OAuth 应用中登记同一地址；本地默认 `http://{host}:{port}/oauth2/callback`。 |
+
+GitHub 预设仅需客户端凭据：
+
+```bash
+export OAUTH2_PROVIDER=github
+export OAUTH2_CLIENT_ID=<github-oauth-client-id>
+export OAUTH2_CLIENT_SECRET=<github-oauth-client-secret>
+export OAUTH2_REDIRECT_URI=http://127.0.0.1:8000/oauth2/callback
+veadk frontend --agents-dir examples
+```
+
+Google 同理，把 `OAUTH2_PROVIDER` 换成 `google`；Keycloak、Auth0、Okta 等任意 OIDC 则设置 `OAUTH2_ISSUER` 加客户端凭据即可。完整示例见仓库 `examples/front_with_sso/`。
+
+<Warning>
+  部署到 runtime 或公网时，OAuth 回调必须指向外部可访问的地址：把 `OAUTH2_REDIRECT_URI` 设为公网回调 URL，并在 OAuth 应用里登记同一地址。Cookie 的 `Secure` 标志会根据该地址是否为 HTTPS 自动开启。
+</Warning>
+
+**无 SSO（本地用户名）** —— 不传上述参数时，登录页会让用户输入一个用户名（字母加数字，不超过 16 位），保存在本地并作为 `user_id`。此时服务始终返回未认证状态与空的 provider 列表，应用即展示本地用户名登录界面。
+
+<Note>
+  登录态会被缓存：SSO 走 `veadk_session` Cookie，本地模式走 `localStorage`。会话本身在发送第一条消息时才创建，而非打开页面时。退出登录为本地登出，即清除会话并回到登录页。
+</Note>
+
+## 渲染流程
+
+前端与 Google ADK API Server 通信：列出可用智能体、创建会话，并以流式方式实时接收智能体的输出。当智能体返回 A2UI 消息时，前端从中解析出界面指令，据此创建并增量更新对应的界面区域，再按每个组件的类型渲染出相应的 React 组件。组件类型到渲染器的映射由一张注册表维护，因此新增一种组件类型，只需为它注册对应的渲染器。
+
+## 添加企业自定义组件
+
+一个自定义组件由两个部分组成，它们共享同一个 catalog id。后端部分见 [A2UI](/productions/veadk/archives/1.0.0/zh/components/frontend/a2ui#自定义组件)；前端部分如下。
+
+**前端部分** —— 新建一个目录即可自动注册，无需修改任何中心文件：
+
+```text
+src/a2ui/components/RevenueChart/
+├── RevenueChart.tsx
+└── index.ts
+```
+
+```ts title="src/a2ui/components/RevenueChart/index.ts"
+import { register } from "../../registry";
+import { RevenueChart } from "./RevenueChart";
+register("RevenueChart", RevenueChart);
+```
+
+```tsx title="src/a2ui/components/RevenueChart/RevenueChart.tsx"
+import type { ComponentRendererProps } from "../../registry";
+
+export function RevenueChart({ node, ctx }: ComponentRendererProps) {
+  const series = ctx.resolve(node.series as any);
+  return <div className="corp-chart">{/* 渲染 series */}</div>;
+}
+```
+
+新增的组件目录会被自动发现并注册，无需改动任何中心配置文件。
+
+<Note>
+  未注册渲染器的未知组件会回退到可折叠的 JSON 视图，因此目录与渲染器不匹配也不会导致界面崩溃。
+</Note>

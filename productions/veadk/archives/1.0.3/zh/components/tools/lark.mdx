@@ -1,0 +1,57 @@
+---
+title: "飞书 Lark MCP"
+tag: "MCP 工具"
+---
+
+## 功能说明
+
+`lark_tools`（`from veadk.tools.builtin_tools.lark import lark_tools`）帮助快速集成 AI 智能体与飞书 / Lark 开放能力，实现云文档处理、会话管理、日历安排等自动化场景。它通过 `npx @larksuiteoapi/lark-mcp` 启动本地 MCP Server，因此需要预装 `npx` 与 `lark-mcp`。
+
+<Note>
+本工具是把飞书能力**作为工具提供给智能体**。若需把飞书机器人的入站消息接入 VeADK `Runner`，请参阅[飞书 Channel 扩展](/productions/veadk/archives/1.0.3/zh/components/extensions/feishu-channel)。
+</Note>
+
+## 环境变量与前提
+
+<Warning>
+应用获取方式见 [Lark 创建应用](https://open.larkoffice.com/document/develop-an-echo-bot/introduction)。
+
+1. 配置用于智能体推理模型的 API Key；
+2. 配置 Lark 服务的 Application ID、API Key 与 OAuthToken。
+</Warning>
+
+环境变量（**必须配置在环境变量中**）：
+
+- `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
+- `TOOL_LARK_ENDPOINT`：Lark 服务的 Application ID
+- `TOOL_LARK_API_KEY`：Lark 服务的 API Key
+- `TOOL_LARK_TOKEN`：Lark 服务的 OAuthToken
+
+## 使用方法
+
+```python title="examples/tools/lark/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.lark import lark_tools
+
+agent = Agent(
+    name="lark_agent",
+    model_name="doubao-seed-1-8-251228",
+    description="一个飞书机器人。",
+    instruction="你是一个飞书机器人，通过 lark_tools 给用户发消息。",
+    tools=[lark_tools],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("给 developer@example.com 发送“你好，我是 lark agent”")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

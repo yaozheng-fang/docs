@@ -1,0 +1,92 @@
+---
+title: "使用 Codex 沙箱开发应用"
+tag: "HOT"
+---
+
+AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex 等编码智能体开发应用：无需在本地准备运行环境，会话可持久保留，代码可双向传输，构建中的应用还能通过 Web 预览查看。沙箱各命令的完整参数见[使用沙箱](/productions/agentkit-cli/archives/0.46.6/zh/commands/sandbox)。
+
+<Note>
+开始前请确认已配置火山引擎访问密钥，即环境变量 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`。
+</Note>
+
+## 端到端流程
+
+<Steps>
+  <Step title="创建沙箱">
+    沙箱是一个 `code` 环境。若项目中还没有，先创建一个：
+
+    ```bash
+    agentkit sandbox create --type code --name dev-sandbox
+    ```
+
+    命令返回该沙箱的 ID。后续沙箱命令会在项目内自动解析 `code` 沙箱：仅有一个时自动选用，存在多个时需用 `--tool-id` 指定（可用 `agentkit sandbox list` 查询）。也可省去这一步，在首次运行沙箱命令时加 `--auto-create` 自动创建。
+  </Step>
+
+  <Step title="进入沙箱用 Codex 开发">
+    打开沙箱会话的交互式终端，在其中运行 `codex` 进行开发：
+
+    ```bash
+    agentkit sandbox attach --session dev --tmux
+    ```
+
+    `--session dev` 指定会话名称，后续命令复用同一名称即可回到同一环境；`--tmux` 会附加一个持久化终端会话，断开后重连不会丢失进度（按 Ctrl-] 脱离）。若要把本地已有的代码带入沙箱，可在附加前上传：
+
+    ```bash
+    agentkit sandbox attach --session dev --src-dir ./my-app --dst-dir my-app
+    ```
+
+    沙箱内编码智能体所用的模型可通过 `--model-name`、`--model-api-key`、`--model-provider` 指定。
+  </Step>
+
+  <Step title="在本地与沙箱之间传输文件">
+    远端一侧以 `:` 前缀标记。上传与下载：
+
+    ```bash
+    # 上传
+    agentkit sandbox cp ./local.txt :/workspace/local.txt --session dev
+
+    # 下载
+    agentkit sandbox cp :/workspace/result.json ./result.json --session dev
+    ```
+  </Step>
+
+  <Step title="预览构建中的应用">
+    若在沙箱内启动了 Web 服务，可打开沙箱的 Web 预览查看：
+
+    ```bash
+    agentkit sandbox web --session dev
+    ```
+  </Step>
+
+  <Step title="清理会话">
+    开发结束后停止并删除会话；也可用 `--all` 清空该沙箱工具上的全部会话：
+
+    ```bash
+    agentkit sandbox rm dev -y
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+为沙箱内的 Codex 提供登录凭据有多种方式，注入本地订阅是其中之一：若本地已通过 `codex login` 登录，可将订阅凭据注入会话——
+
+```bash
+agentkit sandbox login --provider codex --session dev
+```
+
+该命令默认读取本地 `~/.codex/auth.json`，也可用 `--auth-file` 或 `--codex-home` 指定来源。将 `--provider` 换成 `claude`，即可改为注入本地的 Claude 订阅，在沙箱中使用 Claude Code。
+</Tip>
+
+## 脚本化执行
+
+除交互式终端外，`sandbox run` 可在会话中执行单条命令并打印输出，便于脚本或自动化流程调用：
+
+```bash
+agentkit sandbox run "codex exec '给项目补充单元测试'" --session dev
+```
+
+## 实践建议
+
+- **复用同一会话**：以固定的 `--session` 名称贯穿一次开发，保留环境与进度；用 `agentkit sandbox sessions` 查看活跃会话，用 `agentkit sandbox logs <session>` 排查问题。
+- **明确指定沙箱**：项目内存在多个 `code` 沙箱时，命令会要求显式传入 `--tool-id`；先用 `agentkit sandbox list` 查到目标 ID。
+- **长任务用 `--tmux`**：交互式开发建议加 `--tmux`，避免网络中断导致会话丢失。

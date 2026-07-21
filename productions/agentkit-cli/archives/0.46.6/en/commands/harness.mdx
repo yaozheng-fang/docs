@@ -1,0 +1,236 @@
+---
+title: "Harness"
+---
+
+The `harness` command group creates an agent without writing any application code: initialize a `harness.yaml`, set its fields, then deploy it directly as a runtime.
+
+## harness init
+
+Create a harness directory (`harness.yaml` + `.env.example`) for a Harness.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[name]` | Harness name (or `.` for the current directory) | None |
+| `-y, --yes` | Skip prompts and use defaults | `false` |
+| `-f, --force` | Scaffold into a non-empty directory / overwrite `harness.yaml` | `false` |
+
+```bash
+agentkit harness init my-harness
+```
+
+`harness.yaml` is the single source of configuration for a code-free agent; `harness deploy` expands it into the runtime's environment variables. In the generated file, common fields are active and each component's optional params are shown commented-out, grouped by backend — set a component's `type`, then uncomment the params under that backend. The complete file looks like this:
+
+```yaml harness.yaml
+# =============================================================================
+# AgentKit harness configuration (code-free agent).
+#
+# `agentkit harness deploy` converts this file into the runtime's environment
+# variables: top-level fields and `model` are flattened (model.name -> MODEL_NAME,
+# tools -> TOOLS, ...); each component's `type` selects its backend, and the
+# component's other params map to the env vars that backend reads (e.g. viking
+# `project` -> DATABASE_VIKING_PROJECT). Empty values are skipped, so the server
+# falls back to its own defaults.
+#
+# Configure with `agentkit harness set ...` or by editing this file. For a
+# component, uncomment the params under the backend you set as `type`.
+# =============================================================================
+
+# Harness / runtime name (also the knowledgebase & long-term-memory index name).
+#   env: HARNESS_NAME          flag: --name
+harness_name: "my-harness"
+
+# Reasoning model name (Ark auth comes from the runtime's IAM role on deploy).
+#   env: MODEL_NAME            flag: --model-name
+model:
+  name: ""
+
+# Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
+tools: []
+
+# Skill hub names.       env: SKILLS  flag: --skills (comma-separated)
+skills: []
+
+# Agent instruction (empty = server default).
+#   env: SYSTEM_PROMPT         flag: --system-prompt
+system_prompt: ""
+
+# Agent runtime backend: adk (default) | codex.
+#   env: RUNTIME               flag: --runtime
+runtime: adk
+
+# --- Knowledge base ----------------------------------------------------------
+#   type -> env: KNOWLEDGEBASE_TYPE   flag: --knowledgebase-type
+#   "" disables it. Supported: viking | opensearch | redis
+knowledgebase:
+  type: ""
+  # -- viking --      flags: --knowledgebase-project / --knowledgebase-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --knowledgebase-host / -port / -username / -password / -use-ssl
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # use_ssl: true
+  # -- redis --       flags: --knowledgebase-host / -port / -username / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # username: default
+  # password: ""
+  # db: 0
+
+# --- Long-term memory --------------------------------------------------------
+#   type -> env: LONG_TERM_MEMORY_TYPE   flag: --long-term-memory-type
+#   "" disables it. Supported: viking | opensearch | redis | mem0
+long_term_memory:
+  type: ""
+  # -- viking --      flags: --long-term-memory-project / --long-term-memory-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --long-term-memory-host / -port / -username / -password
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # -- redis --       flags: --long-term-memory-host / -port / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # password: ""
+  # db: 0
+  # -- mem0 --        flags: --long-term-memory-api-key / -api-key-id / -project-id / -base-url
+  # api_key: ""
+  # api_key_id: ""
+  # project_id: ""
+  # base_url: https://api.mem0.ai/v1
+
+# --- Short-term memory (session store) ---------------------------------------
+#   type -> env: SHORT_TERM_MEMORY_TYPE   flag: --short-term-memory-type
+#   local (default) | sqlite | mysql | postgresql
+short_term_memory:
+  type: local
+  # -- mysql --       flags: --short-term-memory-host / -user / -password / -database / -charset
+  # host: 1.2.3.4
+  # user: root
+  # password: ""
+  # database: harness
+  # charset: utf8
+  # -- postgresql --  flags: --short-term-memory-host / -port / -user / -password / -database
+  # host: 1.2.3.4
+  # port: 5432
+  # user: postgres
+  # password: ""
+  # database: harness
+
+# --- Authentication (optional) -----------------------------------------------
+# Omit this block to deploy with the default API-key auth (key_auth). Add it to
+# gate the runtime with OAuth2/JWT (custom_jwt): the API gateway then only accepts
+# tokens issued by `discovery_url`'s user pool whose audience is one of
+# `allowed_ids`. Set up the user pool / client in the Volcengine Identity console.
+#   flags: --discovery-url / --allowed-id
+# auth:
+#   discovery_url: "https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com/.well-known/openid-configuration"
+#   allowed_ids: ["<client-id>"]
+```
+
+Field reference:
+
+- **`harness_name`**: the harness and runtime name, also used as the knowledge-base and long-term-memory index name (env `HARNESS_NAME`, flag `--name`).
+- **`model.name`**: the reasoning model; on deploy its Ark auth comes from the runtime's IAM role, so you don't set it here (env `MODEL_NAME`, flag `--model-name`).
+- **`tools`**: built-in tool names (env `TOOLS`, flag `--tools`).
+- **`skills`**: skill-hub names (env `SKILLS`, flag `--skills`).
+- **`system_prompt`**: the agent instruction; empty uses the server default (env `SYSTEM_PROMPT`, flag `--system-prompt`).
+- **`runtime`**: the agent runtime backend, `adk` (default) or `codex` (env `RUNTIME`, flag `--runtime`).
+- **`knowledgebase`**: a knowledge base. An empty `type` disables it; supported backends are `viking`, `opensearch`, `redis` — set `type`, then uncomment that backend's connection params.
+- **`long_term_memory`**: long-term memory. An empty `type` disables it; supported backends are `viking`, `opensearch`, `redis`, `mem0`.
+- **`short_term_memory`**: the session store. `type` is `local` (default), `sqlite`, `mysql`, or `postgresql`.
+- **`auth`** (optional): omit it to use the default API-key auth (`key_auth`); set `discovery_url` and `allowed_ids` to switch to OAuth2/JWT (`custom_jwt`), where the gateway only accepts tokens issued by that user pool whose audience is on the allow-list.
+
+<Note>
+  Expansion: `harness deploy` flattens top-level fields and `model` into environment variables (e.g. `model.name` → `MODEL_NAME`) and maps component params to the `DATABASE_<BACKEND>_*` variables that backend reads; empty values are skipped and the server falls back to its defaults. The `.env.example` written by `harness init` holds only the Volcengine AK/SK needed to deploy — all agent configuration lives in `harness.yaml`.
+</Note>
+
+## harness set
+
+Set fields in `harness.yaml` (partial update; only the flags you pass are changed). Run with no flags to list the current fields. Fields fall into groups: core (model / tools / skills / prompt / runtime), knowledgebase, long-term-memory, short-term-memory, and auth. When configuring a component, set its `--<comp>-type` first, then its connection parameters.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | Harness/runtime name | None |
+| `--model-name <name>` | Reasoning model name | None |
+| `--tools <list>` | Comma-separated built-in tools | None |
+| `--skills <list>` | Comma-separated skill hub names | None |
+| `--system-prompt <text>` | Agent instruction | None |
+| `--runtime <backend>` | Agent runtime backend: `adk` \| `codex` | None |
+| `--knowledgebase-type <type>` | knowledgebase backend type (`""` disables it) | None |
+| `--knowledgebase-project <value>` | knowledgebase project | None |
+| `--knowledgebase-region <value>` | knowledgebase region | None |
+| `--knowledgebase-host <value>` | knowledgebase host | None |
+| `--knowledgebase-port <value>` | knowledgebase port | None |
+| `--knowledgebase-username <value>` | knowledgebase username | None |
+| `--knowledgebase-password <value>` | knowledgebase password | None |
+| `--knowledgebase-use-ssl` | knowledgebase use_ssl | `false` |
+| `--knowledgebase-cert-path <value>` | knowledgebase cert_path | None |
+| `--knowledgebase-secret-token <value>` | knowledgebase secret_token | None |
+| `--knowledgebase-db <value>` | knowledgebase db | None |
+| `--long-term-memory-type <type>` | long_term_memory backend type (`""` disables it) | None |
+| `--long-term-memory-project <value>` | long_term_memory project | None |
+| `--long-term-memory-region <value>` | long_term_memory region | None |
+| `--long-term-memory-host <value>` | long_term_memory host | None |
+| `--long-term-memory-port <value>` | long_term_memory port | None |
+| `--long-term-memory-username <value>` | long_term_memory username | None |
+| `--long-term-memory-password <value>` | long_term_memory password | None |
+| `--long-term-memory-use-ssl` | long_term_memory use_ssl | `false` |
+| `--long-term-memory-cert-path <value>` | long_term_memory cert_path | None |
+| `--long-term-memory-secret-token <value>` | long_term_memory secret_token | None |
+| `--long-term-memory-db <value>` | long_term_memory db | None |
+| `--long-term-memory-api-key <value>` | long_term_memory api_key | None |
+| `--long-term-memory-api-key-id <value>` | long_term_memory api_key_id | None |
+| `--long-term-memory-project-id <value>` | long_term_memory project_id | None |
+| `--long-term-memory-base-url <value>` | long_term_memory base_url | None |
+| `--short-term-memory-type <type>` | short_term_memory backend type (`""` disables it) | None |
+| `--short-term-memory-host <value>` | short_term_memory host | None |
+| `--short-term-memory-user <value>` | short_term_memory user | None |
+| `--short-term-memory-password <value>` | short_term_memory password | None |
+| `--short-term-memory-database <value>` | short_term_memory database | None |
+| `--short-term-memory-charset <value>` | short_term_memory charset | None |
+| `--short-term-memory-port <value>` | short_term_memory port | None |
+| `--discovery-url <url>` | OAuth2/JWT OIDC discovery URL (enables custom_jwt) | None |
+| `--allowed-id <ids>` | Comma-separated allowed client IDs | None |
+
+```bash
+agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
+```
+
+<Tip>
+Only the flags you pass are changed. To configure a component, set its `--<comp>-type` first, then supply its connection parameters.
+</Tip>
+
+## harness dev
+
+Start the Harness service locally from `harness.yaml` for development and debugging. By default, it listens on `127.0.0.1:8000`. Set a different host explicitly if other devices need to access it.
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `-p, --port <port>` | Port to listen on. | `8000` |
+| `--host <host>` | Host address to bind. | `127.0.0.1` |
+| `--reload` | Restart when the service code changes. | `false` |
+| `--python <bin>` | Python interpreter used to start the service. | `python3` |
+
+```bash
+agentkit harness dev --reload --port 8000
+```
+
+## harness deploy
+
+Build the harness image and create or update the runtime from `harness.yaml`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Runtime deploy region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--discovery-url <url>` | OIDC discovery URL (enables OAuth2/JWT, overrides `harness.yaml`) | None |
+| `--allowed-id <ids>` | Comma-separated allowed client IDs (overrides `harness.yaml`) | None |
+
+```bash
+agentkit harness deploy --project default --region cn-beijing
+```

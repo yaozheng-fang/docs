@@ -1,0 +1,264 @@
+---
+title: "Use sandboxes"
+tag: "NEW"
+---
+
+A sandbox is an isolated `code` or `skill` environment. The `sandbox` command group covers its full lifecycle—create, list, show, update, delete—and its operations: run commands in a session, open an interactive terminal, transfer files, open a web preview, inject subscription credentials, and manage sessions.
+
+<Note>
+The operation subcommands (run / attach / cp / web / login / sessions / logs / rm) share a common set of session and sandbox flags: `-s, --session <id>` (session id, reused if it exists, else generated), `--tool-id <id>` (sandbox id), `--type <type>` (sandbox type `code` \| `skill`, default `code`), `--auto-create` (always create a new sandbox, even if some already exist), `-r, --region <region>` (Volcengine region), and `-p, --project <name>` (AgentKit project, default `default`). Each command's full flag set is listed below.
+
+When `--tool-id` is omitted and `--auto-create` is not set, the CLI looks for a sandbox of the requested type in the project: **exactly one is used automatically; when several exist the command fails and asks you to pass `--tool-id`**; when none exist you need `--auto-create`. Passing `--auto-create` always provisions a brand-new sandbox—even when the project already has some—and waits for it to become ready before use. Having several `code` sandboxes in a project is common, so run `agentkit sandbox list` to find the target id and pass it via `--tool-id`.
+</Note>
+
+## sandbox create
+
+Create a sandbox (a `code` or `skill` environment).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | Sandbox name (required). | — |
+| `--type <type>` | Sandbox type: `code` \| `skill`. | `code` |
+| `-r, --region <region>` | Volcengine region. | from env |
+| `--description <text>` | Description. | — |
+| `--command <command>` | Container start command. | — |
+| `--image-url <url>` | Container image url. | — |
+| `--port <port>` | Container port. | — |
+| `-p, --project <name>` | Project name. | `default` |
+| `--role-name <role>` | IAM role name. | — |
+| `--apmplus` | Enable APMPlus. | — |
+| `--cpu <milli>` | CPU in milli-cores. | — |
+| `--memory <mb>` | Memory in MB. | — |
+| `--enable-security` | Enable the security sandbox. | — |
+| `--enable-tos` | Mount TOS into the sandbox. | — |
+| `--env <KEY=VALUE>` | Environment variable (repeatable). | — |
+| `--json <jsonString>` | Extra fields as a JSON object, merged into the request body. | — |
+
+```bash
+agentkit sandbox create --name dev-sandbox --type code --cpu 1000 --memory 2048
+```
+
+## sandbox list
+
+List sandboxes (the `code` and `skill` environments in the project).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-p, --project <name>` | Project name. | `default` |
+| `--type <type>` | Filter by sandbox type: `code` \| `skill`. | — |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit sandbox list --type code
+```
+
+## sandbox show
+
+Show a sandbox's details.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Sandbox id, e.g. `t-xxxxxxxx` (required). | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit sandbox show t-12345678
+```
+
+## sandbox update
+
+Update a sandbox's configuration.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Sandbox id, e.g. `t-xxxxxxxx` (required). | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--description <text>` | Description. | — |
+| `--command <command>` | Container start command. | — |
+| `--image-url <url>` | Container image url. | — |
+| `--port <port>` | Container port. | — |
+| `--apmplus` | Enable APMPlus. | — |
+| `--json <jsonString>` | Extra fields as a JSON object, merged into the request body. | — |
+
+```bash
+agentkit sandbox update t-12345678 --description "Dev sandbox" --port 9090
+```
+
+## sandbox delete
+
+Delete a sandbox—the environment itself. To delete a single session instead, use [`sandbox rm`](#sandbox-rm).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Sandbox id, e.g. `t-xxxxxxxx` (required). | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-y, --yes` | Skip the confirmation prompt. | `false` |
+
+```bash
+agentkit sandbox delete t-12345678 --yes
+```
+
+## sandbox run
+
+Run a command in a sandbox session and print its output.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<command>` | Command to run (required) | None |
+| `--json` | Print the raw result (`{ output, ... }`) | `false` |
+| `--cwd <dir>` | Working directory to run in | None |
+| `--model-name <name>` | Model for the sandbox coding agent | None |
+| `--model-api-key <key>` | Model API key | None |
+| `--model-provider <provider>` | Model provider | None |
+| `--cpu <milli>` | CPU milli-cores when `--auto-create` | None |
+| `--memory <mb>` | Memory MB when `--auto-create` | None |
+| `--timeout <seconds>` | Max seconds to wait for the command before aborting; `0` disables the limit | `30` |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Always create a new sandbox, even if some already exist | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox run "ls -la" --session my-session
+```
+
+A one-shot `run` waits for the command to finish, so an interactive program—an editor, a REPL, or `codex` launched with no arguments—would block until the timeout elapses. Open an interactive session with `agentkit sandbox attach` instead, or raise `--timeout` (or set it to `0`) for long-running non-interactive jobs.
+
+## sandbox attach
+
+Open an interactive terminal in a sandbox session (Ctrl-] to detach).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--tmux` | Attach/create a persistent tmux session | `false` |
+| `--command <cmd>` | Run an initial command after attaching | None |
+| `--workspace <dir>` | Sandbox workspace root | None |
+| `--src-dir <path>` | Local file/dir to upload before attaching | None |
+| `--dst-dir <dir>` | Remote destination for `--src-dir` (under `--workspace`) | None |
+| `--model-name <name>` | Model for the sandbox coding agent | None |
+| `--model-api-key <key>` | Model API key | None |
+| `--model-provider <provider>` | Model provider | None |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Always create a new sandbox, even if some already exist | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox attach --tmux --session my-session
+```
+
+## sandbox cp
+
+Copy files to/from a sandbox session — prefix the remote side with `:`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<src>` | Source path (prefix remote side with `:`, required) | None |
+| `<dst>` | Destination path (prefix remote side with `:`, required) | None |
+| `--overwrite` | Overwrite an existing local file on download | `false` |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Always create a new sandbox, even if some already exist | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
+```
+
+## sandbox web
+
+Open the sandbox web preview in a browser.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--no-open` | Just print the URL | `false` |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Always create a new sandbox, even if some already exist | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox web --session my-session
+```
+
+## sandbox login
+
+Inject your local codex/claude subscription into a sandbox session.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--provider <provider>` | `codex` \| `claude` | `codex` |
+| `--auth-file <path>` | Use a specific local credential file | None |
+| `--codex-home <dir>` | Local codex home | `$CODEX_HOME` or `~/.codex` |
+| `-s, --session <id>` | Session id (reused if it exists; else generated) | None |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--auto-create` | Always create a new sandbox, even if some already exist | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox login --provider claude --session my-session
+```
+
+## sandbox sessions
+
+List active sandbox sessions.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit sandbox sessions
+```
+
+## sandbox logs
+
+Show a sandbox session's logs.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[session]` | Session id | None |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--tail <n>` | Max log lines | None |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit sandbox logs my-session --tail 100
+```
+
+## sandbox rm
+
+Stop and delete a sandbox session (or `--all`). To delete the sandbox environment itself, use [`sandbox delete`](#sandbox-delete).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[session]` | Session id | None |
+| `--tool-id <id>` | Sandbox id. Auto-resolved when omitted: used automatically if the project has exactly one sandbox of this type, **required when there are several**, and needs `--auto-create` when there are none | Auto-resolved |
+| `--type <type>` | Sandbox type: `code` \| `skill` | `code` |
+| `--all` | Delete every session on the sandbox | `false` |
+| `-y, --yes` | Skip confirmation | `false` |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+
+```bash
+agentkit sandbox rm my-session -y
+```

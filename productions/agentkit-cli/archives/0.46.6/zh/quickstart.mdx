@@ -1,0 +1,81 @@
+---
+title: "快速开始"
+---
+
+## 安装
+
+无需 Node.js，一行命令即可安装独立二进制，并将 `agentkit`（及别名 `ak`）加入 PATH：
+
+<Tabs>
+  <Tab title="wget">
+    ```bash
+    wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
+    ```
+  </Tab>
+  <Tab title="curl">
+    ```bash
+    curl -fsSL https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
+    ```
+  </Tab>
+</Tabs>
+
+安装完成后验证：
+
+```bash
+agentkit --help
+```
+
+<Tip>
+  二进制安装在 `~/.agentkit`，并在 `~/.local/bin` 下创建 `agentkit`、`ak` 两个软链接。若提示命令未找到，请将 `~/.local/bin` 加入 PATH。需要安装指定版本时，设置环境变量 `AGENTKIT_VERSION`（默认 `latest`）。
+</Tip>
+
+## 鉴权
+
+CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
+
+<Tabs>
+  <Tab title="AK/SK">
+    在环境变量或本地 `.env`（已被 git 忽略）中设置：
+
+    ```bash
+    VOLCENGINE_ACCESS_KEY=...
+    VOLCENGINE_SECRET_KEY=...
+    VOLCENGINE_REGION=cn-beijing   # 可选，默认 cn-beijing
+    ```
+  </Tab>
+  <Tab title="SSO">
+    浏览器登录，存储短期 STS 凭证。
+
+    ```bash
+    agentkit login <sso-address>
+    agentkit whoami
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  SSO 登录目前仅支持调用（`invoke`）部署在 AgentKit Runtime 上的智能体；云上控制面接口尚不能基于 SSO 身份进行识别与鉴权，因此运行时、知识库、记忆、工具等管理命令仍需使用 AK/SK。
+</Tip>
+
+## 三步部署
+
+<Steps>
+  <Step title="脚手架项目">
+    ```bash
+    agentkit init my-agent -L python -t basic-agent
+    cd my-agent
+    ```
+  </Step>
+  <Step title="构建并部署">
+    ```bash
+    agentkit deploy --name my-agent
+    ```
+  </Step>
+  <Step title="调用运行时">
+    ```bash
+    agentkit invoke my-agent -m "hello"
+    ```
+  </Step>
+</Steps>
+
+完整命令见 [命令参考](/productions/agentkit-cli/archives/0.46.6/zh/commands)，或运行 `agentkit tree` 打印命令树。

@@ -1,0 +1,36 @@
+---
+title: "长期记忆检索"
+tag: "系统工具"
+---
+
+## 功能说明
+
+对应工具标识 `load_memory`。
+
+系统工具由 VeADK 根据智能体配置**自动挂载**，无需手动加入 `tools` 列表。为智能体传入 `long_term_memory` 后，框架自动挂载 `load_memory` 工具。智能体会在跨会话场景中自主决定何时查询长期记忆，从而保留用户偏好、历史信息等长期状态。
+
+长期记忆的后端类型与配置，详见[长期记忆文档](/productions/veadk/archives/1.0.4/zh/components/memory)。
+
+## 使用方法
+
+```python
+from veadk import Agent, Runner
+from veadk.memory.long_term_memory import LongTermMemory
+
+long_term_memory = LongTermMemory(backend="local", app_name="ltm_demo")
+
+agent = Agent(
+    name="memory_agent",
+    model_name="doubao-seed-1-8-251228",
+    instruction="在需要时检索长期记忆，提供个性化、连续的回答。",
+    long_term_memory=long_term_memory,  # 传入后自动挂载 load_memory
+)
+
+runner = Runner(agent=agent)
+```
+
+## 额外说明
+
+<Note>
+系统工具由框架自动管理：只需提供 `long_term_memory`，无需把 `load_memory` 显式加入 `tools` 列表。智能体会根据指令与用户输入自主决定何时调用它。
+</Note>

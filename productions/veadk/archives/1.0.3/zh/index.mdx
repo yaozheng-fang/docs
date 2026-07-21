@@ -1,0 +1,17 @@
+---
+title: "概述"
+---
+
+VeADK 是面向智能体应用开发的 Python 框架。它兼容 Google ADK 的智能体与运行机制，并集成火山引擎模型、存储、工具、安全和可观测服务。本目录中的公开 API、配置和默认行为以 `1.0.3` 标签为准。
+
+## 核心能力
+
+- **智能体配置**：设置模型、系统提示词、结构化输出、ADK/Codex 运行时和技能。
+- **上下文与数据**：使用短期会话、长期记忆和知识库；1.0.3 新增 Milvus 与 OpenViking 后端。
+- **工具调用**：使用函数、MCP Server 及火山引擎内置工具。
+- **安全与身份传递**：配置入站与出站认证，并在 A2A 调用中传递 TIP Token 或 Bearer JWT。
+- **可观测与界面**：导出完整调用链，并使用 VeADK Web 或 VeADK Frontend 调试智能体。
+
+## 开始使用
+
+先完成[安装](/productions/veadk/archives/1.0.3/zh/get-started/installation)，再按照[快速开始](/productions/veadk/archives/1.0.3/zh/get-started/quickstart)运行最小智能体。版本变化见 [1.0.3 更新日志](/productions/veadk/archives/1.0.3/zh/changelog)。

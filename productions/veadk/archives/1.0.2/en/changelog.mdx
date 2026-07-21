@@ -1,0 +1,14 @@
+---
+title: "1.0.2 changelog"
+---
+
+This page lists public changes in VeADK 1.0.2 compared with 1.0.1.
+
+| Module | Change details | Link |
+| :--- | :--- | :--- |
+| Models | Added `MODEL_AGENT_API_KEY_NAME` and `Agent.model_api_key_name` to resolve an Ark API key by name. An explicit key value still has higher precedence. | [Model configuration](/productions/veadk/archives/1.0.2/en/components/agent/model) |
+| Short-term memory | Added PostgreSQL `schema` configuration to isolate session tables for separate deployments in one database. VeADK creates a missing schema and pins the connection's `search_path`. | [Store sessions in PostgreSQL](/productions/veadk/archives/1.0.2/en/components/session/postgresql) |
+| MCP | After an MCP Server session expires, the service restarts, or the connection drops, VeADK discards the stale session, reconnects, and retries tool discovery or execution once. | [Custom MCP Server](/productions/veadk/archives/1.0.2/en/components/tools/custom-mcp) |
+| Frontend | Added a tool OAuth authorization card to VeADK Frontend: it opens the identity provider, accepts the callback, submits the credential, and resumes the original tool call. Also refined the account entry, login page, session list, empty-response notice, and default agent selection. | [VeADK Frontend](/productions/veadk/archives/1.0.2/en/components/frontend/veadk-frontend) |
+| Network requests | Volcengine signed requests now default to a 10-second connect and 60-second read timeout. VeSearch and web-scraping requests use a 30-second timeout so an unresponsive service does not block indefinitely. | [Volcengine search](/productions/veadk/archives/1.0.2/en/components/tools/vesearch) |
+| Security | Restored TLS certificate verification for web scraping, stopped content-safety debug logs from including API-key values, and removed bearer-token output from the credential-service example. | [Content safety guardrails](/productions/veadk/archives/1.0.2/en/components/security/content-safety) |

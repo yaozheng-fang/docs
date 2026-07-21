@@ -1,0 +1,73 @@
+---
+title: "Manage evaluators"
+---
+
+The `eval evaluator` command group manages evaluators (the judging models that assign scores): browse built-in templates, list and show existing evaluators, derive a new evaluator from a template, and delete evaluators. An evaluator is typically a prompt with a scoring rubric backed by a large-model endpoint; it takes several input fields (such as `input`, `output`, `reference_output`) and produces a score.
+
+<Note>
+All subcommands share `-p, --project <name>` (project name, default `default`) and `--json` (output raw JSON).
+</Note>
+
+## evaluator templates
+
+Browse the platform's built-in evaluator templates as a starting point for creating your own evaluators.
+
+```bash
+agentkit eval evaluator templates
+```
+
+## evaluator list
+
+List the evaluators in your current project.
+
+```bash
+agentkit eval evaluator list
+```
+
+## evaluator show
+
+Show details of an evaluator: the rubric prompt, model configuration, and input field schema.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Evaluator id or name (required) | None |
+
+```bash
+agentkit eval evaluator show relevance
+```
+
+## evaluator create
+
+Create an evaluator. The simplest way is to clone the rubric and input schema from a built-in template, then point it at your own model endpoint.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | Evaluator name (required) | None |
+| `--from-template <id\|name>` | Clone the rubric and input schema from a built-in template | None |
+| `--model <endpoint>` | Ark model endpoint id (`ep-…`) used as the judge | None |
+| `--prompt-file <path>` | Custom rubric text file (overrides the template prompt) | None |
+| `--description <text>` | Evaluator description | None |
+
+You must provide at least one of `--from-template` or `--prompt-file`.
+
+```bash
+# Derive from the built-in "relevance" template and swap in your own model endpoint
+agentkit eval evaluator create --name relevance --from-template "relevance" --model ep-xxxxxxxx
+```
+
+<Tip>
+Reference input fields in the prompt with placeholders like <code>{'{{input}}'}</code>, <code>{'{{output}}'}</code>, and <code>{'{{reference_output}}'}</code>; these field names are the evaluator's input schema and are mapped automatically during [`eval run`](/productions/agentkit-cli/preview/en/commands/eval/run).
+</Tip>
+
+## evaluator delete
+
+Delete an evaluator. (Alias: `rm`)
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Evaluator id or name (required) | None |
+| `-y, --yes` | Skip the confirmation prompt | `false` |
+
+```bash
+agentkit eval evaluator delete relevance -y
+```

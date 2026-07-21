@@ -1,0 +1,74 @@
+---
+title: "Manage platform skills"
+---
+
+The `skill` command group manages skills on the AgentKit skill platform: list, show details, list versions, list skill spaces, and delete skills.
+
+## skill list
+
+List skills.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine region | None |
+| `-p, --project <name>` | Project name | default |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit skill list
+```
+
+## skill show
+
+Show a skill's details.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Skill id (required) | None |
+| `-r, --region <region>` | Volcengine region | None |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit skill show sk-xxxxxxxx
+```
+
+## skill versions
+
+List a skill's versions.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Skill id (required) | None |
+| `-r, --region <region>` | Volcengine region | None |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit skill versions sk-xxxxxxxx
+```
+
+## skill spaces
+
+List skill spaces.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine region | None |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit skill spaces
+```
+
+## skill delete
+
+Delete a skill.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Skill id (required) | None |
+| `-r, --region <region>` | Volcengine region | None |
+| `-y, --yes` | Skip the confirmation prompt | `false` |
+
+```bash
+agentkit skill delete sk-xxxxxxxx --yes
+```

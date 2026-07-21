@@ -1,0 +1,120 @@
+---
+title: "Evaluation loop"
+---
+
+Evaluation closes the "develop → deploy → evaluate → tune" loop: use a fixed dataset and one or more evaluators to score a deployed runtime, then iterate on the quantified results. This page walks through the full flow — from initializing a project to viewing evaluation results — using a question-answering agent as the example. For details on each command, see [Manage datasets](/productions/agentkit-cli/archives/0.46.6/en/commands/eval/dataset), [Manage evaluators](/productions/agentkit-cli/archives/0.46.6/en/commands/eval/evaluator), [Run an experiment](/productions/agentkit-cli/archives/0.46.6/en/commands/eval/run), and [View experiments and results](/productions/agentkit-cli/archives/0.46.6/en/commands/eval/experiment).
+
+<Note>
+Before you start, make sure your Volcengine access keys are configured (the `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` environment variables). Evaluation is currently in Preview; commands are automatically routed to the region where the evaluation service lives, so `-r/--region` is not needed.
+</Note>
+
+## End-to-end flow
+
+<Steps>
+  <Step title="Initialize and deploy an agent">
+    Create the project and deploy it to obtain a target runtime to evaluate:
+
+    ```bash
+    agentkit init qa-agent --language python --template default --yes
+    cd qa-agent
+    agentkit deploy --name qa-agent
+    ```
+
+    Once deployed, run `agentkit invoke qa-agent -m "hello"` to confirm the runtime responds.
+  </Step>
+
+  <Step title="Create a dataset and add cases">
+    The dataset is the data source for an experiment. Create it with the `input` and `reference_output` fields, then add cases one at a time or in bulk:
+
+    ```bash
+    agentkit eval dataset create --name qa-set --schema "input,reference_output"
+
+    # Add one at a time
+    agentkit eval dataset add qa-set \
+      --field "input=What is the capital of France?" \
+      --field "reference_output=Paris"
+
+    # Or add in bulk from a JSON file
+    agentkit eval dataset add qa-set --file cases.json
+    ```
+
+    `cases.json` is an array of `{field: value}` objects:
+
+    ```json cases.json
+    [
+      { "input": "What is the capital of France?", "reference_output": "Paris" },
+      { "input": "What is the chemical formula of water?", "reference_output": "H2O" }
+    ]
+    ```
+
+    After adding, run `agentkit eval dataset show qa-set` to verify the cases.
+  </Step>
+
+  <Step title="Create an evaluator">
+    An evaluator is the judging model that assigns scores. Derive one from a built-in template and point it at your own Ark model endpoint:
+
+    ```bash
+    # Browse built-in templates
+    agentkit eval evaluator templates
+
+    # Derive from the "relevance" template and swap in your own endpoint
+    agentkit eval evaluator create \
+      --name relevance \
+      --from-template "relevance" \
+      --model ep-xxxxxxxx
+    ```
+  </Step>
+
+  <Step title="Run an experiment">
+    Submit the dataset, evaluator, and target runtime as one experiment. On the first run, add `--dry-run` to confirm the resolved dataset version, target, and field mapping are correct:
+
+    ```bash
+    # Check first
+    agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent --dry-run
+
+    # Submit
+    agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent
+    # → returns an experiment id, e.g. 75901...
+    ```
+  </Step>
+
+  <Step title="View results">
+    Use the returned experiment id to view the aggregate scores and per-case results:
+
+    ```bash
+    # Status, weighted overall score, and per-evaluator averages
+    agentkit eval experiment get 75901xxxxxxxxxxxxx
+
+    # Per-case results: each case, the target output, and each evaluator's score and rationale
+    agentkit eval experiment results 75901xxxxxxxxxxxxx
+    ```
+  </Step>
+
+  <Step title="Iterate">
+    Improve the agent's prompt, tools, or model based on the results, redeploy, then run the experiment again with the same dataset and evaluator. Compare the aggregate scores and per-case results of the two runs to judge whether the change is an improvement or a regression:
+
+    ```bash
+    agentkit deploy --name qa-agent
+    agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent
+    ```
+  </Step>
+</Steps>
+
+## Wire it into CI
+
+The evaluation commands need no browser login and all support `--json`, so they can be orchestrated directly in a CI pipeline: the `experimentId` returned by `eval run` feeds into `eval experiment get` or `results`.
+
+```bash
+# A minimal loop you can drop into CI
+EXP=$(agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent --json | jq -r .experimentId)
+agentkit eval experiment get "$EXP" --json
+```
+
+## Practical guidance
+
+- **Fix the dataset**: use the same dataset across iterations so results can be compared side by side. Stabilize it before changing the agent.
+- **Keep only stable inputs and reference answers**: a dataset typically needs only `input` and `reference_output`. The model's actual output is produced by the evaluated target during the experiment and should not be written into the dataset.
+- **Prefer deriving evaluators from built-in templates**: `evaluator templates` provides mature scoring rubrics; clone one and swap in your own model endpoint rather than writing one from scratch.
+- **Use a strong judging model**: point `--model` at a capable Ark endpoint; weaker models produce noisier scores.
+- **Weight multiple evaluators**: a single `eval run` can take several `--evaluator` flags to score across dimensions such as relevance and completeness.
+- **Confirm the target runtime is online**: `--target` must point to a deployed, responsive runtime, or cases will fail. When cases fail without an experiment-level error, the target runtime usually did not respond correctly — it is not an evaluation-config problem.
