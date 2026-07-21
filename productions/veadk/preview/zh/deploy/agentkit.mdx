@@ -30,8 +30,8 @@ app = create_agentkit_app(
 | 端点 | 作用 |
 | --- | --- |
 | `/ping` | 健康检查。 |
-| `/web/agent-info/{app_name}` | 查询智能体信息。 |
-| `/web/agent-graph` | 查询智能体拓扑。 |
+| `/web/agent-info/{app_name}` | 查询智能体的名称、描述、模型、子智能体、工具、技能与已挂载组件。 |
+| `/web/agent-graph` | 查询智能体拓扑；每个节点包含技能、组件、路径与是否可在对话中选择。 |
 | `/` | 访问内置 Web UI。 |
 
 ## 初始化与部署
