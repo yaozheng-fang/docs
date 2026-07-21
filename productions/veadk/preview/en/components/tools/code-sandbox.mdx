@@ -99,3 +99,77 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Injecting environment variables into sandbox executions
+
+`execute_skills` and `run_sandbox_agent` accept custom environment variables that are injected into a single sandbox execution. Use them to pass runtime parameters (configuration values, credential references, feature flags, and so on) to a skill or an in-sandbox workflow. Injected variables are scoped to the current execution only and are not persisted to the sandbox base environment.
+
+`execute_skills` injects variables through the `env_vars` parameter; `run_sandbox_agent` injects them through `extra_env_vars`. Both share the same validation and merge rules.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `env_vars` | `Optional[dict[str, str]]` | `None` | Environment variables injected by `execute_skills`; keys and values are strings, scoped to the current execution. |
+| `extra_env_vars` | `Optional[dict[str, str]]` | `None` | Environment variables injected by `run_sandbox_agent`; keys and values are strings, scoped to the current execution. |
+
+### Validation rules
+
+Injected variables are merged with the framework-managed variables that VeADK sets itself, then passed to the sandbox process under these rules:
+
+- Names must match `^[A-Za-z_][A-Za-z0-9_]*$`; otherwise initialization raises an error.
+- `TOOL_USER_SESSION_ID` and `USER_SESSION_ID` are managed by VeADK and cannot be overridden; initialization raises an error if they are set.
+- Values must be strings; non-string values raise an error.
+- Values must not contain null bytes (`\x00`); otherwise initialization raises an error.
+- Custom variables override any same-named variable in the sandbox process environment (including VeADK defaults such as `TOS_SKILLS_DIR` and `SKILL_SPACE_ID`), so resource paths for a single execution can be adjusted on demand.
+
+### Examples
+
+Inject environment variables into `execute_skills`:
+
+```python title="agent.py"
+from veadk import Agent
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+agent = Agent(
+    skills=[skill_space_id],
+    skills_mode="skills_sandbox",
+    tools=[execute_skills],
+)
+```
+
+Pass the variables for the current execution through `env_vars`:
+
+```python title="run_skills_with_env.py"
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+result = execute_skills(
+    workflow_prompt="Read the knowledge base and generate a summary",
+    tool_context=tool_context,
+    env_vars={
+        "SKILL_CONFIG_PATH": "/tmp/skill_config.yaml",
+        "MAX_RESULTS": "20",
+    },
+)
+print(result)
+```
+
+When calling `run_sandbox_agent` directly, inject through `extra_env_vars`:
+
+```python title="run_sandbox_agent_with_env.py"
+from veadk.tools.builtin_tools.run_sandbox_agent import run_sandbox_agent
+
+result = run_sandbox_agent(
+    workflow_prompt="Run the data analysis workflow",
+    tool_id="t-your-skills-tool-id",
+    tool_context=tool_context,
+    extra_env_vars={
+        "DATA_SOURCE_URL": "https://example.com/data.csv",
+    },
+)
+print(result)
+```
+
+<Note>
+Variables injected through `env_vars` or `extra_env_vars` are submitted together with the sandbox execution code. Do not embed long-lived credentials directly; reference credentials through environment variables or a secrets management service when sensitive values are needed.
+</Note>
