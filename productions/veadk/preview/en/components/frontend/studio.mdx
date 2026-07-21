@@ -87,10 +87,12 @@ veadk studio deploy \
   --user-pool-id "your-user-pool-id" \
   --allowed-client-id "your-user-pool-client-id" \
   --vefaas-app-name "veadk-studio" \
-  --veadk-version "1.0.5"
+  --veadk-version "1.0.6"
 ```
 
 On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
+
+`--region` selects the Studio deployment region, either `cn-beijing` (default) or `cn-shanghai`. During deployment, the VeIdentity user pool is first looked up in the deployment region; on a miss, the Beijing and Shanghai Identity regions are searched. When the user pool is found outside the deployment region, a warning is printed and deployment continues; the deployed Studio communicates with VeIdentity using that user pool's region. `--project` selects the Volcengine project for the VeFaaS function and defaults to `default`.
 
 The deployer's long-lived access and secret keys are not written to the VeFaaS application environment. Deployed Studio uses temporary credentials from its bound IAM role.
 
@@ -102,12 +104,13 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 | `--allowed-client-id` | `str` | Required | User-pool client UID used for login. |
 | `--client-secret` | `str` | `""` | Supply only if the secret cannot be read from the client UID. Direct arguments can enter shell history, so omit it when lookup is available. |
 | `--vefaas-app-name` | `str` | Required | VeFaaS application name, 4–64 characters containing letters, digits, and hyphens, but no underscores. |
-| `--region` | `str` | `cn-beijing` | Region for VeFaaS, API Gateway, and related resources. |
+| `--region` | `cn-beijing \| cn-shanghai` | `cn-beijing` | Studio deployment region; also drives the cross-region VeIdentity user-pool lookup. |
+| `--project` | `str` | `default` | Volcengine project for the VeFaaS function. |
 | `--iam-role` | `str \| None` | `None` | Existing IAM role TRN for the function. If omitted, the default role is created or reused. |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway name. If omitted, an existing gateway is reused or a gateway is created when none exists. |
 | `--gateway-service-name` | `str` | `""` | Gateway service name; leave empty for automatic configuration. |
 | `--gateway-upstream-name` | `str` | `""` | Gateway upstream name; leave empty for automatic configuration. |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used during deployment. Prefer the environment variable. |
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. Prefer the environment variable. |
-| `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.5` to reproduce this version. |
+| `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.6` to reproduce this version. |
 | `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |
