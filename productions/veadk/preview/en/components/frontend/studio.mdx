@@ -87,8 +87,17 @@ veadk studio deploy \
   --user-pool-id "your-user-pool-id" \
   --allowed-client-id "your-user-pool-client-id" \
   --vefaas-app-name "veadk-studio" \
+  --region cn-beijing \
+  --project default \
   --veadk-version "1.0.5"
 ```
+
+`--region` selects the Studio deployment region, defaults to `cn-beijing`, and
+also supports `cn-shanghai`. Deployment first queries the user-pool client in
+the deployment region; if it is not found, it falls back to searching the
+Beijing and Shanghai Identity regions and continues with the region where the
+client is found, emitting a warning on a cross-region match. `--project` selects
+the Volcengine project for the VeFaaS function and defaults to `default`.
 
 On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
 
@@ -102,7 +111,8 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 | `--allowed-client-id` | `str` | Required | User-pool client UID used for login. |
 | `--client-secret` | `str` | `""` | Supply only if the secret cannot be read from the client UID. Direct arguments can enter shell history, so omit it when lookup is available. |
 | `--vefaas-app-name` | `str` | Required | VeFaaS application name, 4–64 characters containing letters, digits, and hyphens, but no underscores. |
-| `--region` | `str` | `cn-beijing` | Region for VeFaaS, API Gateway, and related resources. |
+| `--region` | `cn-beijing` \| `cn-shanghai` | `cn-beijing` | Studio deployment region. Determines the region for VeFaaS, API Gateway, and related resources. The user-pool client is first looked up in this region; if not found, Beijing and Shanghai Identity regions are searched. |
+| `--project` | `str` | `default` | Volcengine project for the VeFaaS function. |
 | `--iam-role` | `str \| None` | `None` | Existing IAM role TRN for the function. If omitted, the default role is created or reused. |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway name. If omitted, an existing gateway is reused or a gateway is created when none exists. |
 | `--gateway-service-name` | `str` | `""` | Gateway service name; leave empty for automatic configuration. |
