@@ -1,0 +1,186 @@
+---
+title: "入站认证"
+---
+
+入站认证验证进入智能体的请求方身份。VeADK 支持 API Key 与 OAuth2 两类方式。
+
+## API Key 认证
+
+API Key 通过唯一字符串密钥验证请求方身份、授权访问 API 资源。VeADK 约定将 API Key 放在 URL 的 `token` 参数中传递。
+
+<Note>
+  API Key 仅适用于 A2A / MCP Server 部署模式，不建议在 VeADK Web 部署模式中使用；后者更推荐 OAuth2。
+</Note>
+
+在脚手架创建智能体时选择 API Key 认证，或为已有项目在部署时加上 `--auth-method=api-key` 启用。此后用户访问应用时，API 网关会校验 `token` URL 参数中携带的 API Key。
+
+## OAuth2 单点登录
+
+OAuth2 是一套开放的授权框架，通过令牌而非直接暴露账号密码，实现第三方应用对资源的有限访问；用户一次登录后即可免重复验证地访问多个关联应用。VeADK 提供两种接入方式：
+
+| 方式 | 适用场景 | 说明 |
+| --- | --- | --- |
+| API 网关模式 | VeFaaS 云端部署 | 通过脚手架部署，由 API 网关处理认证 |
+| Starlette / FastAPI 中间件 | 本地开发 / 自托管 | 在应用内集成 OAuth2 中间件 |
+
+### API 网关模式
+
+适用于通过 VeFaaS 部署的 VeADK Web 应用，由 API 网关处理 OAuth2 流程。
+
+<Note>
+  API 网关模式需要 4.0.0 及以上版本的 API 网关。
+</Note>
+
+在脚手架创建智能体时选择 OAuth2，或为已有项目在部署时加上 `--auth-method=oauth2`；VeADK 会自动创建 Identity 用户池与客户端。若要复用已有资源，部署时用 `--user-pool-name` 与 `--client-name` 指定。
+
+部署后在 Agent Identity 中创建用户：
+
+<Steps>
+  <Step title="进入用户池">
+    登录火山引擎控制台，进入 Agent Identity 服务，在左侧选择 **身份认证 › 用户池管理**，选择用户池。
+  </Step>
+  <Step title="新建用户">
+    在用户池的 **用户** 标签页点击 **新建用户**，填写信息并确定。
+  </Step>
+</Steps>
+
+用户访问应用时，API 网关会引导其完成登录；登录后可从 `Authorization` 请求头取得用户的 JWT 令牌。
+
+### Starlette / FastAPI 中间件
+
+适用于本地开发或自托管部署，通过 VeADK 提供的中间件在应用内处理 OAuth2，支持所有基于 Starlette 的框架（含 FastAPI）。推荐用 `OAuth2Config.from_veidentity()` 自动配置 VeIdentity 用户池：
+
+```python
+from fastapi import FastAPI
+from veadk.auth.middleware.oauth2_auth import OAuth2Config, setup_oauth2
+
+app = FastAPI()
+
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_name="my-app",
+        client_name="my-app-web",
+        redirect_uri="https://myapp.com/oauth2/callback",
+    ),
+)
+```
+
+该方法会自动创建用户池与客户端（如不存在）、注册回调 URL 并配置 OAuth2 端点。Starlette 用法相同，将 `FastAPI()` 换成 `Starlette()` 即可。
+
+复用已有资源时关闭自动创建：
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_name="existing-pool",
+        client_name="existing-client",
+        redirect_uri="https://myapp.com/oauth2/callback",
+        auto_create=False,             # 资源不存在时报错
+        auto_register_callback=False,  # 不修改回调 URL
+    ),
+)
+```
+
+本地开发需关闭 HTTPS cookie：
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_name="my-app",
+        client_name="my-app-web",
+        redirect_uri="http://localhost:8000/oauth2/callback",
+        cookie_secure=False,  # 本地 HTTP 开发
+    ),
+)
+```
+
+接入非 VeIdentity 的 OAuth2 提供商时，直接构造 `OAuth2Config`：
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config(
+        authorize_url="https://provider.com/oauth2/authorize",
+        token_url="https://provider.com/oauth2/token",
+        userinfo_url="https://provider.com/oauth2/userinfo",
+        client_id="your-client-id",
+        client_secret="your-client-secret",
+        redirect_uri="https://myapp.com/oauth2/callback",
+    ),
+)
+```
+
+中间件会自动注册以下路由：
+
+| 路由 | 说明 |
+| --- | --- |
+| `/oauth2/login` | 发起 OAuth2 登录 |
+| `/oauth2/callback` | 处理 OAuth2 回调 |
+| `/oauth2/logout` | 登出并清除会话 |
+| `/oauth2/userinfo` | 获取当前用户信息 |
+
+可配置跳过认证的路径：`exempt_paths=["/health", "/metrics"]`（精确匹配）、`exempt_prefixes=["/public/", "/static/"]`（前缀匹配）。中间件按请求类型响应：浏览器请求重定向到登录页，API 请求返回 `401`。API 请求通过 `Accept: application/json` 请求头、路径前缀（默认 `/api/`）或 `X-Requested-With: XMLHttpRequest` 识别，可用 `api_path_prefixes` 自定义。
+
+`OAuth2Config.from_veidentity()` 关键参数：
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `user_pool_name` | 必填 | VeIdentity 用户池名称 |
+| `client_name` | 必填 | 用户池客户端名称 |
+| `redirect_uri` | 必填 | OAuth2 回调 URL |
+| `auto_create` | `True` | 资源不存在时自动创建 |
+| `auto_register_callback` | `True` | 自动注册回调 URL |
+| `client_type` | `WEB_APPLICATION` | 客户端类型 |
+| `scope` | `"openid profile email"` | OAuth2 作用域 |
+
+`OAuth2Config` 关键参数：
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `session_timeout_seconds` | `3600` | 会话超时（秒） |
+| `cookie_secure` | `True` | 是否启用安全 cookie |
+| `auto_refresh_token` | `True` | 自动刷新令牌 |
+| `token_refresh_threshold_seconds` | `300` | 令牌刷新阈值（秒） |
+| `api_path_prefixes` | `["/api/"]` | API 路径前缀 |
+
+<Note>
+  默认的 `InMemoryStateStore` 仅适用于单进程部署。分布式场景需实现基于 Redis 等外部存储的 state store，并通过 `setup_oauth2(app, config, state_store=...)` 传入。
+</Note>
+
+## OAuth2 JWT 认证
+
+OAuth2 JWT 认证将 OAuth2 授权框架与 JWT 结合，用 JWT 承载授权令牌，适用于 A2A / MCP Server。
+
+在脚手架创建智能体时选择 OAuth2，或为已有项目在部署时加上 `--auth-method=oauth2`；VeADK 会自动创建 Identity 用户池，需要复用时用 `--user-pool-name` 指定。随后在 Agent Identity 的用户池中新建 M2M 类型客户端，用其凭据换取 JWT 令牌：
+
+```bash
+REGION="cn-beijing"
+USER_POOL_ID="FILL_IN_YOUR_USER_POOL_ID"
+CLIENT_ID="FILL_IN_YOUR_CLIENT_ID"
+CLIENT_SECRET="FILL_IN_YOUR_SECRET"
+
+curl --location "https://userpool-${USER_POOL_ID}.userpool.auth.id.${REGION}.volces.com/oauth/token" \
+  --header "Content-Type: application/x-www-form-urlencoded" \
+  --header "Authorization: Basic $(echo -n "${CLIENT_ID}:${CLIENT_SECRET}" | base64)" \
+  --data-urlencode "grant_type=client_credentials"
+```
+
+用户访问应用时，API 网关校验其携带的 JWT 令牌；令牌可从 `Authorization` 请求头取得。
+
+## A2A 调用中的身份透传
+
+在使用 AgentKit A2A registry 的调用链中，VeADK 可以把当前请求携带的身份凭证传递给下游智能体，使下游继续按原用户身份和信任关系执行授权。
+
+<Warning>
+  身份凭证会发送给解析到的下游 A2A 地址。仅调用可信的下游智能体，并为传入令牌配置完成任务所需的最小权限。
+</Warning>
+
+| 入站凭证 | 下游行为 |
+| --- | --- |
+| `X-Ve-TIP-Token` | 使用相同的请求头透传给下游 A2A 智能体。 |
+| `Authorization: Bearer <JWT>` | 当下游 AgentCard 声明 OAuth2 时，优先把 Bearer JWT 作为下游的 `Authorization` 请求头。其他认证方案不会作为用户 JWT 透传。 |
+
+对于声明 OAuth2 的下游智能体，VeADK 先使用透传的 Bearer JWT 发起请求。只有下游明确返回 `401 Unauthorized` 时，才会改用 OAuth2 M2M 令牌重试一次。其他状态码或调用错误不会触发 M2M 回退，避免把业务错误或服务故障误判为身份令牌失效。
