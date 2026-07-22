@@ -1,0 +1,21 @@
+---
+title: "Changelog"
+---
+
+VeADK 1.0.6 was released on July 20, 2026. This page covers public user-facing changes since 1.0.5. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.6) for the complete commit history.
+
+| Module | Change details | Link |
+| --- | --- | --- |
+| Studio deployment | `veadk studio deploy` supports the `cn-shanghai` deployment region (`--region` still defaults to `cn-beijing`); VeFaaS, API Gateway, and other resources are created in the selected region. A new `--project` selects the VeFaaS function project and defaults to `default`. Deployment automatically locates the VeIdentity user pool and client across Beijing and Shanghai, emitting a warning and continuing when matched cross-region. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+
+VeADK 1.0.5 was released on July 19, 2026. This page covers public user-facing changes since 1.0.4. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.5) for the complete commit history.
+
+| Module | Change details | Link |
+| --- | --- | --- |
+| Studio and Frontend | Studio now enables the same complete UI as Frontend and opens on the chat view by default. Added cloud Runtime selection, Skill Hub/local upload/AgentKit SkillSpace sources, multimodal conversations, and structured skill and sub-agent invocation. The custom creation flow was redesigned; intelligent, template, and workflow entries are currently marked as coming soon. Also improved deployment regions, environment variables, task status, retry behavior, and OAuth token forwarding. | [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend) · [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Models | Changed the default inference model to `doubao-seed-2-1-pro-260628`; Responses API now supports fallback models and Ark context management, with more reliable inline-image tracing. | [Models](/productions/veadk/preview/en/components/agent/model) |
+| Runtime | Added `piagent` to `Agent.runtime`, including bridges for function tools, MCP tools, and skills; the package no longer vendors the PiAgent binary. | [Runtime](/productions/veadk/preview/en/components/agent/runtime) |
+| Studio testing | Generated agent projects can run in a restricted temporary server-side test process. The process is retained for 1,800 seconds by default and can be adjusted with a command option. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Studio deployment | When Studio is deployed with its default IAM role, the command adds the system policies needed to access model, logging, tracing, knowledge, memory, and identity resources. An explicitly supplied custom role is not modified. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| AgentKit integration | Studio-generated applications now use the public `create_agentkit_app` function to provide AgentKit endpoints, health checks, topology, the built-in Web UI, and short-term memory defaults. | [Deploy to AgentKit](/productions/veadk/preview/en/deploy/agentkit) |
+| Feishu channel | Improved extraction of text, card, and merged-forward messages, added compatibility with the synchronous Channel SDK lifecycle, and allowed Studio-generated AgentKit applications to use Feishu as an inbound channel. | [Feishu channel](/productions/veadk/preview/en/components/extensions/feishu-channel) · [Deploy to AgentKit](/productions/veadk/preview/en/deploy/agentkit) |

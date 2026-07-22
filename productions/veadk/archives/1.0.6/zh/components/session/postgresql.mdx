@@ -1,0 +1,106 @@
+---
+title: "使用 PostgreSQL 存储"
+---
+
+`postgresql` 后端把会话存储到 PostgreSQL 数据库，底层使用 Google ADK 的 `DatabaseSessionService`。多个智能体实例可连接同一数据库，实现会话共享与分布式持久化。
+
+对应的后端实现类为 `PostgreSqlSTMBackend`，它从 `PostgreSqlConfig` 读取连接信息，拼装出 SQLAlchemy 连接串。
+
+## 何时使用
+
+- 生产环境、多实例或分布式部署；
+- 团队已使用 PostgreSQL 作为统一存储。
+
+## 使用示例
+
+连接信息通过 `config.yaml`（或对应环境变量）提供，不要把密码写进代码。
+
+```python
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+
+stm = ShortTermMemory(backend="postgresql")  # 连接信息来自 config.yaml / 环境变量
+
+agent = Agent(name="demo")
+runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+```
+
+如需透传连接池等 SQLAlchemy 驱动参数，可使用 `db_kwargs`：
+
+```python
+stm = ShortTermMemory(
+    backend="postgresql",
+    db_kwargs={"pool_size": 10, "pool_recycle": 3600},
+)
+```
+
+也可以用 `backend_configs` 在代码中直接注入 `PostgreSqlConfig`，覆盖环境变量：
+
+```python
+from veadk.configs.database_configs import PostgreSqlConfig
+
+stm = ShortTermMemory(
+    backend="postgresql",
+    backend_configs={
+        "postgresql_config": PostgreSqlConfig(
+            host="127.0.0.1",
+            port=5432,
+            user="veadk",
+            password="secret",
+            database="veadk_sessions",
+            schema="support_agent",
+        )
+    },
+)
+```
+
+## 参数
+
+### ShortTermMemory 构造参数（postgresql 场景）
+
+| 参数 | 类型 | 默认值 | 对 postgresql 是否生效 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `backend` | `str` | `"local"` | 生效 | 设为 `"postgresql"` 选择本后端。 |
+| `backend_configs` | `dict` | `{}` | 生效 | 以关键字参数展开后传给 `PostgreSqlSTMBackend`，可包含 `postgresql_config`（一个 `PostgreSqlConfig` 实例）以覆盖默认从环境变量读取的配置。 |
+| `db_kwargs` | `dict` | `{}` | 生效 | 透传给底层 `DatabaseSessionService`（即 SQLAlchemy 引擎），常用于连接池设置，如 `pool_size`、`pool_recycle`、`pool_pre_ping` 等。 |
+| `db_url` | `str` | `""` | 生效（覆盖） | 直接给出连接串。一旦设置，将忽略 `backend` 与 `backend_configs`，直接用 `db_url` + `db_kwargs` 构造 `DatabaseSessionService`。 |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 不生效 | 仅 `sqlite` 使用。 |
+| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 读取会话后触发的回调，入参为加载到的 `Session`。 |
+
+### 后端实现类参数（PostgreSqlSTMBackend）
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `postgresql_config` | `PostgreSqlConfig` | 由环境变量构造 | PostgreSQL 连接配置。默认自动从 `DATABASE_POSTGRESQL_*` 环境变量读取。 |
+| `db_kwargs` | `dict` | `{}` | 透传给 `DatabaseSessionService` 的额外参数，与上面的 `db_kwargs` 一致。 |
+
+### PostgreSqlConfig 字段与环境变量
+
+配置类 `PostgreSqlConfig` 的环境变量前缀为 `DATABASE_POSTGRESQL_`。
+
+```yaml config.yaml
+database:
+  postgresql:
+    host:       # 主机或 IP
+    port: 5432
+    user:
+    password:
+    database:
+    schema: support_agent
+```
+
+| 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `host` | `DATABASE_POSTGRESQL_HOST` | `str` | `""` | 数据库主机或 IP。 |
+| `port` | `DATABASE_POSTGRESQL_PORT` | `int` | `5432` | 端口。 |
+| `user` | `DATABASE_POSTGRESQL_USER` | `str` | `""` | 用户名。 |
+| `password` | `DATABASE_POSTGRESQL_PASSWORD` | `str` | `""` | 密码。 |
+| `database` | `DATABASE_POSTGRESQL_DATABASE` | `str` | `""` | 数据库名。 |
+| `schema` | `DATABASE_POSTGRESQL_SCHEMA` | `str` | `""` | 可选的 PostgreSQL schema。设置后会自动创建，并把会话表限定在该 schema 中。1.0.2 新增。 |
+| `secret_token` | `DATABASE_POSTGRESQL_SECRET_TOKEN` | `str` | `""` | PostgreSQL 鉴权用的 STS 临时令牌，暂未支持。 |
+
+<Note>
+VeADK 会根据 Google ADK 版本自动选择同步或异步 PostgreSQL 驱动：ADK ≥ 1.19.0 使用异步的 `postgresql+asyncpg://`，否则使用同步的 `postgresql://`。用户名与密码中的特殊字符会被自动 URL 编码（`urllib.parse.quote_plus`）。可在火山引擎[开通 PostgreSQL 数据库](https://www.volcengine.com/product/rds-pg)。
+</Note>
+
+使用 `schema` 可让多个 VeADK 部署共享一个数据库而不共享会话表。schema 名称只能包含字母、数字与下划线，且不能以数字开头。

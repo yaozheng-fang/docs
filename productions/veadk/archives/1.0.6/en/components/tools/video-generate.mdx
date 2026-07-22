@@ -1,0 +1,74 @@
+---
+title: "Video generation"
+tag: "Function tool"
+---
+
+## Overview
+
+Tool identifier `video_generate`.
+
+`video_generate` generates videos from text. The example below first uses `image_generate` to create a first and last frame, then composes a video.
+
+Import path: `from veadk.tools.builtin_tools.video_generate import video_generate`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure the API key for the agent's reasoning model.
+2. Configure the video-generation model name (`MODEL_VIDEO_NAME`).
+3. If composing from a first/last frame, also configure the image-generation model name (`MODEL_IMAGE_NAME`).
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `MODEL_VIDEO_NAME`: video-generation model name
+- `MODEL_IMAGE_NAME`: image-generation model name
+
+`config.yaml` keys:
+
+```yaml title="config.yaml"
+model:
+  video:
+    name: doubao-seedance-2-0-260128
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: your-api-key-here
+```
+
+## Usage
+
+```python title="examples/tools/video_generate/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.image_generate import image_generate
+from veadk.tools.builtin_tools.video_generate import video_generate
+
+agent = Agent(
+    name="video_generate_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="An expert in creating images and videos.",
+    instruction=(
+        "First use image_generate to create a first frame and a last frame, then use "
+        "video_generate to compose a video. Finally return the absolute path of the "
+        "video and briefly summarize its content."
+    ),
+    tools=[image_generate, video_generate],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "Generate a puppy, then a scene of it flying into the sky, and finally compose a video"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

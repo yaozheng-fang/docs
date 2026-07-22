@@ -1,0 +1,174 @@
+---
+title: "代码沙箱"
+tag: "函数工具"
+---
+
+## 功能说明
+
+VeADK 提供一组在 [AgentKit 沙箱](https://console.volcengine.com/agentkit)中远程执行任务的工具：
+
+| 工具 | 说明 |
+| :--- | :--- |
+| `run_code` | 执行任意代码，适合计算、数据处理等 |
+| `execute_skills` | 在预制技能沙箱中运行 `agent.py` 工作流 |
+| `coding` | 在 OpenCode 沙箱中运行代码生成工作流 |
+| `run_sandbox_agent` | 指定任意 `tool_id` 在远端沙箱执行 `agent.py` |
+
+导入路径：
+
+- `from veadk.tools.builtin_tools.run_code import run_code`
+- `from veadk.tools.builtin_tools.execute_skills import execute_skills`
+- `from veadk.tools.builtin_tools.coding import coding`
+- `from veadk.tools.builtin_tools.run_sandbox_agent import run_sandbox_agent`
+
+## 环境变量与前提
+
+<Warning>
+附加要求：
+
+1. 配置火山引擎 AK / SK；
+2. 配置用于智能体推理模型的 API Key；
+3. 配置 AgentKit Tool ID（见下文）。
+</Warning>
+
+环境变量：
+
+- `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
+- `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`：火山引擎 AK / SK
+- `AGENTKIT_TOOL_ID`：默认 AgentKit 沙箱 ID，作为所有沙箱工具的兜底配置
+- `AGENTKIT_TOOL_ID_SCRIPT`：`run_code` 专用沙箱 ID，未配置时回退到 `AGENTKIT_TOOL_ID`
+- `AGENTKIT_TOOL_ID_SKILLS`：`execute_skills` 专用沙箱 ID，未配置时回退到 `AGENTKIT_TOOL_ID`
+- `AGENTKIT_TOOL_ID_OPENCODE`：`coding` 专用沙箱 ID，未配置时回退到 `AGENTKIT_TOOL_ID`
+- `AGENTKIT_TOOL_HOST`：调用 AgentKit Tools 的 Endpoint
+- `AGENTKIT_TOOL_SERVICE_CODE`：调用 AgentKit Tools 的 ServiceCode
+
+`config.yaml` 配置项：
+
+```yaml title="config.yaml"
+agentkit:
+  tool_id: your-default-tool-id
+  tool_id_script: your-script-tool-id
+  tool_id_skills: your-skills-tool-id
+  tool_id_opencode: your-opencode-tool-id
+```
+
+创建沙箱：
+
+<Steps>
+
+<Step title="创建沙箱工具">
+在控制台创建沙箱工具：自定义名称（如 `AIO_Sandbox_xxxx`），工具集类型选择“一体化工具集”，包含 Browser、Terminal、Code 运行环境。
+</Step>
+
+<Step title="获取沙箱 ID">
+创建完成后，在控制台获取沙箱 ID（形如 `t-ye8dj82xxxxx`），填入上面的环境变量或 `config.yaml`。
+</Step>
+
+</Steps>
+
+## 使用方法
+
+```python title="examples/tools/run_code/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.run_code import run_code
+from veadk.tools.builtin_tools.web_search import web_search
+
+agent = Agent(
+    name="data_analysis_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="A data analysis agent for the stock market.",
+    instruction=(
+        "你是一名资深工程师，在沙箱中执行代码。可使用 web_search 搜索公司经营数据，"
+        "可使用 akshare 等库下载股票数据；缺失依赖时用代码在沙箱中安装。"
+    ),
+    tools=[run_code, web_search],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("分析阳光电源最近的股价走势")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 为沙箱执行注入环境变量
+
+`execute_skills` 和 `run_sandbox_agent` 支持向本次沙箱执行注入自定义环境变量，用于向技能或沙箱内的工作流传入运行时参数（如配置项、凭证引用、特性开关等）。注入的环境变量仅在本次执行生效，不会持久化到沙箱基础环境。
+
+`execute_skills` 通过 `env_vars` 参数注入；`run_sandbox_agent` 通过 `extra_env_vars` 参数注入。两者共享同一套校验与合并规则。
+
+### 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `env_vars` | `Optional[dict[str, str]]` | `None` | `execute_skills` 注入的环境变量，键值均为字符串，仅在本次执行生效。 |
+| `extra_env_vars` | `Optional[dict[str, str]]` | `None` | `run_sandbox_agent` 注入的环境变量，键值均为字符串，仅在本次执行生效。 |
+
+### 校验规则
+
+注入的环境变量会与 VeADK 框架自管理变量合并后传给沙箱进程，并按以下规则校验：
+
+- 变量名必须匹配 `^[A-Za-z_][A-Za-z0-9_]*$`，否则初始化会报错。
+- `TOOL_USER_SESSION_ID` 与 `USER_SESSION_ID` 由 VeADK 管理，不可通过自定义变量覆盖，否则初始化会报错。
+- 变量值必须是字符串；非字符串值会报错。
+- 变量值不能包含空字节（`\x00`），否则初始化会报错。
+- 自定义变量会覆盖沙箱进程环境中的同名变量（包括 VeADK 默认设置的 `TOS_SKILLS_DIR`、`SKILL_SPACE_ID` 等），可用于按需调整本次执行的资源路径。
+
+### 使用示例
+
+为 `execute_skills` 注入环境变量：
+
+```python title="agent.py"
+from veadk import Agent
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+agent = Agent(
+    skills=[skill_space_id],
+    skills_mode="skills_sandbox",
+    tools=[execute_skills],
+)
+```
+
+调用 `execute_skills` 时通过 `env_vars` 传入本次执行所需的环境变量：
+
+```python title="run_skills_with_env.py"
+from veadk.tools.builtin_tools.execute_skills import execute_skills
+
+result = execute_skills(
+    workflow_prompt="读取知识库并生成摘要",
+    tool_context=tool_context,
+    env_vars={
+        "SKILL_CONFIG_PATH": "/tmp/skill_config.yaml",
+        "MAX_RESULTS": "20",
+    },
+)
+print(result)
+```
+
+直接使用 `run_sandbox_agent` 时通过 `extra_env_vars` 注入：
+
+```python title="run_sandbox_agent_with_env.py"
+from veadk.tools.builtin_tools.run_sandbox_agent import run_sandbox_agent
+
+result = run_sandbox_agent(
+    workflow_prompt="运行数据分析流程",
+    tool_id="t-your-skills-tool-id",
+    tool_context=tool_context,
+    extra_env_vars={
+        "DATA_SOURCE_URL": "https://example.com/data.csv",
+    },
+)
+print(result)
+```
+
+<Note>
+通过 `env_vars` 或 `extra_env_vars` 注入的变量会随沙箱执行代码一起提交。请勿直接写入长期凭证；需要敏感凭证时，使用环境变量引用或密钥管理服务。
+</Note>
