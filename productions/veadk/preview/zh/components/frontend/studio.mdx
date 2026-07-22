@@ -30,6 +30,20 @@ veadk studio --agents-dir ./agents --open
 
 测试运行进程默认保留 1800 秒，可通过 `--generated-agent-test-run-ttl` 调整。测试代码可能调用外部服务或访问运行环境中的数据，只应测试可信项目，并为 Studio 使用权限受限的凭证。
 
+## 部署网络模式
+
+在部署页可为 AgentKit Runtime 选择网络模式，决定 Runtime 的公网暴露方式：
+
+| 网络模式 | 说明 |
+| :--- | :--- |
+| 公网 | Runtime 暴露公网数据面地址。 |
+| VPC | Runtime 仅部署在指定 VPC 与子网内，不暴露公网数据面地址；可勾选在 VPC 内启用共享公网出口。 |
+| 公网 + VPC | 同时分配公网地址与 VPC 内地址。 |
+
+选择 VPC 或公网 + VPC 模式时，需要填写 VPC ID 和子网 ID。
+
+VPC 私有 Runtime 部署完成后不返回公网数据面地址，Studio 通过服务端运行时代理访问该 Runtime，数据面 API Key 始终保留在服务端，不会下发到浏览器。该连接方式与「选择云端 Runtime」中所述的服务端运行时代理一致。
+
 ## 管理智能体
 
 「管理 Agent」列出当前登录用户通过该工作台部署的 AgentKit Runtime。列表按部署时记录的用户标识过滤，可以查看：
