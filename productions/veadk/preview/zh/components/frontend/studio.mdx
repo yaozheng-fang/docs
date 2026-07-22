@@ -64,6 +64,56 @@ veadk studio --agents-dir ./agents --open
   「Runtime 信息」标签可能展示 Runtime 的环境变量值。仅向经过授权的用户开放 Studio，并优先使用平台支持的密钥管理能力。
 </Note>
 
+## 新会话模式
+
+对话页面支持三种新会话模式：
+
+- **Agent 对话**：与当前选中的智能体多轮对话，行为与既有对话一致。
+- **临时会话**：在 AgentKit Sandbox 中启动 Codex Agent，进行独立的多轮对话。
+- **Skill 创建**：使用固定模型并行生成两个 Skill 候选方案，完成后可对比、下载 ZIP 或添加到 AgentKit。
+
+### 临时会话
+
+临时会话复用 Studio 专属的 CodeEnv Tool，为当前用户创建全新的 Sandbox Session，并通过 Codex 进行多轮对话。对话过程中会实时展示公开的思考摘要、命令、文件修改、MCP 调用和最终回复。退出临时会话后，云端 Session 会被删除，内容不会写入普通历史会话；页面刷新后可直接新建，遗留的 Session 由 AgentKit 在 TTL 到期后自动回收。
+
+<Note>
+  临时会话状态保存在服务端而非浏览器。部署到多实例环境时，应使用单个服务进程或配置会话亲和，确保同一浏览器的创建、对话和退出请求到达同一个实例。
+</Note>
+
+### Skill 创建模式
+
+Skill 创建模式固定使用 `doubao-seed-2-0-pro-260215` 和 `deepseek-v4-flash-260425`，通过 Ark Responses API 并行生成两个候选方案。每个候选使用独立的 AgentKit CodeEnv Session；生成结果会校验目录名、`SKILL.md` frontmatter、文件数量、大小和路径安全，再打包为 ZIP。
+
+<Warning>
+  Skill 创建接口仅允许 Studio 的 developer 和 admin 使用。
+</Warning>
+
+真实的 Ark API Key 由 AgentKit 凭据托管保存，Studio 和 Sandbox 只使用可撤销的网关票据；每个任务的 Session 环境变量不会覆盖托管票据，且服务端只接受火山引擎 HTTPS 凭据中继地址。浏览器不会收到模型凭据。
+
+提交需求后会立即显示两个候选对话流，各自持续渲染生成器返回的公开思考摘要、工具调用和助手回复；私有思维链和凭据不会进入页面。候选完成后可预览、下载 ZIP 或添加到 AgentKit。添加到 AgentKit 时，服务端会先将 ZIP 上传到 TOS，再调用 Skills API 创建或更新 Skill；只有用户填写 SkillSpace ID 时才发布到对应空间。
+
+候选 Session 的 TTL 为 30 分钟，用户重新创建或离开任务时会立即清理。任务状态保存在 Sandbox 而非进程内存，因此 FaaS 请求命中不同实例时仍可继续轮询和下载。
+
+#### 本地配置
+
+本地启动前，需要分别为临时会话和 Skill 创建模式配置两个处于 `Ready` 状态的 AgentKit CodeEnv Tool，并使用 AgentKit 的凭据托管命令将 Ark 凭据写入这两个 Tool：
+
+```bash
+export SANDBOX_CHAT_CODEX=<临时会话-code-env-tool-id>
+export SANDBOX_SKILL_CREATOR=<skill-创建-code-env-tool-id>
+veadk studio --agents-dir ./agents --open
+```
+
+以下环境变量均为可选覆盖项：
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `SANDBOX_CHAT_CODEX` | — | 临时会话专用的 AgentKit CodeEnv Tool ID。本地运行时必填。 |
+| `SANDBOX_SKILL_CREATOR` | — | Skill 创建模式专用的 AgentKit CodeEnv Tool ID。本地运行时必填。 |
+| `VEADK_SKILL_CREATOR_TOS_BUCKET` | AgentKit 账户默认 Bucket | 发布 Skill 产物使用的 TOS Bucket。 |
+| `VEADK_SKILL_CREATOR_TOS_PREFIX` | `agentkit/skills` | 发布产物的 TOS 对象 Key 前缀。 |
+| `VEADK_SKILL_CREATOR_PROJECT_NAME` | — | 创建 Skill 时使用的项目名称。 |
+
 ## `veadk studio` 参数
 
 | 选项 | 类型 | 默认值 | 说明 |
@@ -114,6 +164,10 @@ veadk studio deploy \
 
 部署者的长期 AK/SK 不会写入 VeFaaS 应用环境变量。已部署的 Studio 使用绑定 IAM Role 的临时凭证访问火山引擎服务。
 
+<Note>
+  未指定 `--sandbox-chat-codex-tool-id` 和 `--sandbox-skill-creator-tool-id` 时，部署命令会使用部署凭证自动创建两个独立的 CodeEnv Tool，并通过 AgentKit 凭据托管将 Ark 凭据保存到 KMS，再把代理地址和可撤销票据绑定到这两个 Tool。VeFaaS Function 只接收 Tool ID，不接收模型凭据。
+</Note>
+
 ### 部署参数
 
 | 选项 | 类型 | 默认值 | 说明 |
@@ -132,3 +186,5 @@ veadk studio deploy \
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | 部署用 Secret Key。推荐通过环境变量提供。 |
 | `--veadk-version` | `str` | 最新发布版本 | 写入 VeFaaS 依赖的 `veadk-python` 版本。重现本页行为时显式设为 `1.0.6`。 |
 | `--from-source` | `bool` 标志 | `false` | 从当前源码目录构建 wheel 后部署，包含未提交改动；用于验证未发布版本，不应与 `--veadk-version` 的发布版本工作流混用。 |
+| `--sandbox-chat-codex-tool-id` | `str \| None` | 自动创建 | 临时会话专用的 AgentKit CodeEnv Tool ID。省略时部署命令使用部署凭证自动创建；也可通过环境变量 `SANDBOX_CHAT_CODEX` 设置。 |
+| `--sandbox-skill-creator-tool-id` | `str \| None` | 自动创建 | Skill 创建模式专用的 AgentKit CodeEnv Tool ID，别名 `--skill-creator-tool-id`。省略时部署命令使用部署凭证自动创建；也可通过环境变量 `SANDBOX_SKILL_CREATOR` 设置。 |

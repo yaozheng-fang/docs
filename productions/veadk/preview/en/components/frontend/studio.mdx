@@ -64,6 +64,56 @@ The info panel has two tabs:
   The Runtime info tab can display runtime environment-variable values. Restrict Studio to authorized users and prefer the platform's secret-management features.
 </Note>
 
+## New conversation modes
+
+The chat view supports three new-conversation modes:
+
+- **Agent chat**: multi-turn conversation with the currently selected agent, identical to the existing chat behavior.
+- **Temporary session**: launches a Codex agent inside an AgentKit Sandbox for an independent multi-turn conversation.
+- **Skill creation**: generates two candidate Skill proposals in parallel using fixed models; once complete, you can compare them, download a ZIP, or add them to AgentKit.
+
+### Temporary session
+
+A temporary session reuses a Studio-dedicated CodeEnv Tool, creates a fresh Sandbox Session for the current user, and conducts multi-turn conversation through Codex. During the conversation it streams the public thinking summary, commands, file changes, MCP calls, and the final reply. Exiting the session deletes the cloud Session and its content is not written to ordinary session history; refreshing the page lets you start a new one, and any leftover Session is reclaimed by AgentKit after its TTL expires.
+
+<Note>
+  Temporary-session state is kept on the server, not in the browser. For multi-instance deployments, run a single service process or enable session affinity so that create, conversation, and exit requests from the same browser reach the same instance.
+</Note>
+
+### Skill creation mode
+
+Skill creation mode uses `doubao-seed-2-0-pro-260215` and `deepseek-v4-flash-260425` to generate two candidate proposals in parallel through the Ark Responses API. Each candidate runs in its own AgentKit CodeEnv Session; the generated result is validated for directory names, `SKILL.md` frontmatter, file count, size, and path safety before being packaged as a ZIP.
+
+<Warning>
+  The Skill creation interface is available only to Studio developers and admins.
+</Warning>
+
+The real Ark API key is held by AgentKit credential hosting; Studio and the Sandbox only use revocable gateway tickets. Per-task Session environment variables never override the hosted ticket, and the server only accepts Volcengine HTTPS credential-relay addresses. The browser never receives model credentials.
+
+After you submit a requirement, two candidate conversation streams appear immediately and continuously render the public thinking summary, tool calls, and assistant replies returned by the generator; private chain-of-thought and credentials never reach the page. When the candidates finish, you can preview them, download a ZIP, or add them to AgentKit. Adding to AgentKit uploads the ZIP to TOS and then calls the Skills API to create or update the Skill; it is published to a SkillSpace only when you provide a SkillSpace ID.
+
+Candidate Sessions have a TTL of 30 minutes and are cleaned up immediately when you start over or leave the task. Task state is stored in the Sandbox rather than in process memory, so FaaS requests hitting different instances can still poll and download.
+
+#### Local configuration
+
+Before starting locally, configure two AgentKit CodeEnv Tools in the `Ready` state for the temporary session and Skill creation mode respectively, and use the AgentKit credential-hosting command to write the Ark credentials into both Tools:
+
+```bash
+export SANDBOX_CHAT_CODEX=<chat-code-env-tool-id>
+export SANDBOX_SKILL_CREATOR=<skill-create-code-env-tool-id>
+veadk studio --agents-dir ./agents --open
+```
+
+The following environment variables are optional overrides:
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `SANDBOX_CHAT_CODEX` | — | AgentKit CodeEnv Tool ID for temporary sessions. Required for local runs. |
+| `SANDBOX_SKILL_CREATOR` | — | AgentKit CodeEnv Tool ID for Skill creation mode. Required for local runs. |
+| `VEADK_SKILL_CREATOR_TOS_BUCKET` | AgentKit account default bucket | TOS bucket used when publishing Skill artifacts. |
+| `VEADK_SKILL_CREATOR_TOS_PREFIX` | `agentkit/skills` | TOS object key prefix for published artifacts. |
+| `VEADK_SKILL_CREATOR_PROJECT_NAME` | — | Project name used when creating a Skill. |
+
 ## `veadk studio` options
 
 | Option | Type | Default | Description |
@@ -114,6 +164,10 @@ On success, the terminal prints the public URL and VeFaaS application ID. Openin
 
 The deployer's long-lived access and secret keys are not written to the VeFaaS application environment. Deployed Studio uses temporary credentials from its bound IAM role.
 
+<Note>
+  When `--sandbox-chat-codex-tool-id` and `--sandbox-skill-creator-tool-id` are omitted, the deploy command uses the deploy credentials to create two independent CodeEnv Tools automatically. It saves the Ark credentials to KMS through AgentKit credential hosting and binds a relay address with a revocable ticket to each Tool. The VeFaaS function receives only the Tool IDs, never the model credentials.
+</Note>
+
 ### Deployment options
 
 | Option | Type | Default | Description |
@@ -132,3 +186,5 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. Prefer the environment variable. |
 | `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.6` to reproduce this version. |
 | `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |
+| `--sandbox-chat-codex-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for temporary sessions. When omitted, the deploy command creates one from the deploy credentials; also set via the `SANDBOX_CHAT_CODEX` environment variable. |
+| `--sandbox-skill-creator-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for Skill creation mode, alias `--skill-creator-tool-id`. When omitted, the deploy command creates one from the deploy credentials; also set via the `SANDBOX_SKILL_CREATOR` environment variable. |
