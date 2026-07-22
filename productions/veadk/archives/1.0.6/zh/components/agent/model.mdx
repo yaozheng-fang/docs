@@ -1,0 +1,121 @@
+---
+title: "模型"
+---
+
+智能体默认使用全局配置的模型，即通过环境变量或 `config.yaml` 设置的模型（参见[快速开始](/productions/veadk/preview/zh/get-started/quickstart)）。VeADK 1.0.5 的默认推理模型为 `doubao-seed-2-1-pro-260628`。也可以在创建智能体时为其单独指定模型。
+
+## 为单个智能体指定模型
+
+通过 `model_name` 与 `model_provider` 覆盖全局默认模型：
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    model_name="doubao-seed-2-1-pro-260628",
+    model_provider="openai",
+)
+```
+
+未显式传入时，`model_provider`、`model_api_base`、`model_api_key` 均沿用全局配置。
+
+### 按名称解析 API Key
+
+除直接设置 `MODEL_AGENT_API_KEY` 外，还可以设置 `MODEL_AGENT_API_KEY_NAME`，让 VeADK 按名称获取火山方舟 API Key。显式提供的 Key 始终优先：
+
+```bash
+export MODEL_AGENT_API_KEY_NAME="production-key"
+```
+
+创建智能体时也可传入 `model_api_key_name`。该能力从 VeADK 1.0.2 开始提供。
+
+## 配置回退模型
+
+`model_name` 也接受一个列表：第一个为主模型，其余作为回退模型；当主模型不可用时，依次尝试后续模型。
+
+```python
+agent = Agent(
+    model_name=["doubao-seed-2-1-pro-260628", "deepseek-r1-250528"],
+)
+```
+
+回退模型同时适用于默认模型接口与 `enable_responses=True` 的 Responses API。
+
+## Responses API
+
+Responses API 是火山方舟推出的接口，原生支持高效的上下文管理，输入输出格式更简洁，并具备更强的工具调用与多模态能力。在 VeADK 中启用后，智能体的每一轮对话都会经由该接口，从而获得原生的上下文缓存与图片、视频、文档理解能力。
+
+### 启用
+
+在创建智能体时设置 `enable_responses=True`：
+
+```python
+from veadk import Agent
+
+agent = Agent(enable_responses=True)
+```
+
+启用 Responses API 要求 `google-adk>=1.21.0`，且所用模型需支持该接口（豆包系列 0615 版本之后默认支持）。
+
+### 多模态理解
+
+除文本外，Responses API 还支持图片、视频与文档理解。通过 `google.genai.types.FileData` 传入多模态数据，`file_uri` 支持三种来源：
+
+- **本地文件路径**：`file://{本地路径}`，底层自动经 Files API 上传。
+- **Files API 资源**：`file_id://{file_id}`，用于已上传的文件。
+- **网络地址**：直接传入 `https://` 链接，按 `mime_type` 识别类型。
+
+以本地图片为例：
+
+```python
+import os
+from google.genai import types
+from google.genai.types import FileData
+
+local_path = os.path.abspath("example.png")
+message = types.UserContent(
+    parts=[
+        types.Part(text="描述一下这张图片"),
+        types.Part(
+            file_data=FileData(
+                file_uri=f"file://{local_path}",
+                mime_type="image/png",
+            )
+        ),
+    ],
+)
+```
+
+视频还可在 `FileData` 中附带 `video_metadata`，用 `fps` 控制抽帧频率（默认 1，可在 0.2–5 之间调整）。
+
+### 配置方舟上下文管理
+
+启用 Responses API 时，可通过 `model_extra_config` 传入方舟支持的 `context_management` 配置。以下示例会清理较早的思维内容，仅保留最近一个思维轮次：
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    enable_responses=True,
+    model_extra_config={
+        "context_management": {
+            "edits": [
+                {
+                    "type": "clear_thinking",
+                    "keep": {"type": "thinking_turns", "value": 1},
+                }
+            ]
+        }
+    },
+)
+```
+
+### 上下文缓存
+
+Responses API 模式下默认开启会话缓存：系统自动存储初始上下文，并在每轮对话中动态更新，后续请求会将缓存内容与新输入合并后再送入模型。这对多轮对话、复杂工具调用等长上下文场景可显著降低重复 token 的开销。
+
+缓存命中情况可通过返回事件的 `usage_metadata` 查看，其中 `cached_content_token_count` 为命中缓存的 token 数，`prompt_token_count` 为输入总 token 数，缓存命中率即两者之比。
+
+<Warning>
+  当智能体设置了 `output_schema` 时，该字段与缓存机制冲突，VeADK 会自动关闭上下文缓存。
+</Warning>
