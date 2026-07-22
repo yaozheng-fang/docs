@@ -6,6 +6,7 @@ VeADK 1.0.6 was released on July 20, 2026. This page covers public user-facing c
 
 | Module | Change details | Link |
 | --- | --- | --- |
+| Studio and Frontend | Smart search adds Knowledge and Memory retrieval sources, reusing the agent's mounted knowledge base and long-term memory back ends. Sources are detected from the agent's live metadata, unavailable sources are disabled up front, and knowledge/memory results identify the index or source name and back-end type separately. | [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend) · [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio deployment | `veadk studio deploy` supports the `cn-shanghai` deployment region (`--region` still defaults to `cn-beijing`); VeFaaS, API Gateway, and other resources are created in the selected region. A new `--project` selects the VeFaaS function project and defaults to `default`. Deployment automatically locates the VeIdentity user pool and client across Beijing and Shanghai, emitting a warning and continuing when matched cross-region. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 
 VeADK 1.0.5 was released on July 19, 2026. This page covers public user-facing changes since 1.0.4. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.5) for the complete commit history.
