@@ -1,0 +1,75 @@
+---
+title: "Video-on-Demand MCP"
+tag: "MCP tool"
+---
+
+## Overview
+
+`vod_tools` (`from veadk.tools.builtin_tools.vod import vod_tools`) edits and processes video through the Volcengine Video-on-Demand MCP. See the [VOD MCP Server](https://github.com/volcengine/mcp-server/blob/main/server/mcp_server_vod/README_zh.md).
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure Volcengine AK / SK.
+2. (Optional) Choose capability groups via `TOOL_VOD_GROUPS`: `edit`, `intelligent_slicing`, `intelligent_matting`, `subtitle_processing`, `audio_processing`, `video_enhancement`, `upload`, `video_play`. Join multiple with commas; defaults to `edit,video_play`.
+3. (Optional) `TOOL_VOD_TIMEOUT`, the connection timeout, defaults to 10 seconds.
+4. The VOD tool cannot create a Space — create a [Video Cloud space](https://console.volcengine.com/vod/region:vod+cn-north-1/overview/) in the console first.
+</Warning>
+
+Environment variables:
+
+- `VOLCENGINE_ACCESS_KEY`: Volcengine AccessKey
+- `VOLCENGINE_SECRET_KEY`: Volcengine SecretKey
+- `TOOL_VOD_GROUPS` (optional): capability groups
+- `TOOL_VOD_TIMEOUT` (optional): connection timeout, defaults to 10.0 seconds
+
+Or configure in `config.yaml`:
+
+```yaml title="config.yaml"
+volcengine:
+  access_key: your-access-key-here
+  secret_key: your-secret-key-here
+tool:
+  vod:
+    groups: edit,video_play
+    timeout: 10.0
+```
+
+## Usage
+
+```python title="examples/tools/vod/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.vod import vod_tools
+
+agent = Agent(
+    name="vod_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="A video editing assistant.",
+    instruction="Use vod_tools to edit and process videos.",
+    tools=[vod_tools],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "Merge these two videos: <your-url1>, <your-url2>, with space_name <your-space-name>"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Notes
+
+<Note>
+Some video-editing tasks take a while and return a `task_id` immediately. You can keep asking the agent whether the task is finished to retrieve the result.
+</Note>

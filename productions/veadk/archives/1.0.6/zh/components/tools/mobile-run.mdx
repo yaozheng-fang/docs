@@ -1,0 +1,58 @@
+---
+title: "手机操作"
+tag: "函数工具"
+---
+
+## 功能说明
+
+对应工具标识 `mobile_run`。
+
+`create_mobile_use_tool()` 返回一个让智能体在云手机上完成操作任务的工具。
+
+导入路径：`from veadk.tools.builtin_tools.mobile_run import create_mobile_use_tool`
+
+## 环境变量与前提
+
+<Warning>
+附加要求：
+
+1. 在火山引擎购买云手机服务并订购 pod；
+2. 按需在云手机上配置环境（安装 App、登录账号等）。
+</Warning>
+
+环境变量：
+
+- `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
+- `TOOL_MOBILE_USE_TOOL_ID`：云手机实例 ID，格式为 `product_id-pod_id`
+- `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`：火山引擎 AK / SK
+
+`tool_id` 格式为 `product_id-pod_id`，在云手机控制台的实例管理界面获取。
+
+## 使用方法
+
+```python title="examples/tools/mobile_run/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.mobile_run import create_mobile_use_tool
+
+agent = Agent(
+    name="mobile_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="An agent that operates a cloud phone.",
+    instruction="Use the mobile tool to complete tasks on the cloud phone.",
+    tools=[create_mobile_use_tool()],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("打开购物 App 搜索“耳机”")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

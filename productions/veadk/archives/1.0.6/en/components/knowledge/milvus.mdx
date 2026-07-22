@@ -1,0 +1,70 @@
+---
+title: "Use Milvus storage"
+---
+
+The `milvus` backend stores knowledge-chunk embeddings in a Milvus collection. It can connect to Milvus or Zilliz Cloud, or use a local Milvus Lite file. This backend is available in VeADK 1.0.3 and later.
+
+## Dependencies
+
+```bash
+pip install "veadk-python[extensions]"
+```
+
+## Use Milvus Lite
+
+For local validation, point `DATABASE_MILVUS_URI` to a Milvus Lite data file and configure an embedding model:
+
+```bash
+export DATABASE_MILVUS_URI="./data/product_docs.db"
+export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
+```
+
+The first run creates the data file. Later runs can retrieve existing content by using the same file and collection name.
+
+## Example
+
+```python
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="milvus",
+    index="product_docs",
+    backend_config={
+        "index": "product_docs",
+        "milvus_config": {
+            "uri": "https://milvus.example.com",
+            "token": "your-milvus-token",
+            "db_name": "default",
+        },
+    },
+)
+kb.add_from_directory("./docs")
+
+agent = Agent(knowledgebase=kb)
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `index` | `str` | None | Milvus collection name. It must start with a letter or underscore, contain only letters, digits, and underscores, and be at most 255 characters. |
+| `milvus_config` | `MilvusConfig` | Read from `DATABASE_MILVUS_*` | Milvus connection and collection settings. |
+| `embedding_config` | `EmbeddingModelConfig` | Read from `MODEL_EMBEDDING_*` | Embedding model used to vectorize knowledge chunks. |
+
+### Milvus configuration
+
+| Setting | Environment variable | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `uri` | `DATABASE_MILVUS_URI` | `str` | `""` | Remote Milvus URI or local Milvus Lite file path. Required. |
+| `token` | `DATABASE_MILVUS_TOKEN` | `str` | `""` | Milvus token; takes precedence over username and password. |
+| `user` | `DATABASE_MILVUS_USER` | `str` | `""` | Username, used with `password`. |
+| `password` | `DATABASE_MILVUS_PASSWORD` | `str` | `""` | Password. |
+| `db_name` | `DATABASE_MILVUS_DB_NAME` | `str` | `default` | Database name. |
+| `overwrite` | `DATABASE_MILVUS_OVERWRITE` | `bool` | `false` | Whether to replace an existing collection during initialization. |
+| `timeout` | `DATABASE_MILVUS_TIMEOUT` | `float \| None` | `None` | Request timeout in seconds. |
+| `output_fields` | `DATABASE_MILVUS_OUTPUT_FIELDS` | `list[str] \| str` | Empty | Fields returned with search results; use a comma-separated value or JSON array in the environment variable. |
+
+<Warning>
+  Enabling `overwrite` can remove existing data from a collection with the same name. Use it only when the knowledge base can be rebuilt.
+</Warning>

@@ -1,0 +1,82 @@
+---
+title: "Use OpenViking storage"
+---
+
+The `openviking` long-term memory backend writes conversation messages to OpenViking user memory and retrieves entities, events, and preferences by user identity. It is available in VeADK 1.0.3 and later.
+
+## Example
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+memory = LongTermMemory(
+    backend="openviking",
+    app_name="support_app",
+    backend_config={
+        "index": "support_app",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+    },
+)
+
+agent = Agent(
+    long_term_memory=memory,
+    auto_save_session=True,
+)
+```
+
+## Parameters
+
+### `LongTermMemory` parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str` | `opensearch` | Set to `openviking` to use OpenViking. |
+| `backend_config` | `dict` | `{}` | Explicit OpenViking backend configuration. |
+| `top_k` | `int` | `5` | Number of memories returned by each retrieval. |
+| `index` | `str` | `""` | Application isolation key. Falls back to `app_name`, then `default_app`. |
+| `app_name` | `str` | `""` | Application name and fallback value for `index`. |
+| `user_id` | `str` | `""` | Deprecated compatibility field. The runtime user comes from the session or `Runner.user_id`. |
+
+### OpenViking backend parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `index` | `str` | Supplied by `LongTermMemory` | Application or memory index name. It cannot be empty. |
+| `openviking_config` | `OpenVikingConfig` | Read from `DATABASE_OPENVIKING_*` | OpenViking service configuration. |
+| `url` | `str` | `DATABASE_OPENVIKING_URL` | OpenViking service URL. Required. |
+| `api_key` | `str` | `DATABASE_OPENVIKING_API_KEY` | OpenViking API key. Required. |
+| `peer_id_resolver` | `Callable \| None` | Uses `user_id` | Maps `app_name` and `user_id` to an OpenViking peer ID. |
+| `timeout` | `float` | `30` | OpenViking request timeout in seconds. |
+
+By default, `user_id` becomes the peer ID and may contain only letters, digits, periods, underscores, `@`, and hyphens. Pass `peer_id_resolver` to customize this mapping.
+
+<Warning>
+  Setting `auto_save_session=True` writes conversation data to an external OpenViking service. Confirm that data processing, access control, and retention meet your requirements before enabling it.
+</Warning>
+
+## Customize user mapping
+
+Multi-tenant applications can provide `peer_id_resolver` to combine the application and user into one isolation key:
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+
+def resolve_peer_id(app_name: str, user_id: str) -> str:
+    return f"{app_name}-{user_id}"
+
+
+memory = LongTermMemory(
+    backend="openviking",
+    backend_config={
+        "index": "support_app",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "peer_id_resolver": resolve_peer_id,
+    },
+)
+```
+
+The returned ID cannot be empty. It may contain only letters, digits, periods, underscores, `@`, and hyphens, and cannot be `.` or `..`. Changing the mapping after deployment leaves existing memories under the old peer path, so later retrievals may no longer find them.
