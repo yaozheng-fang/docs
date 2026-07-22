@@ -2,20 +2,95 @@
 title: "Changelog"
 ---
 
-VeADK 1.0.6 was released on July 20, 2026. This page covers public user-facing changes since 1.0.5. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.6) for the complete commit history.
+This changelog cumulatively lists all public user-facing changes from VeADK 1.0.0 through 1.0.6. Versions are ordered newest first.
+
+## 1.0.6
+
+VeADK 1.0.6 was released on July 20, 2026. The following table lists its public user-facing changes. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.6) for the complete commit history.
 
 | Module | Change details | Link |
 | --- | --- | --- |
 | Studio deployment | `veadk studio deploy` supports the `cn-shanghai` deployment region (`--region` still defaults to `cn-beijing`); VeFaaS, API Gateway, and other resources are created in the selected region. A new `--project` selects the VeFaaS function project and defaults to `default`. Deployment automatically locates the VeIdentity user pool and client across Beijing and Shanghai, emitting a warning and continuing when matched cross-region. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 
-VeADK 1.0.5 was released on July 19, 2026. This page covers public user-facing changes since 1.0.4. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.5) for the complete commit history.
+## 1.0.5
+
+VeADK 1.0.5 was released on July 19, 2026. The following table lists its public user-facing changes. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.5) for the complete commit history.
 
 | Module | Change details | Link |
 | --- | --- | --- |
-| Studio and Frontend | Studio now enables the same complete UI as Frontend and opens on the chat view by default. Added cloud Runtime selection, Skill Hub/local upload/AgentKit SkillSpace sources, multimodal conversations, and structured skill and sub-agent invocation. The custom creation flow was redesigned; intelligent, template, and workflow entries are currently marked as coming soon. Also improved deployment regions, environment variables, task status, retry behavior, and OAuth token forwarding. | [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend) · [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
-| Models | Changed the default inference model to `doubao-seed-2-1-pro-260628`; Responses API now supports fallback models and Ark context management, with more reliable inline-image tracing. | [Models](/productions/veadk/preview/en/components/agent/model) |
-| Runtime | Added `piagent` to `Agent.runtime`, including bridges for function tools, MCP tools, and skills; the package no longer vendors the PiAgent binary. | [Runtime](/productions/veadk/preview/en/components/agent/runtime) |
-| Studio testing | Generated agent projects can run in a restricted temporary server-side test process. The process is retained for 1,800 seconds by default and can be adjusted with a command option. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
-| Studio deployment | When Studio is deployed with its default IAM role, the command adds the system policies needed to access model, logging, tracing, knowledge, memory, and identity resources. An explicitly supplied custom role is not modified. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
-| AgentKit integration | Studio-generated applications now use the public `create_agentkit_app` function to provide AgentKit endpoints, health checks, topology, the built-in Web UI, and short-term memory defaults. | [Deploy to AgentKit](/productions/veadk/preview/en/deploy/agentkit) |
-| Feishu channel | Improved extraction of text, card, and merged-forward messages, added compatibility with the synchronous Channel SDK lifecycle, and allowed Studio-generated AgentKit applications to use Feishu as an inbound channel. | [Feishu channel](/productions/veadk/preview/en/components/extensions/feishu-channel) · [Deploy to AgentKit](/productions/veadk/preview/en/deploy/agentkit) |
+| Studio and Frontend | Studio now enables the same complete UI as Frontend and opens on the chat view by default. Added cloud Runtime selection, Skill Hub/local upload/AgentKit SkillSpace sources, multimodal conversations, and structured skill and sub-agent invocation. The custom creation flow was redesigned; intelligent, template, and workflow entries are currently marked as coming soon. Also improved deployment regions, environment variables, task status, retry behavior, and OAuth token forwarding. | [VeADK Frontend](/productions/veadk/archives/1.0.5/en/components/frontend/veadk-frontend) · [Studio agent workbench](/productions/veadk/archives/1.0.5/en/components/frontend/studio) |
+| Models | Changed the default inference model to `doubao-seed-2-1-pro-260628`; Responses API now supports fallback models and Ark context management, with more reliable inline-image tracing. | [Models](/productions/veadk/archives/1.0.5/en/components/agent/model) |
+| Runtime | Added `piagent` to `Agent.runtime`, including bridges for function tools, MCP tools, and skills; the package no longer vendors the PiAgent binary. | [Runtime](/productions/veadk/archives/1.0.5/en/components/agent/runtime) |
+| Studio testing | Generated agent projects can run in a restricted temporary server-side test process. The process is retained for 1,800 seconds by default and can be adjusted with a command option. | [Studio agent workbench](/productions/veadk/archives/1.0.5/en/components/frontend/studio) |
+| Studio deployment | When Studio is deployed with its default IAM role, the command adds the system policies needed to access model, logging, tracing, knowledge, memory, and identity resources. An explicitly supplied custom role is not modified. | [Studio agent workbench](/productions/veadk/archives/1.0.5/en/components/frontend/studio) |
+| AgentKit integration | Studio-generated applications now use the public `create_agentkit_app` function to provide AgentKit endpoints, health checks, topology, the built-in Web UI, and short-term memory defaults. | [Deploy to AgentKit](/productions/veadk/archives/1.0.5/en/deploy/agentkit) |
+| Feishu channel | Improved extraction of text, card, and merged-forward messages, added compatibility with the synchronous Channel SDK lifecycle, and allowed Studio-generated AgentKit applications to use Feishu as an inbound channel. | [Feishu channel](/productions/veadk/archives/1.0.5/en/components/extensions/feishu-channel) · [Deploy to AgentKit](/productions/veadk/archives/1.0.5/en/deploy/agentkit) |
+
+## 1.0.4
+
+VeADK 1.0.4 was released on July 14, 2026. The following table lists its public user-facing changes.
+
+| Module | Change details | Link |
+| :--- | :--- | :--- |
+| Studio | Added `veadk studio`, a focused workbench for agent creation and management. It supports intelligent, custom, and template creation; the workflow entry is marked as coming soon. AgentKit deployment progress is reported by stage. | [Studio agent workbench](/productions/veadk/archives/1.0.4/en/components/frontend/studio) |
+| Agent management | Added an AgentKit runtime management view to Frontend and Studio. It lists workbench deployments for the current user, exposes control-plane and primary-agent details, and can delete runtimes. | [Studio agent workbench](/productions/veadk/archives/1.0.4/en/components/frontend/studio) |
+| VeFaaS deployment | Added `veadk studio deploy` to deploy Studio to VeFaaS with VeIdentity login and create or reuse a Serverless API Gateway and IAM role. | [Studio deployment](/productions/veadk/archives/1.0.4/en/components/frontend/studio) |
+| VeADK Frontend | Added agent topology and transfer-path visualization. Project deployment now reports live build-image, deploy, and publish stages. | [VeADK Frontend](/productions/veadk/archives/1.0.4/en/components/frontend/veadk-frontend) |
+| Harness skills | Harness `skills` accepts `space:<skill-space-id>` to load an entire AgentKit skills-center space alongside Skill Hub names or slugs. | [Skills](/productions/veadk/archives/1.0.4/en/components/agent/skills) |
+| Frontend security | Removed the action that directly executed browser-submitted code; restricted the AgentKit proxy protocol, host, and credential requirements; and confined deployment and static-file paths. | [VeADK Frontend](/productions/veadk/archives/1.0.4/en/components/frontend/veadk-frontend) |
+| Logging | Migrated logging to Python's standard `logging` package while retaining trace-ID correlation. Non-interactive output no longer contains color escapes, and streaming reasoning is no longer logged token by token. | [Application logging](/productions/veadk/archives/1.0.4/en/components/observability/logging) |
+| Storage configuration | Expanded Milvus and OpenViking environment and configuration examples. Version 1.0.4 continues to provide the Milvus knowledge, OpenViking knowledge, and OpenViking long-term memory backends introduced in 1.0.3. | [Milvus](/productions/veadk/archives/1.0.4/en/components/knowledge/milvus) · [OpenViking knowledge](/productions/veadk/archives/1.0.4/en/components/knowledge/openviking) · [OpenViking memory](/productions/veadk/archives/1.0.4/en/components/memory/openviking) |
+
+## 1.0.3
+
+VeADK 1.0.3 contains the following public user-facing changes.
+
+| Module | Change details | Link |
+| :--- | :--- | :--- |
+| Knowledge base | Added the `milvus` backend with Milvus service and Milvus Lite URIs, token or username/password authentication, database selection, initialization overwrite, timeout, and additional output fields. | [Store knowledge in Milvus](/productions/veadk/archives/1.0.3/en/components/knowledge/milvus) |
+| Knowledge base | Added the `openviking` backend for importing files, directories, and text into OpenViking and retrieving and hydrating results by resource URI. | [Store knowledge in OpenViking](/productions/veadk/archives/1.0.3/en/components/knowledge/openviking) |
+| Long-term memory | Added the `openviking` backend to store per-user entity, event, and preference memory while retaining user isolation across sessions. | [Store memory in OpenViking](/productions/veadk/archives/1.0.3/en/components/memory/openviking) |
+| A2A | Calls to downstream agents in the AgentKit A2A Registry can propagate inbound `X-Ve-TIP-Token` and bearer JWT credentials. If a downstream call made with the inbound JWT returns `401`, VeADK can fall back to M2M OAuth2 and retry once. | [Inbound authentication](/productions/veadk/archives/1.0.3/en/components/security/inbound) |
+| Dependencies | Consolidated duplicate dependency declarations, added the OpenViking SDK to the base dependencies, and added Milvus integrations to `extensions`. | [Installation](/productions/veadk/archives/1.0.3/en/get-started/installation) |
+
+## 1.0.2
+
+VeADK 1.0.2 contains the following public user-facing changes.
+
+| Module | Change details | Link |
+| :--- | :--- | :--- |
+| Models | Added `MODEL_AGENT_API_KEY_NAME` and `Agent.model_api_key_name` to resolve an Ark API key by name. An explicit key value still has higher precedence. | [Model configuration](/productions/veadk/archives/1.0.2/en/components/agent/model) |
+| Short-term memory | Added PostgreSQL `schema` configuration to isolate session tables for separate deployments in one database. VeADK creates a missing schema and pins the connection's `search_path`. | [Store sessions in PostgreSQL](/productions/veadk/archives/1.0.2/en/components/session/postgresql) |
+| MCP | After an MCP Server session expires, the service restarts, or the connection drops, VeADK discards the stale session, reconnects, and retries tool discovery or execution once. | [Custom MCP Server](/productions/veadk/archives/1.0.2/en/components/tools/custom-mcp) |
+| Frontend | Added a tool OAuth authorization card to VeADK Frontend: it opens the identity provider, accepts the callback, submits the credential, and resumes the original tool call. Also refined the account entry, login page, session list, empty-response notice, and default agent selection. | [VeADK Frontend](/productions/veadk/archives/1.0.2/en/components/frontend/veadk-frontend) |
+| Network requests | Volcengine signed requests now default to a 10-second connect and 60-second read timeout. VeSearch and web-scraping requests use a 30-second timeout so an unresponsive service does not block indefinitely. | [Volcengine search](/productions/veadk/archives/1.0.2/en/components/tools/vesearch) |
+| Security | Restored TLS certificate verification for web scraping, stopped content-safety debug logs from including API-key values, and removed bearer-token output from the credential-service example. | [Content safety guardrails](/productions/veadk/archives/1.0.2/en/components/security/content-safety) |
+
+## 1.0.1
+
+VeADK 1.0.1 was released on July 7, 2026. It adds Harness, A2A registration, and ADK skill integration, with updates to the Codex runtime and VeADK Frontend.
+
+| Module | Change details | Link |
+| --- | --- | --- |
+| Codex runtime | Ships sandbox, network, and review defaults that allow full host and network access without interactive approval. | [PR #629](https://github.com/volcengine/veadk-python/pull/629) |
+| Harness | Adds the VeADK Harness extension to prepare context for each turn, compact large tool results, and verify final answers; Harness initialization also applies the agent description. | [PR #625](https://github.com/volcengine/veadk-python/pull/625), [PR #633](https://github.com/volcengine/veadk-python/pull/633) |
+| A2A | Adds Harness A2A registration and corrects its registration behavior. | [PR #631](https://github.com/volcengine/veadk-python/pull/631), [PR #632](https://github.com/volcengine/veadk-python/pull/632) |
+| A2A | Adds OAuth authentication to A2A calls. | [PR #635](https://github.com/volcengine/veadk-python/pull/635) |
+| Codex runtime | Adds configurable retries for transient backend errors and restores web search through the Responses shim. | [PR #637](https://github.com/volcengine/veadk-python/pull/637) |
+| Skills | Adds `VeSkillRegistry` for using SkillHub and Skill Space sources with Google ADK `SkillToolset`; local skills should migrate to ADK `SkillToolset`, while the legacy `Agent(skills=..., skills_mode="local")` entry point remains compatible but is deprecated. | [PR #634](https://github.com/volcengine/veadk-python/pull/634) |
+| VeADK Frontend | Adds gateway authentication mode and a missing-Volcengine-credentials notice during agent creation. | [PR #638](https://github.com/volcengine/veadk-python/pull/638) |
+| Codex runtime | Passes agent skills through to the Codex runtime. | [PR #640](https://github.com/volcengine/veadk-python/pull/640) |
+| Codex runtime | Executes an agent's MCP and function tools through the Codex runtime. | [PR #641](https://github.com/volcengine/veadk-python/pull/641) |
+| Examples | Adds a Codex-runtime example that combines a local skill with an MCP tool. | [PR #642](https://github.com/volcengine/veadk-python/pull/642) |
+
+See the [VeADK 1.0.1 release](https://github.com/volcengine/veadk-python/releases/tag/1.0.1) for the complete published record.
+
+## 1.0.0
+
+VeADK 1.0.0 was released on June 22, 2026. The table follows the public release notes; the published change from 0.5.40 is limited to the documentation entry-point wording.
+
+| Module | Change details | Link |
+| --- | --- | --- |
+| Documentation | Aligned the Chinese quickstart card with the English card so it explicitly says users can build and run their first agent. | [PR #628](https://github.com/volcengine/veadk-python/pull/628) |
+
+See the [VeADK 1.0.0 release](https://github.com/volcengine/veadk-python/releases/tag/1.0.0) for the complete published record.
