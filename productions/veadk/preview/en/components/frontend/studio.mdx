@@ -30,6 +30,20 @@ Volcengine credentials are used for models, cloud-resource queries, and AgentKit
 
 The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
 
+## Deployment network modes
+
+The deploy page lets you choose a network mode for the AgentKit runtime, which determines how it is exposed to the public network:
+
+| Network mode | Description |
+| :--- | :--- |
+| Public | The runtime exposes a public data-plane address. |
+| VPC | The runtime is deployed only inside a specified VPC and subnet and does not expose a public data-plane address; you can enable a shared public egress within the VPC. |
+| Public + VPC | Both a public address and an in-VPC address are assigned. |
+
+When you select VPC or Public + VPC, you must provide the VPC ID and subnet ID.
+
+A private VPC runtime does not return a public data-plane address after deployment. Studio reaches it through the server-side runtime proxy, and the data-plane API key stays server-side and is never delivered to the browser. This is the same server-side runtime proxy described in "Select a cloud Runtime".
+
 ## Manage agents
 
 Manage Agents lists AgentKit runtimes deployed through this workbench by the signed-in user. The list defaults to the Beijing region and can be switched to Shanghai. It is filtered by the user identity recorded during deployment and exposes:
