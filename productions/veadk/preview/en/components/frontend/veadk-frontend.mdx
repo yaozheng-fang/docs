@@ -176,7 +176,7 @@ When connecting to an AgentKit Runtime protected by `custom_jwt`, the server for
 **No SSO (local username)** — without those flags, the login page asks for a username (letters and digits, up to 16 characters), stored locally and used as the `user_id`. In this case the server always reports an unauthenticated state and an empty provider list, and the app renders its local username login.
 
 <Note>
-  Login state is cached: SSO via the `veadk_session` cookie, local mode via `localStorage`. The session is created lazily on the first message or attachment upload, not on page load. Logout is a local logout — it clears the session and returns to the login page.
+  Login state is cached: SSO via the `veadk_session` cookie, local mode via `localStorage`. The session is created lazily on the first message or attachment upload, not on page load. Once the first message is sent, the conversation view renders it immediately while the server session initializes in the background; during initialization the session ID is shown as “Initializing”. Logout is a local logout — it clears the session and returns to the login page.
 </Note>
 
 ## Frontend security restrictions
