@@ -9,7 +9,7 @@ VeADK provides a set of tools that run tasks remotely in an [AgentKit sandbox](h
 
 | Tool | Description |
 | :--- | :--- |
-| `run_code` | Execute arbitrary code — good for computation, data processing, and so on |
+| `run_code` | Execute arbitrary code or shell commands — good for computation, data processing, dependency installation, and so on |
 | `execute_skills` | Run an `agent.py` workflow in a prebuilt skills sandbox |
 | `coding` | Run a code-generation workflow in an OpenCode sandbox |
 | `run_sandbox_agent` | Run `agent.py` in a remote sandbox under any `tool_id` |
@@ -99,6 +99,64 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Running shell commands
+
+In addition to running code such as Python, `run_code` can run shell commands in the sandbox. When `language` is set to `bash` or `shell`, the `code` is executed as a shell command in the remote sandbox — useful for file operations, installing dependencies, or invoking command-line tools.
+
+Shell execution reuses the sandbox ID and credential configuration of `run_code`. The `code` is submitted as a command, so multiple commands can be chained within a single execution.
+
+### Parameters
+
+The full signature of `run_code`:
+
+```python
+def run_code(
+    code: str,
+    language: str,
+    tool_context: ToolContext,
+    timeout: int = 30,
+    exec_dir: str = "/tmp",
+    env: dict[str, str] | None = None,
+    hard_timeout: int = 300,
+    max_output_length: int = 30000,
+) -> str
+```
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `code` | `str` | — | The code or shell command to run. |
+| `language` | `str` | — | Execution language. Use `python3` for code, or `bash` / `shell` for shell commands. |
+| `tool_context` | `ToolContext` | — | Tool runtime context, injected automatically by VeADK. |
+| `timeout` | `int` | `30` | Execution timeout in seconds. |
+| `exec_dir` | `str` | `/tmp` | Working directory for shell execution. |
+| `env` | `dict[str, str] \| None` | `None` | Environment variables for shell execution. |
+| `hard_timeout` | `int` | `300` | Hard timeout for shell execution, in seconds. |
+| `max_output_length` | `int` | `30000` | Maximum length of shell output. |
+
+`exec_dir`, `env`, `hard_timeout`, and `max_output_length` apply only when running shell commands (`language` set to `bash` or `shell`); they are managed by the sandbox runtime and do not apply when running code.
+
+### Example
+
+```python title="run_code_bash.py"
+from veadk.tools.builtin_tools.run_code import run_code
+
+result = run_code(
+    code="pip install akshare && python -c 'import akshare; print(akshare.__version__)'",
+    language="bash",
+    tool_context=tool_context,
+    timeout=60,
+    exec_dir="/tmp",
+    env={"PIP_INDEX_URL": "https://pypi.org/simple"},
+    hard_timeout=120,
+    max_output_length=5000,
+)
+print(result)
+```
+
+<Note>
+Shell commands are submitted to the remote sandbox as code and run within the sandbox runtime. Do not embed real credentials in the command; reference sensitive values through the `env` parameter as environment variables.
+</Note>
 
 ## Injecting environment variables into sandbox executions
 
