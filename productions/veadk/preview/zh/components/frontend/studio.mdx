@@ -82,6 +82,8 @@ veadk studio --agents-dir ./agents --open
 | `--oauth2-provider` | `str \| None` | `OAUTH2_PROVIDER`；配置用户池时默认为 `veidentity` | SSO provider 标识。 |
 | `--oauth2-provider-label` | `str \| None` | `OAUTH2_PROVIDER_LABEL` | 登录按钮文案。 |
 | `--auth-mode` | `frontend \| gateway` | `frontend` | `frontend` 由 Studio 处理登录；`gateway` 信任上游网关转发的 JWT 身份。也可通过 `VEADK_FRONTEND_AUTH_MODE` 设置。 |
+| `--admin` | `str \| None` | `None` | 逗号分隔的管理员名单（用户名或 OAuth 邮箱）。省略 `--admin` 与 `--developer` 时，所有登录用户都按 `admin` 处理。也可通过 `VEADK_STUDIO_ADMINS` 设置。 |
+| `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
 | `--generated-agent-test-run-ttl` | `int` | `1800` | 生成智能体的临时测试进程保留秒数。 |
 | `--open` / `--no-open` | `bool` | `--no-open` | 服务就绪后是否打开默认浏览器；`--vite` 模式下忽略。 |
 
@@ -125,6 +127,8 @@ veadk studio deploy \
 | `--region` | `cn-beijing \| cn-shanghai` | `cn-beijing` | Studio 部署地域，同时决定 VeFaaS、API Gateway 等资源所在区域。部署时会跨北京、上海查找 VeIdentity 用户池。 |
 | `--project` | `str` | `default` | VeFaaS 函数所属项目。 |
 | `--iam-role` | `str \| None` | `None` | 绑定到函数的既有 IAM Role TRN；省略时创建或复用默认 Role。 |
+| `--admin` | `str \| None` | `None` | 逗号分隔的管理员名单（用户名或 OAuth 邮箱）。省略 `--admin` 与 `--developer` 时，所有登录用户都按 `admin` 处理。也可通过 `VEADK_STUDIO_ADMINS` 设置。 |
+| `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway 名称；省略时复用已有网关，没有可用网关时创建。 |
 | `--gateway-service-name` | `str` | `""` | 指定网关服务名称；留空时自动配置。 |
 | `--gateway-upstream-name` | `str` | `""` | 指定网关上游名称；留空时自动配置。 |
@@ -132,3 +136,38 @@ veadk studio deploy \
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | 部署用 Secret Key。推荐通过环境变量提供。 |
 | `--veadk-version` | `str` | 最新发布版本 | 写入 VeFaaS 依赖的 `veadk-python` 版本。重现本页行为时显式设为 `1.0.6`。 |
 | `--from-source` | `bool` 标志 | `false` | 从当前源码目录构建 wheel 后部署，包含未提交改动；用于验证未发布版本，不应与 `--veadk-version` 的发布版本工作流混用。 |
+
+## Studio 角色与 Runtime 权限
+
+`--admin` 和 `--developer` 各自接收逗号分隔的本地用户名或 OAuth 邮箱名单。空格会被忽略，身份匹配不区分大小写；同一身份同时出现在两个名单时，`admin` 优先。本地启动示例：
+
+```bash
+veadk studio \
+  --admin "admin,admin@example.com" \
+  --developer "alice,alice@example.com,bob"
+```
+
+也可以分别通过 `VEADK_STUDIO_ADMINS` 和 `VEADK_STUDIO_DEVELOPERS` 环境变量设置这两个名单。部署 Studio 时使用相同参数：
+
+```bash
+veadk studio deploy \
+  --user-pool-id "your-user-pool-id" \
+  --allowed-client-id "your-user-pool-client-id" \
+  --vefaas-app-name "veadk-studio" \
+  --admin "admin@example.com" \
+  --developer "alice@example.com,bob@example.com"
+```
+
+两项都不传时，所有登录用户都按 `admin` 处理，拥有全部 Studio 能力并可见全部 Runtime。只要传入任一名单就会启用角色权限；未命中名单的身份为普通用户。
+
+| 功能 | admin | developer | 普通用户 |
+| :--- | :--- | :--- | :--- |
+| 添加、调试和部署智能体 | 允许 | 允许 | 不允许；侧边栏隐藏添加/管理入口 |
+| 查看和连接 Runtime | 全部 Runtime | 仅自己创建的 Runtime | 仅自己创建的 Runtime |
+| 管理或删除 Runtime | 全部 Studio 管理的 Runtime | 仅自己创建的 Runtime | 不允许 |
+
+Runtime 归属由服务端在创建时记录，不依据浏览器提交的作者字段判断。缺少归属标签的历史 Runtime 仅 `admin` 可见。
+
+<Warning>
+  本地用户名保存在浏览器中，可被用户修改或冒充，仅适用于本地开发与功能验证。生产环境必须使用 OAuth 或 gateway 认证，由服务端从已验证身份中确定角色和 Runtime 归属。
+</Warning>
