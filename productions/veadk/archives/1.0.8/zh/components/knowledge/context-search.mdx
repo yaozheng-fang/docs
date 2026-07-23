@@ -1,0 +1,96 @@
+---
+title: "使用 Context Search 存储"
+---
+
+`context_search` 后端由 `ContextSearchBackend` 实现，对接火山引擎 Context Search 托管检索服务。文件通过预签名地址上传至 TOS（对象存储），再登记进 Context Search 的 RAG 场景（Scene），切分、向量化与检索均在服务端完成，因此**无需本地 embedding**。
+
+## 何时使用
+
+- 需要托管的语义检索服务，免于自行维护向量库；
+- 已在火山引擎 Context Search 创建 RAG 场景（Scene）与检索引擎（Engine）。
+
+## 前置条件
+
+- 已开通火山引擎账号并创建 Context Search 的 RAG 场景，其场景 ID 为纯数字字符串；
+- 已获取检索引擎的 Endpoint 与 API Key（检索时必需）。
+
+## 使用示例
+
+```python
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+# index 即 Context Search 的场景 ID（Scene Id），须为纯数字字符串
+kb = KnowledgeBase(backend="context_search", index="123456789")
+kb.add_from_text("公司的标准年假为每年 15 天，入职满一年起享受。")
+
+agent = Agent(
+    name="demo",
+    instruction="回答用户问题，必要时用 `load_knowledgebase` 工具检索知识库。",
+    knowledgebase=kb,
+)
+```
+
+也可以通过 `backend_config` 显式传入凭证与检索引擎信息：
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="context_search",
+    index="123456789",
+    backend_config={
+        "index": "123456789",
+        "volcengine_access_key": "your-ak",
+        "volcengine_secret_key": "your-sk",
+        "context_search_project": "default",
+        "context_search_engine_endpoint": "https://your-engine-endpoint",
+        "context_search_engine_apikey": "your-engine-apikey",
+    },
+)
+```
+
+## 参数
+
+### 构造参数
+
+`ContextSearchBackend` 接受以下字段：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | 无默认，由 `KnowledgeBase` 传入 | 场景 ID（Scene Id），须为纯数字字符串；当 `context_search_engine_id` 为空时作为场景 ID 使用。 |
+| `volcengine_access_key` | `str \| None` | 读取环境变量 `VOLCENGINE_ACCESS_KEY` | 火山引擎访问密钥 AK。 |
+| `volcengine_secret_key` | `str \| None` | 读取环境变量 `VOLCENGINE_SECRET_KEY` | 火山引擎访问密钥 SK。 |
+| `volcengine_session_token` | `str \| None` | 读取环境变量 `VOLCENGINE_SESSION_TOKEN` | STS 临时凭证令牌。 |
+| `context_search_region` | `str \| None` | 读取环境变量 `DATABASE_CONTEXT_SEARCH_REGION`；缺省 `cn-beijing`（`byteplus` 为 `ap-southeast-1`） | 服务区域。 |
+| `context_search_project` | `str \| None` | 读取环境变量 `DATABASE_CONTEXT_SEARCH_PROJECT`；缺省 `default` | Context Search 项目名。 |
+| `context_search_engine_id` | `str \| None` | 读取环境变量 `DATABASE_CONTEXT_SEARCH_ENGINE_ID` | 检索引擎 ID，设置后优先作为场景 ID。 |
+| `context_search_engine_endpoint` | `str \| None` | 读取环境变量 `DATABASE_CONTEXT_SEARCH_ENGINE_ENDPOINT` | 检索引擎 Endpoint，检索时必需。 |
+| `context_search_engine_apikey` | `str \| None` | 读取环境变量 `DATABASE_CONTEXT_SEARCH_ENGINE_APIKEY` | 检索引擎 API Key，检索时必需。 |
+| `context_search_service` | `str` | `ctxsearch` | 服务标识。 |
+| `context_search_version` | `str` | `2025-09-01` | API 版本。 |
+| `context_search_host` | `str` | `ctxsearch.volcengineapi.com` | API 主机名。`byteplus` 下自动替换为 `byteplusapi.com`。 |
+| `context_search_scheme` | `str` | `https` | 请求协议。 |
+
+## 环境变量配置
+
+```bash
+# 火山引擎凭证
+export VOLCENGINE_ACCESS_KEY="your-ak"
+export VOLCENGINE_SECRET_KEY="your-sk"
+
+# Context Search
+export DATABASE_CONTEXT_SEARCH_PROJECT="default"
+export DATABASE_CONTEXT_SEARCH_REGION="cn-beijing"
+export DATABASE_CONTEXT_SEARCH_ENGINE_ID="your-engine-id"
+export DATABASE_CONTEXT_SEARCH_ENGINE_ENDPOINT="https://your-engine-endpoint"
+export DATABASE_CONTEXT_SEARCH_ENGINE_APIKEY="your-engine-apikey"
+```
+
+<Note>
+向量化与检索均在 Context Search 服务端完成，本后端无需配置 embedding 模型。知识注入为异步过程，文件上传后需等待服务端完成索引才可检索。
+</Note>
+
+<Warning>
+`index`（场景 ID）必须为纯数字字符串，否则会抛出 `ValueError`；初始化时还会调用 `GetScene` 校验该场景是否存在。检索前必须配置 `context_search_engine_endpoint` 与 `context_search_engine_apikey`，否则 `search` 会报错。
+</Warning>

@@ -1,0 +1,73 @@
+---
+title: "In-memory exporter"
+---
+
+`InMemoryExporter` keeps span data in process memory instead of reporting it to an external platform. It organizes spans by `session_id`, which is useful for local debugging, testing, and dumping a session's trace data to a JSON file for offline analysis.
+
+## When to use
+
+- Local development and debugging of agent execution flows;
+- Verifying spans in unit or integration tests;
+- Offline environments without external platform connectivity, where you need to retain and analyze trace data locally.
+
+## Automatic management
+
+`InMemoryExporter` is created and managed automatically by `OpentelemetryTracer` and records every span. It therefore **cannot** be added explicitly to the `exporters` list of `OpentelemetryTracer`, or initialization fails.
+
+```python
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+# The in-memory exporter is attached automatically even with no external exporters
+tracer = OpentelemetryTracer(exporters=[])
+```
+
+## Usage
+
+After a session run finishes, call the tracer's `dump` method to export that session's spans to a local JSON file:
+
+```python
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.demo_tools import get_city_weather
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer()
+
+agent = Agent(tools=[get_city_weather], tracers=[tracer])
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="session_id_demo"))
+
+# Dump the current session's spans to JSON
+path = tracer.dump(user_id="user-1", session_id="session_id_demo")
+print(f"trace written to {path}")
+```
+
+## Parameters
+
+### Constructor parameters
+
+`InMemoryExporter` usually does not need to be constructed by hand; its constructor parameters are:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | `inmemory_exporter` | Exporter instance identifier. |
+
+### `dump` method parameters
+
+`OpentelemetryTracer.dump` relies on spans retained by the in-memory exporter, with the following parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `str` | `unknown_user_id` | User identifier, used to organize and name the dump file. |
+| `session_id` | `str` | `unknown_session_id` | Session identifier, used to filter spans of that session. |
+| `path` | `str` | Agent directory | Directory for the output file; defaults to the agent directory. |
+
+The dump file is named like `{name}_{user_id}_{session_id}_{trace_id}.json`, and its content is a list of spans, each containing the name, `span_id`, `trace_id`, start/end times, attributes, and parent span.
+
+<Note>
+Memory usage grows with the number of spans, so long-running processes should watch memory growth. Session-level filtering relies on a correctly configured `session_id`; `dump` first force-exports all pending spans, then filters by `session_id` before writing the file.
+</Note>

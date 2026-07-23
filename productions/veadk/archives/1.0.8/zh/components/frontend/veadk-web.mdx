@@ -1,0 +1,78 @@
+---
+title: "VeADK Web"
+---
+
+`veadk web` 在 Google ADK 的 `adk web` 之上封装了一层，启动一个可视化的调试界面：无需编写任何前端代码，即可在浏览器中与智能体对话并观察其执行过程。相比直接使用 `adk web`，它额外提供了 VeADK 记忆能力的自动集成、工作流智能体的记忆告警、可选的 VeIdentity SSO 登录，并默认关闭 OpenAPI 文档路由与冗余日志。它适合本地开发与排查。
+
+`veadk web` 会透传 `adk web` 的选项，因此 `adk web` 的用法在此同样适用，本页仅在其基础上说明 VeADK 增加的行为与选项。
+
+## 启动
+
+在智能体目录的上层目录中执行命令。每个包含 `agent.py` 并暴露 `root_agent` 的子目录都会成为界面中可选择的一个应用。
+
+```bash
+# 智能体目录作为位置参数，缺省为当前目录
+veadk web examples
+
+# 指定监听地址与端口
+veadk web examples --host 0.0.0.0 --port 8080
+```
+
+打开命令输出中的地址即可使用。
+
+## 常用透传选项
+
+以下选项由底层的 `adk web` 提供，`veadk web` 原样透传。
+
+| 选项 | 默认值 | 说明 |
+| :-- | :-- | :-- |
+| `AGENTS_DIR` | 当前目录 | 位置参数：智能体应用所在目录，每个子目录暴露一个 `root_agent`。 |
+| `--host` | `127.0.0.1` | 服务监听地址。 |
+| `--port` | `8000` | 服务监听端口。 |
+| `--log_level` | `ERROR` | 日志级别。`veadk web` 将缺省值下调为 `ERROR`，详见下文。 |
+| `--reload` / `--no-reload` | `--reload` | 智能体代码变更时是否自动重载。 |
+| `--session_service_uri` | — | 会话服务的存储地址。未指定时使用本地存储。 |
+
+<Note>
+  完整的透传选项以 `adk web --help` 为准。上表列出的是与本界面最常配合使用的几项。
+</Note>
+
+## 自有 OAuth2 选项
+
+`veadk web` 额外提供三个用于 VeIdentity 单点登录的选项。仅当同时提供用户池与客户端名称时才会启用登录中间件。
+
+| 选项 | 默认值 | 说明 |
+| :-- | :-- | :-- |
+| `--oauth2-user-pool` | — | VeIdentity 用户池名称。与客户端名称同时设置后启用 SSO。 |
+| `--oauth2-user-pool-client` | — | VeIdentity 用户池客户端名称。 |
+| `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | OAuth2 回调地址。未显式设置时，依据透传的 `--host` 与 `--port` 自动拼接。 |
+
+```bash
+veadk web examples \
+  --oauth2-user-pool <用户池名称> \
+  --oauth2-user-pool-client <客户端名称>
+```
+
+<Note>
+  启用 SSO 需要进程能够读取到火山引擎凭证。此模式下的 Cookie 未强制 `Secure` 标志，以便在本地 HTTP 环境下正常工作。
+</Note>
+
+## 记忆能力自动集成
+
+这是 `veadk web` 相较于原生 `adk web` 的核心增强。命令会挂钩 ADK Web 服务的运行器获取过程，在为某个应用创建运行器之前，先加载对应的智能体并检查其记忆配置：
+
+- 若智能体配置了短期记忆，则将其会话服务接入为该应用的会话服务。
+- 若智能体配置了长期记忆，则将其接入为该应用的记忆服务，并在日志中打印所使用的长期记忆后端。
+
+因此，只要在智能体上配置了记忆，界面中的对话即可直接使用，无需在启动命令中另行指定会话或记忆服务。
+
+<Warning>
+  当检测到工作流智能体时,该智能体各个子智能体上单独配置的短期记忆与长期记忆均不会生效，命令会在日志中给出告警。请将记忆配置在工作流智能体本身上。
+</Warning>
+
+## 关闭 OpenAPI 与日志默认级别
+
+`veadk web` 在启动时对 ADK Web 服务做了两处调整：
+
+- **关闭 OpenAPI 文档路由。** 从服务中移除 `/openapi.json`、`/docs`、`/redoc` 三个路由，以简化界面并收敛暴露面。
+- **收敛日志默认级别。** 若未显式传入 `--log_level`，则将日志级别默认设为 `ERROR`，以抑制 Google ADK 与 LiteLLM 的冗余输出；显式传入 `--log_level` 时以传入值为准。
