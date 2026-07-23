@@ -124,6 +124,8 @@ veadk studio deploy \
   --veadk-version "1.0.6"
 ```
 
+Deployment credentials are resolved in the following order: explicit `--volcengine-access-key` / `--volcengine-secret-key` options take precedence; otherwise the `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` environment variables of the current process are read; when neither is present, the `[default]` profile in `~/.volc/credentials` is used. Any source that yields a complete access key and secret key is sufficient to proceed.
+
 On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
 
 `--region` selects the Studio deployment region, defaults to `cn-beijing`, and also supports `cn-shanghai`; VeFaaS, API Gateway, and other resources are created in that region. Deployment also locates the VeIdentity user pool and client across the deployment region and the Beijing and Shanghai regions: it queries the deployment region first, then searches the other region on a miss, emitting a warning and continuing when matched cross-region. `--project` selects the VeFaaS function project and defaults to `default`.
@@ -146,8 +148,8 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 | `--gateway-name` | `str` | `""` | Serverless API Gateway name. If omitted, an existing gateway is reused or a gateway is created when none exists. |
 | `--gateway-service-name` | `str` | `""` | Gateway service name; leave empty for automatic configuration. |
 | `--gateway-upstream-name` | `str` | `""` | Gateway upstream name; leave empty for automatic configuration. |
-| `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used during deployment. Prefer the environment variable. |
-| `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. Prefer the environment variable. |
+| `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used during deployment. When omitted, the `VOLCENGINE_ACCESS_KEY` environment variable and then the `[default]` profile in `~/.volc/credentials` are read. |
+| `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. When omitted, the `VOLCENGINE_SECRET_KEY` environment variable and then the `[default]` profile in `~/.volc/credentials` are read. |
 | `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.6` to reproduce this version. |
 | `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |
 
