@@ -126,7 +126,7 @@ veadk studio deploy \
 
 部署成功后，终端会输出公网 URL 和 VeFaaS 应用 ID。打开公网 URL 时，Studio 会先跳转到 VeIdentity 完成登录。
 
-`--region` 指定 Studio 的部署地域，默认为 `cn-beijing`，也支持 `cn-shanghai`；VeFaaS、API Gateway 等资源均创建在该地域。部署时还会自动在所部署地域以及北京、上海两个地域之间查找 VeIdentity 用户池与客户端：优先查询部署地域，未命中时跨地域查询另一个地域；跨地域命中时终端会输出 warning 并继续部署。`--project` 指定 VeFaaS 函数所属项目，默认为 `default`。
+`--region` 指定 Studio 的部署地域，默认为 `cn-beijing`，也支持 `cn-shanghai`；VeFaaS、API Gateway 等资源均创建在该地域。部署时还会自动在所部署地域以及北京、上海两个地域之间查找 VeIdentity 用户池与客户端：优先查询部署地域，未命中时跨地域查询另一个地域；跨地域命中时终端会输出 warning 并继续部署。选择上海地域时，函数、网关和 AgentKit 资源仍部署在上海，而 VeFaaS Application 操作使用其北京控制面端点；部署后函数会记录所选的 AgentKit 沙箱地域，使临时会话与 Skill 创建会话与各自 CodeEnv Tool 位于同一地域。`--project` 指定 VeFaaS 函数所属项目，默认为 `default`。
 
 部署者的长期 AK/SK 不会写入 VeFaaS 应用环境变量。已部署的 Studio 使用绑定 IAM Role 的临时凭证访问火山引擎服务。
 

@@ -126,7 +126,7 @@ veadk studio deploy \
 
 On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
 
-`--region` selects the Studio deployment region, defaults to `cn-beijing`, and also supports `cn-shanghai`; VeFaaS, API Gateway, and other resources are created in that region. Deployment also locates the VeIdentity user pool and client across the deployment region and the Beijing and Shanghai regions: it queries the deployment region first, then searches the other region on a miss, emitting a warning and continuing when matched cross-region. `--project` selects the VeFaaS function project and defaults to `default`.
+`--region` selects the Studio deployment region, defaults to `cn-beijing`, and also supports `cn-shanghai`; VeFaaS, API Gateway, and other resources are created in that region. Deployment also locates the VeIdentity user pool and client across the deployment region and the Beijing and Shanghai regions: it queries the deployment region first, then searches the other region on a miss, emitting a warning and continuing when matched cross-region. For Shanghai deployments, the Function, APIG, and AgentKit resources remain in Shanghai while VeFaaS Application operations use the service's Beijing control-plane endpoint. The deployed Function records the selected AgentKit Sandbox region so that temporary-chat and Skill-creation sessions query the same region as their CodeEnv Tools. `--project` selects the VeFaaS function project and defaults to `default`.
 
 The deployer's long-lived access and secret keys are not written to the VeFaaS application environment. Deployed Studio uses temporary credentials from its bound IAM role.
 
