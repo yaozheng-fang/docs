@@ -1,0 +1,67 @@
+---
+title: "Image editing"
+tag: "Function tool"
+---
+
+## Overview
+
+Tool identifier `image_edit`.
+
+`image_edit` performs image-to-image editing on a source image following a text instruction (replace elements, change style, and so on). The agent extracts the source image and the edit request from user input — you don't construct the parameters by hand. It uses its own edit-model environment variable, `MODEL_EDIT_NAME` (**note: different from `image_generate`'s `MODEL_IMAGE_NAME`**).
+
+Import path: `from veadk.tools.builtin_tools.image_edit import image_edit`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure the API key for the agent's reasoning model.
+2. Configure the image-editing model name (`MODEL_EDIT_NAME`).
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `MODEL_EDIT_NAME`: image-editing model name
+
+`config.yaml` keys:
+
+```yaml title="config.yaml"
+model:
+  edit:
+    name: doubao-seededit-3-0-i2i-250628
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+    api_key: your-api-key-here
+```
+
+## Usage
+
+```python title="examples/tools/image_edit/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.image_edit import image_edit
+
+agent = Agent(
+    name="image_edit_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="Edit images on instruction.",
+    instruction="You are an image-editing expert. Call image_edit with the user's source image and request.",
+    tools=[image_edit],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "In this image https://example.com/cat.png, replace the cat with a puppy"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
