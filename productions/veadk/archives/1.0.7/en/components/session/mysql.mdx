@@ -1,0 +1,104 @@
+---
+title: "MySQL (mysql)"
+---
+
+The `mysql` backend stores sessions in a MySQL database, backed by Google ADK's `DatabaseSessionService`. Multiple agent instances can connect to the same database for shared, distributed persistence.
+
+The backing implementation class is `MysqlSTMBackend`, which reads connection details from `MysqlConfig` and assembles a SQLAlchemy connection string.
+
+## When to use
+
+- Production, multi-instance, or distributed deployments;
+- When sessions are centrally managed by a shared MySQL.
+
+## Usage
+
+Provide connection details via `config.yaml` (or the matching environment variables) — never hard-code the password.
+
+```python
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+
+stm = ShortTermMemory(backend="mysql")  # connection details from config.yaml / env
+
+agent = Agent(name="demo")
+runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+```
+
+To forward SQLAlchemy driver args such as connection pooling, use `db_kwargs`:
+
+```python
+stm = ShortTermMemory(
+    backend="mysql",
+    db_kwargs={"pool_size": 10, "pool_recycle": 3600},
+)
+```
+
+You can also inject a `MysqlConfig` directly through `backend_configs` to override the environment variables (hard-coding the password is discouraged):
+
+```python
+from veadk.configs.database_configs import MysqlConfig
+
+stm = ShortTermMemory(
+    backend="mysql",
+    backend_configs={
+        "mysql_config": MysqlConfig(
+            host="127.0.0.1",
+            user="veadk",
+            password="secret",
+            database="veadk_sessions",
+        )
+    },
+)
+```
+
+## Parameters
+
+### ShortTermMemory constructor parameters (mysql)
+
+| Parameter | Type | Default | Effective for mysql | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `backend` | `str` | `"local"` | Yes | Set to `"mysql"` to select this backend. |
+| `backend_configs` | `dict` | `{}` | Yes | Expanded as keyword arguments to `MysqlSTMBackend`; may include `mysql_config` (a `MysqlConfig` instance) to override the config otherwise read from environment variables. |
+| `db_kwargs` | `dict` | `{}` | Yes | Forwarded to the underlying `DatabaseSessionService` (the SQLAlchemy engine); commonly used for pool settings such as `pool_size`, `pool_recycle`, `pool_pre_ping`. |
+| `db_url` | `str` | `""` | Yes (override) | A connection string. Once set, `backend` and `backend_configs` are ignored and `DatabaseSessionService` is built directly from `db_url` + `db_kwargs`. |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | No | Used only by `sqlite`. |
+| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Callback invoked after a session is loaded; receives the loaded `Session`. |
+
+### Backend implementation class parameters (MysqlSTMBackend)
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `mysql_config` | `MysqlConfig` | built from env vars | MySQL connection config. By default read automatically from the `DATABASE_MYSQL_*` environment variables. |
+| `db_kwargs` | `dict` | `{}` | Extra args forwarded to `DatabaseSessionService`; same as the `db_kwargs` above. |
+
+### MysqlConfig fields and environment variables
+
+The `MysqlConfig` config class uses the env prefix `DATABASE_MYSQL_`.
+
+```yaml config.yaml
+database:
+  mysql:
+    host:       # host or IP
+    user:
+    password:
+    database:
+    charset: utf8
+```
+
+| Field | Env var | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `host` | `DATABASE_MYSQL_HOST` | `str` | `""` | Database host or IP. |
+| `user` | `DATABASE_MYSQL_USER` | `str` | `""` | Username. |
+| `password` | `DATABASE_MYSQL_PASSWORD` | `str` | `""` | Password. |
+| `database` | `DATABASE_MYSQL_DATABASE` | `str` | `""` | Database name. |
+| `charset` | `DATABASE_MYSQL_CHARSET` | `str` | `utf8` | Character set. |
+| `secret_token` | `DATABASE_MYSQL_SECRET_TOKEN` | `str` | `""` | STS token for MySQL auth; not supported yet. |
+
+<Note>
+VeADK auto-selects the sync or async MySQL driver based on the Google ADK version: ADK ≥ 1.19.0 uses `mysql+aiomysql://`, otherwise `mysql+pymysql://`. Special characters in the username and password are URL-encoded automatically (`urllib.parse.quote_plus`). You can [provision MySQL on Volcengine](https://www.volcengine.com/product/rds-mysql).
+</Note>
+
+<Warning>
+`MysqlConfig` has no port field, so the connection uses MySQL's default port. For a non-default port or finer connection control, use `db_url` to supply a full connection string instead.
+</Warning>
