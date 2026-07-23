@@ -12,6 +12,8 @@ title: "飞书"
 
 它监听飞书机器人的消息事件，并把飞书的会话身份映射到 VeADK：以消息发送者作为 `Runner` 的用户标识，以消息所在的话题作为会话标识；话题不存在时，回退到当前群聊或单聊作为会话标识。1.0.5 支持提取文本消息、互动卡片与合并转发消息中的文本内容，并兼容同步 Channel SDK 生命周期。
 
+收到话题消息或回复消息时，扩展会自动获取话题历史或被引用的父消息，并将这些上下文拼接到用户消息前再转发给智能体，使智能体能够参考完整对话上下文。该能力默认开启，详见[话题历史与引用消息](#话题历史与引用消息)。
+
 ## 环境变量与前提
 
 安装：
@@ -80,6 +82,54 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+## 话题历史与引用消息
+
+当消息来自飞书话题（thread）或是一条回复消息时，扩展会在把消息转发给智能体之前，自动获取相关上下文并拼接到用户消息文本之前：
+
+- **话题历史**：消息属于话题时，扩展获取该话题内按时间正序排列的历史消息（最多 `thread_history_limit` 条，不包含当前消息），将其作为话题上下文拼接到用户消息前。
+- **引用消息**：消息是一条回复但未归属话题时，扩展获取被引用的父消息；若父消息无法获取，则回退获取该回复链的根消息，将其作为引用上下文拼接到用户消息前。
+
+话题历史优先于引用消息：当消息同时存在话题标识时，仅附加话题历史，不再单独获取父消息。获取到的消息内容会被还原为可读文本，覆盖文本消息、富文本（post）、互动卡片与合并转发消息。
+
+<Note>
+获取话题历史与引用消息需要通过飞书 OpenAPI 调用消息接口，因此必须配置 `app_id` 与 `app_secret`（构造参数，或 `TOOL_FEISHU_CHANNEL_APP_ID` / `TOOL_FEISHU_CHANNEL_APP_SECRET` 环境变量，回退到 `TOOL_LARK_ENDPOINT` / `TOOL_LARK_API_KEY`）。未配置凭证时该能力会被跳过，不会报错。
+</Note>
+
+### 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `include_parent_message` | `bool` | `True` | 收到回复消息时是否获取并附带被引用的父消息内容 |
+| `include_thread_history` | `bool` | `True` | 收到话题消息时是否获取并附带该话题的历史消息 |
+| `thread_history_limit` | `int` | `20` | 获取话题历史消息的最大条数，最小为 `1` |
+
+### 使用示例
+
+```python title="examples/channel/feishu_bot_thread.py"
+from veadk.extensions import FeishuChannelExtension
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    app_id="cli_xxx",
+    app_secret="xxx",
+    include_thread_history=True,
+    thread_history_limit=30,
+    include_parent_message=True,
+)
+```
+
+关闭该能力，使扩展仅转发当前消息原文：
+
+```python title="examples/channel/feishu_bot_plain.py"
+from veadk.extensions import FeishuChannelExtension
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    include_parent_message=False,
+    include_thread_history=False,
+)
 ```
 
 ## 额外说明

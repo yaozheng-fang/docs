@@ -12,6 +12,8 @@ This page treats Feishu as an **inbound message channel**: messages from Feishu 
 
 It listens for the bot's message events and maps Feishu's session identity onto VeADK: the message sender becomes the `Runner`'s user identity, and the thread the message belongs to becomes the session identity; when there is no thread, it falls back to the current group or direct chat as the session. In 1.0.5 it extracts text from plain messages, interactive cards, and merged-forward messages and supports the synchronous Channel SDK lifecycle.
 
+When an incoming message belongs to a Feishu thread or is a reply, the extension automatically fetches the thread history or the quoted parent message and prepends that context to the user message before forwarding it to the agent, so the agent can reason over the full conversation context. This is enabled by default; see [Thread history and quoted messages](#thread-history-and-quoted-messages).
+
 ## Environment & prerequisites
 
 Installation:
@@ -80,6 +82,54 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+## Thread history and quoted messages
+
+When an incoming message comes from a Feishu thread or is a reply, the extension fetches the relevant context and prepends it to the user message before forwarding it to the agent:
+
+- **Thread history**: when the message belongs to a thread, the extension fetches the thread's history ordered oldest-first (up to `thread_history_limit` messages, excluding the current message) and prepends it as thread context.
+- **Quoted message**: when the message is a reply but does not belong to a thread, the extension fetches the quoted parent message; if the parent cannot be fetched, it falls back to the root message of the reply chain and prepends it as quoted context.
+
+Thread history takes precedence over quoted messages: when a thread identifier is present, only the thread history is attached and the parent message is not fetched separately. Fetched message content is rendered back to readable text, covering text, rich-text (post), interactive card, and merged-forward messages.
+
+<Note>
+Fetching thread history and quoted messages requires calling Feishu OpenAPI message endpoints, so `app_id` and `app_secret` must be configured (constructor parameters, or the `TOOL_FEISHU_CHANNEL_APP_ID` / `TOOL_FEISHU_CHANNEL_APP_SECRET` environment variables, falling back to `TOOL_LARK_ENDPOINT` / `TOOL_LARK_API_KEY`). When credentials are not configured the capability is skipped silently without raising an error.
+</Note>
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `include_parent_message` | `bool` | `True` | Whether to fetch and attach the quoted parent message for reply messages |
+| `include_thread_history` | `bool` | `True` | Whether to fetch and attach the thread history for thread messages |
+| `thread_history_limit` | `int` | `20` | Maximum number of thread history messages to fetch, minimum `1` |
+
+### Usage example
+
+```python title="examples/channel/feishu_bot_thread.py"
+from veadk.extensions import FeishuChannelExtension
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    app_id="cli_xxx",
+    app_secret="xxx",
+    include_thread_history=True,
+    thread_history_limit=30,
+    include_parent_message=True,
+)
+```
+
+Disable the capability so the extension forwards only the current message text:
+
+```python title="examples/channel/feishu_bot_plain.py"
+from veadk.extensions import FeishuChannelExtension
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    include_parent_message=False,
+    include_thread_history=False,
+)
 ```
 
 ## Notes
