@@ -78,6 +78,14 @@ VPC 私有 Runtime 部署完成后不返回公网数据面地址，Studio 通过
   「Runtime 信息」标签可能展示 Runtime 的环境变量值。仅向经过授权的用户开放 Studio，并优先使用平台支持的密钥管理能力。
 </Note>
 
+连接 Runtime 时若无法建立连接，Studio 会区分失败原因并给出对应提示，便于直接定位问题：
+
+- **权限不足**：当前账号无权访问该 Runtime，可刷新列表或重新登录后重试。
+- **Agent Server 不可连接**：Runtime 的 Agent Server 未提供连接接口，通常是 Runtime 尚未就绪或版本不兼容，需确认 Runtime 状态与版本。
+- **鉴权失败**：Runtime 服务拒绝了连接请求，需检查 Runtime 的鉴权配置。
+
+这样无需查看日志即可判断应刷新、重新登录，还是检查 Runtime 就绪状态与鉴权配置。
+
 ## `veadk studio` 参数
 
 | 选项 | 类型 | 默认值 | 说明 |

@@ -78,6 +78,14 @@ The info panel has two tabs:
   The Runtime info tab can display runtime environment-variable values. Restrict Studio to authorized users and prefer the platform's secret-management features.
 </Note>
 
+When a Runtime connection cannot be established, Studio distinguishes the failure cause and shows a corresponding message so you can locate the problem directly:
+
+- **Access denied**: the current account is not allowed to use the Runtime. Refresh the list or sign in again and retry.
+- **Agent Server unreachable**: the Runtime's Agent Server does not expose a connection interface, usually because the Runtime is not ready or its version is incompatible. Confirm the Runtime status and version.
+- **Authentication failure**: the Runtime service rejected the connection request. Check the Runtime's authentication configuration.
+
+This lets you decide whether to refresh, sign in again, or inspect the Runtime's readiness and authentication settings without reading logs.
+
 ## `veadk studio` options
 
 | Option | Type | Default | Description |
