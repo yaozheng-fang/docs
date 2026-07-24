@@ -30,9 +30,23 @@ Volcengine credentials are used for models, cloud-resource queries, and AgentKit
 
 The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
 
+## Deployment network modes
+
+The deploy page lets you choose a network mode for the AgentKit runtime, which determines how it is exposed to the public network:
+
+| Network mode | Description |
+| :--- | :--- |
+| Public | The runtime exposes a public data-plane address. |
+| VPC | The runtime is deployed only inside a specified VPC and subnet and does not expose a public data-plane address; you can enable a shared public egress within the VPC. |
+| Public + VPC | Both a public address and an in-VPC address are assigned. |
+
+When you select VPC or Public + VPC, you must provide the VPC ID and subnet ID.
+
+A private VPC runtime does not return a public data-plane address after deployment. Studio reaches it through the server-side runtime proxy, and the data-plane API key stays server-side and is never delivered to the browser. This is the same server-side runtime proxy described in "Select a cloud Runtime".
+
 ## Manage agents
 
-Manage Agents lists AgentKit runtimes deployed through this workbench by the signed-in user. The list is filtered by the user identity recorded during deployment and exposes:
+Manage Agents lists AgentKit runtimes deployed through this workbench by the signed-in user. The list defaults to the Beijing region and can be switched to Shanghai. It is filtered by the user identity recorded during deployment and exposes:
 
 - Runtime name, ID, status, region, and creation time;
 - Model, description, project, version, resources, and update time;
@@ -64,6 +78,14 @@ The info panel has two tabs:
   The Runtime info tab can display runtime environment-variable values. Restrict Studio to authorized users and prefer the platform's secret-management features.
 </Note>
 
+When a Runtime connection cannot be established, Studio distinguishes the failure cause and shows a corresponding message so you can locate the problem directly:
+
+- **Access denied**: the current account is not allowed to use the Runtime. Refresh the list or sign in again and retry.
+- **Agent Server unreachable**: the Runtime's Agent Server does not expose a connection interface, usually because the Runtime is not ready or its version is incompatible. Confirm the Runtime status and version.
+- **Authentication failure**: the Runtime service rejected the connection request. Check the Runtime's authentication configuration.
+
+This lets you decide whether to refresh, sign in again, or inspect the Runtime's readiness and authentication settings without reading logs.
+
 ## `veadk studio` options
 
 | Option | Type | Default | Description |
@@ -82,6 +104,8 @@ The info panel has two tabs:
 | `--oauth2-provider` | `str \| None` | `OAUTH2_PROVIDER`; defaults to `veidentity` with a pool | SSO provider identifier. |
 | `--oauth2-provider-label` | `str \| None` | `OAUTH2_PROVIDER_LABEL` | Login-button label. |
 | `--auth-mode` | `frontend \| gateway` | `frontend` | `frontend` handles login in Studio; `gateway` trusts JWT identity forwarded by an upstream gateway. It also reads `VEADK_FRONTEND_AUTH_MODE`. |
+| `--admin` | `str \| None` | `None` | Comma-separated admin list (usernames or OAuth emails). Omitting both `--admin` and `--developer` treats every signed-in user as an `admin`. Also reads `VEADK_STUDIO_ADMINS`. |
+| `--developer` | `str \| None` | `None` | Comma-separated developer list (usernames or OAuth emails). Also reads `VEADK_STUDIO_DEVELOPERS`. |
 | `--generated-agent-test-run-ttl` | `int` | `1800` | Lifetime in seconds for temporary generated-agent test processes. |
 | `--open` / `--no-open` | `bool` | `--no-open` | Open the default browser when ready. Ignored with `--vite`. |
 
@@ -108,6 +132,8 @@ veadk studio deploy \
   --veadk-version "1.0.6"
 ```
 
+Deployment credentials are resolved in the following order: explicit `--volcengine-access-key` / `--volcengine-secret-key` options take precedence; otherwise the `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` environment variables of the current process are read; when neither is present, the `[default]` profile in `~/.volc/credentials` is used. Any source that yields a complete access key and secret key is sufficient to proceed.
+
 On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
 
 `--region` selects the Studio deployment region, defaults to `cn-beijing`, and also supports `cn-shanghai`; VeFaaS, API Gateway, and other resources are created in that region. Deployment also locates the VeIdentity user pool and client across the deployment region and the Beijing and Shanghai regions: it queries the deployment region first, then searches the other region on a miss, emitting a warning and continuing when matched cross-region. `--project` selects the VeFaaS function project and defaults to `default`.
@@ -125,10 +151,47 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 | `--region` | `cn-beijing \| cn-shanghai` | `cn-beijing` | Studio deployment region; also determines the region for VeFaaS, API Gateway, and related resources. The deploy command searches VeIdentity user pools across Beijing and Shanghai. |
 | `--project` | `str` | `default` | VeFaaS function project. |
 | `--iam-role` | `str \| None` | `None` | Existing IAM role TRN for the function. If omitted, the default role is created or reused. |
+| `--admin` | `str \| None` | `None` | Comma-separated admin list (usernames or OAuth emails). Omitting both `--admin` and `--developer` treats every signed-in user as an `admin`. Also reads `VEADK_STUDIO_ADMINS`. |
+| `--developer` | `str \| None` | `None` | Comma-separated developer list (usernames or OAuth emails). Also reads `VEADK_STUDIO_DEVELOPERS`. |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway name. If omitted, an existing gateway is reused or a gateway is created when none exists. |
 | `--gateway-service-name` | `str` | `""` | Gateway service name; leave empty for automatic configuration. |
 | `--gateway-upstream-name` | `str` | `""` | Gateway upstream name; leave empty for automatic configuration. |
-| `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used during deployment. Prefer the environment variable. |
-| `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. Prefer the environment variable. |
+| `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used during deployment. When omitted, the `VOLCENGINE_ACCESS_KEY` environment variable and then the `[default]` profile in `~/.volc/credentials` are read. |
+| `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used during deployment. When omitted, the `VOLCENGINE_SECRET_KEY` environment variable and then the `[default]` profile in `~/.volc/credentials` are read. |
 | `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS. Set it to `1.0.6` to reproduce this version. |
 | `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |
+
+## Studio roles and Runtime access
+
+`--admin` and `--developer` each accept a comma-separated list of local usernames or OAuth email addresses. Whitespace is ignored and matching is case-insensitive. If the same identity appears in both lists, `admin` takes precedence. For a local Studio:
+
+```bash
+veadk studio \
+  --admin "admin,admin@example.com" \
+  --developer "alice,alice@example.com,bob"
+```
+
+The equivalent environment variables are `VEADK_STUDIO_ADMINS` and `VEADK_STUDIO_DEVELOPERS`. Use the same options for a deployed Studio:
+
+```bash
+veadk studio deploy \
+  --user-pool-id "your-user-pool-id" \
+  --allowed-client-id "your-user-pool-client-id" \
+  --vefaas-app-name "veadk-studio" \
+  --admin "admin@example.com" \
+  --developer "alice@example.com,bob@example.com"
+```
+
+Omitting both options treats every signed-in user as an `admin`, granting full Studio capabilities and visibility into all Runtimes. Supplying either list enables role-based access control; an identity that does not match either list is a regular user.
+
+| Capability | admin | developer | Regular user |
+| :--- | :--- | :--- | :--- |
+| Add, debug, and deploy agents | Allowed | Allowed | Denied; add/manage items are hidden from the sidebar |
+| View and connect to Runtimes | All Runtimes | Own Runtimes only | Own Runtimes only |
+| Manage or delete Runtimes | All Studio-managed Runtimes | Own Runtimes only | Denied |
+
+Runtime ownership is recorded by the server when a Runtime is created and does not rely on an author field submitted by the browser. Existing Runtimes with no ownership tag are visible only to `admin`.
+
+<Warning>
+  A local username is stored in the browser and can be changed or impersonated. Use it only for local development and feature testing. Production deployments must use OAuth or gateway authentication so roles and Runtime ownership come from a server-verified identity.
+</Warning>

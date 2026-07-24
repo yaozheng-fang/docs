@@ -2,7 +2,11 @@
 title: "1.0.3 更新日志"
 ---
 
-本页列出 VeADK 1.0.3 相对 1.0.2 的对外变更。
+本更新日志累计记录 VeADK 1.0.0 至 1.0.3 的全部公开用户能力变化，版本按从新到旧排列。
+
+## 1.0.3
+
+VeADK 1.0.3 包含以下公开用户能力变化。
 
 | 模块 | 变更细节 | 链接 |
 | :--- | :--- | :--- |
@@ -11,3 +15,45 @@ title: "1.0.3 更新日志"
 | 长期记忆 | 新增 `openviking` 后端，按用户保存实体、事件与偏好记忆，并在跨会话检索时保持用户隔离。 | [使用 OpenViking 存储](/productions/veadk/archives/1.0.3/zh/components/memory/openviking) |
 | A2A | 调用 AgentKit A2A Registry 中的下游智能体时，可传递入站 `X-Ve-TIP-Token` 和 Bearer JWT；下游使用入站 JWT 返回 `401` 时，可回退到 M2M OAuth2 并重试一次。 | [入站认证](/productions/veadk/archives/1.0.3/zh/components/security/inbound) |
 | 依赖 | 合并重复的项目依赖声明，并把 OpenViking SDK 加入基础依赖、把 Milvus 集成加入 `extensions`。 | [安装](/productions/veadk/archives/1.0.3/zh/get-started/installation) |
+
+## 1.0.2
+
+VeADK 1.0.2 包含以下公开用户能力变化。
+
+| 模块 | 变更细节 | 链接 |
+| :--- | :--- | :--- |
+| 模型 | 新增 `MODEL_AGENT_API_KEY_NAME` 和 `Agent.model_api_key_name`，可按火山方舟 API Key 名称解析密钥；显式 Key 值仍具有更高优先级。 | [模型配置](/productions/veadk/archives/1.0.2/zh/components/agent/model) |
+| 短期记忆 | PostgreSQL 新增 `schema` 配置，可在一个数据库内为不同部署隔离会话表；VeADK 会创建不存在的 schema 并固定连接的 `search_path`。 | [使用 PostgreSQL 存储](/productions/veadk/archives/1.0.2/zh/components/session/postgresql) |
+| MCP | MCP Server 会话过期、服务重启或连接中断后，自动清理失效会话、重连并重试工具加载或调用一次。 | [自定义 MCP Server](/productions/veadk/archives/1.0.2/zh/components/tools/custom-mcp) |
+| 前端 | VeADK Frontend 新增工具 OAuth 授权卡片：打开身份提供方授权页，接收回调后提交凭证并继续原工具调用；同时优化账号入口、登录页、会话列表、空回复提示与默认智能体选择。 | [VeADK Frontend](/productions/veadk/archives/1.0.2/zh/components/frontend/veadk-frontend) |
+| 网络请求 | 火山引擎签名请求默认使用 10 秒连接、60 秒读取超时；VeSearch 与网页爬取请求使用 30 秒超时，避免无响应服务持续阻塞。 | [火山引擎搜索](/productions/veadk/archives/1.0.2/zh/components/tools/vesearch) |
+| 安全 | 网页爬取恢复 TLS 证书校验；内容安全护栏不再把 API Key 值写入调试日志；凭证服务示例不再输出 Bearer Token。 | [内容安全护栏](/productions/veadk/archives/1.0.2/zh/components/security/content-safety) |
+
+## 1.0.1
+
+VeADK 1.0.1 发布于 2026 年 7 月 7 日，主要新增 Harness、A2A 注册和 ADK 技能集成，并增强 Codex 运行时与 Frontend。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Codex 运行时 | 随包提供沙箱、网络访问与操作审核的默认配置：允许完整主机与网络访问，且不要求交互式确认。 | [PR #629](https://github.com/volcengine/veadk-python/pull/629) |
+| Harness | 新增 VeADK Harness 扩展，可为每轮调用准备上下文、压缩大体积工具结果并验证最终回答；同时支持在初始化时应用智能体描述。 | [PR #625](https://github.com/volcengine/veadk-python/pull/625)、[PR #633](https://github.com/volcengine/veadk-python/pull/633) |
+| A2A | 新增 Harness A2A 注册能力并修正注册行为。 | [PR #631](https://github.com/volcengine/veadk-python/pull/631)、[PR #632](https://github.com/volcengine/veadk-python/pull/632) |
+| A2A | A2A 调用支持 OAuth 认证。 | [PR #635](https://github.com/volcengine/veadk-python/pull/635) |
+| Codex 运行时 | 对临时后端错误提供可配置重试，并恢复经 Responses 适配层使用网页搜索的能力。 | [PR #637](https://github.com/volcengine/veadk-python/pull/637) |
+| 技能 | 新增与 Google ADK `SkillToolset` 配合使用的 `VeSkillRegistry`，支持 SkillHub 与技能空间；本地技能推荐迁移到 ADK `SkillToolset`，旧的 `Agent(skills=..., skills_mode="local")` 入口保持兼容但已废弃。 | [PR #634](https://github.com/volcengine/veadk-python/pull/634) |
+| VeADK Frontend | 新增网关认证模式，并在创建智能体时提示缺失的火山引擎访问凭证。 | [PR #638](https://github.com/volcengine/veadk-python/pull/638) |
+| Codex 运行时 | 支持将智能体技能传递给 Codex 运行时。 | [PR #640](https://github.com/volcengine/veadk-python/pull/640) |
+| Codex 运行时 | 支持在 Codex 运行时中调用智能体的 MCP 工具和函数工具。 | [PR #641](https://github.com/volcengine/veadk-python/pull/641) |
+| 示例 | 新增同时使用本地技能和 MCP 工具的 Codex 运行时示例。 | [PR #642](https://github.com/volcengine/veadk-python/pull/642) |
+
+完整发布信息参见 [VeADK 1.0.1 Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.1)。
+
+## 1.0.0
+
+VeADK 1.0.0 发布于 2026 年 6 月 22 日。下表依据公开 Release 整理；该版本相对 0.5.40 的公开变更集中在文档入口文案。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 文档 | 对齐中英文快速开始入口文案，中文入口明确说明可构建并运行第一个智能体。 | [PR #628](https://github.com/volcengine/veadk-python/pull/628) |
+
+完整发布信息参见 [VeADK 1.0.0 Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.0)。

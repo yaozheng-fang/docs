@@ -1,0 +1,27 @@
+---
+title: "Trusted MCP toolset"
+tag: "MCP tool"
+---
+
+## Overview
+
+When connecting to an MCP Server protected by access control, use `TrustedMcpToolset` (`from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset`). It builds on the standard `McpToolset` and injects authentication into outbound requests, allowing secure access to trusted MCP services. It reuses Google ADK's connection parameters — the example below uses `StreamableHTTPConnectionParams`:
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import (
+    StreamableHTTPConnectionParams,
+)
+
+toolset = TrustedMcpToolset(
+    connection_params=StreamableHTTPConnectionParams(
+        url="https://your-trusted-mcp-endpoint",
+        headers={"Authorization": "Bearer your-api-key-here"},
+    ),
+)
+
+agent = Agent(tools=[toolset])
+```

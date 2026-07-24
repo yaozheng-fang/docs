@@ -1,0 +1,17 @@
+---
+title: "Overview"
+---
+
+VeADK ships two frontends: **VeADK Web** for local debugging, and **VeADK Frontend**, a production-grade, enterprise agent-application frontend.
+
+## VeADK Web and VeADK Frontend
+
+**VeADK Web** is a visual debugging UI inherited from Google ADK Web — chat with your agent and inspect execution in the browser with zero frontend code, ideal for local development and troubleshooting; see [VeADK Web](/productions/veadk/preview/en/components/frontend/veadk-web).
+
+**VeADK Frontend** is a customizable, production-grade React app and enterprise agent workbench. In 1.0.5, custom configuration is the available project-creation flow; intelligent, template, and workflow entries are marked as coming soon and cannot be selected. It also supports chatting with and debugging agents, browsing the skill center, connecting remote AgentKit agents, running full-text and web search, inspecting call traces, and signing in. It talks to the same process `veadk frontend` launches, so there is no separate backend to deploy; for the command and build instructions, see [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend).
+
+In 1.0.5, **VeADK Studio** uses the same complete UI as VeADK Frontend, including chat, search, session history, the skill center, and agent creation, testing, deployment, and management. See the [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio).
+
+## A2UI
+
+[A2UI](/productions/veadk/preview/en/components/frontend/a2ui) is one of VeADK Frontend's capabilities — the rich-UI rendering layer: it lets an agent return cards, forms, and row/column layouts in a conversation instead of plain text only, rendered natively by the frontend. Enable it by setting `enable_a2ui=True` when creating the agent, and extend the built-in set with your own enterprise components.

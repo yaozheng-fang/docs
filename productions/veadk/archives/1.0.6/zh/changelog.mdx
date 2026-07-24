@@ -1,0 +1,101 @@
+---
+title: "更新日志"
+---
+
+本更新日志累计记录 VeADK 1.0.0 至 1.0.6 的全部公开用户能力变化，版本按从新到旧排列。
+
+## 1.0.6
+
+VeADK 1.0.6 发布于 2026 年 7 月 20 日。下表列出该版本的公开用户能力变化；完整提交记录见 [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.6)。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Studio 品牌 | `veadk studio` 和 `veadk frontend` 新增 `--site-title`（至多 6 个字符）和 `--site-logo`（本地图片或 HTTP(S) URL，至多 5 MB，支持 PNG、JPEG、GIF、WebP、AVIF、ICO），分别设置系统名称与 Logo。Logo 同时用于侧边栏、登录页和浏览器 favicon，系统名称也作为浏览器页面标题；不传 `--site-title` 时保留默认 `VeADK Studio`。对应环境变量为 `VEADK_SITE_TITLE` 与 `VEADK_SITE_LOGO`。云上部署使用相同参数，网络图片在部署时下载并打包进 VeFaaS。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 | `veadk studio deploy` 支持 `--region` 选择部署地域（`cn-beijing` 默认，`cn-shanghai`），VeFaaS、API Gateway 等资源创建在所选地域；新增 `--project` 指定 VeFaaS 函数所属项目，默认为 `default`。部署时自动跨北京、上海查找 VeIdentity 用户池与客户端，跨地域命中时输出 warning 并继续。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 IAM | `veadk studio deploy` 部署前自动检查 `ServerlessApplicationRole`，缺失时创建该 Role 并绑定 `vefaas_full_access` 自定义策略及所需系统策略；该检查即使指定 `--iam-role` 也会执行。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 创建与调试 | 系统提示词支持所见即所得的 Markdown 编辑，提供标题、列表等快捷输入；初始化、会话或对话失败时展示经过凭据脱敏的错误详情和 Runner 日志，可展开与复制。新增 Agent 名称校验，须符合 Google ADK 规则：以英文字母或下划线开头，仅含英文字母、数字和下划线，不能使用保留名 `user`，且在 Agent 结构中唯一。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| AgentKit 部署 | 飞书、知识库、短期/长期记忆和观测配置显示在各自配置区域，填写的值仅在部署时转换为运行时环境变量；选择观测 exporter 后对应 `ENABLE_*` 开关自动启用，这些值不写入生成源码或导出的 YAML，部署页同步显示便于核对。多实例部署应使用数据库持久化短期记忆；`run_sse` 返回 404 时界面提示检查会话是否落在不同实例。通过内置 Web UI 部署时，云端镜像构建失败会显示经过凭据脱敏的构建日志片段，便于定位依赖或 Dockerfile 错误。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
+| Studio 运行时管理 | 改进运行时管理视图与响应式布局。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| 飞书渠道 | 在部署页打开或关闭飞书渠道时，Studio 自动重新生成项目，确保 `app.py`、`extensions` 依赖和运行时环境变量在部署前保持一致。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+## 1.0.5
+
+VeADK 1.0.5 发布于 2026 年 7 月 19 日。下表列出该版本的公开用户能力变化；完整提交记录见 [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.5)。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Studio 与 Frontend | Studio 启用与 Frontend 相同的完整界面并默认进入对话页面；新增云端 Runtime 选择、Skill Hub/本地上传/AgentKit SkillSpace、多模态会话、结构化技能与子智能体调用；重构自定义创建流程，智能模式、模板和工作流入口当前显示为「敬请期待」；并完善部署区域、环境变量、任务状态、失败重试和 OAuth Token 转发。 | [VeADK Frontend](/productions/veadk/archives/1.0.5/zh/components/frontend/veadk-frontend) · [Studio 智能体工作台](/productions/veadk/archives/1.0.5/zh/components/frontend/studio) |
+| 模型 | 默认推理模型更新为 `doubao-seed-2-1-pro-260628`；Responses API 支持回退模型与方舟上下文管理，并改进内联图片追踪。 | [模型](/productions/veadk/archives/1.0.5/zh/components/agent/model) |
+| 运行时 | `Agent.runtime` 新增 `piagent`，支持通过 PiAgent 执行智能体并桥接函数工具、MCP 工具与技能；安装包不再内置 PiAgent 二进制文件。 | [运行时](/productions/veadk/archives/1.0.5/zh/components/agent/runtime) |
+| Studio 测试 | 生成的智能体项目可在服务端受限临时进程中测试；测试进程默认保留 1800 秒，可通过命令参数调整。 | [Studio 智能体工作台](/productions/veadk/archives/1.0.5/zh/components/frontend/studio) |
+| Studio 部署 | 使用默认 IAM Role 部署 Studio 时，自动补充访问模型、日志、追踪、知识库、记忆与身份资源所需的系统策略；显式指定的自定义 Role 不会被修改。 | [Studio 智能体工作台](/productions/veadk/archives/1.0.5/zh/components/frontend/studio) |
+| AgentKit 集成 | Studio 生成的智能体应用统一通过公开函数 `create_agentkit_app` 构建，集中提供 AgentKit 接口、健康检查、拓扑、Web UI 和短期记忆配置。 | [部署到 AgentKit](/productions/veadk/archives/1.0.5/zh/deploy/agentkit) |
+| 飞书渠道 | 改进文本、卡片和合并转发消息的内容提取，兼容飞书 Channel SDK 的同步生命周期，并支持在 Studio 生成的 AgentKit 应用中配置飞书入站消息渠道。 | [飞书渠道](/productions/veadk/archives/1.0.5/zh/components/extensions/feishu-channel) · [部署到 AgentKit](/productions/veadk/archives/1.0.5/zh/deploy/agentkit) |
+
+## 1.0.4
+
+VeADK 1.0.4 发布于 2026 年 7 月 14 日。下表列出该版本的公开用户能力变化。
+
+| 模块 | 变更细节 | 链接 |
+| :--- | :--- | :--- |
+| Studio | 新增 `veadk studio`，提供专注于创建和管理智能体的工作台；支持智能生成、自定义和模板创建，工作流入口显示为「敬请期待」；并分阶段展示 AgentKit 部署进度。 | [Studio 智能体工作台](/productions/veadk/archives/1.0.4/zh/components/frontend/studio) |
+| 智能体管理 | Frontend 与 Studio 新增 AgentKit Runtime 管理视图，按当前用户列出由工作台部署的 Runtime，可查看控制面详情、主智能体信息并删除 Runtime。 | [Studio 智能体工作台](/productions/veadk/archives/1.0.4/zh/components/frontend/studio) |
+| VeFaaS 部署 | 新增 `veadk studio deploy`，可将 Studio 部署到 VeFaaS，接入 VeIdentity 登录，并创建或复用 Serverless API Gateway 与 IAM Role。 | [Studio 部署说明](/productions/veadk/archives/1.0.4/zh/components/frontend/studio) |
+| VeADK Frontend | 新增智能体拓扑和转移路径展示；项目部署按构建镜像、部署、发布三个阶段展示实时进度。 | [VeADK Frontend](/productions/veadk/archives/1.0.4/zh/components/frontend/veadk-frontend) |
+| Harness 技能 | Harness 的 `skills` 支持 `space:<技能空间 ID>`，可以加载 AgentKit 技能中心的整个技能空间，并继续与 Skill Hub 名称或 slug 混用。 | [技能](/productions/veadk/archives/1.0.4/zh/components/agent/skills) |
+| 前端安全 | 移除直接执行浏览器提交代码的测试入口；限制 AgentKit 代理的协议、域名与凭证要求；限制部署文件和静态文件的可访问路径。 | [VeADK Frontend](/productions/veadk/archives/1.0.4/zh/components/frontend/veadk-frontend) |
+| 日志 | 日志实现迁移到 Python 标准库 `logging`，保留追踪 ID 关联；非交互式输出不再包含颜色转义序列，流式思考内容不再逐 token 记录。 | [应用日志](/productions/veadk/archives/1.0.4/zh/components/observability/logging) |
+| 存储配置 | 完善 Milvus 与 OpenViking 的环境变量和配置示例；1.0.4 继续提供 1.0.3 已加入的 Milvus 知识库、OpenViking 知识库与 OpenViking 长期记忆后端。 | [Milvus](/productions/veadk/archives/1.0.4/zh/components/knowledge/milvus) · [OpenViking 知识库](/productions/veadk/archives/1.0.4/zh/components/knowledge/openviking) · [OpenViking 长期记忆](/productions/veadk/archives/1.0.4/zh/components/memory/openviking) |
+
+## 1.0.3
+
+VeADK 1.0.3 包含以下公开用户能力变化。
+
+| 模块 | 变更细节 | 链接 |
+| :--- | :--- | :--- |
+| 知识库 | 新增 `milvus` 后端，支持 Milvus 服务和 Milvus Lite URI、Token 或用户名密码鉴权、数据库名称、初始化覆盖、超时和额外返回字段。 | [使用 Milvus 存储](/productions/veadk/archives/1.0.3/zh/components/knowledge/milvus) |
+| 知识库 | 新增 `openviking` 后端，支持向 OpenViking 导入文件、目录和文本，并按资源 URI 检索与读取结果。 | [使用 OpenViking 存储](/productions/veadk/archives/1.0.3/zh/components/knowledge/openviking) |
+| 长期记忆 | 新增 `openviking` 后端，按用户保存实体、事件与偏好记忆，并在跨会话检索时保持用户隔离。 | [使用 OpenViking 存储](/productions/veadk/archives/1.0.3/zh/components/memory/openviking) |
+| A2A | 调用 AgentKit A2A Registry 中的下游智能体时，可传递入站 `X-Ve-TIP-Token` 和 Bearer JWT；下游使用入站 JWT 返回 `401` 时，可回退到 M2M OAuth2 并重试一次。 | [入站认证](/productions/veadk/archives/1.0.3/zh/components/security/inbound) |
+| 依赖 | 合并重复的项目依赖声明，并把 OpenViking SDK 加入基础依赖、把 Milvus 集成加入 `extensions`。 | [安装](/productions/veadk/archives/1.0.3/zh/get-started/installation) |
+
+## 1.0.2
+
+VeADK 1.0.2 包含以下公开用户能力变化。
+
+| 模块 | 变更细节 | 链接 |
+| :--- | :--- | :--- |
+| 模型 | 新增 `MODEL_AGENT_API_KEY_NAME` 和 `Agent.model_api_key_name`，可按火山方舟 API Key 名称解析密钥；显式 Key 值仍具有更高优先级。 | [模型配置](/productions/veadk/archives/1.0.2/zh/components/agent/model) |
+| 短期记忆 | PostgreSQL 新增 `schema` 配置，可在一个数据库内为不同部署隔离会话表；VeADK 会创建不存在的 schema 并固定连接的 `search_path`。 | [使用 PostgreSQL 存储](/productions/veadk/archives/1.0.2/zh/components/session/postgresql) |
+| MCP | MCP Server 会话过期、服务重启或连接中断后，自动清理失效会话、重连并重试工具加载或调用一次。 | [自定义 MCP Server](/productions/veadk/archives/1.0.2/zh/components/tools/custom-mcp) |
+| 前端 | VeADK Frontend 新增工具 OAuth 授权卡片：打开身份提供方授权页，接收回调后提交凭证并继续原工具调用；同时优化账号入口、登录页、会话列表、空回复提示与默认智能体选择。 | [VeADK Frontend](/productions/veadk/archives/1.0.2/zh/components/frontend/veadk-frontend) |
+| 网络请求 | 火山引擎签名请求默认使用 10 秒连接、60 秒读取超时；VeSearch 与网页爬取请求使用 30 秒超时，避免无响应服务持续阻塞。 | [火山引擎搜索](/productions/veadk/archives/1.0.2/zh/components/tools/vesearch) |
+| 安全 | 网页爬取恢复 TLS 证书校验；内容安全护栏不再把 API Key 值写入调试日志；凭证服务示例不再输出 Bearer Token。 | [内容安全护栏](/productions/veadk/archives/1.0.2/zh/components/security/content-safety) |
+
+## 1.0.1
+
+VeADK 1.0.1 发布于 2026 年 7 月 7 日，主要新增 Harness、A2A 注册和 ADK 技能集成，并增强 Codex 运行时与 Frontend。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Codex 运行时 | 随包提供沙箱、网络访问与操作审核的默认配置：允许完整主机与网络访问，且不要求交互式确认。 | [PR #629](https://github.com/volcengine/veadk-python/pull/629) |
+| Harness | 新增 VeADK Harness 扩展，可为每轮调用准备上下文、压缩大体积工具结果并验证最终回答；同时支持在初始化时应用智能体描述。 | [PR #625](https://github.com/volcengine/veadk-python/pull/625)、[PR #633](https://github.com/volcengine/veadk-python/pull/633) |
+| A2A | 新增 Harness A2A 注册能力并修正注册行为。 | [PR #631](https://github.com/volcengine/veadk-python/pull/631)、[PR #632](https://github.com/volcengine/veadk-python/pull/632) |
+| A2A | A2A 调用支持 OAuth 认证。 | [PR #635](https://github.com/volcengine/veadk-python/pull/635) |
+| Codex 运行时 | 对临时后端错误提供可配置重试，并恢复经 Responses 适配层使用网页搜索的能力。 | [PR #637](https://github.com/volcengine/veadk-python/pull/637) |
+| 技能 | 新增与 Google ADK `SkillToolset` 配合使用的 `VeSkillRegistry`，支持 SkillHub 与技能空间；本地技能推荐迁移到 ADK `SkillToolset`，旧的 `Agent(skills=..., skills_mode="local")` 入口保持兼容但已废弃。 | [PR #634](https://github.com/volcengine/veadk-python/pull/634) |
+| VeADK Frontend | 新增网关认证模式，并在创建智能体时提示缺失的火山引擎访问凭证。 | [PR #638](https://github.com/volcengine/veadk-python/pull/638) |
+| Codex 运行时 | 支持将智能体技能传递给 Codex 运行时。 | [PR #640](https://github.com/volcengine/veadk-python/pull/640) |
+| Codex 运行时 | 支持在 Codex 运行时中调用智能体的 MCP 工具和函数工具。 | [PR #641](https://github.com/volcengine/veadk-python/pull/641) |
+| 示例 | 新增同时使用本地技能和 MCP 工具的 Codex 运行时示例。 | [PR #642](https://github.com/volcengine/veadk-python/pull/642) |
+
+完整发布信息参见 [VeADK 1.0.1 Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.1)。
+
+## 1.0.0
+
+VeADK 1.0.0 发布于 2026 年 6 月 22 日。下表依据公开 Release 整理；该版本相对 0.5.40 的公开变更集中在文档入口文案。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 文档 | 对齐中英文快速开始入口文案，中文入口明确说明可构建并运行第一个智能体。 | [PR #628](https://github.com/volcengine/veadk-python/pull/628) |
+
+完整发布信息参见 [VeADK 1.0.0 Release](https://github.com/volcengine/veadk-python/releases/tag/1.0.0)。
