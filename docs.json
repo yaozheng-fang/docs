@@ -114,7 +114,8 @@
                           "productions/veadk/preview/zh/components/memory/mem0",
                           "productions/veadk/preview/zh/components/memory/opensearch",
                           "productions/veadk/preview/zh/components/memory/redis",
-                          "productions/veadk/preview/zh/components/memory/openviking"
+                          "productions/veadk/preview/zh/components/memory/openviking",
+                          "productions/veadk/preview/zh/components/memory/tos-context"
                         ]
                       },
                       {
@@ -1591,7 +1592,8 @@
                           "productions/veadk/preview/en/components/memory/mem0",
                           "productions/veadk/preview/en/components/memory/opensearch",
                           "productions/veadk/preview/en/components/memory/redis",
-                          "productions/veadk/preview/en/components/memory/openviking"
+                          "productions/veadk/preview/en/components/memory/openviking",
+                          "productions/veadk/preview/en/components/memory/tos-context"
                         ]
                       },
                       {

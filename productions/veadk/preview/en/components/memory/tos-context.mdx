@@ -1,0 +1,150 @@
+---
+title: "TOS ContextBucket (tos_context)"
+---
+
+The `tos_context` backend is implemented by `TosContextBucketLTMBackend` and uses the ContextBucket memory capability of Volcengine [TOS](https://www.volcengine.com/product/TOS) as long-term storage. It is a managed service: the server performs memory inference and retrieval, so no self-hosted vector store or local embedding is required.
+
+The backend maps `index` (or `app_name`) to a single **ContextBucket**, and maps the runtime `user_id` to a **ContextSet** under that bucket, so memories are naturally isolated per user. The corresponding ContextBucket and ContextSet are created automatically on first use (enabling the `memory` scene).
+
+## When to use
+
+- Production with persistence and managed operations;
+- When you want the ContextBucket memory capability of Volcengine TOS (server-side inference and retrieval);
+- When you want strong isolation by `user_id` (one ContextSet per user).
+
+## Dependencies
+
+The ContextBucket API is currently only available in a **pre-release (beta)** TOS SDK: `tos>=2.9.4b1`. VeADK's core dependency is the stable `tos>=2.8.4` (used by TOS object storage and VikingDB), so it does **not** install the beta for you. Before using `backend="tos_context"`, upgrade the TOS SDK explicitly:
+
+```bash
+pip install --upgrade "tos>=2.9.4b1" --pre
+```
+
+<Warning>
+pip / uv **ignore pre-releases by default**, so you must pass `--pre` (uv uses `--prerelease=allow`). Otherwise `2.9.4b1` will not be installed and you will still hit the errors below at runtime.
+</Warning>
+
+## Common runtime errors and how to handle them
+
+`tos_context` is fail-closed: when a dependency or config requirement is not met, it fails at **initialization** rather than degrading silently or writing bad data. Common errors:
+
+| Symptom | Trigger | How to fix |
+| :--- | :--- | :--- |
+| Missing `tos` SDK | The `tos` SDK is not installed. | Install it: `pip install --upgrade "tos>=2.9.4b1" --pre`. |
+| Installed `tos` does not support ContextBucket | `tos` is installed but too old (e.g. `2.8.4`, or stable `2.9.2`); the client lacks the ContextBucket methods. | Upgrade to the pre-release: `pip install --upgrade "tos>=2.9.4b1" --pre`. The error message includes the installed version and this command. |
+| Missing `account_id` or `control_endpoint` | `account_id` or `control_endpoint` is not configured. | Set the env vars `DATABASE_TOS_CONTEXT_ACCOUNT_ID` and `DATABASE_TOS_CONTEXT_CONTROL_ENDPOINT` (see the configuration table below). |
+
+<Note>
+ContextBucket support was added as new methods on the existing TOS client class, so an older release still imports `tos` successfully — it just lacks those methods. At initialization VeADK probes for the required methods to decide whether the installed SDK actually supports ContextBucket, turning a silent "imports but fails on call" problem into a clear, actionable error at startup.
+</Note>
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+# index maps to the ContextBucket name and must satisfy the bucket naming rules (see Note below)
+ltm = LongTermMemory(
+    backend="tos_context",
+    index="demo-agent-memory",
+    top_k=5,
+)
+agent = Agent(
+    name="demo",
+    long_term_memory=ltm,
+    auto_save_session=True,  # persist to long-term memory at session end
+)
+```
+
+At init, if the ContextBucket does not exist, VeADK creates it; the first write/search for each `user_id` also creates the corresponding ContextSet if missing (enabling the `memory` scene).
+
+You can also pass config explicitly via `backend_config`:
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+ltm = LongTermMemory(
+    backend="tos_context",
+    index="demo-agent-memory",
+    backend_config={
+        "account_id": "your-account-id",
+        "context_bucket_name": "demo-agent-memory",
+        "tos_context_config": {
+            "control_endpoint": "your-control-endpoint",
+            "endpoint": "tos-cn-beijing.volces.com",
+            "region": "cn-beijing",
+        },
+    },
+)
+```
+
+## Parameters
+
+### Constructor parameters
+
+`TosContextBucketLTMBackend` accepts the following fields:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `context_bucket_name` | `str \| None` | Reads env `DATABASE_TOS_CONTEXT_BUCKET_NAME`; falls back to `index` | ContextBucket name. |
+| `account_id` | `str \| None` | Reads env `DATABASE_TOS_CONTEXT_ACCOUNT_ID` | **Required**. Account ID for the ContextBucket control-plane APIs. |
+| `volcengine_access_key` | `str \| None` | Reads env `VOLCENGINE_ACCESS_KEY` | Volcengine Access Key (long-term or STS temporary AK). |
+| `volcengine_secret_key` | `str \| None` | Reads env `VOLCENGINE_SECRET_KEY` | Volcengine Secret Key (long-term or STS temporary SK). |
+| `session_token` | `str` | Reads env `VOLCENGINE_SESSION_TOKEN`, defaults to `""` | STS security token, only needed with a temporary AK/SK. |
+| `tos_context_config` | `TOSContextBucketConfig` | Built from `TOSContextBucketConfig` | TOS connection settings, see table below. |
+
+### Connection settings
+
+`tos_context_config` (`TOSContextBucketConfig`) fields:
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `control_endpoint` | `str \| None` | `None` | **Required**. ContextBucket controller (control-plane) endpoint. |
+| `endpoint` | `str` | `tos-cn-beijing.volces.com` | TOS data-plane endpoint. |
+| `region` | `str` | `cn-beijing` | Region. |
+
+### Credential resolution order
+
+The backend prefers `volcengine_access_key` and `volcengine_secret_key` from explicit arguments or environment variables (with the STS token taken from `VOLCENGINE_SESSION_TOKEN`). When both are missing, it falls back to the VeFaaS IAM credential file for the temporary AK/SK and STS token — the path used for keyless cloud deployments (VeFaaS / AgentKit).
+
+## Environment variables
+
+Connection settings use the env prefix `DATABASE_TOS_CONTEXT_`; locally they can be placed under `database.tos_context.*` in `config.yaml` (flattened into the matching env vars).
+
+| Env var | Default | Description |
+| :--- | :--- | :--- |
+| `DATABASE_TOS_CONTEXT_ACCOUNT_ID` | None | **Required**. Account ID for the ContextBucket control plane. |
+| `DATABASE_TOS_CONTEXT_CONTROL_ENDPOINT` | None | **Required**. ContextBucket control-plane endpoint. |
+| `DATABASE_TOS_CONTEXT_BUCKET_NAME` | Falls back to `index` | ContextBucket name. |
+| `DATABASE_TOS_CONTEXT_ENDPOINT` | `tos-cn-beijing.volces.com` | TOS data-plane endpoint. |
+| `DATABASE_TOS_CONTEXT_REGION` | `cn-beijing` | Region. |
+| `VOLCENGINE_ACCESS_KEY` | None | Volcengine Access Key. |
+| `VOLCENGINE_SECRET_KEY` | None | Volcengine Secret Key. |
+| `VOLCENGINE_SESSION_TOKEN` | None | STS security token, not needed with long-term AK/SK. |
+
+```bash
+export DATABASE_TOS_CONTEXT_ACCOUNT_ID="your-account-id"
+export DATABASE_TOS_CONTEXT_CONTROL_ENDPOINT="your-control-endpoint"
+export DATABASE_TOS_CONTEXT_BUCKET_NAME="demo-agent-memory"
+export DATABASE_TOS_CONTEXT_ENDPOINT="tos-cn-beijing.volces.com"
+export DATABASE_TOS_CONTEXT_REGION="cn-beijing"
+export VOLCENGINE_ACCESS_KEY="your-ak"
+export VOLCENGINE_SECRET_KEY="your-sk"
+```
+
+<Warning>
+`account_id` and `control_endpoint` are required; a missing value fails at initialization (fail-closed — no silent degradation).
+</Warning>
+
+<Note>
+The STS token reuses the global `VOLCENGINE_SESSION_TOKEN` convention (consistent with TOS object storage and other components); the standalone `DATABASE_TOS_CONTEXT_SECURITY_TOKEN` is no longer used. It is not needed when using long-term AK/SK. If `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` are not both provided, the VeFaaS IAM credential file is read instead; a missing file raises an error.
+</Note>
+
+<Note>
+`index` (the ContextBucket name) must follow TOS bucket naming rules: **length 3–63**, containing only **lowercase letters, digits, and hyphens (`-`)**, and not starting or ending with a hyphen. Use `DATABASE_TOS_CONTEXT_BUCKET_NAME` to override the bucket name derived from `app_name`/`index`.
+</Note>
+
+<Note>
+Memories are isolated by `user_id`: different `user_id`s write to different ContextSets, and retrieval only matches memories of the same `user_id`. Use a consistent `user_id` for cross-session recall.
+</Note>
