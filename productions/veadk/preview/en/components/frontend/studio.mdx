@@ -28,6 +28,8 @@ Volcengine credentials are used for models, cloud-resource queries, and AgentKit
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
 4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
 
+A2A nodes discover and invoke remote agents through an AgentKit agent center. When creating an A2A node, select the agent center from a dropdown; the list is loaded server-side using the configured Volcengine credentials, and the credentials are never sent to the browser. Additional settings such as top K, region, and the OpenAPI endpoint are available under "More options". A2A nodes that use an agent center to discover remote agents can serve as either the root agent or a sub-agent of another agent. When used as a sub-agent, the discovered remote-agent tools are attached to the parent agent, and the sub-agent does not need a separate name or A2A URL.
+
 The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
 
 ## Deployment network modes
