@@ -71,7 +71,7 @@ In cloud mode, the agent selector in the chat sidebar lists AgentKit Runtimes th
 
 The info panel has two tabs:
 
-- **Agent info**: reads live metadata from the Runtime's deployed Agent Server, including name, model, description, sub-agents, tools, skills, and mounted components (knowledge base, memory, prompt manager, example store, run processor, tracer, toolset, plugin, and so on). This information contains only display-oriented summaries and never returns system prompts, credentials, environment-variable values, or arbitrary serialized objects.
+- **Agent info**: reads live metadata from the Runtime's deployed Agent Server, including name, model, description, sub-agents, tools, skills, and mounted components (knowledge base, memory, prompt manager, example store, run processor, tracer, toolset, plugin, and so on) with their back-end type. The metadata also reports `searchSources`, the retrieval sources actually mounted on the agent, so smart search enables only available sources. This information contains only display-oriented summaries and never returns system prompts, credentials, environment-variable values, or arbitrary serialized objects.
 - **Runtime info**: shows control-plane Runtime detail, including model, description, status, region, resources, version, and environment variables.
 
 <Note>
