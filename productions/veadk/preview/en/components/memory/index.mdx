@@ -25,7 +25,7 @@ ltm = LongTermMemory(backend="viking", app_name="ltm_demo")
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `backend` | `"local" \| "opensearch" \| "redis" \| "viking" \| "mem0" \| "openviking"` or a backend instance | `"opensearch"` | Selects the backend, or pass a `BaseLongTermMemoryBackend` instance directly. `viking_mem` is deprecated and maps to `viking`. |
+| `backend` | `"local" \| "opensearch" \| "redis" \| "viking" \| "mem0" \| "openviking" \| "tos_context"` or a backend instance | `"opensearch"` | Selects the backend, or pass a `BaseLongTermMemoryBackend` instance directly. `viking_mem` is deprecated and maps to `viking`. |
 | `backend_config` | `dict` | `{}` | Config passed to the backend constructor; if it lacks `index`, it's filled from `index` or `app_name`. |
 | `top_k` | `int` | `5` | Number of most-similar chunks to retrieve. |
 | `index` | `str` | `""` | Index/collection name for storing memories. Falls back to `app_name`, then `default_app`. |
@@ -71,6 +71,7 @@ Use `local` for debugging; prefer `viking` or `mem0` in production.
 | `opensearch` | OpenSearch vector store | OpenSearch + embedding | Self-hosted vector search | [OpenSearch](/productions/veadk/preview/en/components/memory/opensearch) |
 | `redis` | Redis vector store | Redis (RediSearch) + embedding | Self-hosted vector search | [Redis](/productions/veadk/preview/en/components/memory/redis) |
 | `openviking` | OpenViking user memory | OpenViking service | Entity, event, and preference memory | [OpenViking](/productions/veadk/preview/en/components/memory/openviking) |
+| `tos_context` | TOS ContextBucket memory (managed) | Volcengine account + pre-release TOS SDK | Server-side inference & retrieval, per-user isolation | [TOS ContextBucket](/productions/veadk/preview/en/components/memory/tos-context) |
 
 ## Binding to an Agent
 
