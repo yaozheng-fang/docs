@@ -9,7 +9,7 @@ VeADK 提供一组在 [AgentKit 沙箱](https://console.volcengine.com/agentkit)
 
 | 工具 | 说明 |
 | :--- | :--- |
-| `run_code` | 执行任意代码，适合计算、数据处理等 |
+| `run_code` | 执行任意代码或 Shell 命令，适合计算、数据处理、依赖安装等 |
 | `execute_skills` | 在预制技能沙箱中运行 `agent.py` 工作流 |
 | `coding` | 在 OpenCode 沙箱中运行代码生成工作流 |
 | `run_sandbox_agent` | 指定任意 `tool_id` 在远端沙箱执行 `agent.py` |
@@ -98,6 +98,64 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 执行 Shell 命令
+
+`run_code` 除了执行 Python 等代码外，还支持在沙箱中执行 Shell 命令。当 `language` 取值为 `bash` 或 `shell` 时，`code` 将作为 Shell 命令在远端沙箱中执行，适合文件操作、依赖安装、命令行工具调用等场景。
+
+执行 Shell 命令时复用 `run_code` 的沙箱 ID 与凭证配置，`code` 内容会作为命令提交，可在单次执行中串接多条命令。
+
+### 参数
+
+`run_code` 的完整签名如下：
+
+```python
+def run_code(
+    code: str,
+    language: str,
+    tool_context: ToolContext,
+    timeout: int = 30,
+    exec_dir: str = "/tmp",
+    env: dict[str, str] | None = None,
+    hard_timeout: int = 300,
+    max_output_length: int = 30000,
+) -> str
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `code` | `str` | — | 要执行的代码或 Shell 命令。 |
+| `language` | `str` | — | 执行语言。执行代码时取 `python3`；执行 Shell 命令时取 `bash` 或 `shell`。 |
+| `tool_context` | `ToolContext` | — | 工具运行时上下文，由 VeADK 自动注入。 |
+| `timeout` | `int` | `30` | 命令执行的超时时间，单位为秒。 |
+| `exec_dir` | `str` | `/tmp` | Shell 执行的工作目录。 |
+| `env` | `dict[str, str] \| None` | `None` | Shell 执行使用的环境变量。 |
+| `hard_timeout` | `int` | `300` | Shell 执行的硬超时时间，单位为秒。 |
+| `max_output_length` | `int` | `30000` | Shell 输出的最大长度。 |
+
+`exec_dir`、`env`、`hard_timeout` 和 `max_output_length` 仅在执行 Shell 命令（`language` 为 `bash` 或 `shell`）时生效；执行代码时由沙箱运行时管理，不适用这些参数。
+
+### 使用示例
+
+```python title="run_code_bash.py"
+from veadk.tools.builtin_tools.run_code import run_code
+
+result = run_code(
+    code="pip install akshare && python -c 'import akshare; print(akshare.__version__)'",
+    language="bash",
+    tool_context=tool_context,
+    timeout=60,
+    exec_dir="/tmp",
+    env={"PIP_INDEX_URL": "https://pypi.org/simple"},
+    hard_timeout=120,
+    max_output_length=5000,
+)
+print(result)
+```
+
+<Note>
+Shell 命令在远端沙箱中以代码形式提交，执行结果与沙箱的运行时一致。请勿在命令中拼接真实密钥；需要敏感凭证时通过 `env` 引用环境变量。
+</Note>
 
 ## 为沙箱执行注入环境变量
 
