@@ -30,9 +30,23 @@ veadk studio --agents-dir ./agents --open
 
 测试运行进程默认保留 1800 秒，可通过 `--generated-agent-test-run-ttl` 调整。测试代码可能调用外部服务或访问运行环境中的数据，只应测试可信项目，并为 Studio 使用权限受限的凭证。
 
+## 部署网络模式
+
+在部署页可为 AgentKit Runtime 选择网络模式，决定 Runtime 的公网暴露方式：
+
+| 网络模式 | 说明 |
+| :--- | :--- |
+| 公网 | Runtime 暴露公网数据面地址。 |
+| VPC | Runtime 仅部署在指定 VPC 与子网内，不暴露公网数据面地址；可勾选在 VPC 内启用共享公网出口。 |
+| 公网 + VPC | 同时分配公网地址与 VPC 内地址。 |
+
+选择 VPC 或公网 + VPC 模式时，需要填写 VPC ID 和子网 ID。
+
+VPC 私有 Runtime 部署完成后不返回公网数据面地址，Studio 通过服务端运行时代理访问该 Runtime，数据面 API Key 始终保留在服务端，不会下发到浏览器。该连接方式与「选择云端 Runtime」中所述的服务端运行时代理一致。
+
 ## 管理智能体
 
-「管理 Agent」列出当前登录用户通过该工作台部署的 AgentKit Runtime。列表按部署时记录的用户标识过滤，可以查看：
+「管理 Agent」列出当前登录用户通过该工作台部署的 AgentKit Runtime。列表默认展示北京区域的 Runtime，也可以切换到上海。列表按部署时记录的用户标识过滤，可以查看：
 
 - Runtime 名称、ID、状态、区域和创建时间；
 - 模型、描述、项目、版本、资源规格和更新时间；
@@ -63,6 +77,14 @@ veadk studio --agents-dir ./agents --open
 <Note>
   「Runtime 信息」标签可能展示 Runtime 的环境变量值。仅向经过授权的用户开放 Studio，并优先使用平台支持的密钥管理能力。
 </Note>
+
+连接 Runtime 时若无法建立连接，Studio 会区分失败原因并给出对应提示，便于直接定位问题：
+
+- **权限不足**：当前账号无权访问该 Runtime，可刷新列表或重新登录后重试。
+- **Agent Server 不可连接**：Runtime 的 Agent Server 未提供连接接口，通常是 Runtime 尚未就绪或版本不兼容，需确认 Runtime 状态与版本。
+- **鉴权失败**：Runtime 服务拒绝了连接请求，需检查 Runtime 的鉴权配置。
+
+这样无需查看日志即可判断应刷新、重新登录，还是检查 Runtime 就绪状态与鉴权配置。
 
 ## 新会话模式
 
@@ -132,6 +154,8 @@ veadk studio --agents-dir ./agents --open
 | `--oauth2-provider` | `str \| None` | `OAUTH2_PROVIDER`；配置用户池时默认为 `veidentity` | SSO provider 标识。 |
 | `--oauth2-provider-label` | `str \| None` | `OAUTH2_PROVIDER_LABEL` | 登录按钮文案。 |
 | `--auth-mode` | `frontend \| gateway` | `frontend` | `frontend` 由 Studio 处理登录；`gateway` 信任上游网关转发的 JWT 身份。也可通过 `VEADK_FRONTEND_AUTH_MODE` 设置。 |
+| `--admin` | `str \| None` | `None` | 逗号分隔的管理员名单（用户名或 OAuth 邮箱）。省略 `--admin` 与 `--developer` 时，所有登录用户都按 `admin` 处理。也可通过 `VEADK_STUDIO_ADMINS` 设置。 |
+| `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
 | `--generated-agent-test-run-ttl` | `int` | `1800` | 生成智能体的临时测试进程保留秒数。 |
 | `--open` / `--no-open` | `bool` | `--no-open` | 服务就绪后是否打开默认浏览器；`--vite` 模式下忽略。 |
 
@@ -158,15 +182,13 @@ veadk studio deploy \
   --veadk-version "1.0.6"
 ```
 
+部署凭据按以下顺序解析：优先使用 `--volcengine-access-key` / `--volcengine-secret-key` 显式传入；未提供时读取当前进程的 `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` 环境变量；两者均缺失时，读取 `~/.volc/credentials` 中的 `[default]` 配置。任一来源解析到完整的 Access Key 与 Secret Key 即可继续部署。
+
 部署成功后，终端会输出公网 URL 和 VeFaaS 应用 ID。打开公网 URL 时，Studio 会先跳转到 VeIdentity 完成登录。
 
 `--region` 指定 Studio 的部署地域，默认为 `cn-beijing`，也支持 `cn-shanghai`；VeFaaS、API Gateway 等资源均创建在该地域。部署时还会自动在所部署地域以及北京、上海两个地域之间查找 VeIdentity 用户池与客户端：优先查询部署地域，未命中时跨地域查询另一个地域；跨地域命中时终端会输出 warning 并继续部署。`--project` 指定 VeFaaS 函数所属项目，默认为 `default`。
 
 部署者的长期 AK/SK 不会写入 VeFaaS 应用环境变量。已部署的 Studio 使用绑定 IAM Role 的临时凭证访问火山引擎服务。
-
-<Note>
-  未指定 `--sandbox-chat-codex-tool-id` 和 `--sandbox-skill-creator-tool-id` 时，部署命令会使用部署凭证自动创建两个独立的 CodeEnv Tool，并通过 AgentKit 凭据托管将 Ark 凭据保存到 KMS，再把代理地址和可撤销票据绑定到这两个 Tool。VeFaaS Function 只接收 Tool ID，不接收模型凭据。
-</Note>
 
 ### 部署参数
 
@@ -179,12 +201,49 @@ veadk studio deploy \
 | `--region` | `cn-beijing \| cn-shanghai` | `cn-beijing` | Studio 部署地域，同时决定 VeFaaS、API Gateway 等资源所在区域。部署时会跨北京、上海查找 VeIdentity 用户池。 |
 | `--project` | `str` | `default` | VeFaaS 函数所属项目。 |
 | `--iam-role` | `str \| None` | `None` | 绑定到函数的既有 IAM Role TRN；省略时创建或复用默认 Role。 |
+| `--admin` | `str \| None` | `None` | 逗号分隔的管理员名单（用户名或 OAuth 邮箱）。省略 `--admin` 与 `--developer` 时，所有登录用户都按 `admin` 处理。也可通过 `VEADK_STUDIO_ADMINS` 设置。 |
+| `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway 名称；省略时复用已有网关，没有可用网关时创建。 |
 | `--gateway-service-name` | `str` | `""` | 指定网关服务名称；留空时自动配置。 |
 | `--gateway-upstream-name` | `str` | `""` | 指定网关上游名称；留空时自动配置。 |
-| `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | 部署用 Access Key。推荐通过环境变量提供。 |
-| `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | 部署用 Secret Key。推荐通过环境变量提供。 |
+| `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | 部署用 Access Key。未提供时依次读取 `VOLCENGINE_ACCESS_KEY` 环境变量与 `~/.volc/credentials` 的 `[default]` 配置。 |
+| `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | 部署用 Secret Key。未提供时依次读取 `VOLCENGINE_SECRET_KEY` 环境变量与 `~/.volc/credentials` 的 `[default]` 配置。 |
 | `--veadk-version` | `str` | 最新发布版本 | 写入 VeFaaS 依赖的 `veadk-python` 版本。重现本页行为时显式设为 `1.0.6`。 |
 | `--from-source` | `bool` 标志 | `false` | 从当前源码目录构建 wheel 后部署，包含未提交改动；用于验证未发布版本，不应与 `--veadk-version` 的发布版本工作流混用。 |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | 自动创建 | 临时会话专用的 AgentKit CodeEnv Tool ID。省略时部署命令使用部署凭证自动创建；也可通过环境变量 `SANDBOX_CHAT_CODEX` 设置。 |
 | `--sandbox-skill-creator-tool-id` | `str \| None` | 自动创建 | Skill 创建模式专用的 AgentKit CodeEnv Tool ID，别名 `--skill-creator-tool-id`。省略时部署命令使用部署凭证自动创建；也可通过环境变量 `SANDBOX_SKILL_CREATOR` 设置。 |
+
+## Studio 角色与 Runtime 权限
+
+`--admin` 和 `--developer` 各自接收逗号分隔的本地用户名或 OAuth 邮箱名单。空格会被忽略，身份匹配不区分大小写；同一身份同时出现在两个名单时，`admin` 优先。本地启动示例：
+
+```bash
+veadk studio \
+  --admin "admin,admin@example.com" \
+  --developer "alice,alice@example.com,bob"
+```
+
+也可以分别通过 `VEADK_STUDIO_ADMINS` 和 `VEADK_STUDIO_DEVELOPERS` 环境变量设置这两个名单。部署 Studio 时使用相同参数：
+
+```bash
+veadk studio deploy \
+  --user-pool-id "your-user-pool-id" \
+  --allowed-client-id "your-user-pool-client-id" \
+  --vefaas-app-name "veadk-studio" \
+  --admin "admin@example.com" \
+  --developer "alice@example.com,bob@example.com"
+```
+
+两项都不传时，所有登录用户都按 `admin` 处理，拥有全部 Studio 能力并可见全部 Runtime。只要传入任一名单就会启用角色权限；未命中名单的身份为普通用户。
+
+| 功能 | admin | developer | 普通用户 |
+| :--- | :--- | :--- | :--- |
+| 添加、调试和部署智能体 | 允许 | 允许 | 不允许；侧边栏隐藏添加/管理入口 |
+| 查看和连接 Runtime | 全部 Runtime | 仅自己创建的 Runtime | 仅自己创建的 Runtime |
+| 管理或删除 Runtime | 全部 Studio 管理的 Runtime | 仅自己创建的 Runtime | 不允许 |
+
+Runtime 归属由服务端在创建时记录，不依据浏览器提交的作者字段判断。缺少归属标签的历史 Runtime 仅 `admin` 可见。
+
+<Warning>
+  本地用户名保存在浏览器中，可被用户修改或冒充，仅适用于本地开发与功能验证。生产环境必须使用 OAuth 或 gateway 认证，由服务端从已验证身份中确定角色和 Runtime 归属。
+</Warning>

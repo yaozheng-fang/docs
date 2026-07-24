@@ -1,0 +1,56 @@
+---
+title: "LAS 数据湖"
+tag: "MCP 工具"
+---
+
+## 功能说明
+
+`las`（`from veadk.tools.builtin_tools.las import las`）基于 AI 多模态数据湖服务 LAS，提供多模态数据集的创建、预览、查询分析、编辑与清洗加工能力。
+
+## 环境变量与前提
+
+<Warning>
+附加要求：
+
+1. 配置用于智能体推理模型的 API Key；
+2. 预先[创建 LAS 通用数据集](https://console.volcengine.com/las/region:las+cn-beijing/next/dataset/common/create)并获取 DatasetId；
+3. 配置 LAS 服务的 DatasetId 与 URL（[URL 获取方式](https://www.volcengine.com/mcp-marketplace/detail?name=LAS%20MCP)）。
+</Warning>
+
+环境变量（**必须配置在环境变量中**）：
+
+- `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
+- `TOOL_LAS_URL`：LAS MCP Server 服务地址
+- `TOOL_LAS_DATASET_ID`：LAS 服务使用的数据集 ID
+
+## 使用方法
+
+```python title="examples/tools/las/agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.las import las
+
+agent = Agent(
+    name="las_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="使用 LAS 中的数据作答。",
+    instruction=(
+        "你是一个诗人。先用 las 工具在 ds_public 数据集中检索相关内容，"
+        "再基于检索结果写一首诗词。"
+    ),
+    tools=[las],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("写一首国风、与木头和爱情相关的诗词")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

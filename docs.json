@@ -186,6 +186,158 @@
                 "default": true
               },
               {
+                "version": "1.0.7",
+                "groups": [
+                  {
+                    "group": "概览",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/zh/index",
+                      "productions/veadk/archives/1.0.7/zh/changelog"
+                    ]
+                  },
+                  {
+                    "group": "快速开始",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/zh/get-started/installation",
+                      "productions/veadk/archives/1.0.7/zh/get-started/quickstart"
+                    ]
+                  },
+                  {
+                    "group": "核心组件",
+                    "pages": [
+                      {
+                        "group": "智能体",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/zh/components/agent/model",
+                          "productions/veadk/archives/1.0.7/zh/components/agent/runtime",
+                          "productions/veadk/archives/1.0.7/zh/components/agent/system-prompt",
+                          "productions/veadk/archives/1.0.7/zh/components/agent/prompt-management",
+                          "productions/veadk/archives/1.0.7/zh/components/agent/structured-output",
+                          "productions/veadk/archives/1.0.7/zh/components/agent/skills"
+                        ]
+                      },
+                      {
+                        "group": "执行引擎",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/zh/components/execution-engine/index"
+                        ]
+                      },
+                      {
+                        "group": "工具",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/zh/components/tools/index",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/custom-function",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/web-search",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/vesearch",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/link-reader",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/web-fetch",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/image-generate",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/image-edit",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/video-generate",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/text-to-speech",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/code-sandbox",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/mobile-run",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/mcp-router",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/lark",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/las",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/vod",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/supabase",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/trusted-mcp",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/custom-mcp",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/load-knowledgebase",
+                          "productions/veadk/archives/1.0.7/zh/components/tools/load-memory"
+                        ]
+                      },
+                      {
+                        "group": "短期会话",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/zh/components/session/index",
+                          "productions/veadk/archives/1.0.7/zh/components/session/local",
+                          "productions/veadk/archives/1.0.7/zh/components/session/sqlite",
+                          "productions/veadk/archives/1.0.7/zh/components/session/mysql",
+                          "productions/veadk/archives/1.0.7/zh/components/session/postgresql"
+                        ]
+                      },
+                      {
+                        "group": "长期记忆",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/zh/components/memory/index",
+                          "productions/veadk/archives/1.0.7/zh/components/memory/local",
+                          "productions/veadk/archives/1.0.7/zh/components/memory/vikingdb",
+                          "productions/veadk/archives/1.0.7/zh/components/memory/mem0",
+                          "productions/veadk/archives/1.0.7/zh/components/memory/opensearch",
+                          "productions/veadk/archives/1.0.7/zh/components/memory/redis",
+                          "productions/veadk/archives/1.0.7/zh/components/memory/openviking"
+                        ]
+                      },
+                      {
+                        "group": "知识库",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/index",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/local",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/opensearch",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/redis",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/tos-vector",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/viking",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/milvus",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/openviking",
+                          "productions/veadk/archives/1.0.7/zh/components/knowledge/context-search"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "可观测",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/zh/components/observability/index",
+                      "productions/veadk/archives/1.0.7/zh/components/observability/logging",
+                      "productions/veadk/archives/1.0.7/zh/components/observability/apmplus",
+                      "productions/veadk/archives/1.0.7/zh/components/observability/cozeloop",
+                      "productions/veadk/archives/1.0.7/zh/components/observability/tls",
+                      "productions/veadk/archives/1.0.7/zh/components/observability/inmemory"
+                    ]
+                  },
+                  {
+                    "group": "扩展",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/zh/components/extensions/index",
+                      {
+                        "group": "消息渠道",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/zh/components/extensions/feishu-channel"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "前端",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/zh/components/frontend/index",
+                      "productions/veadk/archives/1.0.7/zh/components/frontend/veadk-web",
+                      "productions/veadk/archives/1.0.7/zh/components/frontend/veadk-frontend",
+                      "productions/veadk/archives/1.0.7/zh/components/frontend/a2ui",
+                      "productions/veadk/archives/1.0.7/zh/components/frontend/studio"
+                    ]
+                  },
+                  {
+                    "group": "安全",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/zh/components/security/index",
+                      "productions/veadk/archives/1.0.7/zh/components/security/inbound",
+                      "productions/veadk/archives/1.0.7/zh/components/security/outbound",
+                      "productions/veadk/archives/1.0.7/zh/components/security/trusted-mcp",
+                      "productions/veadk/archives/1.0.7/zh/components/security/content-safety"
+                    ]
+                  },
+                  {
+                    "group": "部署",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/zh/deploy/agentkit"
+                    ]
+                  }
+                ]
+              },
+              {
                 "version": "1.0.6",
                 "groups": [
                   {
@@ -1509,6 +1661,158 @@
                   }
                 ],
                 "default": true
+              },
+              {
+                "version": "1.0.7",
+                "groups": [
+                  {
+                    "group": "Overview",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/en/index",
+                      "productions/veadk/archives/1.0.7/en/changelog"
+                    ]
+                  },
+                  {
+                    "group": "Get started",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/en/get-started/installation",
+                      "productions/veadk/archives/1.0.7/en/get-started/quickstart"
+                    ]
+                  },
+                  {
+                    "group": "Core components",
+                    "pages": [
+                      {
+                        "group": "Agent",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/en/components/agent/model",
+                          "productions/veadk/archives/1.0.7/en/components/agent/runtime",
+                          "productions/veadk/archives/1.0.7/en/components/agent/system-prompt",
+                          "productions/veadk/archives/1.0.7/en/components/agent/prompt-management",
+                          "productions/veadk/archives/1.0.7/en/components/agent/structured-output",
+                          "productions/veadk/archives/1.0.7/en/components/agent/skills"
+                        ]
+                      },
+                      {
+                        "group": "Execution engine",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/en/components/execution-engine/index"
+                        ]
+                      },
+                      {
+                        "group": "Tools",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/en/components/tools/index",
+                          "productions/veadk/archives/1.0.7/en/components/tools/custom-function",
+                          "productions/veadk/archives/1.0.7/en/components/tools/web-search",
+                          "productions/veadk/archives/1.0.7/en/components/tools/vesearch",
+                          "productions/veadk/archives/1.0.7/en/components/tools/link-reader",
+                          "productions/veadk/archives/1.0.7/en/components/tools/web-fetch",
+                          "productions/veadk/archives/1.0.7/en/components/tools/image-generate",
+                          "productions/veadk/archives/1.0.7/en/components/tools/image-edit",
+                          "productions/veadk/archives/1.0.7/en/components/tools/video-generate",
+                          "productions/veadk/archives/1.0.7/en/components/tools/text-to-speech",
+                          "productions/veadk/archives/1.0.7/en/components/tools/code-sandbox",
+                          "productions/veadk/archives/1.0.7/en/components/tools/mobile-run",
+                          "productions/veadk/archives/1.0.7/en/components/tools/mcp-router",
+                          "productions/veadk/archives/1.0.7/en/components/tools/lark",
+                          "productions/veadk/archives/1.0.7/en/components/tools/las",
+                          "productions/veadk/archives/1.0.7/en/components/tools/vod",
+                          "productions/veadk/archives/1.0.7/en/components/tools/supabase",
+                          "productions/veadk/archives/1.0.7/en/components/tools/trusted-mcp",
+                          "productions/veadk/archives/1.0.7/en/components/tools/custom-mcp",
+                          "productions/veadk/archives/1.0.7/en/components/tools/load-knowledgebase",
+                          "productions/veadk/archives/1.0.7/en/components/tools/load-memory"
+                        ]
+                      },
+                      {
+                        "group": "Short-term sessions",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/en/components/session/index",
+                          "productions/veadk/archives/1.0.7/en/components/session/local",
+                          "productions/veadk/archives/1.0.7/en/components/session/sqlite",
+                          "productions/veadk/archives/1.0.7/en/components/session/mysql",
+                          "productions/veadk/archives/1.0.7/en/components/session/postgresql"
+                        ]
+                      },
+                      {
+                        "group": "Long-term memory",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/en/components/memory/index",
+                          "productions/veadk/archives/1.0.7/en/components/memory/local",
+                          "productions/veadk/archives/1.0.7/en/components/memory/vikingdb",
+                          "productions/veadk/archives/1.0.7/en/components/memory/mem0",
+                          "productions/veadk/archives/1.0.7/en/components/memory/opensearch",
+                          "productions/veadk/archives/1.0.7/en/components/memory/redis",
+                          "productions/veadk/archives/1.0.7/en/components/memory/openviking"
+                        ]
+                      },
+                      {
+                        "group": "Knowledge base",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/index",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/local",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/opensearch",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/redis",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/tos-vector",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/viking",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/milvus",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/openviking",
+                          "productions/veadk/archives/1.0.7/en/components/knowledge/context-search"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Observability",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/en/components/observability/index",
+                      "productions/veadk/archives/1.0.7/en/components/observability/logging",
+                      "productions/veadk/archives/1.0.7/en/components/observability/apmplus",
+                      "productions/veadk/archives/1.0.7/en/components/observability/cozeloop",
+                      "productions/veadk/archives/1.0.7/en/components/observability/tls",
+                      "productions/veadk/archives/1.0.7/en/components/observability/inmemory"
+                    ]
+                  },
+                  {
+                    "group": "Extensions",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/en/components/extensions/index",
+                      {
+                        "group": "Message channels",
+                        "pages": [
+                          "productions/veadk/archives/1.0.7/en/components/extensions/feishu-channel"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Frontend",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/en/components/frontend/index",
+                      "productions/veadk/archives/1.0.7/en/components/frontend/veadk-web",
+                      "productions/veadk/archives/1.0.7/en/components/frontend/veadk-frontend",
+                      "productions/veadk/archives/1.0.7/en/components/frontend/a2ui",
+                      "productions/veadk/archives/1.0.7/en/components/frontend/studio"
+                    ]
+                  },
+                  {
+                    "group": "Security",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/en/components/security/index",
+                      "productions/veadk/archives/1.0.7/en/components/security/inbound",
+                      "productions/veadk/archives/1.0.7/en/components/security/outbound",
+                      "productions/veadk/archives/1.0.7/en/components/security/trusted-mcp",
+                      "productions/veadk/archives/1.0.7/en/components/security/content-safety"
+                    ]
+                  },
+                  {
+                    "group": "Deployment",
+                    "pages": [
+                      "productions/veadk/archives/1.0.7/en/deploy/agentkit"
+                    ]
+                  }
+                ]
               },
               {
                 "version": "1.0.6",
