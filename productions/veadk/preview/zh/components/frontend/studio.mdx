@@ -296,6 +296,9 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
 | `--from-source` | `bool` 标志 | `false` | 从当前源码目录构建 wheel 后部署，包含未提交改动；用于验证未发布版本，不应与 `--veadk-version` 的发布版本工作流混用。 |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | 自动创建 | 临时会话使用的 AgentKit CodeEnv Tool ID；也可通过 `SANDBOX_CHAT_CODEX` 设置。 |
 | `--sandbox-skill-creator-tool-id`、`--skill-creator-tool-id` | `str \| None` | 自动创建 | Skill 创建使用的 AgentKit CodeEnv Tool ID；也可通过 `SANDBOX_SKILL_CREATOR` 设置。 |
+| `--studio-update-bucket` | `str \| None` | `None` | 存放 Studio 不可变发布包的 TOS Bucket。省略时关闭应用内一键更新；也可通过 `VEADK_STUDIO_UPDATE_BUCKET` 设置。 |
+| `--studio-update-region` | `str \| None` | `--region` | 发布包所在 TOS 地域；省略时与部署地域一致。也可通过 `VEADK_STUDIO_UPDATE_REGION` 设置。 |
+| `--studio-update-prefix` | `str` | `veadk/studio/main` | Studio 主发布通道在 TOS 中的对象 Key 前缀。也可通过 `VEADK_STUDIO_UPDATE_PREFIX` 设置。 |
 
 ## 更新已部署的 Studio
 
@@ -322,6 +325,30 @@ veadk studio update --vefaas-app-name "veadk-studio"
 | `--sandbox-skill-creator-tool-id`、`--skill-creator-tool-id` | `str \| None` | 保留云上值 | 显式传入时替换 Skill 创建使用的 Tool ID。 |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | 更新操作使用的 Access Key。 |
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | 更新操作使用的 Secret Key。 |
+
+## Studio 一键更新
+
+部署时通过 `--studio-update-bucket` 配置 TOS 发布通道后，管理员可在 Studio 导航栏中检查并应用更新：
+
+```bash
+veadk studio deploy \
+  --user-pool-id "your-user-pool-id" \
+  --allowed-client-id "your-user-pool-client-id" \
+  --vefaas-app-name "veadk-studio" \
+  --studio-update-bucket "your-tos-bucket" \
+  --studio-update-region "cn-beijing" \
+  --studio-update-prefix "veadk/studio/main"
+```
+
+省略 `--studio-update-bucket` 时，应用内一键更新保持关闭，已部署的 Studio 不会展示更新入口。配置发布通道后，部署命令会将 Bucket、地域、前缀以及当前 Application 与 Function 标识写入 VeFaaS Function 环境，供更新流程使用。
+
+Studio 每隔约 3 分钟读取发布通道中的 `latest.json`，展示比当前版本更新的发布版本及其 changelog 和 Git SHA。管理员确认后，Studio 下载完整发布包，同时替换 Python 后端和前端资源，再重新发布原 Application；Application 与 Function ID、访问 URL、SSO 客户端和服务端 Secret 保持不变。
+
+<Note>
+  一键更新仅对具备 `admin` 角色的登录用户开放。更新过程中替换的是 Studio 自身的 VeFaaS Function，不影响已部署的 AgentKit Runtime。
+</Note>
+
+更新内容来自发布通道中的不可变发布包。该通道由 VeADK 维护方通过独立的发布流程构建并写入：每次发布对应一个明确的 Git SHA，构建前端并校验离线 wheel 后，生成包含 Python 后端与前端资源的完整包及版本清单，更新有数量上限的发布目录，最后覆盖 `latest.json`。发布流程不保存用于写入 TOS 的长期 AK/SK，仅使用短期凭据完成上传。
 
 ## Studio 角色与 Runtime 权限
 

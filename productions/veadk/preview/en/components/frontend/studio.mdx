@@ -296,6 +296,9 @@ When `--sandbox-chat-codex-tool-id` and `--sandbox-skill-creator-tool-id` are om
 | `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for temporary sessions; also read from `SANDBOX_CHAT_CODEX`. |
 | `--sandbox-skill-creator-tool-id`, `--skill-creator-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for Skill creation; also read from `SANDBOX_SKILL_CREATOR`. |
+| `--studio-update-bucket` | `str \| None` | `None` | TOS bucket holding immutable Studio release bundles. Omit to disable in-app one-click updates; also read from `VEADK_STUDIO_UPDATE_BUCKET`. |
+| `--studio-update-region` | `str \| None` | `--region` | TOS region for the release bundles; defaults to the deployment region. Also read from `VEADK_STUDIO_UPDATE_REGION`. |
+| `--studio-update-prefix` | `str` | `veadk/studio/main` | TOS object-key prefix for the Studio main release channel. Also read from `VEADK_STUDIO_UPDATE_PREFIX`. |
 
 ## Update a deployed Studio
 
@@ -322,6 +325,30 @@ When `--region` and `--project` are omitted, the command searches Beijing, Shang
 | `--sandbox-skill-creator-tool-id`, `--skill-creator-tool-id` | `str \| None` | Preserve deployed value | Replace the Skill-creation Tool ID only when supplied. |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used for the update. |
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used for the update. |
+
+## One-click Studio updates
+
+After you configure a TOS release channel with `--studio-update-bucket` during deployment, administrators can check for and apply updates from the Studio navigation bar:
+
+```bash
+veadk studio deploy \
+  --user-pool-id "your-user-pool-id" \
+  --allowed-client-id "your-user-pool-client-id" \
+  --vefaas-app-name "veadk-studio" \
+  --studio-update-bucket "your-tos-bucket" \
+  --studio-update-region "cn-beijing" \
+  --studio-update-prefix "veadk/studio/main"
+```
+
+When `--studio-update-bucket` is omitted, in-app one-click updates stay disabled and the deployed Studio shows no update entry. When a release channel is configured, the deploy command writes the bucket, region, prefix, and the current Application and Function identifiers to the VeFaaS Function environment for the update flow.
+
+Studio reads `latest.json` from the release channel roughly every three minutes and shows releases newer than the current version, with their changelog and Git SHA. After an administrator confirms an update, Studio downloads the full release bundle, replaces the Python backend and frontend assets together, and re-releases the original Application. The Application and Function IDs, public URL, SSO client, and server-side secrets are preserved.
+
+<Note>
+  One-click updates are available only to signed-in users with the `admin` role. The update replaces the Studio VeFaaS Function itself and does not affect deployed AgentKit Runtimes.
+</Note>
+
+Update content comes from immutable release bundles in the channel. The channel is populated by the VeADK maintainers through a dedicated publish flow: each release targets an explicit Git SHA, builds the frontend, verifies the offline wheels, then produces a complete bundle (Python backend and frontend assets) plus a version manifest, updates a bounded release catalog, and finally overwrites `latest.json`. The publish flow stores no long-lived AK/SK for writing to TOS; uploads use short-lived credentials.
 
 ## Studio roles and Runtime access
 
