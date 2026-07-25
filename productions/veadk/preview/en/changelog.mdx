@@ -11,6 +11,7 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 | Studio knowledge bases | Agent creation now defaults to VikingDB Knowledge. Studio no longer offers the local vector-store option and can select an existing VikingDB knowledge-base collection visible to the current account in the Beijing-region `default` project. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio remote agents | Remote-agent configuration can list and refresh AgentKit agent centers by region in a dropdown. Remote agents remain available only as sub-agents. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Long-term memory | Added the TOS ContextBucket backend for managed memory inference and retrieval with per-`user_id` isolation. | [TOS ContextBucket](/productions/veadk/preview/en/components/memory/tos-context) |
+| Studio deployment | `veadk studio deploy` now uses the `veadk-studio` TOS bucket in the deployment region as its immutable release channel by default, enabling in-app updates after deployment without extra options. Override it with `--studio-update-bucket`, `--studio-update-region`, and `--studio-update-prefix` or the `VEADK_STUDIO_UPDATE_*` environment variables. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 
 ## 1.0.8
 
