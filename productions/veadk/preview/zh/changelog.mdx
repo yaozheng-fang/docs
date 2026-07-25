@@ -11,6 +11,7 @@ title: "更新日志"
 | Studio 知识库 | 创建智能体时，知识库默认使用 VikingDB Knowledge；Studio 不再提供本地向量库选项，并支持从北京地域 `default` 项目中选择当前账号可见的已有 VikingDB 知识库集合。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 远程智能体 | 远程智能体配置支持按地域从下拉框选择 AgentKit 智能体中心并刷新列表；远程智能体仍只能作为子智能体使用。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 长期记忆 | 新增 TOS ContextBucket 后端，由托管服务完成记忆推理与检索，并按 `user_id` 隔离记忆。 | [使用 TOS ContextBucket 存储](/productions/veadk/preview/zh/components/memory/tos-context) |
+| Studio 消息反馈 | 修复反馈评测集名称被云端占用但不可见时无法写入的问题：当标准名称不可用时改用带稳定短后缀的备用名称并在后续反馈中复用，同时将名称长度限制在 50 字符以内。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
 
 ## 1.0.8
 
