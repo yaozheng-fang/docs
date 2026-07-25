@@ -14,6 +14,7 @@ VeADK ships a production-grade React frontend — an enterprise agent-applicatio
 - **Skill center**: select skills from Skill Hub, a local upload, or an AgentKit SkillSpace while creating an agent.
 - **Session history**: auto-saved, time-sorted, reopen or delete.
 - **Smart search**: *Session* searches the current agent's message history, *Web* calls its mounted web-search tool, and *Knowledge* and *Memory* perform semantic retrieval through the configured backends. The interface enables only sources available to the agent and labels results with the index or source name and backend type.
+- **Message feedback**: when connected to a cloud AgentKit Runtime, the like/dislike controls below each answer write the current question, answer, and feedback state to AgentKit evaluation sets. Each agent gets stable `{agent_name}_good_case` and `{agent_name}_bad_case` sets; changing or cancelling a rating updates the item idempotently. If a Runtime does not expose Session state updates, the browser keeps a compatibility cache.
 - **Add an AgentKit agent**: paste a URL and API key to connect a remote agent over the ADK protocol; it then appears in the picker.
 - **Studio deployment**: inspect generated code, configure the region, channel, network, and environment variables, deploy to AgentKit, and monitor the task from the same workbench.
 - **Tracing**: view the call flame graph for the current session.
