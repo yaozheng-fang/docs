@@ -40,6 +40,10 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
 4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
 
+<Note>
+  Resource pickers in custom creation (such as agent centers and knowledge-base collections) support local keyword filtering: type in the dropdown to filter the currently loaded options. Filtering applies only to the loaded list and does not change the region, project scope, or refresh behavior.
+</Note>
+
 ### Add a remote agent
 
 Remote agents are discovered and invoked through an AgentKit agent center. Use them to connect specialized capabilities that have already been published to a center. A remote agent can only be a sub-agent, not the root agent; the root must use the LLM, sequential, parallel, or loop type.
@@ -113,6 +117,21 @@ For a local Studio, provide access through `VOLCENGINE_ACCESS_KEY` and `VOLCENGI
 | The knowledge base list is empty | Confirm that the `default` project in Beijing contains a VikingDB knowledge base collection and that the current credentials can view it. |
 | The knowledge base list does not load | Check the Studio login session, network access to VikingDB Knowledge, and credential permissions, then refresh the list. |
 | Project generation or testing fails | Confirm that the knowledge base configuration is complete and that the runtime can access the selected backend. |
+
+### Add the code-execution tool
+
+Selecting **Code execution** in the custom agent's built-in tools adds the `run_code` tool to the generated Python and reveals the sandbox configuration it depends on, below the built-in tool list. The code, language, and timeout are supplied by the agent at runtime from the `run_code` tool signature, while `tool_context` is injected automatically by ADK and does not need to be set in Studio.
+
+| Studio setting | Generated-project env var | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Code-execution sandbox ID | `AGENTKIT_TOOL_ID` | `str` | Yes | — | AgentKit code-execution sandbox ID used by `run_code`, e.g. `t-xxxxxxxx`. |
+| AgentKit Tools region | `AGENTKIT_TOOL_REGION` | `str` | No | `cn-beijing` | Region for calling AgentKit Tools. |
+
+<Note>
+  Both values apply to local debug runs and deployed runtimes, and the generated `.env.example` includes both variables. The sandbox ID and region are used only on the Studio server and are never delivered to the browser.
+</Note>
+
+For the full parameters, shell execution, and credential requirements of `run_code`, see the [Code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox).
 
 ## Use smart search
 

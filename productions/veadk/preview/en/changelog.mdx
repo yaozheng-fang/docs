@@ -8,6 +8,9 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 
 | Module | Change details | Link |
 | --- | --- | --- |
+| Studio code execution | The custom-creation built-in tools add a Code execution option: selecting it adds the `run_code` tool to the generated Python and reveals `AGENTKIT_TOOL_ID` (code-execution sandbox ID) and `AGENTKIT_TOOL_REGION` (default `cn-beijing`) below the tool list. Both values apply to local debug runs and deployed runtimes. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Code sandbox | Added the `AGENTKIT_TOOL_REGION` environment variable for the region used to call AgentKit Tools; defaults to `cn-beijing`. | [Code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox) |
+| Studio pickers | Resource pickers in custom creation support local keyword filtering of loaded options. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio knowledge bases | Agent creation now defaults to VikingDB Knowledge. Studio no longer offers the local vector-store option and can select an existing VikingDB knowledge-base collection visible to the current account in the Beijing-region `default` project. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio remote agents | Remote-agent configuration can list and refresh AgentKit agent centers by region in a dropdown. Remote agents remain available only as sub-agents. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Long-term memory | Added the TOS ContextBucket backend for managed memory inference and retrieval with per-`user_id` isolation. | [TOS ContextBucket](/productions/veadk/preview/en/components/memory/tos-context) |
