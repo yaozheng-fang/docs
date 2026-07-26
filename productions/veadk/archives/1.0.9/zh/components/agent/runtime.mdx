@@ -1,0 +1,136 @@
+---
+title: "运行时"
+---
+
+运行时决定智能体「内层循环」如何执行——即每一轮如何调用模型、解析意图、调用工具。默认运行时基于 Google ADK 的内置执行流程，开箱即用；你也可以切换执行后端，或在执行流程上插入统一的处理逻辑，而无需改动智能体本身。
+
+## 默认运行时
+
+默认即为 ADK 运行时，无需额外配置：
+
+```python
+from veadk import Agent
+
+agent = Agent(name="assistant")  # 默认使用 ADK 运行时
+```
+
+## 切换执行后端
+
+通过 `runtime` 选择内层循环的执行后端：
+
+```python
+agent = Agent(name="assistant", runtime="codex")
+```
+
+| 取值 | 说明 |
+| --- | --- |
+| `adk`（默认） | 使用 Google ADK 内置的执行流程，适用于绝大多数场景。 |
+| `codex` | 使用 Codex SDK 执行内层循环，并桥接智能体的函数工具、MCP 工具与技能。 |
+| `piagent` | 通过 PiAgent RPC 执行内层循环，并桥接函数工具、MCP 工具与技能。1.0.5 新增。 |
+
+### 使用 Codex 运行时
+
+Codex 运行时依赖 `openai-codex`，该依赖不会随 VeADK 默认安装。使用前安装所需依赖：
+
+```bash
+pip install openai-codex fastapi uvicorn
+```
+
+<Warning>
+  Codex 运行时默认不会请求交互式批准，并具有对运行所在主机或容器执行命令、读写文件和访问网络的权限。仅在受信任的工作负载中启用该运行时；生产环境应使用最小权限的隔离容器，并限制可访问的凭证、文件与网络目标。
+</Warning>
+
+模型名称、API 地址与 API Key 仍使用智能体的模型配置：
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+)
+```
+
+工具和技能沿用标准的 `Agent` 配置，无需为 Codex 运行时单独注册：
+
+- `tools` 中的[函数工具](/productions/veadk/preview/zh/components/tools/custom-function)会作为可调用工具提供给模型；
+- `tools` 中的 [MCPToolset](/productions/veadk/preview/zh/components/tools/custom-mcp)会完成工具发现与调用；
+- 通过 `SkillToolset` 或 VeADK 旧入口加载的[技能](/productions/veadk/preview/zh/components/agent/skills)会交由 Codex 的技能机制使用。
+
+### 配置临时错误重试
+
+Codex 运行时调用模型后端时，会对限流、服务端错误、服务过载和超时等临时错误进行重试。默认最多重试两次，可通过环境变量调整：
+
+| 环境变量 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `CODEX_SHIM_NUM_RETRIES` | `int` | `2` | 临时错误的最大重试次数；设为 `0` 可关闭重试。 |
+| `CODEX_SHIM_TIMEOUT` | `float` | `0` | 单次模型后端调用的超时秒数；`0` 表示使用底层客户端的默认超时。 |
+
+### 使用 PiAgent
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="piagent",
+    model_name="doubao-seed-2-1-pro-260628",
+)
+```
+
+VeADK 不在 Python 安装包中内置 PiAgent 二进制文件。运行时按以下顺序查找：
+
+1. `PIAGENT_BINARY` 指向的可执行文件；
+2. `PIAGENT_INSTALL_DIR` 下的托管缓存，默认为 `~/.cache/veadk/piagent`；
+3. 若缓存不存在，从 PiAgent Release 下载并校验后安装。
+
+| 环境变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `PIAGENT_BINARY` | — | 已安装的 PiAgent 可执行文件路径。生产环境建议显式设置。 |
+| `PIAGENT_INSTALL_DIR` | `~/.cache/veadk/piagent` | 自动下载和缓存目录。 |
+| `PIAGENT_AGENT_DIR` | 每次运行创建临时目录 | PiAgent 的隔离配置与会话目录；不能指向用户真实的 `~/.pi/agent`。 |
+| `PIAGENT_WORKDIR` | 当前目录 | PiAgent 的工作目录。 |
+| `PIAGENT_TIMEOUT_SECONDS` | `600` | 单次执行超时秒数。 |
+| `PIAGENT_TOOL_ALLOWLIST` | 空 | 允许使用的内置工具，使用逗号分隔。 |
+| `PIAGENT_EXCLUDE_TOOLS` | 空 | 禁止使用的工具，使用逗号分隔。 |
+
+<Note>
+  自动安装需要运行环境能够访问 PiAgent Release。离线或受限网络环境应预先安装二进制文件，并通过 `PIAGENT_BINARY` 指定路径。
+</Note>
+
+## 请求处理
+
+在不侵入业务逻辑的前提下，可为每次执行插入统一的横切处理。将处理器传入 `run_processor` 即可，例如接入身份认证做登录态校验：
+
+```python
+from veadk import Agent
+from veadk.integrations.ve_identity import AuthRequestProcessor
+
+agent = Agent(name="assistant", run_processor=AuthRequestProcessor())
+```
+
+不设置时使用默认处理器，不改变任何行为。VeADK 内置 `AuthRequestProcessor` 作为身份认证的开箱即用实现。
+
+### 自定义处理器
+
+所有处理器都继承抽象基类 `BaseRunProcessor`，实现其 `process_run(runner, message)` 方法。该方法返回一个包裹本轮「事件流」的装饰器，从而让你：
+
+- 在整轮执行的**前后**插入逻辑（如鉴权、日志、性能监控）；
+- **拦截、改写或注入**执行过程中产生的事件；
+- 在此基础上实现重试等控制逻辑。
+
+```python
+from veadk.processors.base_run_processor import BaseRunProcessor
+
+class LoggingProcessor(BaseRunProcessor):
+    def process_run(self, runner, message, **kwargs):
+        def decorator(event_generator):
+            async def wrapper():
+                # 执行前：记录起始、校验等
+                async for event in event_generator():
+                    yield event  # 可在此拦截或改写事件
+                # 执行后：汇总、上报等
+            return wrapper
+        return decorator
+```
