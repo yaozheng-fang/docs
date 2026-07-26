@@ -357,3 +357,10 @@ Studio restricts Runtime visibility according to the signed-in account. Existing
 <Warning>
   A local username is stored in the browser and can be changed or impersonated. Use it only for local development and feature testing. Production deployments must use OAuth or gateway authentication so identity and permissions are determined from verified sign-in information.
 </Warning>
+
+
+## View the system version
+
+After signing in, the account menu at the bottom of the sidebar offers a "System info" entry. Selecting it opens a dialog showing the Studio "Current version".
+
+When Studio is started locally or built and deployed from source, the version is the installed VeADK version. When Studio is switched to a cloud Frontend release, the corresponding release version is shown. If no version is available, "—" is displayed.
