@@ -34,6 +34,134 @@ The application exposes AgentKit conversation APIs and these public endpoints:
 | `/web/agent-graph` | Agent topology; each node includes skills, components, path, and whether it can be selected in a conversation. |
 | `/` | Built-in Web UI. |
 
+
+## Session-scoped capability overlays
+
+<Note>
+  Session-scoped capability overlays are an unreleased Preview feature available only when running or deploying from the current VeADK source, not from the latest released `veadk-python`. Studio deployments include it when built with `--from-source`.
+</Note>
+
+In addition to the stable endpoints above, applications built with `create_agentkit_app` mount a set of session-scoped capability-overlay endpoints under the `/harness` prefix. A caller can temporarily mount a built-in tool or a remote skill for a session, then run the agent with the overlay applied through `/harness/run_sse`. Overlays apply only to the specified session: they do not modify the root agent definition and are not written to other sessions.
+
+Capabilities fall into two categories:
+
+- **Built-in tools**: from the VeADK built-in tool catalog, referenced by tool name.
+- **Remote skills**: from the public Skill Hub or an AgentKit Skill Space, referenced by skill name and skill-source identifier.
+
+Tools and skills already mounted on the root agent are returned as base capabilities (`custom` is `false`) and cannot be removed; capabilities mounted through the overlay API are session capabilities (`custom` is `true`) and can be removed individually.
+
+### When to use
+
+- When you need to enable an additional tool or skill for a single session without redeploying the Runtime.
+- When you need to isolate different capability sets by session so they do not affect each other.
+
+### Dependencies
+
+- The agent must expose a `tools` attribute; mounting fails when the overlay is non-empty but the root agent has no `tools`.
+- Listing and mounting remote skills requires Volcengine credentials. Provide them locally with `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`; on VeFaaS, use the bound IAM Role.
+
+### Endpoints
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/harness/capabilities/tools` | `GET` | List mountable built-in tools. |
+| `/harness/skills/spaces` | `GET` | List AgentKit Skill Spaces visible to the current account. |
+| `/harness/skills/spaces/{space_id}/skills` | `GET` | List skills in the specified Skill Space. |
+| `/harness/skills/findskill` | `GET` | Search the public Skill Hub for skills. |
+| `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities` | `GET` | Query the current capability list and revision for the session. |
+| `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities` | `POST` | Mount one built-in tool or remote skill for the session. |
+| `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities/{capability_id}` | `DELETE` | Remove a mounted capability from the session. |
+| `/harness/run_sse` | `POST` | Run the agent with the session overlay applied as an SSE stream. |
+
+### Examples
+
+Mount a built-in tool for a session:
+
+```bash
+curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/capabilities" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "tool",
+    "name": "web_search",
+    "expected_revision": 0
+  }'
+```
+
+Example response:
+
+```json
+{
+  "schema_version": 1,
+  "revision": 1,
+  "tools": [
+    {"id": "base:tool:get_weather", "kind": "tool", "name": "get_weather", "custom": false},
+    {"id": "session:tool:web_search", "kind": "tool", "name": "web_search", "custom": true}
+  ],
+  "skills": []
+}
+```
+
+Mount a remote skill from an AgentKit Skill Space:
+
+```bash
+curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/capabilities" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "skill",
+    "name": "order-lookup",
+    "skill_source_id": "ss-xxxxxxxx",
+    "description": "Look up order status",
+    "expected_revision": 1
+  }'
+```
+
+Run the agent with the overlay applied:
+
+```bash
+curl -N -X POST "$RUNTIME_URL/harness/run_sse" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_name": "customer_support",
+    "user_id": "u-1",
+    "session_id": "s-1",
+    "new_message": {"role": "user", "parts": [{"text": "Look up my order"}]},
+    "streaming": true
+  }'
+```
+
+`/harness/run_sse` returns the same event format as the standard `/run_sse` endpoint; each event is sent as a `data: `-prefixed JSON line.
+
+### Parameters
+
+`POST /capabilities` request body:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `kind` | `"tool"` \| `"skill"` | — | Capability type to mount. |
+| `name` | `str` | — | Tool or skill name; the tool must be a built-in tool, and the skill must exist in the selected source. |
+| `skill_source_id` | `str \| None` | `None` | Skill-source identifier. Required when mounting a skill; a `findskill:` prefix denotes the public Skill Hub, otherwise it is an AgentKit Skill Space ID. |
+| `description` | `str` | `""` | Skill description, used only when mounting a skill. |
+| `version` | `str` | `""` | Skill version, used only when mounting a skill. |
+| `expected_revision` | `int \| None` | `None` | Optimistic concurrency control; pass the current `revision`; a mismatch returns 409. |
+
+`GET /harness/skills/spaces` and `GET /harness/skills/spaces/{space_id}/skills` accept a `region` query parameter: `spaces` defaults to `all` (combining Beijing and Shanghai), and the skill list defaults to `cn-beijing`.
+
+`GET /harness/skills/findskill` accepts these query parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | `""` | Search keyword; empty returns popular skills. |
+| `page_number` | `int` | `1` | Page number, starting at 1. |
+| `page_size` | `int` | `20` | Page size, range 1–50. |
+
+### Limitations
+
+- Base capabilities cannot be removed; a `capability_id` starting with `base:` returns 409.
+- A tool or skill with a duplicate name cannot be mounted; a name that collides with a root-agent capability returns 409.
+- An `expected_revision` that does not match the current `revision` returns 409; the caller should re-query and retry.
+- Session capabilities take effect only for runs of the session they were mounted to; they are not persisted to the root agent after the run.
+- The public Skill Hub search URL defaults to `https://skills.volces.com/v1/skills` and can be overridden with the `FINDSKILL_SEARCH_URL` environment variable.
+
 ## Initialize and deploy
 
 Run these commands in the project directory:

@@ -212,6 +212,22 @@ veadk studio --agents-dir ./agents --open
 | `VEADK_SKILL_CREATOR_TOS_PREFIX` | `agentkit/skills` | TOS object-key prefix for published artifacts. |
 | `VEADK_SKILL_CREATOR_PROJECT_NAME` | — | Project name used when creating a Skill. |
 
+
+## Manage session capabilities
+
+<Note>
+  Session-capability management is an unreleased Preview feature available only when running or deploying Studio from the current VeADK source. Run it locally from source, or deploy with `--from-source`; without it, deployments use the latest released version and do not include this feature.
+</Note>
+
+When the connected Runtime exposes the session-scoped capability-overlay endpoints, the agent info panel on the conversation page shows "Add a tool to this conversation" and "Add a skill to this conversation" entries in the tool and skill lists. Added capabilities apply only to the current session: they do not modify the deployed root agent and are not written to other sessions.
+
+- **Built-in tools**: chosen from the VeADK built-in tool catalog; searchable by Chinese name or tool identifier.
+- **Remote skills**: searched from the public Skill Hub, or browsed from AgentKit Skill Spaces by region and project.
+
+Mounted session capabilities can be removed from the same panel; once removed, the capability is no longer available in the current session. Conversations in the session run through a session-aware runner so that the overlaid tools and skills actually participate in calls.
+
+Listing and mounting remote skills requires Volcengine credentials; provide them locally with `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`, and on VeFaaS use the bound IAM Role. For the complete overlay endpoints and parameters, see [Deploy to AgentKit](/productions/veadk/preview/en/deploy/agentkit).
+
 ## `veadk studio` options
 
 | Option | Type | Default | Description |
