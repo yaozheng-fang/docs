@@ -40,6 +40,25 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
 4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
 
+### Add skills
+
+The agent creation flow supports three skill sources:
+
+- **Skill Hub**: search the public Volcengine skill repository by keyword and add a skill.
+- **Local upload**: drag a local skill directory or ZIP into Studio; the format is detected automatically.
+- **AgentKit SkillSpace**: browse skill spaces visible to the current account and select skills from a space.
+
+Browsing AgentKit SkillSpaces and their skills is performed by the Studio server using its own configured Volcengine credentials; the browser never sees credentials. For a local Studio, grant access through `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`. A VeFaaS deployment uses temporary credentials from its bound IAM role. When SSO login is enabled, you must be signed in to Studio before browsing skill spaces.
+
+The skill-space list returns every space visible to the current account across all regions by default. After you select a space, Studio loads its skills in the space's region. Use the refresh button to reload a list.
+
+| Symptom | Check |
+| :--- | :--- |
+| Studio reports missing Volcengine credentials | For a local Studio, check `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`. For VeFaaS, check the bound IAM role. Credentials remain on the server and are never delivered to the browser. |
+| Studio prompts you to sign in | When SSO is enabled, sign in to Studio before browsing skill spaces. |
+| The skill-space or skill list is empty | Confirm that the current credentials can view skill spaces in the corresponding region and that the selected space contains skills; use the refresh button when necessary. |
+| A list does not load | Check the Studio login session, network access, and credential permissions, then use the refresh button to retry. |
+
 ### Add a remote agent
 
 Remote agents are discovered and invoked through an AgentKit agent center. Use them to connect specialized capabilities that have already been published to a center. A remote agent can only be a sub-agent, not the root agent; the root must use the LLM, sequential, parallel, or loop type.
