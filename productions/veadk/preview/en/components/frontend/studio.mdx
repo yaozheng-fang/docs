@@ -4,7 +4,7 @@ title: "Studio agent workbench"
 
 VeADK Studio uses the same service and complete UI as VeADK Frontend. It provides chat, search, session history, the skill center, and agent creation, testing, deployment, and management, and opens on the chat view by default.
 
-Custom configuration is the available project-creation flow; intelligent, template, and workflow entries are marked as coming soon and cannot be selected. You can preview and edit generated files, run them in a temporary test process, download a ZIP, or deploy to AgentKit. Studio also supports cloud Runtime selection, multiple skill sources, multimodal conversations, and centralized deployment task status and retries.
+Custom configuration and code-package deployment are the available project-creation flows; intelligent, template, and workflow entries are marked as coming soon and cannot be selected. You can preview and edit generated files, run them in a temporary test process, download a ZIP, or deploy to AgentKit. Studio also supports cloud Runtime selection, multiple skill sources, multimodal conversations, and centralized deployment task status and retries.
 
 ## Start locally
 
@@ -39,6 +39,43 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
 2. Configure the model, instruction, tools, memory, and knowledge base, and add skills from Skill Hub, a local upload, or an AgentKit SkillSpace. Multi-agent projects can also use sequential, parallel, loop, or A2A nodes.
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
 4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
+
+### Add and deploy from a code package
+
+Code-package deployment is an independent creation flow: on Add Agent, select “Add and deploy from a code package” and upload an existing Agent project archive. You can then inspect or edit its files in Studio and deploy directly to AgentKit without configuring the model, tools, or skills individually. It suits getting an externally authored VeADK project online quickly, or re-deploying an existing project after small adjustments.
+
+<Steps>
+  <Step title="Upload the code package">
+    On the Add Agent menu, choose “Add and deploy from a code package” and click the upload area or drag a file to select a `.zip` archive. The archive can be up to 50 MB, contain no more than 800 files after extraction, and must include `app.py` at the root as the AgentKit entry point.
+  </Step>
+  <Step title="Review or edit files">
+    After a successful upload, Studio reports the recognized file count and derives a project name from the archive file name (following Google ADK naming rules: starting with an ASCII letter or underscore, containing only ASCII letters, digits, and underscores, never using the reserved name `user`, and at most 64 characters). Use “View files” to preview or edit file contents in the code browser; re-upload the archive to replace the contents.
+  </Step>
+  <Step title="Configure deployment">
+    Select the region and network mode in the deployment configuration area, the same as the custom-creation deploy page. Code-package deployment does not show the agent topology or the Feishu channel toggle.
+  </Step>
+  <Step title="Deploy to AgentKit">
+    After selecting “Deploy”, Studio reports progress across four stages: upload code package, build image, create Runtime, and publish service. Each stage reports its completion or failure in the deployment progress area.
+  </Step>
+</Steps>
+
+<Note>
+  Studio sanitizes the archive: it ignores `__MACOSX` directories and `.DS_Store` files, and when all files share a single top-level directory it strips that wrapping directory before validating the entry. Entries with absolute paths, empty segments, `.`, `..` segments, or null bytes are rejected, and duplicate file paths raise an error. `app.py` must be in the root after the wrapping directory is removed.
+</Note>
+
+<Warning>
+  The uploaded `app.py` runs inside the deployed AgentKit Runtime and can call external services or access data available to the runtime. Deploy only trusted projects and give Studio restricted credentials.
+</Warning>
+
+| Check | Limit | Description |
+| :--- | :--- | :--- |
+| Archive size | 50 MB | Maximum size of a single uploaded archive. |
+| File count | 800 | Maximum number of files retained after extraction. |
+| Uncompressed size | 50 MB | Maximum total size after extraction. |
+| Entry point | `app.py` | The root after the wrapping directory is removed must contain this file. |
+| Path safety | — | Absolute paths, `.` / `..` segments, and null bytes are rejected; `__MACOSX` and `.DS_Store` are ignored. |
+| Wrapping directory | Single level | When all files share one top-level directory, that level is stripped automatically. |
+| Project name | 64 characters | Derived from the archive file name and follows ADK naming rules. |
 
 ### Add a remote agent
 
