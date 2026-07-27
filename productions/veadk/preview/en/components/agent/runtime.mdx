@@ -34,16 +34,15 @@ agent = Agent(name="assistant", runtime="codex")
 
 ### Use the Codex runtime
 
-The Codex runtime requires `openai-codex`, which is not installed with VeADK by
-default. Install the required dependencies before using it:
+The Codex runtime requires the optional `codex` dependency group, which is not
+installed with VeADK by default. Install the required dependencies before using
+it:
 
 ```bash
-pip install openai-codex fastapi uvicorn
+pip install "veadk-python[codex]"
 ```
 
-<Warning>
-  By default, the Codex runtime does not request interactive approval and can execute commands, read and write files, and access the network from its host or container. Enable it only for trusted workloads. In production, use a least-privilege isolated container and restrict the credentials, files, and network destinations it can access.
-</Warning>
+The `codex` extra includes the OpenAI Codex SDK and the Codex CLI binary.
 
 The model name, API endpoint, and API key still come from the agent's model
 configuration:
@@ -64,6 +63,64 @@ not require a separate registration path:
 - [function tools](/productions/veadk/preview/en/components/tools/custom-function) in `tools` are exposed as callable tools to the model;
 - an [MCPToolset](/productions/veadk/preview/en/components/tools/custom-mcp) in `tools` supports tool discovery and invocation;
 - [skills](/productions/veadk/preview/en/components/agent/skills) loaded through `SkillToolset` or VeADK's legacy entry are made available through the Codex skill mechanism.
+
+### Codex security configuration
+
+The Codex runtime defaults to least-privilege settings suited to a
+multi-tenant service: each invocation uses a session-isolated workspace, the
+`workspace_write` sandbox, no network access, and denial of escalated
+operations. Broader access must be enabled explicitly.
+
+Pass a `CodexRuntimeConfig` through the `Agent` `codex_runtime_config`
+parameter:
+
+```python title="agent.py"
+from veadk import Agent
+from veadk.runtime.codex import CodexRuntimeConfig
+
+agent = Agent(
+    name="assistant",
+    runtime="codex",
+    codex_runtime_config=CodexRuntimeConfig(
+        sandbox="workspace_write",
+        approval_mode="auto_review",
+        network_access=True,
+        # Set this explicitly to work inside an existing project.
+        workspace_root="/workspace/codex",
+    ),
+)
+```
+
+The full set of `CodexRuntimeConfig` parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `approval_mode` | `"deny_all"` \| `"auto_review"` | `"deny_all"` | Review policy for escalated operations. `deny_all` rejects every escalation request; `auto_review` lets the model's self-review decide whether to run. |
+| `sandbox` | `"read_only"` \| `"workspace_write"` \| `"full_access"` | `"workspace_write"` | Sandbox level. `read_only` only reads the workspace; `workspace_write` reads and writes inside the workspace; `full_access` grants full host access. |
+| `network_access` | `bool` | `False` | Whether network access is allowed, effective only under the `workspace_write` sandbox. |
+| `workspace_root` | `str` \| `None` | `None` | Workspace root directory. When unset, a session-isolated temporary directory is used. |
+| `reuse_workspace` | `bool` | `False` | Whether to reuse the same workspace directory across invocations, effective only when `workspace_root` is set. |
+| `reasoning_effort` | `"minimal"` \| `"low"` \| `"medium"` \| `"high"` \| `"xhigh"` | `"medium"` | Reasoning effort level. |
+| `personality` | `"none"` \| `"friendly"` \| `"pragmatic"` | `"pragmatic"` | Reply personality. |
+| `max_tool_iterations` | `int` | `8` | Maximum tool-call iterations per turn, range 1–64. |
+| `tool_timeout_seconds` | `float` \| `None` | `120.0` | Timeout in seconds for a single tool call. |
+
+The following environment variables override the corresponding `CodexRuntimeConfig` field without changing code, and take precedence over `codex_runtime_config`:
+
+| Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `VEADK_CODEX_SANDBOX` | `str` | — | Overrides `sandbox`. |
+| `VEADK_CODEX_APPROVAL_MODE` | `str` | — | Overrides `approval_mode`. |
+| `VEADK_CODEX_WORKSPACE_ROOT` | `str` | — | Overrides `workspace_root`. |
+| `VEADK_CODEX_NETWORK_ACCESS` | `str` | — | Overrides `network_access`; accepts `1`, `true`, `yes`, `on` (case-insensitive) as enabled. |
+
+<Warning>
+  `sandbox="full_access"` and `reuse_workspace=True` relax filesystem isolation between invocations and should only be enabled in trusted environments. In production, use a least-privilege isolated container and restrict the credentials, files, and network destinations it can access.
+</Warning>
+
+### Codex observability
+
+Codex-native lifecycle notifications and ADK Function/MCP tool calls are converted into standard ADK Events, so tool calls, results, state changes, confirmations, and authentication surface in Session, Trace, and the UI. Runtime logs use stable `codex_*` event names and attribution fields such as `invocation_id`, `call_id`, `tool`, `status`, and `duration_ms`. Tool arguments, tool results, API tokens, credentials, and backend addresses are not logged. Token usage is exposed through `codex_event_type=token_usage` events and the corresponding log entry.
 
 ### Configure transient-error retries
 

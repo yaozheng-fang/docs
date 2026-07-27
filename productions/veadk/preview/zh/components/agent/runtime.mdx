@@ -30,15 +30,13 @@ agent = Agent(name="assistant", runtime="codex")
 
 ### 使用 Codex 运行时
 
-Codex 运行时依赖 `openai-codex`，该依赖不会随 VeADK 默认安装。使用前安装所需依赖：
+Codex 运行时依赖可选依赖组 `codex`，该依赖不会随 VeADK 默认安装。使用前安装所需依赖：
 
 ```bash
-pip install openai-codex fastapi uvicorn
+pip install "veadk-python[codex]"
 ```
 
-<Warning>
-  Codex 运行时默认不会请求交互式批准，并具有对运行所在主机或容器执行命令、读写文件和访问网络的权限。仅在受信任的工作负载中启用该运行时；生产环境应使用最小权限的隔离容器，并限制可访问的凭证、文件与网络目标。
-</Warning>
+`codex` 依赖组包含 OpenAI Codex SDK 与 Codex CLI 二进制文件。
 
 模型名称、API 地址与 API Key 仍使用智能体的模型配置：
 
@@ -57,6 +55,60 @@ agent = Agent(
 - `tools` 中的[函数工具](/productions/veadk/preview/zh/components/tools/custom-function)会作为可调用工具提供给模型；
 - `tools` 中的 [MCPToolset](/productions/veadk/preview/zh/components/tools/custom-mcp)会完成工具发现与调用；
 - 通过 `SkillToolset` 或 VeADK 旧入口加载的[技能](/productions/veadk/preview/zh/components/agent/skills)会交由 Codex 的技能机制使用。
+
+### Codex 安全配置
+
+Codex 运行时默认采用面向多租户服务的最小权限配置：每次调用使用会话隔离的工作区、`workspace_write` 沙箱、禁用网络访问，并拒绝需要提权的操作。需要扩大权限时必须显式配置。
+
+通过 `Agent` 的 `codex_runtime_config` 参数传入 `CodexRuntimeConfig`：
+
+```python title="agent.py"
+from veadk import Agent
+from veadk.runtime.codex import CodexRuntimeConfig
+
+agent = Agent(
+    name="assistant",
+    runtime="codex",
+    codex_runtime_config=CodexRuntimeConfig(
+        sandbox="workspace_write",
+        approval_mode="auto_review",
+        network_access=True,
+        # 若需在已有工程内工作，显式指定目录；默认使用会话隔离目录。
+        workspace_root="/workspace/codex",
+    ),
+)
+```
+
+`CodexRuntimeConfig` 的全部参数如下：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `approval_mode` | `"deny_all"` \| `"auto_review"` | `"deny_all"` | 提权操作的审核策略。`deny_all` 拒绝所有提权请求；`auto_review` 由模型自审核决定是否执行。 |
+| `sandbox` | `"read_only"` \| `"workspace_write"` \| `"full_access"` | `"workspace_write"` | 沙箱级别。`read_only` 仅允许读取工作区；`workspace_write` 允许在工作区内读写；`full_access` 允许完整主机访问。 |
+| `network_access` | `bool` | `False` | 是否允许网络访问，仅在 `workspace_write` 沙箱下生效。 |
+| `workspace_root` | `str` \| `None` | `None` | 工作区根目录。未设置时使用会话隔离的临时目录。 |
+| `reuse_workspace` | `bool` | `False` | 是否在多次调用间复用同一工作区目录，仅在显式设置 `workspace_root` 时生效。 |
+| `reasoning_effort` | `"minimal"` \| `"low"` \| `"medium"` \| `"high"` \| `"xhigh"` | `"medium"` | 推理投入程度。 |
+| `personality` | `"none"` \| `"friendly"` \| `"pragmatic"` | `"pragmatic"` | 回复风格。 |
+| `max_tool_iterations` | `int` | `8` | 单轮内工具调用的最大迭代次数，取值范围 1–64。 |
+| `tool_timeout_seconds` | `float` \| `None` | `120.0` | 单次工具调用的超时秒数。 |
+
+以下环境变量可在不修改代码的情况下覆盖 `CodexRuntimeConfig` 的对应字段，优先级高于 `codex_runtime_config`：
+
+| 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `VEADK_CODEX_SANDBOX` | `str` | — | 覆盖 `sandbox`。 |
+| `VEADK_CODEX_APPROVAL_MODE` | `str` | — | 覆盖 `approval_mode`。 |
+| `VEADK_CODEX_WORKSPACE_ROOT` | `str` | — | 覆盖 `workspace_root`。 |
+| `VEADK_CODEX_NETWORK_ACCESS` | `str` | — | 覆盖 `network_access`，接受 `1`、`true`、`yes`、`on`（不区分大小写）为开启。 |
+
+<Warning>
+  `sandbox="full_access"` 与 `reuse_workspace=True` 会放宽不同调用之间的文件系统边界，仅应在受信任的环境中开启。生产环境应使用最小权限的隔离容器，并限制可访问的凭证、文件与网络目标。
+</Warning>
+
+### Codex 可观测性
+
+Codex 原生生命周期通知与 ADK Function/MCP 工具调用都会转换为标准 ADK Event，因此工具调用、结果、状态变更、确认与鉴权过程均可进入 Session、Trace 与前端展示。运行日志使用稳定的 `codex_*` 事件名，并包含 `invocation_id`、`call_id`、`tool`、`status`、`duration_ms` 等可归因字段。日志不会记录工具参数、工具结果、API Token、凭证或后端地址；Token 用量通过 `codex_event_type=token_usage` 事件及对应日志提供。
 
 ### 配置临时错误重试
 

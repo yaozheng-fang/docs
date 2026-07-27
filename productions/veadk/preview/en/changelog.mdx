@@ -11,6 +11,8 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 | Studio knowledge bases | Agent creation now defaults to VikingDB Knowledge. Studio no longer offers the local vector-store option and can select an existing VikingDB knowledge-base collection visible to the current account in the Beijing-region `default` project. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio remote agents | Remote-agent configuration can list and refresh AgentKit agent centers by region in a dropdown. Remote agents remain available only as sub-agents. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Long-term memory | Added the TOS ContextBucket backend for managed memory inference and retrieval with per-`user_id` isolation. | [TOS ContextBucket](/productions/veadk/preview/en/components/memory/tos-context) |
+| Codex runtime | Added the `codex` optional dependency group and `CodexRuntimeConfig`, configurable via `Agent.codex_runtime_config` for sandbox, network access, approval review, workspace isolation, and tool iteration limits. Defaults changed to a session-isolated workspace, the `workspace_write` sandbox, no network, and denial of escalated operations. | [Runtime](/productions/veadk/preview/en/components/agent/runtime#codex-security-configuration) |
+| Codex runtime | Tool calls, results, state changes, confirmations, and authentication are converted into standard ADK Events, with observability through `codex_*` event names and attribution fields. Token usage is exposed through `codex_event_type=token_usage` events. | [Runtime](/productions/veadk/preview/en/components/agent/runtime#codex-observability) |
 
 ## 1.0.8
 
