@@ -180,6 +180,10 @@ When connecting to an AgentKit Runtime protected by `custom_jwt`, the server for
   Login state is cached: SSO via the `veadk_session` cookie, local mode via `localStorage`. The session is created lazily on the first message or attachment upload, not on page load. Once the first message is sent, the conversation view renders it immediately while the server session initializes in the background; during initialization the session ID is shown as “Initializing”. Logout is a local logout — it clears the session and returns to the login page.
 </Note>
 
+<Note>
+  When SSO is enabled and the sign-in expires during use, a "Login expired" dialog appears. Choose "Sign in again" to open the login page in a separate popup; the current editing context is preserved, and once sign-in completes the action that triggered the prompt is retried automatically. The popup is isolated from the editor and cannot access it. This applies to both `veadk frontend` and `veadk studio`.
+</Note>
+
 ## Frontend security restrictions
 
 VeADK Frontend can be deployed on a public endpoint, so it restricts user-controlled addresses and paths:
