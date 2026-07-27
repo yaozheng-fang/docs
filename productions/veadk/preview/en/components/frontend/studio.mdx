@@ -159,7 +159,7 @@ The management page can display runtime environment-variable values. Restrict St
 
 ## Select a cloud Runtime
 
-In cloud mode, the agent selector in the chat sidebar lists AgentKit Runtimes that the signed-in user deployed through this workbench, paginated by region. Each Runtime exposes two independent actions:
+In cloud mode, the agent selector at the top of the chat page lists AgentKit Runtimes that the signed-in user deployed through this workbench, paginated by region. Each Runtime exposes two independent actions:
 
 - **Connect**: makes the Runtime the agent for the current conversation and closes the selector after switching.
 - **Info**: opens a tabbed preview panel that shows the Runtime's capabilities without connecting to it or persisting the selection.
@@ -181,12 +181,12 @@ When a Runtime connection cannot be established, Studio distinguishes the failur
 
 This lets you decide whether to refresh, sign in again, or inspect the Runtime's readiness and authentication settings without reading logs.
 
-## Use temporary sessions and Skill creation
+## Use built-in agents and Skill creation
 
-The new-conversation view provides three modes:
+The new-conversation view provides three modes visible to all users:
 
-- **Agent chat**: starts a normal multi-turn conversation with the selected agent.
-- **Temporary session**: starts a multi-turn conversation in an independent AgentKit CodeEnv Session. Exiting deletes the cloud Session and does not add it to ordinary session history.
+- **Agent chat**: starts a normal multi-turn conversation with the selected agent. When the input is empty, starter prompts appear for quick access to common questions.
+- **Built-in agent**: uses a platform-provided agent for conversation. You can select Codex, which starts a multi-turn conversation in an independent AgentKit CodeEnv Session. Exiting deletes the cloud Session and does not add it to ordinary session history.
 - **Skill creation**: generates two Skill candidates in parallel. You can compare and preview the results, download a ZIP, or add one to AgentKit.
 
 Skill creation is available only to `developer` and `admin` users. Each candidate uses a separate Session, and Studio checks its `SKILL.md`, file count, size, and paths before packaging. Candidate Sessions expire after 30 minutes and are deleted immediately when the user starts over or leaves the task. If candidate or credential provisioning fails, Studio displays a credential-safe error that helps identify Tool-state, region, or model-credential problems.
@@ -195,7 +195,7 @@ Follow-up messages in an ordinary conversation continue to use the existing mess
 
 ### Local configuration
 
-Before using temporary sessions or Skill creation locally, prepare two AgentKit CodeEnv Tools in the `Ready` state and configure their IDs:
+Before using built-in agents or Skill creation locally, prepare two AgentKit CodeEnv Tools in the `Ready` state and configure their IDs:
 
 ```bash
 export SANDBOX_CHAT_CODEX="your-chat-code-env-tool-id"
@@ -206,7 +206,7 @@ veadk studio --agents-dir ./agents --open
 
 | Environment variable | Default | Description |
 | :--- | :--- | :--- |
-| `SANDBOX_CHAT_CODEX` | — | AgentKit CodeEnv Tool ID for temporary sessions; required when using this mode locally. |
+| `SANDBOX_CHAT_CODEX` | — | AgentKit CodeEnv Tool ID for built-in agents; required when using this mode locally. |
 | `SANDBOX_SKILL_CREATOR` | — | AgentKit CodeEnv Tool ID for Skill creation; required when using this mode locally. |
 | `VEADK_SKILL_CREATOR_TOS_BUCKET` | AgentKit account default bucket | TOS bucket used for published Skill artifacts. |
 | `VEADK_SKILL_CREATOR_TOS_PREFIX` | `agentkit/skills` | TOS object-key prefix for published artifacts. |
@@ -223,7 +223,7 @@ veadk studio --agents-dir ./agents --open
 | `--host` | `str` | `127.0.0.1` | Bind address. |
 | `--port` | `int` | `8000` | Bind port. |
 | `--dev` | Boolean flag | `false` | Load local agents in the picker instead of cloud AgentKit Runtimes. |
-| `--vite` | Boolean flag | `false` | Serve only the API and allow CORS from the Vite development server at `http://localhost:5173`. |
+| `--vite` | Boolean flag | `false` | Serve only the API and allow CORS from the Vite development server at `http://localhost:5173` (and the fallback port `http://localhost:5174`). |
 | `--oauth2-user-pool` | `str \| None` | `None` | VeIdentity user-pool name. Combine with a client name or UID to enable SSO. |
 | `--oauth2-user-pool-client` | `str \| None` | `None` | VeIdentity user-pool client name. |
 | `--oauth2-user-pool-uid` | `str \| None` | `OAUTH2_USER_POOL_ID` | Select the VeIdentity user pool by UID. |
@@ -270,7 +270,7 @@ On success, the terminal prints the public URL and VeFaaS application ID. Openin
 
 The deployer's long-lived access and secret keys are not written to the VeFaaS application environment. Deployed Studio uses temporary credentials from its bound IAM role.
 
-When `--sandbox-chat-codex-tool-id` and `--sandbox-skill-creator-tool-id` are omitted, deployment creates two independent AgentKit CodeEnv Tools in the region selected by `--region`, one for temporary sessions and one for Skill creation. Sessions created by these Tools use the same region as the VeFaaS Function and API Gateway. Model credentials are configured only on the respective Tools; the VeFaaS Function receives only the Tool IDs. You can pass existing Tool IDs when suitable Tools are already available in the same region.
+When `--sandbox-chat-codex-tool-id` and `--sandbox-skill-creator-tool-id` are omitted, deployment creates two independent AgentKit CodeEnv Tools in the region selected by `--region`, one for built-in agents and one for Skill creation. Sessions created by these Tools use the same region as the VeFaaS Function and API Gateway. Model credentials are configured only on the respective Tools; the VeFaaS Function receives only the Tool IDs. You can pass existing Tool IDs when suitable Tools are already available in the same region.
 
 ### Deployment options
 
@@ -294,7 +294,7 @@ When `--sandbox-chat-codex-tool-id` and `--sandbox-skill-creator-tool-id` are om
 | `--volcengine-secret-key` | `str \| None` | Auto-resolved | Deployment secret key, resolved from the option, `VOLCENGINE_SECRET_KEY`, then the `[default]` profile in `~/.volc/credentials`. |
 | `--veadk-version` | `str` | Latest release | `veadk-python` version installed in VeFaaS; set it only when pinning or reproducing a release. |
 | `--from-source` | Boolean flag | `false` | Build and deploy a wheel from the current checkout, including uncommitted changes. Use it for unreleased validation, not together with a pinned release workflow. |
-| `--sandbox-chat-codex-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for temporary sessions; also read from `SANDBOX_CHAT_CODEX`. |
+| `--sandbox-chat-codex-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for built-in agents; also read from `SANDBOX_CHAT_CODEX`. |
 | `--sandbox-skill-creator-tool-id`, `--skill-creator-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for Skill creation; also read from `SANDBOX_SKILL_CREATOR`. |
 
 ## Update a deployed Studio
@@ -318,7 +318,7 @@ When `--region` and `--project` are omitted, the command searches Beijing, Shang
 | `--path` | `str` | `.` | VeADK source checkout to build. |
 | `--site-title` | `str \| None` | Preserve deployed value | Replace the Studio name only when supplied. |
 | `--site-logo` | `str \| None` | Preserve deployed value | Replace the Studio logo only when supplied. |
-| `--sandbox-chat-codex-tool-id` | `str \| None` | Preserve deployed value | Replace the temporary-session Tool ID only when supplied. |
+| `--sandbox-chat-codex-tool-id` | `str \| None` | Preserve deployed value | Replace the built-in-agent Tool ID only when supplied. |
 | `--sandbox-skill-creator-tool-id`, `--skill-creator-tool-id` | `str \| None` | Preserve deployed value | Replace the Skill-creation Tool ID only when supplied. |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used for the update. |
 | `--volcengine-secret-key` | `str \| None` | `VOLCENGINE_SECRET_KEY` | Secret key used for the update. |

@@ -54,7 +54,7 @@ veadk frontend --agents-dir examples
 
 ### Dev mode (hot reload)
 
-Use `--vite` to serve only the API and allow CORS from the Vite dev server (`http://localhost:5173`). Add `--dev` to load local agents instead of cloud AgentKit runtimes.
+Use `--vite` to serve only the API and allow CORS from the Vite dev server (`http://localhost:5173`, falling back to `http://localhost:5174`). Add `--dev` to load local agents instead of cloud AgentKit runtimes.
 
 ```bash
 veadk frontend --dev --vite --agents-dir examples   # API only, CORS for Vite

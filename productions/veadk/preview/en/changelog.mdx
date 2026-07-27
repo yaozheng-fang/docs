@@ -11,6 +11,8 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 | Studio knowledge bases | Agent creation now defaults to VikingDB Knowledge. Studio no longer offers the local vector-store option and can select an existing VikingDB knowledge-base collection visible to the current account in the Beijing-region `default` project. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio remote agents | Remote-agent configuration can list and refresh AgentKit agent centers by region in a dropdown. Remote agents remain available only as sub-agents. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Long-term memory | Added the TOS ContextBucket backend for managed memory inference and retrieval with per-`user_id` isolation. | [TOS ContextBucket](/productions/veadk/preview/en/components/memory/tos-context) |
+| Studio new-chat experience | The new-chat mode selector is now visible to all users, no longer requiring agent-creation permission. The agent picker moved from the sidebar to the top navigation bar. The former temporary-session mode is renamed to built-in agent with a submenu for selecting Codex. Starter prompts appear in agent chat when the input is empty. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Dev server | The `--vite` mode of `veadk studio` and `veadk frontend` now also allows CORS from `http://localhost:5174` as a fallback for the default port 5173. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) · [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend) |
 
 ## 1.0.8
 
