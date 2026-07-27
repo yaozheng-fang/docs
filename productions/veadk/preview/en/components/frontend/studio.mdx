@@ -114,6 +114,16 @@ For a local Studio, provide access through `VOLCENGINE_ACCESS_KEY` and `VOLCENGI
 | The knowledge base list does not load | Check the Studio login session, network access to VikingDB Knowledge, and credential permissions, then refresh the list. |
 | Project generation or testing fails | Confirm that the knowledge base configuration is complete and that the runtime can access the selected backend. |
 
+## View sub-agent handoffs
+
+In multi-agent projects, the root agent can hand a task off to a sub-agent for execution. When a handoff occurs, Studio shows the sub-agent's replies in a dedicated card labeled “Agent handoff” that displays the sub-agent's name and description, instead of mixing the sub-agent's output into the root agent's reply bubble.
+
+The sub-agent's name and description come from the agent configuration in the project structure. If the sub-agent has no description, the card shows a default note. After the sub-agent finishes, subsequent replies continue to appear as the root agent's messages.
+
+<Note>
+This presentation applies to both local sub-agents and remote agents. A remote agent can only be a sub-agent and cannot be the root agent.
+</Note>
+
 ## Use smart search
 
 Smart search provides four retrieval sources:
