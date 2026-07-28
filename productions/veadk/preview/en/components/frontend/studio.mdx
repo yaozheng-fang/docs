@@ -40,6 +40,90 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
 4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
 
+### Generate an agent draft from a requirement
+
+The custom-creation build canvas offers a "smart generate" entry above the canvas. Describe your goal in one sentence, for example "Create a short-video production agent that performs trend research, script writing, asset production, video generation, and quality review in order," and select "smart generate".
+
+Studio calls the `doubao-seed-2-0-lite-260428` model to produce a validated, complete agent-configuration draft that is loaded onto the canvas. Generation consumes tokens.
+
+<Note>
+  The generated result replaces the current canvas and property configuration. When the canvas has unsaved changes, Studio asks for confirmation before continuing.
+</Note>
+
+#### Structure of the generated draft
+
+The generated configuration follows these rules:
+
+- The root agent is always a sequential orchestrator that organizes stages in the order described by the requirement.
+- Orchestrator agents (sequential, parallel, loop) only schedule sub-agents and do not carry a model, instruction, tools, memory, knowledge base, or tracing configuration.
+- LLM agents are always leaf nodes. Their name, description, instruction, model, tools, memory, knowledge base, and tracing are populated automatically, and they cannot contain sub-agents.
+- Every generated LLM agent uses the `doubao-seed-2-1-pro-260628` model.
+- The iteration limit for orchestrator agents defaults to `3`; loop agents use the limit stated in the requirement.
+- All agent and custom-tool names are globally unique snake_case Python identifiers.
+- Memory, tracing, and tools are enabled only when the requirement needs them; review-only agents are not given media-generation tools.
+
+The generated agent can select from these built-in tools:
+
+| Tool identifier | Description |
+| :--- | :--- |
+| `web_search` | Searches the public Internet through the fused information search API. |
+| `parallel_web_search` | Runs several web searches in parallel. |
+| `link_reader` | Reads and parses the web content of given URLs. |
+| `web_scraper` | Extracts the body of public web pages. |
+| `image_generate` | Generates images from text prompts. |
+| `image_edit` | Edits an existing image. |
+| `video_generate` | Generates video from text or image inputs. |
+| `text_to_speech` | Converts text into audio. |
+| `run_code` | Executes code in a sandbox. |
+| `vesearch` | Searches the public Internet, social media, and news through the Volcengine online Q&A Agent. |
+
+Memory, knowledge-base, and tracing backends are selected per the requirement:
+
+| Capability | Available backends |
+| :--- | :--- |
+| Short-term memory | `local`, `sqlite`, `mysql`, `postgresql` |
+| Long-term memory | `local`, `opensearch`, `redis`, `viking`, `mem0` |
+| Knowledge base | `viking`, `opensearch`, `context_search` |
+| Tracing | `apmplus`, `cozeloop`, `tls` |
+
+When a capability is disabled, its backend uses the default (memory uses `local`; the knowledge base uses `viking`). The generated configuration does not assign an enterprise knowledge-base search tool to an LLM agent unless that agent explicitly needs public-Internet research.
+
+#### Unresolved items
+
+The result lists real resources or identifiers that still need to be provided (such as instance IDs, URLs, credentials, MCP servers, or skill IDs). Studio does not invent them; after generation, supply the actual resources on the canvas as needed.
+
+#### Steps
+
+<Steps>
+  <Step title="Enter the requirement">
+    Describe the goal in natural language in the input above the build canvas. The input is limited to 8,000 characters.
+  </Step>
+  <Step title="Generate the configuration">
+    Select "smart generate". The input is dimmed during generation; when it finishes, the new draft is loaded onto the canvas along with a one-sentence summary.
+  </Step>
+  <Step title="Review unresolved items">
+    Check the unresolved-items list in the result and supply the actual resources or identifiers on the canvas as needed.
+  </Step>
+  <Step title="Adjust and test">
+    Review and edit the configuration as in custom creation, then generate the project and start a temporary test, download a ZIP, or deploy to AgentKit.
+  </Step>
+</Steps>
+
+After generation you can select "regenerate" to produce a new configuration from the same requirement.
+
+#### Permissions and failure handling
+
+When role-based access control is enabled, smart generation is available only to `developer` and `admin` users.
+
+On failure, Studio shows an error dialog. Common cases include:
+
+| Symptom | Check |
+| :--- | :--- |
+| Generation timed out | Generation is limited to 180 seconds on the server. On timeout it returns a timeout prompt; retry after shortening the requirement. |
+| Model call failed | Check the Volcengine credentials and model access permissions. Error details are credential-redacted. |
+| Access denied | Confirm the current account has the `developer` or `admin` role. |
+
+
 ### Add a remote agent
 
 Remote agents are discovered and invoked through an AgentKit agent center. Use them to connect specialized capabilities that have already been published to a center. A remote agent can only be a sub-agent, not the root agent; the root must use the LLM, sequential, parallel, or loop type.
