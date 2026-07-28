@@ -40,6 +40,18 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
 4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
 
+### Add skills
+
+When creating an agent, add skills from the following sources. Skill files are written to the generated project's `skills/` directory:
+
+- **Skill Hub**: Choose a prebuilt skill from the built-in skill center.
+- **Local upload**: Drag in a folder or select a ZIP archive. Each skill directory must contain a `SKILL.md` file. Studio checks for `SKILL.md` presence, file count, size, and path safety; full validation of `SKILL.md` frontmatter and skill format is performed by ADK at load time. The skill folder name in the generated project is derived from the `SKILL.md` `name` field or the uploaded folder name.
+- **AgentKit SkillSpace**: Browse skills in a skill space by region and project, then select a version.
+
+<Note>
+  Local uploads no longer enforce `SKILL.md` `name` and `description` format or require the directory name to match `name` at import time. If a skill fails at runtime, check that the `SKILL.md` frontmatter meets ADK skill requirements.
+</Note>
+
 ### Add a remote agent
 
 Remote agents are discovered and invoked through an AgentKit agent center. Use them to connect specialized capabilities that have already been published to a center. A remote agent can only be a sub-agent, not the root agent; the root must use the LLM, sequential, parallel, or loop type.
