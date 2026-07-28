@@ -266,7 +266,7 @@ Deployment credentials are resolved in the following order: explicit `--volcengi
 
 On success, the terminal prints the public URL and VeFaaS application ID. Opening the URL redirects the user through VeIdentity login.
 
-`--region` selects the Studio deployment region, defaults to `cn-beijing`, and also supports `cn-shanghai`; VeFaaS, API Gateway, and other resources are created in that region. Deployment also locates the VeIdentity user pool and client across the deployment region and the Beijing and Shanghai regions: it queries the deployment region first, then searches the other region on a miss, emitting a warning and continuing when matched cross-region. `--project` selects the VeFaaS function project and defaults to `default`.
+`--region` selects the Studio deployment region, defaults to `cn-beijing`, and also supports `cn-shanghai`; the VeFaaS Application, Function, API Gateway, and AgentKit resources use the selected deployment region. Deployment also locates the VeIdentity user pool and client across the deployment region and the Beijing and Shanghai regions: it queries the deployment region first, then searches the other region on a miss, emitting a warning and continuing when matched cross-region. `--project` selects the VeFaaS function project and defaults to `default`.
 
 The deployer's long-lived access and secret keys are not written to the VeFaaS application environment. Deployed Studio uses temporary credentials from its bound IAM role.
 
