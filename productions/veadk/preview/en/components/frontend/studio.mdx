@@ -2,7 +2,7 @@
 title: "Studio agent workbench"
 ---
 
-VeADK Studio uses the same service and complete UI as VeADK Frontend. It provides chat, search, session history, the skill center, and agent creation, testing, deployment, and management, and opens on the chat view by default.
+VeADK Studio uses the same service and complete UI as VeADK Frontend. It provides chat, search, session history, the skill center, and agent creation, testing, deployment, and management, and opens on the chat view by default. The agent workspace renders multi-agent topologies as a canvas, surfaces deployed Runtime versions and deployment status, and supports iterating on the same Runtime.
 
 Custom configuration is the available project-creation flow; intelligent, template, and workflow entries are marked as coming soon and cannot be selected. You can preview and edit generated files, run them in a temporary test process, download a ZIP, or deploy to AgentKit. Studio also supports cloud Runtime selection, multiple skill sources, multimodal conversations, and centralized deployment task status and retries.
 
@@ -36,9 +36,9 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
 ## Create an agent
 
 1. On Add Agent, select Custom. Intelligent, template, and workflow entries are not available.
-2. Configure the model, instruction, tools, memory, and knowledge base, and add skills from Skill Hub, a local upload, or an AgentKit SkillSpace. Multi-agent projects can also use sequential, parallel, loop, or A2A nodes.
+2. Configure the model, instruction, tools, memory, and knowledge base, and add skills from Skill Hub, a local upload, or an AgentKit SkillSpace. Multi-agent projects can also use sequential, parallel, loop, or A2A nodes, and the canvas lets you inspect and arrange the agent topology.
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
-4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
+4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages from the workspace. After deployment, the agent appears as published in the workspace and can be updated on the same Runtime.
 
 ### Add a remote agent
 
@@ -156,6 +156,33 @@ Studio does not store the Runtime API key in the browser. The management page th
 </Warning>
 
 The management page can display runtime environment-variable values. Restrict Studio to authorized users and avoid storing plaintext secrets in ordinary environment variables; prefer the platform's secret-management features.
+
+The agent workspace unifies deployed Runtimes and local drafts. Each deployed agent shows its current version number and a deployment status: deploying, update pending, not yet published, failed, or cancelled. A deployed agent can be edited directly in the workspace and updated on the same Runtime without creating a new deployment.
+
+## Update a deployed agent
+
+An agent deployed to AgentKit can be edited again in Studio and updated on the same Runtime instead of creating a new deployment each time. The update produces an incremented image version based on the Runtime's current version and publishes it on the existing Runtime.
+
+<Steps>
+  <Step title="Select a deployed agent">
+    In the agent workspace, select a deployed agent. Studio reads the agent's name, description, model, instruction, tools, and sub-agent structure from the Runtime and loads them into an editable draft.
+  </Step>
+  <Step title="Modify the configuration">
+    Adjust the model, instruction, tools, skills, or sub-agent structure on the canvas or in the configuration panel, using the same editing capabilities as when creating an agent.
+  </Step>
+  <Step title="Update and publish">
+    Select "Update and publish". Studio reports progress through the prepare, build-image, deploy, and publish stages; the deploy stage reuses the existing Runtime identifier and publishes an incremented version.
+  </Step>
+  <Step title="Verify the update">
+    After the update completes, the agent's version number increments in the workspace and its status returns to published. Connect the Runtime from the chat view to verify the new configuration.
+  </Step>
+</Steps>
+
+<Note>
+  Cancelling a deployment task during an update does not destroy the existing Runtime; the previous version remains available. Only when creating a brand-new deployment does cancelling the task clean up the unfinished Runtime resources.
+</Note>
+
+Updates are still governed by Studio role permissions: `admin` can update all Studio-managed Runtimes, `developer` can update only their own, and regular users cannot update.
 
 ## Select a cloud Runtime
 
