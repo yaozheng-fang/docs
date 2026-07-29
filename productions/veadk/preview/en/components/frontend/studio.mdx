@@ -90,7 +90,7 @@ For example, create an LLM root agent named `support_router`, add a remote-agent
 | Testing does not discover an available agent | Confirm that the center contains an invokable agent matching the test request; adjust the recall count when necessary. |
 | Discovery succeeds but remote invocation fails | Check the region, OpenAPI endpoint, agent status in the center, and the runtime's AgentKit permissions and network access. |
 
-The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
+The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`. Each logged-in user can run at most 3 generated-agent test processes concurrently; exceeding the limit returns 429 with a prompt to close unused debug pages and retry. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
 
 ### Configure a knowledge base
 
