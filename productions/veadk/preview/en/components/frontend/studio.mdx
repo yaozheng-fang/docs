@@ -139,6 +139,10 @@ When you select VPC or Public + VPC, you must provide the VPC ID and subnet ID.
 
 A private VPC runtime does not return a public data-plane address after deployment. Studio reaches it through the server-side runtime proxy, and the data-plane API key stays server-side and is never delivered to the browser. This is the same server-side runtime proxy described in "Select a cloud Runtime".
 
+<Note>
+  After a deployment completes, Studio automatically connects to the newly created runtime. If the runtime deployed successfully but Studio cannot reach it yet (the gateway domain may still be propagating, or the current network or DNS cannot access the runtime), the deployment task is marked "Deployed, not yet connected" and the progress card with its message stays visible. You can retry the connection from Manage Agents.
+</Note>
+
 ## Manage agents
 
 Manage Agents lists AgentKit runtimes deployed through this workbench by the signed-in user. The list defaults to the Beijing region and can be switched to Shanghai. It is filtered by the user identity recorded during deployment and exposes:
