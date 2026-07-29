@@ -157,6 +157,27 @@ Studio does not store the Runtime API key in the browser. The management page th
 
 The management page can display runtime environment-variable values. Restrict Studio to authorized users and avoid storing plaintext secrets in ordinary environment variables; prefer the platform's secret-management features.
 
+## Browse agents
+
+The **Agents** entry in the sidebar opens the agent directory, where you browse, connect to, and inspect the AgentKit runtimes under your account. The agent selector in the conversation top bar also provides an entry point into this directory.
+
+The directory switches between agent types using the tabs at the top, defaulting to **General agents**:
+
+| Type | Description |
+| :--- | :--- |
+| General agents | Lists all AgentKit runtimes created by the signed-in user. |
+| Codex agents | Opens the Codex temporary session creation entry. |
+| OpenClaw agents | Not yet available. |
+| Hermes agents | Not yet available. |
+
+The General agents list loads the signed-in user's own runtimes across all regions and automatically loads the next page as you scroll to the bottom of the list, showing "All agents loaded" when complete. Use the search box at the top to filter the loaded agents by name.
+
+Each agent card shows the runtime name and creation time. Click a card to open that runtime's detail view; the **Connect** button on the card makes the runtime the agent for the current conversation and switches to the conversation page. The connected agent is pinned to the top of the list. When loading fails, the directory shows an error message with a **Reload** button; an empty list shows the corresponding empty-state message. Connection failures are diagnosed the same way as when [selecting a cloud runtime](#select-a-cloud-runtime).
+
+<Note>
+  The agent directory lists only the runtimes created by the signed-in user and is not filtered by region. To browse other users' or all runtimes, use the agent selector in the top bar or the management page; the visible scope depends on role permissions.
+</Note>
+
 ## Select a cloud Runtime
 
 In cloud mode, the agent selector in the chat sidebar lists AgentKit Runtimes that the signed-in user deployed through this workbench, paginated by region. Each Runtime exposes two independent actions:
