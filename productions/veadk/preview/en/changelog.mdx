@@ -8,6 +8,8 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 
 | Module | Change details | Link |
 | --- | --- | --- |
+| Studio skills | When adding skills from an AgentKit SkillSpace, Studio downloads all files from the cloud package (`SKILL.md`, scripts, references, and assets) when the version exposes one; when no full package is available, it falls back to `SKILL.md` only. The fixed limit on the number of skills a single agent can have has been removed. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Studio test runs | The maximum number of project files accepted in a single temporary test run increased from 100 to 300. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio knowledge bases | Agent creation now defaults to VikingDB Knowledge. Studio no longer offers the local vector-store option and can select an existing VikingDB knowledge-base collection visible to the current account in the Beijing-region `default` project. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio remote agents | Remote-agent configuration can list and refresh AgentKit agent centers by region in a dropdown. Remote agents remain available only as sub-agents. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Long-term memory | Added the TOS ContextBucket backend for managed memory inference and retrieval with per-`user_id` isolation. | [TOS ContextBucket](/productions/veadk/preview/en/components/memory/tos-context) |

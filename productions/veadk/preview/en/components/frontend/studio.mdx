@@ -40,6 +40,10 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
 3. Review the generated files and run them in a restricted temporary process; download a ZIP if you need to work offline.
 4. Select AgentKit deployment and monitor the build-image, deploy, and publish stages.
 
+<Note>
+When adding skills from an AgentKit SkillSpace, if the cloud skill version exposes a full package, Studio downloads and includes all of its files (`SKILL.md`, scripts, references, and assets); only when the cloud version does not provide a full package does Studio use `SKILL.md` alone. There is no fixed limit on the number of skills a single agent can have.
+</Note>
+
 ### Add a remote agent
 
 Remote agents are discovered and invoked through an AgentKit agent center. Use them to connect specialized capabilities that have already been published to a center. A remote agent can only be a sub-agent, not the root agent; the root must use the LLM, sequential, parallel, or loop type.
@@ -90,7 +94,7 @@ For example, create an LLM root agent named `support_router`, add a remote-agent
 | Testing does not discover an available agent | Confirm that the center contains an invokable agent matching the test request; adjust the recall count when necessary. |
 | Discovery succeeds but remote invocation fails | Check the region, OpenAPI endpoint, agent status in the center, and the runtime's AgentKit permissions and network access. |
 
-The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
+The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`; a single test run accepts at most 300 project files. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
 
 ### Configure a knowledge base
 
