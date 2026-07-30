@@ -44,6 +44,10 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
   Resource pickers in custom creation (such as agent centers and knowledge-base collections) support local keyword filtering: type in the dropdown to filter the currently loaded options. Filtering applies only to the loaded list and does not change the region, project scope, or refresh behavior.
 </Note>
 
+<Note>
+  Orchestrator agents (sequential, parallel, loop) only schedule sub-agents and do not carry a model, instruction, or other configuration. Before publishing or debugging, an orchestrator agent must have at least one sub-agent; otherwise Studio reports the missing sub-agent in the type section.
+</Note>
+
 ### Add and deploy from a code package
 
 Code-package deployment is an independent creation flow: on Add Agent, select “Add and deploy from a code package” and upload an existing Agent project archive. You can then inspect or edit its files in Studio and deploy directly to AgentKit without configuring the model, tools, or skills individually. It suits getting an externally authored VeADK project online quickly, or re-deploying an existing project after small adjustments.
@@ -335,6 +339,8 @@ Studio does not store the Runtime API key in the browser. The management page th
 <Warning>
   Delete permanently removes the corresponding AgentKit runtime. Confirm that it no longer serves traffic and back up required data and configuration before proceeding.
 </Warning>
+
+When you delete an agent, the deleted entry is removed from the list immediately. If the deleted agent is the one currently in use, Studio clears that selection and returns to the agent list.
 
 The management page can display runtime environment-variable values. Restrict Studio to authorized users and avoid storing plaintext secrets in ordinary environment variables; prefer the platform's secret-management features.
 
