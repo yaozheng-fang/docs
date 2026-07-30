@@ -322,7 +322,7 @@ A private VPC runtime does not return a public data-plane address after deployme
 
 ## Manage agents
 
-Manage Agents lists AgentKit runtimes deployed through this workbench by the signed-in user. The list defaults to the Beijing region and can be switched to Shanghai. It is filtered by the user identity recorded during deployment and exposes:
+Manage Agents lists the AgentKit Runtimes visible to the current user. Visibility is determined by the signed-in account role: `admin` sees all Runtimes, while `developer` and regular users see only their own. The list defaults to the Beijing region and can be switched to Shanghai. When the visible scope includes all Runtimes, Runtimes created by the current user are marked "Created by me." The list exposes:
 
 - Runtime name, ID, status, region, and creation time;
 - Model, description, project, version, resources, and update time;
@@ -367,7 +367,7 @@ Updates are still governed by Studio role permissions: `admin` can update all St
 
 ## Select a cloud Runtime
 
-In cloud mode, the agent selector at the top of the chat page lists AgentKit Runtimes that the signed-in user deployed through this workbench, paginated by region. Each Runtime exposes two independent actions:
+In cloud mode, the agent selector at the top of the chat page lists the AgentKit Runtimes visible to the current user. The visible scope matches the Manage Agents view and is determined by the signed-in account role. Runtimes are paginated by region. Each Runtime exposes two independent actions:
 
 - **Connect**: makes the Runtime the agent for the current conversation and closes the selector after switching.
 - **Info**: opens a tabbed preview panel that shows the Runtime's capabilities without connecting to it or persisting the selection.
@@ -594,7 +594,7 @@ Omitting both options treats every signed-in user as an `admin`, granting full S
 
 | Capability | admin | developer | Regular user |
 | :--- | :--- | :--- | :--- |
-| Add, debug, and deploy agents | Allowed | Allowed | Denied; add/manage items are hidden from the sidebar |
+| Add, debug, and deploy agents | Allowed | Allowed | Denied; create entries are hidden from both the sidebar and the Manage Agents view |
 | View and connect to Runtimes | All Runtimes | Own Runtimes only | Own Runtimes only |
 | Manage or delete Runtimes | All Studio-managed Runtimes | Own Runtimes only | Denied |
 
