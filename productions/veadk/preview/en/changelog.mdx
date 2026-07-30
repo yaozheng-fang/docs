@@ -8,6 +8,7 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 
 | Module | Change details | Link |
 | --- | --- | --- |
+| Studio deployment | Build logs are streamed in real time in the deployment progress card during the build stage, with expand, collapse, and copy support; logs are redacted and length-bounded on the server, and build failures append the failure detail. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Studio new-chat experience | The new-chat mode selector is available to all users, the agent picker moves to the top navigation, temporary session is renamed to built-in agent with Codex selection, and empty inputs show starter prompts. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 | Dev server | The `--vite` mode of `veadk studio` and `veadk frontend` allows `http://localhost:5174` as a fallback to port 5173. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) · [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend) |
 | Studio code-package deployment | Adds an “Add and deploy from a code package” flow for uploading, inspecting, and editing a ZIP project with a root `app.py` before deployment to AgentKit. Archives are limited to 50 MB and 800 files and undergo path-safety checks. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |

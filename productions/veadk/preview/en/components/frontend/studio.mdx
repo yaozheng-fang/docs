@@ -44,6 +44,10 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
   Resource pickers in custom creation (such as agent centers and knowledge-base collections) support local keyword filtering: type in the dropdown to filter the currently loaded options. Filtering applies only to the loaded list and does not change the region, project scope, or refresh behavior.
 </Note>
 
+<Note>
+  When deployment enters the build-image stage, Studio streams build logs in real time within the deployment progress card. Logs are redacted and length-bounded on the server before being sent to the browser. The panel shows the sync status (syncing, synced, or read failed) and line count, and can be expanded, collapsed, and copied; on a build failure the failure detail is appended to the log. Log syncing depends on the Volcengine credentials used for deployment; if logs cannot be read, the panel shows a failed status without interrupting the deployment. Both custom creation and code-package deployment support this.
+</Note>
+
 ### Add and deploy from a code package
 
 Code-package deployment is an independent creation flow: on Add Agent, select “Add and deploy from a code package” and upload an existing Agent project archive. You can then inspect or edit its files in Studio and deploy directly to AgentKit without configuring the model, tools, or skills individually. It suits getting an externally authored VeADK project online quickly, or re-deploying an existing project after small adjustments.
