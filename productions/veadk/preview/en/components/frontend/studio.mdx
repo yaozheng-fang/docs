@@ -244,6 +244,10 @@ For example, create an LLM root agent named `support_router`, add a remote-agent
 
 The temporary test process is retained for 1,800 seconds by default and can be changed with `--generated-agent-test-run-ttl`. Each logged-in user can run at most 3 generated-agent test processes concurrently; exceeding the limit returns 429 with a prompt to close unused debug pages and retry. Studio reclaims test processes left behind after a page refresh, and a single test run accepts at most 300 project files. Generated code can call external services or access data available to Studio, so test only trusted projects and give Studio restricted credentials.
 
+<Note>
+  Test runs normalize HTTP MCP tool endpoints configured on a generated agent: a URL not ending in `/mcp` is appended with `/mcp`, and tool discovery is validated over Streamable HTTP. If Studio cannot reach the MCP server to discover tools, the test returns an error prompting you to confirm the URL points to the actual MCP endpoint (typically ending in `/mcp`) and check the token; the original URL saved on the canvas is not modified.
+</Note>
+
 ### Configure a knowledge base
 
 After enabling a knowledge base for an agent, select one of these backends in Studio:

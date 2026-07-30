@@ -21,6 +21,7 @@ title: "更新日志"
 | Studio Runtime | Runtime 启动期间会重试只读就绪探测；私网 Runtime 不可达时提供 VPC 排查建议；部署完成后自动连接，暂时不可达时保留任务并允许重试。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 调试 | Runtime 创建或更新后立即刷新智能体详情和版本；生成智能体测试进程按用户限制为最多 3 个，并自动清理刷新页面后遗留的进程。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 测试运行 | 单次临时测试运行最多接受 300 个项目文件。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 测试运行 MCP 端点 | 测试运行时自动规范化生成智能体中 HTTP MCP 工具的端点：URL 未以 `/mcp` 结尾时自动补全，并通过 Streamable HTTP 验证工具发现；连接失败时返回错误提示确认 URL 与 Token，画布中保存的原始 URL 不受影响。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 模型 | 启用 Responses API 所需的 `google-adk` 最低版本提升至 `1.34.0`。 | [模型](/productions/veadk/preview/zh/components/agent/model) |
 
 ## 1.0.9
