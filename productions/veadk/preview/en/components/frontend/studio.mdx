@@ -340,6 +340,10 @@ The management page can display runtime environment-variable values. Restrict St
 
 The agent workspace unifies deployed Runtimes and local drafts. Each deployed agent shows its current version number and a deployment status: deploying, update pending, not yet published, failed, or cancelled. A deployed agent can be edited directly in the workspace and updated on the same Runtime without creating a new deployment.
 
+<Note>
+  When a build or deployment stage fails, Studio shows the complete error message returned by the service, expanded by default and copyable, so you can locate the problem directly. Deployment and update failures can also be retried from the error panel.
+</Note>
+
 ## Update a deployed agent
 
 An agent deployed to AgentKit can be edited again in Studio and updated on the same Runtime instead of creating a new deployment each time. The update produces an incremented image version based on the Runtime's current version and publishes it on the existing Runtime.
