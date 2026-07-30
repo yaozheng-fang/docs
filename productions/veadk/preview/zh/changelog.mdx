@@ -8,6 +8,8 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 沙箱会话 | 创建内置智能体或 Skill 的 Session、查找对应 Tool 时，优先使用 `AGENTKIT_SANDBOX_REGION` 指定的地域（默认 `cn-beijing`）；当该地域返回资源不存在时，自动回退到另一个支持地域（北京 ↔ 上海）继续操作，其他错误不触发回退。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 | 部署到 AgentKit 时，根智能体描述会自动整理为符合 Runtime 规范的单行描述（至多 255 字节，去除换行、控制字符与不安全符号），完整描述保留在项目中；若整理后的描述被 Runtime 拒绝，会去掉描述后重试创建。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 新会话体验 | 新会话模式选择器对所有用户可见；智能体选择器移至页面顶部；原「临时会话」更名为「内置智能体」，可选择 Codex 智能体；空输入时显示快捷提示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 开发服务器 | `veadk studio` 和 `veadk frontend` 的 `--vite` 模式允许 `http://localhost:5174` 作为端口 5173 的回退来源。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) · [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
 | Studio 代码包部署 | 新增「从代码包添加和部署」创建方式，可上传、检查并编辑包含根目录 `app.py` 的 ZIP 项目后部署到 AgentKit；压缩包最大 50 MB、800 个文件，并执行路径安全校验。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |

@@ -44,6 +44,10 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
   Resource pickers in custom creation (such as agent centers and knowledge-base collections) support local keyword filtering: type in the dropdown to filter the currently loaded options. Filtering applies only to the loaded list and does not change the region, project scope, or refresh behavior.
 </Note>
 
+<Note>
+  When deploying to AgentKit, the root agent description is automatically normalized to a Runtime-compliant single-line description (at most 255 bytes, with line breaks, control characters, and unsafe symbols removed); the full description is kept in the project and is only used to produce the Runtime description. If the normalized description is rejected by Runtime, Studio retries creation without the description, leaving other configuration unaffected.
+</Note>
+
 ### Add and deploy from a code package
 
 Code-package deployment is an independent creation flow: on Add Agent, select “Add and deploy from a code package” and upload an existing Agent project archive. You can then inspect or edit its files in Studio and deploy directly to AgentKit without configuring the model, tools, or skills individually. It suits getting an externally authored VeADK project online quickly, or re-deploying an existing project after small adjustments.
@@ -417,10 +421,14 @@ veadk studio --agents-dir ./agents --open
 | :--- | :--- | :--- |
 | `SANDBOX_CHAT_CODEX` | — | AgentKit CodeEnv Tool ID for built-in agents; required when using this mode locally. |
 | `SANDBOX_SKILL_CREATOR` | — | AgentKit CodeEnv Tool ID for Skill creation; required when using this mode locally. |
+| `AGENTKIT_SANDBOX_REGION` | `cn-beijing` | Preferred region for creating Sessions and looking up Tools for built-in agents and Skill creation; supports `cn-beijing` and `cn-shanghai`. |
 | `VEADK_SKILL_CREATOR_TOS_BUCKET` | AgentKit account default bucket | TOS bucket used for published Skill artifacts. |
 | `VEADK_SKILL_CREATOR_TOS_PREFIX` | `agentkit/skills` | TOS object-key prefix for published artifacts. |
 | `VEADK_SKILL_CREATOR_PROJECT_NAME` | — | Project name used when creating a Skill. |
 
+<Note>
+  When creating a Session or looking up the Tool for built-in agents or Skill creation, Studio first tries the region set by `AGENTKIT_SANDBOX_REGION` (default `cn-beijing`); if that region reports the resource as not found, it automatically falls back to the other supported region (Beijing ↔ Shanghai) and continues. Other errors do not trigger fallback. When deployed to VeFaaS, this region matches `--region`.
+</Note>
 
 ## Manage session capabilities
 

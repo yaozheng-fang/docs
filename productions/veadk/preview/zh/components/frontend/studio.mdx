@@ -44,6 +44,10 @@ Logo 最大 5 MB，支持 PNG、JPEG、GIF、WebP、AVIF 和 ICO。也可以通�
   自定义创建中的资源选择器（如智能体中心、知识库集合）支持按关键词本地筛选：在下拉框中输入文字即可过滤当前已加载的选项。筛选只作用于已经加载的列表，不会改变地域、项目范围或刷新逻辑。
 </Note>
 
+<Note>
+  部署到 AgentKit 时，根智能体的描述会自动整理为符合 Runtime 规范的单行描述（至多 255 字节，去除换行、控制字符与不安全符号）；完整描述保留在项目中，仅用于生成 Runtime 描述。若整理后的描述被 Runtime 拒绝，Studio 会去掉描述后重试创建，不影响其他配置。
+</Note>
+
 ### 从代码包添加和部署
 
 代码包部署是一种独立的创建方式：在「添加智能体」中选择「从代码包添加和部署」，上传一个已有的智能体项目压缩包，即可在 Studio 中查看或编辑其文件并直接部署到 AgentKit，无需逐项配置模型、工具和技能。适合把在外部编写好的 VeADK 项目快速上线，或对已有项目做少量调整后重新部署。
@@ -417,10 +421,14 @@ veadk studio --agents-dir ./agents --open
 | :--- | :--- | :--- |
 | `SANDBOX_CHAT_CODEX` | — | 内置智能体使用的 AgentKit CodeEnv Tool ID；本地使用该模式时必填。 |
 | `SANDBOX_SKILL_CREATOR` | — | Skill 创建使用的 AgentKit CodeEnv Tool ID；本地使用该模式时必填。 |
+| `AGENTKIT_SANDBOX_REGION` | `cn-beijing` | 内置智能体和 Skill 创建在创建 Session、查找 Tool 时优先使用的地域，支持 `cn-beijing` 与 `cn-shanghai`。 |
 | `VEADK_SKILL_CREATOR_TOS_BUCKET` | AgentKit 账户默认 Bucket | 发布 Skill 产物使用的 TOS Bucket。 |
 | `VEADK_SKILL_CREATOR_TOS_PREFIX` | `agentkit/skills` | 发布产物的 TOS 对象 Key 前缀。 |
 | `VEADK_SKILL_CREATOR_PROJECT_NAME` | — | 创建 Skill 时使用的项目名称。 |
 
+<Note>
+  创建内置智能体或 Skill 的 Session、查找对应 Tool 时，Studio 会优先使用 `AGENTKIT_SANDBOX_REGION` 指定的地域（默认 `cn-beijing`）；若该地域返回资源不存在，会自动回退到另一个支持地域（北京 ↔ 上海）继续操作，其他错误不会触发回退。部署到 VeFaaS 时该地域与 `--region` 一致。
+</Note>
 
 ## 管理会话能力
 
