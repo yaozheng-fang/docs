@@ -1,0 +1,205 @@
+---
+title: "TOS ContextBucket"
+---
+
+`tos_context` is a VeADK long-term memory backend that stores and retrieves memories with the ContextBucket capability of Volcengine [TOS](https://www.volcengine.com/product/TOS). Memory inference and retrieval run in the managed service, so you do not need to deploy a vector database or configure an embedding model.
+
+Each `index` maps to one ContextBucket. Within that bucket, every runtime `user_id` maps to an independent ContextSet. Use the same `user_id` across sessions when the application must recall a user's existing memories.
+
+## When to use
+
+- You want a managed long-term memory service instead of operating a vector database;
+- You need to isolate memories by `user_id`;
+- You have a Volcengine account, ContextBucket service endpoints, and the required service permissions.
+
+## Prerequisites
+
+- VeADK 1.0.9 or later installed;
+- Your Volcengine account ID, the ContextBucket control endpoint, and the data endpoint for the target region;
+- AK/SK credentials that can access and create ContextBuckets and ContextSets and can write and search memories, or an IAM role with the same permissions for the AgentKit or VeFaaS runtime;
+- Network access to the configured control and data endpoints.
+
+<Note>
+ContextBucket availability, control endpoints, and IAM permissions are provided by the TOS service and are separate from ordinary TOS Bucket permissions. If your account has not received ContextBucket enablement information, confirm the available regions, control endpoint, and least-privilege policy through your Volcengine service support channel before configuring this page.
+</Note>
+
+## Install the dependency
+
+ContextBucket requires TOS SDK `tos>=2.9.4b1`. VeADK's base dependencies also permit earlier TOS SDK releases, so upgrade the SDK separately in the VeADK environment:
+
+```bash
+python -m pip install --upgrade "tos>=2.9.4b1"
+```
+
+The version constraint explicitly includes the `2.9.4b1` pre-release, so pip does not require a separate `--pre` option. If your package manager or lockfile policy rejects pre-release dependencies, allow this dependency with the tool's corresponding setting and regenerate the lockfile.
+
+Verify the installed version with:
+
+```bash
+python -c "from importlib.metadata import version; print(version('tos'))"
+```
+
+## Configure credentials and endpoints
+
+The following example supplies credentials through environment variables so that AK/SK values are not stored in code or configuration files:
+
+```bash
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+export DATABASE_TOS_CONTEXT_ACCOUNT_ID="your-account-id"
+export DATABASE_TOS_CONTEXT_CONTROL_ENDPOINT="your-control-endpoint"
+export DATABASE_TOS_CONTEXT_ENDPOINT="tos-cn-beijing.volces.com"
+export DATABASE_TOS_CONTEXT_REGION="cn-beijing"
+```
+
+Also set `VOLCENGINE_SESSION_TOKEN` when using temporary STS credentials. If AK and SK are not both provided, the backend uses the IAM role credentials of the AgentKit or VeFaaS runtime instead. Providing only AK or only SK does not form a valid credential pair.
+
+<Warning>
+The first initialization checks for and may create a ContextBucket. The first save or search for each `user_id` also checks for and may create a ContextSet. These operations create or access cloud resources and send session content to TOS. Before running the example, confirm that account permissions, costs, data processing, and retention policies meet your requirements.
+</Warning>
+
+## Usage
+
+The following example saves one session and then retrieves the same user's long-term memory from a new session. Before running it, configure model credentials as described in [Model configuration](/productions/veadk/preview/en/components/agent/model).
+
+```python
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.long_term_memory import LongTermMemory
+
+APP_NAME = "support-memory"
+USER_ID = "user-42"
+
+
+async def main() -> None:
+    memory = LongTermMemory(
+        backend="tos_context",
+        index=APP_NAME,
+        app_name=APP_NAME,
+        top_k=5,
+    )
+    agent = Agent(
+        name="support_agent",
+        instruction=(
+            "Before answering, use `load_memory` to retrieve long-term "
+            "memories for the current user."
+        ),
+        long_term_memory=memory,
+    )
+    runner = Runner(agent=agent, app_name=APP_NAME, user_id=USER_ID)
+
+    await runner.run(
+        messages="Remember that I am allergic to peanuts.",
+        session_id="session-1",
+    )
+    completed_session = await runner.session_service.get_session(
+        app_name=APP_NAME,
+        user_id=USER_ID,
+        session_id="session-1",
+    )
+    await memory.add_session_to_memory(completed_session)
+
+    response = await runner.run(
+        messages="What food am I allergic to?",
+        session_id="session-2",
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+After a successful run, the second session can retrieve the peanut allergy saved by the same `user_id` in the first session. If the ContextBucket named `support-memory` does not exist, initialization creates it. The first save also creates a memory-enabled ContextSet for `user-42`.
+
+### Pass backend configuration explicitly
+
+In addition to environment variables, you can use `backend_config` for non-secret connection settings. The backend must ultimately receive a valid `index`; set it on the outer `LongTermMemory` object and VeADK fills it into the backend configuration.
+
+```python
+from veadk.configs.database_configs import TOSContextBucketConfig
+from veadk.memory.long_term_memory import LongTermMemory
+
+memory = LongTermMemory(
+    backend="tos_context",
+    index="support-memory",
+    backend_config={
+        "account_id": "your-account-id",
+        "tos_context_config": TOSContextBucketConfig(
+            control_endpoint="your-control-endpoint",
+            endpoint="tos-cn-beijing.volces.com",
+            region="cn-beijing",
+        ),
+    },
+)
+```
+
+## Parameters
+
+### `LongTermMemory` parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `backend` | `str` | `"opensearch"` | Set to `"tos_context"` for this backend. |
+| `index` | `str` | `""` | Default ContextBucket name. This backend requires a valid `index` or `app_name`; explicitly setting `index` is recommended. |
+| `app_name` | `str` | `""` | Application name and the fallback value when `index` is not set. |
+| `top_k` | `int` | `5` | Maximum number of memories returned by each search. |
+| `backend_config` | `dict` | `{}` | Configuration passed to the selected backend. If the dictionary has no `index`, VeADK fills it from the outer `index` or `app_name`. |
+
+### Backend configuration
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | Outer `index` or `app_name` | Required. Long-term memory isolation identifier and, when `context_bucket_name` is unset, the ContextBucket name. Normally set it on `LongTermMemory`. |
+| `context_bucket_name` | `str \| None` | Reads `DATABASE_TOS_CONTEXT_BUCKET_NAME`, then uses `index` | ContextBucket name. |
+| `account_id` | `str \| None` | Reads `DATABASE_TOS_CONTEXT_ACCOUNT_ID` | Required. Volcengine account ID that owns the ContextBucket. |
+| `volcengine_access_key` | `str \| None` | Reads `VOLCENGINE_ACCESS_KEY` | Volcengine Access Key. It must be supplied with the Secret Key; otherwise the runtime IAM role is used. |
+| `volcengine_secret_key` | `str \| None` | Reads `VOLCENGINE_SECRET_KEY` | Volcengine Secret Key. It must be supplied with the Access Key; otherwise the runtime IAM role is used. |
+| `session_token` | `str` | Reads `VOLCENGINE_SESSION_TOKEN`, otherwise `""` | Session token required with temporary STS AK/SK credentials. |
+| `tos_context_config` | `TOSContextBucketConfig` | The configuration class defaults | Control endpoint, data endpoint, and region settings. |
+
+### `TOSContextBucketConfig` parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `control_endpoint` | `str \| None` | `None` | Required. ContextBucket control endpoint. |
+| `endpoint` | `str` | `"tos-cn-beijing.volces.com"` | TOS data endpoint. |
+| `region` | `str` | `"cn-beijing"` | TOS service region. |
+
+### Save option
+
+Pass `infer=False` to `await memory.add_session_to_memory(session, infer=False)` to control whether ContextBucket performs memory inference when saving content.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `infer` | `bool` | `True` | Whether to perform memory inference while writing content. Automatic session saving uses the default. |
+
+### Environment variables
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `DATABASE_TOS_CONTEXT_ACCOUNT_ID` | None | Required. Volcengine account ID that owns the ContextBucket. |
+| `DATABASE_TOS_CONTEXT_CONTROL_ENDPOINT` | None | Required. ContextBucket control endpoint. |
+| `DATABASE_TOS_CONTEXT_BUCKET_NAME` | Uses `index` | ContextBucket name. |
+| `DATABASE_TOS_CONTEXT_ENDPOINT` | `tos-cn-beijing.volces.com` | TOS data endpoint. |
+| `DATABASE_TOS_CONTEXT_REGION` | `cn-beijing` | TOS service region. |
+| `VOLCENGINE_ACCESS_KEY` | None | Volcengine Access Key. |
+| `VOLCENGINE_SECRET_KEY` | None | Volcengine Secret Key. |
+| `VOLCENGINE_SESSION_TOKEN` | `""` | STS session token; not required with long-term AK/SK credentials. |
+
+## Failure behavior
+
+| Stage | Behavior | Recommended handling |
+| :--- | :--- | :--- |
+| Initialization | Initialization fails when the TOS SDK does not support ContextBucket, the account ID or control endpoint is missing, the ContextBucket name is invalid, credentials are unavailable, or the ContextBucket cannot be checked or created. | Validate configuration, network access, and permissions during application startup instead of initializing the backend on its first production request. |
+| Save | If the ContextSet is unavailable or a TOS write fails, the backend logs the error and returns `False`. When called through `add_session_to_memory` or automatic saving, that Boolean is not exposed as the method result. | Monitor error logs and verify that critical memories were written with a business-level check. |
+| Search | If the ContextSet is unavailable or a TOS search fails, the backend logs the error and returns no memories. No matching memory produces the same empty result. | Use error logs to distinguish a service failure from no match; do not treat every empty result as proof that the service is healthy. |
+
+## Limitations
+
+- ContextBucket names must be 3–63 characters, contain only lowercase letters, digits, and hyphens, and must not start or end with a hyphen.
+- The minimum compatibility baseline, `2.9.4b1`, is a pre-release TOS SDK version. Revalidate compatibility when upgrading the TOS SDK or VeADK.
+- An existing ContextSet must have the memory scene enabled; otherwise saves and searches fail.
+- Memories are strictly isolated by `user_id`. If the application changes a user's `user_id`, new sessions cannot retrieve memories from the previous ContextSet.
+- This backend does not support `get_user_profile(user_id)`; the method returns an empty string.

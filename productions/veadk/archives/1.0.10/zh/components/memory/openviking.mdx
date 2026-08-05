@@ -1,0 +1,115 @@
+---
+title: "使用 OpenViking 存储"
+---
+
+`openviking` 长期记忆后端把会话消息写入 OpenViking 的用户记忆，并按用户身份检索实体、事件和偏好。该后端从 VeADK 1.0.3 开始提供。
+
+<Note>
+`Runner.user_id` 是终端用户标识，VeADK 将其作为 OpenViking 的 `peer_id` 用于记忆隔离。`openviking_user_id` 是 OpenViking 中记忆所属的 owner/context，用于在同一 OpenViking 服务内隔离不同应用或租户的记忆。两者是不同的概念。
+</Note>
+
+## 使用示例
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+memory = LongTermMemory(
+    backend="openviking",
+    app_name="support_app",
+    backend_config={
+        "index": "support_app",
+        "url": "https://openviking.example.com",
+        "api_key": "填入 OpenViking API Key",
+        # 可选；不传时默认 default
+        "openviking_user_id": "support_app",
+        # 可选；不传时保持 VeADK 默认 policy
+        "memory_policy": {
+            "self": {"enabled": False},
+            "peer": {"enabled": True},
+            "memory_types": ["entities", "events", "preferences"],
+        },
+    },
+)
+
+agent = Agent(
+    long_term_memory=memory,
+    auto_save_session=True,
+)
+```
+
+## 参数
+
+### `LongTermMemory` 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `backend` | `str` | `opensearch` | 使用 OpenViking 时设为 `openviking`。 |
+| `backend_config` | `dict` | `{}` | OpenViking 后端的显式配置。 |
+| `top_k` | `int` | `5` | 每次检索返回的记忆数量。 |
+| `index` | `str` | `""` | 应用隔离标识；为空时使用 `app_name`，两者均为空时使用 `default_app`。 |
+| `app_name` | `str` | `""` | 应用名称，也是 `index` 的回退值。 |
+| `user_id` | `str` | `""` | 已废弃，仅为兼容旧代码保留。运行时用户以会话或 `Runner` 的 `user_id` 为准。 |
+
+### OpenViking 后端参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `index` | `str` | 由 `LongTermMemory` 传入 | 应用或记忆索引名称，不能为空。 |
+| `openviking_config` | `OpenVikingConfig` | 从 `DATABASE_OPENVIKING_*` 读取 | OpenViking 服务配置。 |
+| `url` | `str` | `DATABASE_OPENVIKING_URL` | OpenViking 服务地址，必填。 |
+| `api_key` | `str` | `DATABASE_OPENVIKING_API_KEY` | OpenViking API Key，必填。 |
+| `openviking_user_id` | `str` | `DATABASE_OPENVIKING_USER_ID` 或 `default` | OpenViking owner/context 标识，用于构建记忆路径。只允许字母、数字、`.`、`_`、`@`、`-`，不能为 `.` 或 `..`。 |
+| `memory_policy` | `dict \| None` | `None` | OpenViking 记忆提取策略。未配置时使用默认 policy。 |
+| `peer_id_resolver` | `Callable \| None` | 使用 `user_id` | 把 `app_name` 与 `user_id` 转换为 OpenViking peer ID。 |
+| `timeout` | `float` | `30` | OpenViking 请求超时秒数。 |
+
+默认使用 `user_id` 作为 peer ID，只允许字母、数字、点、下划线、`@` 和连字符。需要改变用户映射时，可传入 `peer_id_resolver`。
+
+`openviking_user_id` 未配置时按 `DATABASE_OPENVIKING_USER_ID` 顺序查找，都未配置时使用 `default` 并输出告警日志。建议为每个应用或租户显式设置，避免不同应用的记忆混在同一个 `default` 路径下。
+
+未配置 `memory_policy` 时使用默认策略：
+
+```json
+{"self": {"enabled": false}, "peer": {"enabled": true}, "memory_types": ["entities", "events", "preferences"]}
+```
+
+默认不提取自身记忆，只从 peer（对话对象）提取实体、事件与偏好。需要开启自身记忆或调整记忆类型时，传入合法的 `memory_policy`。
+
+<Warning>
+  `auto_save_session=True` 会把会话内容写入外部 OpenViking 服务。使用前应确认数据处理、访问控制和保留策略符合业务要求。
+</Warning>
+
+## 环境变量
+
+| 环境变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `DATABASE_OPENVIKING_URL` | 无 | OpenViking 服务地址。 |
+| `DATABASE_OPENVIKING_API_KEY` | 无 | OpenViking service owner API Key。 |
+| `DATABASE_OPENVIKING_USER_ID` | `default` | OpenViking owner/context 标识。 |
+| `DATABASE_OPENVIKING_MEMORY_POLICY` | 默认 policy | 长期记忆 `memory_policy` 的 JSON 字符串；未配置时使用默认 policy。 |
+
+## 自定义用户映射
+
+多租户应用可以提供 `peer_id_resolver`，把应用和用户组合成单个隔离标识：
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+
+def resolve_peer_id(app_name: str, user_id: str) -> str:
+    return f"{app_name}-{user_id}"
+
+
+memory = LongTermMemory(
+    backend="openviking",
+    backend_config={
+        "index": "support_app",
+        "url": "https://openviking.example.com",
+        "api_key": "your-openviking-api-key",
+        "peer_id_resolver": resolve_peer_id,
+    },
+)
+```
+
+返回值不能为空，只能包含字母、数字、点、下划线、`@` 和连字符，且不能为 `.` 或 `..`。上线后修改映射规则会使既有记忆保留在旧 peer 路径下，新的检索可能无法命中这些数据。

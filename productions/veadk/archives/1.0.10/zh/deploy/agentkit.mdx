@@ -1,0 +1,211 @@
+---
+title: "部署到 AgentKit"
+---
+
+VeADK 可以把本地智能体部署为 AgentKit Runtime，并通过统一的 AgentKit 应用组件提供对话接口、健康检查、智能体拓扑、内置 Web UI、短期会话默认配置和可选的飞书生命周期。
+
+## 前置条件
+
+- 已安装 `veadk-python==1.0.8`；
+- 已登录或配置火山引擎访问凭据；
+- 项目包含可导入的 `root_agent`；
+- 不要把 `.env`、API Key 或访问凭据提交到代码仓库。
+
+## 创建应用
+
+Studio 生成的项目会调用 `create_agentkit_app`。手动创建项目时也可以使用相同入口：
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "客户支持"},
+)
+```
+
+应用会提供 AgentKit 对话接口以及以下公共端点：
+
+| 端点 | 作用 |
+| --- | --- |
+| `/ping` | 健康检查。 |
+| `/web/agent-info/{app_name}` | 查询智能体的名称、描述、模型、系统提示词、子智能体、工具、技能与已挂载组件。 |
+| `/web/agent-graph` | 查询智能体拓扑；每个节点包含技能、组件、路径与是否可在对话中选择。 |
+| `/` | 访问内置 Web UI。 |
+
+## Runtime 身份绑定
+
+`create_agentkit_app` 接受可选的 `identity` 参数，用于将 AgentKit Runtime 身份边界传递给应用。传入后，AgentKit 会在 VeADK 智能体或工具代码执行前，验证并绑定入站用户身份。不传入 `identity` 时，应用行为与此前一致。
+
+<Warning>
+  使用 `identity` 参数需要 `agentkit-sdk-python>=0.8.2`。安装版本较低时，传入 `identity` 会报错，请先升级 AgentKit SDK。
+</Warning>
+
+VeADK 将 `/ping` 健康检查端点排除在身份绑定之外，该端点始终返回 `{"status": "ok"}`；其余业务和内省端点均纳入身份验证范围。
+
+```python title="app.py"
+from agentkit.identity import RuntimeIdentity
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "客户支持"},
+    identity=RuntimeIdentity(),
+)
+```
+
+## 动态 A2A 运行接口
+
+`create_agentkit_app` 构建的应用覆盖标准 AgentKit 运行接口（`/run`、`/run_sse`、`/invoke`），使其支持动态 A2A 智能体发现。当智能体通过 `REGISTRY_SPACE_ID` 等环境变量配置了 AgentKit 智能体中心后，运行接口会根据用户输入从中心动态发现匹配的远程智能体，并在当前轮次中将其作为可调用工具使用。未配置智能体中心时，运行接口行为与标准 AgentKit 运行接口一致。
+
+<Note>
+  运行接口在指定会话不存在时会自动创建会话，不再返回 404。
+</Note>
+
+## 会话级能力叠加
+
+VeADK 1.0.9 起，通过 `create_agentkit_app` 构建的应用会在 `/harness` 前缀下挂载一组会话级能力叠加接口。调用方可为某个会话临时挂载内置工具或远程技能，再通过 `/harness/run_sse` 运行应用了叠加内容的智能体。叠加内容仅对指定会话生效，不修改根智能体定义，也不会写入其他会话。
+
+能力分为两类：
+
+- **内置工具**：来自 VeADK 内置工具目录，按工具名称引用。
+- **远程技能**：来自公域 Skill Hub 或 AgentKit Skill 中心，按技能名称与技能来源标识引用。
+
+根智能体自身已挂载的工具与技能在返回列表中标记为基础能力（`custom` 为 `false`）且不可移除；通过叠加接口挂载的能力标记为会话能力（`custom` 为 `true`），可单独移除。
+
+### 何时使用
+
+- 需要在不重新部署 Runtime 的前提下，为单个会话临时启用额外工具或技能。
+- 需要按会话隔离不同的能力组合，避免互相影响。
+
+### 依赖
+
+- 智能体需具备 `tools` 属性；当叠加内容非空但根智能体没有 `tools` 时，挂载会失败。
+- 列举与挂载远程技能需要火山引擎凭证；本地通过 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY` 提供，部署到 VeFaaS 时使用绑定的 IAM Role。
+
+### 端点
+
+| 端点 | 方法 | 作用 |
+| --- | --- | --- |
+| `/harness/capabilities/tools` | `GET` | 列出可挂载的内置工具。 |
+| `/harness/skills/spaces` | `GET` | 列出当前账号可见的 AgentKit Skill 中心。 |
+| `/harness/skills/spaces/{space_id}/skills` | `GET` | 列出指定 Skill 中心内的技能。 |
+| `/harness/skills/findskill` | `GET` | 搜索公域 Skill Hub 中的技能。 |
+| `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities` | `GET` | 查询该会话当前的能力列表与版本。 |
+| `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities` | `POST` | 为该会话挂载一个内置工具或远程技能。 |
+| `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities/{capability_id}` | `DELETE` | 移除该会话中已挂载的能力。 |
+| `/harness/run_sse` | `POST` | 以 SSE 流方式运行应用了会话叠加内容的智能体。 |
+
+### 使用示例
+
+为会话挂载一个内置工具：
+
+```bash
+curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/capabilities" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "tool",
+    "name": "web_search",
+    "expected_revision": 0
+  }'
+```
+
+返回示例：
+
+```json
+{
+  "schema_version": 1,
+  "revision": 1,
+  "tools": [
+    {"id": "base:tool:get_weather", "kind": "tool", "name": "get_weather", "custom": false},
+    {"id": "session:tool:web_search", "kind": "tool", "name": "web_search", "custom": true}
+  ],
+  "skills": []
+}
+```
+
+挂载一个来自 AgentKit Skill 中心的远程技能：
+
+```bash
+curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/capabilities" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "skill",
+    "name": "order-lookup",
+    "skill_source_id": "ss-xxxxxxxx",
+    "description": "查询订单状态",
+    "expected_revision": 1
+  }'
+```
+
+运行应用了叠加内容的智能体：
+
+```bash
+curl -N -X POST "$RUNTIME_URL/harness/run_sse" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_name": "customer_support",
+    "user_id": "u-1",
+    "session_id": "s-1",
+    "new_message": {"role": "user", "parts": [{"text": "查询我的订单"}]},
+    "streaming": true
+  }'
+```
+
+`/harness/run_sse` 返回的事件格式与标准 `/run_sse` 一致，每个事件以 `data: ` 前缀的 JSON 行发送。
+
+### 参数
+
+`POST /capabilities` 请求体：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `kind` | `"tool"` \| `"skill"` | — | 要挂载的能力类型。 |
+| `name` | `str` | — | 工具名称或技能名称；工具须为内置工具，技能须在所选来源中存在。 |
+| `skill_source_id` | `str \| None` | `None` | 技能来源标识。挂载技能时必填；以 `findskill:` 开头表示公域 Skill Hub，否则为 AgentKit Skill 中心 ID。 |
+| `description` | `str` | `""` | 技能描述，仅挂载技能时使用。 |
+| `version` | `str` | `""` | 技能版本，仅挂载技能时使用。 |
+| `expected_revision` | `int \| None` | `None` | 乐观并发控制；传入当前 `revision`，不匹配时返回 409。 |
+
+`GET /harness/skills/spaces` 与 `GET /harness/skills/spaces/{space_id}/skills` 通过 `region` 查询参数指定地域：`spaces` 默认 `all`（合并北京、上海两个地域），技能列表默认 `cn-beijing`。
+
+`GET /harness/skills/findskill` 支持以下查询参数：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | `""` | 搜索关键词，为空时返回热门技能。 |
+| `page_number` | `int` | `1` | 页码，从 1 开始。 |
+| `page_size` | `int` | `20` | 每页数量，范围 1–50。 |
+
+### 限制
+
+- 基础能力不可移除；`capability_id` 以 `base:` 开头时返回 409。
+- 同名工具或技能不可重复挂载；与根智能体已有能力重名时返回 409。
+- `expected_revision` 不匹配当前 `revision` 时返回 409，调用方应重新查询后重试。
+- 会话能力仅在挂载后会话的运行中生效；运行结束后不会持久化到根智能体。
+- 公域 Skill Hub 搜索地址默认为 `https://skills.volces.com/v1/skills`，可通过环境变量 `FINDSKILL_SEARCH_URL` 覆盖。
+
+## 初始化与部署
+
+在项目目录中运行：
+
+```bash
+veadk agentkit init
+veadk agentkit config
+veadk agentkit launch
+```
+
+部署完成后检查状态并调用 Runtime：
+
+```bash
+veadk agentkit status
+veadk agentkit invoke -m "介绍你的能力"
+```
+
+`veadk agentkit` 与 AgentKit CLI 使用相同的项目配置和工作流。完整命令、参数与破坏性操作说明见 [AgentKit CLI 文档](/productions/agentkit-cli/preview/zh)。
+
+<Warning>
+  销毁 Runtime 会删除云端运行资源。执行 `veadk agentkit destroy` 前，应确认项目、地域与 Runtime 标识无误，并保留需要的日志和数据。
+</Warning>
