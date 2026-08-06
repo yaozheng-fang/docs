@@ -15,9 +15,9 @@ title: "评测闭环"
     先创建项目并部署，得到一个可评测的目标运行时：
 
     ```bash
-    agentkit init qa-agent --language python --template default --yes
+    agentkit init qa-agent --template basic
     cd qa-agent
-    agentkit deploy --name qa-agent
+    agentkit launch
     ```
 
     部署完成后可用 `agentkit invoke qa-agent -m "你好"` 确认运行时可正常响应。
@@ -94,7 +94,7 @@ title: "评测闭环"
     根据结果改进智能体的提示词、工具或模型，重新部署后，以相同的评测集与评估器再次运行实验，对比两次的汇总分与逐条结果，判断改动是提升还是回退：
 
     ```bash
-    agentkit deploy --name qa-agent
+    agentkit launch
     agentkit eval run --dataset qa-set --evaluator 相关性 --target qa-agent
     ```
   </Step>

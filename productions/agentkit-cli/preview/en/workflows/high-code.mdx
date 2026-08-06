@@ -5,15 +5,15 @@ title: "High-code agents"
 The high-code path suits cases that need custom logic, tools, or multi-agent orchestration: you scaffold a project from a template, write the agent code directly, and let the CLI build the image in the cloud and deploy it as a runtime. The loop starts at scaffolding and runs through editing, deploying, invoking, and reading logs, then returns to editing to iterate.
 
 <Note>
-  Configure credentials first. `deploy` is a control-plane operation and requires AK/SK; [SSO login](/productions/agentkit-cli/preview/en/commands/auth) currently only covers invoking (`invoke`) a deployed runtime. See the Authentication section of the [Quickstart](/productions/agentkit-cli/preview/en/quickstart). For the full guide to writing agent code, see the [VeADK docs](/productions/veadk/preview/en/index).
+  Configure credentials first. `launch` and `deploy` are control-plane operations and require AK/SK; [SSO login](/productions/agentkit-cli/preview/en/commands/auth) currently only covers invoking (`invoke`) a deployed runtime. See the Authentication section of the [Quickstart](/productions/agentkit-cli/preview/en/quickstart). For the full guide to writing agent code, see the [VeADK docs](/productions/veadk/preview/en/index).
 </Note>
 
 <Steps>
   <Step title="Scaffold a project">
-    Create a project from a built-in template, grouped by language. Run `agentkit init -l` to list every language and template first.
+    Create a project from a built-in template. Run `agentkit init --list-templates` to list every template first.
 
     ```bash
-    agentkit init my-agent -L python -t basic-agent
+    agentkit init my-agent --template basic
     cd my-agent
     ```
   </Step>
@@ -25,14 +25,14 @@ The high-code path suits cases that need custom logic, tools, or multi-agent orc
     </Note>
   </Step>
   <Step title="Build and deploy">
-    Run the full deploy flow (config → build → apply), building the image in the cloud and creating or updating the runtime.
+    Run the full lifecycle flow, building the image in the cloud and creating or updating the runtime.
 
     ```bash
-    agentkit deploy --name my-agent --region cn-beijing
+    agentkit launch
     ```
 
     <Tip>
-      To inspect or hand-edit `agentkit.yaml` or the `Dockerfile` between scaffolding and building, run `agentkit deploy config`, `agentkit deploy build`, and `agentkit deploy apply` separately. See [Build & deploy](/productions/agentkit-cli/preview/en/commands/deploy).
+      To inspect or hand-edit `agentkit.yaml` or the `Dockerfile` between scaffolding and building, run `agentkit config --show`, then split the flow into `agentkit build` and `agentkit deploy`. See [Config](/productions/agentkit-cli/preview/en/commands/config), [Build](/productions/agentkit-cli/preview/en/commands/build), and [Deploy](/productions/agentkit-cli/preview/en/commands/deploy).
     </Tip>
   </Step>
   <Step title="Invoke the runtime">
@@ -47,7 +47,7 @@ The high-code path suits cases that need custom logic, tools, or multi-agent orc
 
     ```bash
     agentkit runtime logs my-agent --limit 200
-    agentkit deploy
+    agentkit launch
     ```
 
     To roll back or adjust resources, use the version and update commands: list history with `agentkit runtime versions my-agent`, publish a specific version with `agentkit runtime release my-agent --rev <n>`, and change CPU and memory with `agentkit runtime update my-agent --cpu-milli 1000 --memory-mb 2048 --auto-release`.

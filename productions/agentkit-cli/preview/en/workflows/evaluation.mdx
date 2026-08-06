@@ -15,9 +15,9 @@ Before you start, make sure your Volcengine access keys are configured (the `VOL
     Create the project and deploy it to obtain a target runtime to evaluate:
 
     ```bash
-    agentkit init qa-agent --language python --template default --yes
+    agentkit init qa-agent --template basic
     cd qa-agent
-    agentkit deploy --name qa-agent
+    agentkit launch
     ```
 
     Once deployed, run `agentkit invoke qa-agent -m "hello"` to confirm the runtime responds.
@@ -94,7 +94,7 @@ Before you start, make sure your Volcengine access keys are configured (the `VOL
     Improve the agent's prompt, tools, or model based on the results, redeploy, then run the experiment again with the same dataset and evaluator. Compare the aggregate scores and per-case results of the two runs to judge whether the change is an improvement or a regression:
 
     ```bash
-    agentkit deploy --name qa-agent
+    agentkit launch
     agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent
     ```
   </Step>

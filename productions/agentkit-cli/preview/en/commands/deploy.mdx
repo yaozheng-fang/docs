@@ -1,89 +1,45 @@
 ---
-title: "Build & deploy"
+title: "Deploy"
 ---
 
-The `deploy` command builds and deploys the project to AgentKit, running the full pipeline of configuration, build, and apply. It also exposes each stage as a dedicated subcommand.
+`deploy` deploys the runtime described by the current project's lifecycle config. It does not build an image first; use [`launch`](/productions/agentkit-cli/preview/en/commands/launch) when you want build and deploy in one command. Use [`release`](/productions/agentkit-cli/preview/en/commands/release) for the `.agentkit/agentkit.yaml` cloud release pipeline, IM channels, or frontend release flow.
 
 ## deploy
 
-Run the full deployment pipeline (config → build → apply). The top-level options are applied during the configuration stage.
+Read `agentkit.yaml`, select the local, cloud, or hybrid strategy from `common.launch_type`, and write deployment state such as runtime id, endpoint, or local container state back to the config file.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `-n, --name <name>` | Runtime/app name (config). | — |
-| `-r, --region <region>` | Volcengine region (config). | — |
-| `-p, --project <name>` | AgentKit project (config). | — |
-| `--im-feishu` | Deploy a Feishu bot proxy to VeFaaS after the runtime deploy. | `false` |
-| `--im-feishu-app-id <id>` | Feishu app id for the proxy. | — |
-| `--im-feishu-app-secret <secret>` | Feishu app secret for the proxy. | — |
+| `--config-file <path>` | Lifecycle config file path. | `agentkit.yaml` |
+| `--harness <name>` | Deploy a Harness runtime from `<name>.harness.json` in the current directory instead of reading `agentkit.yaml`. | — |
+| `--region <region>` | AgentKit region for Harness deploy. | Harness config or current cloud environment |
+| `--volcengine-access-key <key>` | Volcengine Access Key for Harness deploy. | Environment or global config |
+| `--volcengine-secret-key <key>` | Volcengine Secret Key for Harness deploy. | Environment or global config |
+| `--discovery-url <url>` | OIDC discovery URL for Harness deploy; enables OAuth2/JWT auth. | — |
+| `--allowed-id <ids>` | OAuth2/JWT allowed client IDs for Harness deploy, comma-separated. | — |
+| `-y, --yes` | Update an existing same-name Harness runtime without prompting. | `false` |
 
 ```bash
-agentkit deploy --name my-agent --region cn-beijing --project demo
+agentkit deploy --config-file agentkit.yaml
 ```
 
-IM channels are normally configured in `agentkit.yaml` under the `im` block (Feishu, WeCom, and DingTalk); see [agentkit.yaml](/productions/agentkit-cli/preview/en/agentkit-yaml). The `--im-feishu*` flags are a convenience for deploying a Feishu proxy without editing the file.
+<Note>
+`deploy` runs service preflight checks before deployment. In an interactive terminal it prompts when required services are not enabled; use `launch --preflight-mode` when an automated build-and-deploy flow must control preflight behavior explicitly.
+</Note>
 
-## deploy config
+## Harness Deploy
 
-Scaffold the `.agentkit/` directory, generating `agentkit.yaml` and a `Dockerfile`.
-
-| Flag / Argument | Description | Default |
-| --- | --- | --- |
-| `-n, --name <name>` | Runtime/app name. | — |
-| `-r, --region <region>` | Volcengine region. | cn-beijing |
-| `-p, --project <name>` | AgentKit project. | default |
-| `-f, --force` | Overwrite existing generated files. | `false` |
+With `--harness <name>`, the CLI reads `<name>.harness.json` from the current directory, converts it into runtime environment variables, creates a temporary lifecycle config, and deploys a Harness runtime. If you pass `--discovery-url`, also pass at least one allowed client id through `--allowed-id`.
 
 ```bash
-agentkit deploy config --name my-agent --force
+agentkit deploy \
+  --harness support-bot \
+  --region cn-beijing \
+  --discovery-url https://identity.example.com/.well-known/openid-configuration \
+  --allowed-id web-client-id \
+  --yes
 ```
 
-The generated `agentkit.yaml` is the single source of deploy configuration — both `deploy build` and `deploy apply` read from it. For the complete file structure and a field-by-field reference, see [agentkit.yaml](/productions/agentkit-cli/preview/en/agentkit-yaml).
-
-## Container entrypoint and port
-
-`deploy` has no entrypoint setting — how the runtime starts is determined entirely by the Dockerfile used to build the image. The template Dockerfile sets the start command via `CMD`:
-
-```dockerfile
-EXPOSE 8000
-CMD ["python", "main.py"]
-```
-
-The one hard requirement is that the process inside the container must listen on `0.0.0.0:8000`; the runtime probes that port to decide whether an instance is ready. To change how it starts, edit the Dockerfile's `CMD` (or point the `dockerfile` field at a different file) rather than passing a flag to `deploy`.
-
-## Environment variables
-
-Runtime environment variables are declared in `agentkit.yaml`'s `envs`, with values referencing the deploy environment via `${VAR}` (for the syntax and a field reference, see [agentkit.yaml · Environment variables](/productions/agentkit-cli/preview/en/agentkit-yaml#environment-variables)). The CLI resolves these references at deploy time and injects them into the runtime.
-
-For a local deploy, export the variables (or keep them in a local, uncommitted `.env`), then deploy:
-
-```bash
-export MODEL_AGENT_API_KEY=sk-...
-agentkit deploy
-```
-
-In continuous deployment, store them as repository secrets and export them into the deploy job's environment. The `VOLCENGINE_*` deploy credentials are not injected into the runtime.
-
-## deploy build
-
-Build the image in the cloud and write the artifact.
-
-| Flag / Argument | Description | Default |
-| --- | --- | --- |
-| _(no options)_ | This subcommand takes no options. | — |
-
-```bash
-agentkit deploy build
-```
-
-## deploy apply
-
-Create or update the runtime from the latest built artifact.
-
-| Flag / Argument | Description | Default |
-| --- | --- | --- |
-| _(no options)_ | This subcommand takes no options. | — |
-
-```bash
-agentkit deploy apply
-```
+<Warning>
+Harness deploy creates or updates a cloud runtime and may rewrite `harness.json` in the current directory with endpoint, runtime id, and auth information. Confirm the working directory, Harness name, and target project before running it.
+</Warning>

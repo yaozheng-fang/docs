@@ -2,10 +2,10 @@
 title: "使用沙箱"
 ---
 
-`sandbox` 命令组用于创建和管理 AgentKit 沙箱工具，并在沙箱会话中执行命令、调用智能体、传输文件、打开 Web 预览或注入本地模型订阅凭据。当前沙箱工具类型包括 `CodeEnv`、`SkillEnv` 和 `Private`。
+`sandbox` 命令组用于创建和管理 AgentKit 沙箱工具，并在沙箱会话中执行命令、调用智能体、传输文件、打开 Web 预览或注入本地模型订阅凭据。`sandbox create` 与 `sandbox config` 对外支持的工具类型包括 `All-in-one`、`Skill`、`CodeEnv`、`DevEnv`、`ArkClawEnv`、`HermesEnv` 和 `Private`。
 
 <Note>
-沙箱命令不提供 `--region` 标志。需要指定 AgentKit 控制面区域时，可通过 `agentkit sandbox config --set region=<region>` 写入 `.agentkit/sandbox.yaml`，或设置 `AGENTKIT_SANDBOX_REGION`。TOS 挂载区域可通过 `AGENTKIT_SANDBOX_TOS_REGION` 指定；未设置时，CLI 会根据 TOS bucket 或当前云环境推断。
+多数沙箱命令从 `.agentkit/sandbox.yaml` 或 `AGENTKIT_SANDBOX_REGION` 读取 AgentKit 控制面区域；`sandbox dashboard` 还支持用 `--region` 指定本地控制台会话的区域。TOS 挂载区域可通过 `AGENTKIT_SANDBOX_TOS_REGION` 指定；未设置时，CLI 会根据 TOS bucket 或当前云环境推断。
 </Note>
 
 常用会话命令使用同一组工具和会话定位参数：`-s, --session-id <id>, --sid <id>` 指定用户会话 ID；`--tool-id <id>` 指定沙箱工具 ID；`--tool-name <name>` 按工具名称查找；`--tool-type <type>` 指定工具类型。若本地配置中已经保存 `tool-id`、`tool-name`、`tool-type` 或 `session-id`，相关命令会按各自参数表在未显式传参时读取配置默认值。
@@ -19,6 +19,7 @@ title: "使用沙箱"
 | `config` | 读取、写入或删除沙箱命令默认值。 |
 | `create` | 创建沙箱工具。 |
 | `delete` | 删除沙箱工具或指定会话。 |
+| `dashboard` (`ui`) | 启动本地沙箱 Web 控制台。 |
 | `list` | 列出本地缓存的沙箱会话。 |
 | `mount` | 使用 TosBrowser 打开已挂载 TOS 的沙箱会话目录。 |
 | `exec` | 连接沙箱终端并执行命令。 |
@@ -97,7 +98,7 @@ agentkit sandbox config --list
 | `network-shared-internet` | boolean | `false` | 私有网络下启用共享公网出口。 |
 | `network-vpc-id` | string | — | 私有网络使用的 VPC ID。 |
 | `network-subnet-ids` | string list | — | 私有网络使用的子网 ID，支持逗号分隔或 JSON 数组。 |
-| `tool-type` | `CodeEnv` \| `SkillEnv` \| `Private` | `CodeEnv` | 默认沙箱工具类型。 |
+| `tool-type` | `All-in-one` \| `Skill` \| `CodeEnv` \| `DevEnv` \| `ArkClawEnv` \| `HermesEnv` \| `Private` | `CodeEnv` | 默认沙箱工具类型。 |
 | `tool-id` | string | — | 默认沙箱工具 ID。 |
 | `tool-name` | string | — | 默认沙箱工具名称。 |
 | `region` | string | 当前云环境区域 | AgentKit 控制面区域。 |
@@ -123,7 +124,7 @@ agentkit sandbox config --list
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--tool-type <type>` | 工具类型：`CodeEnv`、`SkillEnv`、`Private`。 | 配置值或 `CodeEnv` |
+| `--tool-type <type>` | 工具类型：`All-in-one`、`Skill`、`CodeEnv`、`DevEnv`、`ArkClawEnv`、`HermesEnv` 或 `Private`。 | 配置值或 `CodeEnv` |
 | `--tool-name <name>` | 工具名称；未设置时自动生成。 | 自动生成 |
 | `--tos-bucket <bucket>` | 要挂载的 TOS bucket。 | 配置值或 — |
 | `--tos-mount <path>` | TOS 在沙箱中的挂载路径。 | 配置值或 `/home/gem/workspace` |
@@ -157,6 +158,24 @@ agentkit sandbox create \
   --tool-type Private \
   --tool-name private-dev \
   --image-url cr.example.com/agentkit/custom-sandbox:latest
+```
+
+## sandbox dashboard
+
+启动本地 Web 控制台，用于查看和操作沙箱工具与会话。该命令会在本机监听一个端口，默认在交互终端中打开浏览器；在 CI 或传入 `--no-open` 时只输出访问地址。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--host <host>` | 本地监听地址。 | `127.0.0.1` |
+| `-p, --port <port>` | 本地监听端口；`0` 表示自动选择空闲端口。 | `0` |
+| `-r, --region <region>` | AgentKit 区域。 | 当前云环境区域 |
+| `--no-open` | 只输出控制台 URL，不打开浏览器。 | `false` |
+| `--json` | 以 JSON 输出启动信息。 | `false` |
+
+```bash
+agentkit sandbox dashboard --port 0
+
+agentkit sandbox ui --no-open --json
 ```
 
 ## sandbox delete

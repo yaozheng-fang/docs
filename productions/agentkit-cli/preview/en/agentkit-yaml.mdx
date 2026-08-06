@@ -2,7 +2,140 @@
 title: "agentkit.yaml"
 ---
 
-`agentkit.yaml` is the single source of deploy configuration. Scaffold a project with `agentkit init` first, then run `agentkit deploy config` to generate it under the project's `.agentkit/` directory; `agentkit deploy`, `deploy build`, and `deploy apply` all read from it — no extra flags required. In the generated file, required and common fields are active; every optional field is shown commented-out with its full shape, so you uncomment and fill it to enable it.
+AgentKit CLI currently uses two `agentkit.yaml` files:
+
+- Root `agentkit.yaml`: created by `agentkit init` or `agentkit config --init`, read by `build`, `deploy`, `launch`, `status`, and `destroy` for lifecycle-style build and deploy.
+- `.agentkit/agentkit.yaml`: created by `agentkit release config`, read by `release`, `release build`, and `release apply` for the full cloud release flow that can include IM channels and frontend BFF.
+
+This page covers the root lifecycle config first, then the `.agentkit/agentkit.yaml` release config. Do not mix the two: lifecycle commands read root `agentkit.yaml` by default, while `release` reads `.agentkit/agentkit.yaml` by default.
+
+## Lifecycle Config
+
+Root `agentkit.yaml` describes how an agent application is built, deployed, and inspected. `common.launch_type` selects the active strategy: `local` means local Docker build and local container deploy, `cloud` means cloud build and cloud runtime deploy, and `hybrid` means local build followed by cloud runtime deploy.
+
+```yaml title="agentkit.yaml"
+common:
+  agent_name: my-agent
+  entry_point: agent.py
+  description: AgentKit project my-agent
+  language: Python
+  language_version: "3.12"
+  agent_type: Basic App
+  dependencies_file: requirements.txt
+  runtime_envs:
+    MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
+  launch_type: cloud
+  cloud_provider: volcengine
+
+launch_types:
+  cloud:
+    region: cn-beijing
+    tos_bucket: agentkit-platform-{{account_id}}
+    tos_prefix: agentkit-builds
+    image_tag: "{{timestamp}}"
+    cr_instance_name: agentkit-platform-{{account_id}}
+    cr_namespace_name: agentkit
+    cr_repo_name: my-agent
+    cr_auto_create_instance_type: Micro
+    build_timeout: 3600
+    cp_workspace_name: agentkit-cli-workspace
+    cp_pipeline_name: Auto
+    project_name: default
+    runtime_id: Auto
+    runtime_name: Auto
+    runtime_role_name: Auto
+    runtime_auth_type: key_auth
+    runtime_apikey_name: Auto
+    runtime_apikey: Auto
+    runtime_jwt_allowed_clients: []
+    runtime_envs: {}
+    runtime_bindings: {}
+    runtime_network: {}
+
+docker_build:
+  base_image:
+  build_script:
+```
+
+### Common Fields
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `common.agent_name` | Agent application name; only letters, digits, underscores, and hyphens are allowed. | — |
+| `common.entry_point` | Application entry file, such as `agent.py`, `main.go`, or `build.sh`. | `agent.py` |
+| `common.description` | Application description. | — |
+| `common.language` | Application language; the config wizard currently supports `Python` and `Golang`. | `Python` |
+| `common.language_version` | Language version; Python defaults to `3.12`, Go defaults to `1.24`. | By language |
+| `common.agent_type` | Application type label. | `Basic App` |
+| `common.dependencies_file` | Dependency file; Python defaults to `requirements.txt`, Go defaults to `go.mod`. | By language |
+| `common.runtime_envs` | Runtime environment variables shared by all launch modes. | `{}` |
+| `common.launch_type` | Launch mode: `local`, `cloud`, or `hybrid`. | `cloud` |
+| `common.cloud_provider` | Cloud provider: `volcengine` or `byteplus`. | Current cloud environment |
+
+### Local Strategy
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `launch_types.local.image_tag` | Local image tag. | `latest` |
+| `launch_types.local.invoke_port` | Application invoke port. | `8000` |
+| `launch_types.local.container_name` | Local container name; generated from the app name when empty. | — |
+| `launch_types.local.ports` | Docker port mappings. | `["8000:8000"]` |
+| `launch_types.local.volumes` | Docker volume mounts. | `[]` |
+| `launch_types.local.restart_policy` | Docker restart policy. | `unless-stopped` |
+| `launch_types.local.memory_limit` | Local container memory limit. | `1g` |
+| `launch_types.local.cpu_limit` | Local container CPU limit. | `1` |
+| `launch_types.local.runtime_envs` | Runtime environment variables for local mode. | `{}` |
+
+### Cloud And Hybrid Strategies
+
+`cloud` and `hybrid` share most runtime, auth, networking, and container registry fields. `cloud` also includes TOS and Code Pipeline fields; `hybrid` uses the local build result and omits those cloud-build fields.
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `region` | AgentKit Runtime region. | Provider default region |
+| `region_overrides` | Per-service region overrides for services such as `agentkit`, `cr`, `cp`, and `tos`. | `{}` |
+| `tos_bucket` | TOS bucket for `cloud` build artifacts. | `agentkit-platform-{{account_id}}` |
+| `tos_prefix` | Object prefix for `cloud` build artifacts. | `agentkit-builds` |
+| `image_tag` | Image tag; supports `{{timestamp}}`. | `{{timestamp}}` |
+| `cr_instance_name` | Container Registry instance name. | `agentkit-platform-{{account_id}}` |
+| `cr_namespace_name` | Container Registry namespace. | `agentkit` |
+| `cr_repo_name` | Container Registry repository name. | Agent application name |
+| `cr_auto_create_instance_type` | Instance type when auto-creating CR. | `Micro` |
+| `build_timeout` | Cloud build timeout in seconds for `cloud` mode. | `3600` |
+| `cp_workspace_name` | Code Pipeline workspace name for `cloud` mode. | `agentkit-cli-workspace` |
+| `cp_pipeline_name` | Code Pipeline pipeline name for `cloud` mode. | `Auto` |
+| `cp_pipeline_id` | Existing Code Pipeline pipeline id. | — |
+| `project_name` | AgentKit project name. | `default` |
+| `runtime_id` | Deployed runtime id; `Auto` means create or resolve automatically. | `Auto` |
+| `runtime_name` | Runtime name; `Auto` means generated from the app name. | `Auto` |
+| `runtime_role_name` | Runtime IAM role name. | `Auto` |
+| `runtime_auth_type` | Runtime gateway auth type: `key_auth` or `custom_jwt`. | `key_auth` |
+| `runtime_apikey_name` | API key name for `key_auth`. | `Auto` |
+| `runtime_apikey` | API key value recorded after deployment. | `Auto` |
+| `runtime_jwt_discovery_url` | OIDC discovery URL for `custom_jwt`. | — |
+| `runtime_jwt_allowed_clients` | Allowed client ids for `custom_jwt`. | `[]` |
+| `runtime_endpoint` | Runtime endpoint recorded after deployment. | — |
+| `runtime_envs` | Runtime environment variables for the current strategy, merged with `common.runtime_envs`. | `{}` |
+| `runtime_bindings.knowledge_id` | Bound knowledge base id. | — |
+| `runtime_bindings.memory_id` | Bound memory collection id. | — |
+| `runtime_bindings.tool_id` | Bound tool id. | — |
+| `runtime_bindings.mcp_toolset_id` | Bound MCP toolset id. | — |
+| `runtime_network.mode` | Network mode; `private` enables private networking. | Platform default |
+| `runtime_network.vpc_id` | VPC id for private networking. | — |
+| `runtime_network.subnet_ids` | Subnet ids for private networking. | `[]` |
+| `runtime_network.security_group_ids` | Security group ids for private networking. | `[]` |
+| `runtime_network.enable_shared_internet_access` | Whether shared internet access is enabled for private networking. | Platform default |
+
+### Build Fields
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `docker_build.base_image` | Base image used when generating a Dockerfile; empty means selected from language and cloud provider. | — |
+| `docker_build.build_script` | Custom build script used when generating a Dockerfile. | — |
+
+## Release Config
+
+`.agentkit/agentkit.yaml` is the `release` config. Generate it with `agentkit release config`; `agentkit release`, `release build`, and `release apply` all read from it. In the generated file, required and common fields are active, and optional fields are shown commented-out with their full shape, so you uncomment and fill them to enable them.
 
 Secrets are not written in plaintext; instead, reference the deploy environment with `${VAR}`, resolved by the CLI at deploy time:
 
@@ -13,12 +146,12 @@ Secrets are not written in plaintext; instead, reference the deploy environment 
 
 The CLI loads the project's `.env` (from the working directory) before resolving these, so it is enough to put the values in `.env` — no manual `export` is needed. Variables already set in your shell take precedence, and `.env` is never uploaded to the runtime.
 
-## Full example
+## Release Config Full Example
 
-```yaml .agentkit/agentkit.yaml
-# agentkit.yaml — AgentKit deploy configuration (fully yaml-driven).
+```yaml title=".agentkit/agentkit.yaml"
+# agentkit.yaml — AgentKit release configuration (fully yaml-driven).
 #
-# `agentkit deploy` reads everything from this file — no flags required.
+# `agentkit release` reads everything from this file — no flags required.
 # Secrets are NOT written here in plaintext: reference the deploy environment
 # with ${VAR}. Forms: ${VAR} (required) · ${VAR:-default} · ${VAR:?message} ·
 # $$ for a literal $. Values are resolved by the CLI at deploy time.
@@ -145,7 +278,7 @@ envs:
   LOG_LEVEL: ${LOG_LEVEL:-info}
 ```
 
-For how to supply the values, see [Build & deploy · Environment variables](/productions/agentkit-cli/preview/en/commands/deploy#environment-variables): for a local deploy, export the variables or put them in a local `.env`; in continuous deployment, configure them as repository secrets. The `VOLCENGINE_*` deploy credentials are not injected into the runtime.
+For local release, export the variables in your shell or put them in a local `.env`; in continuous deployment, configure them as repository secrets and export them into the release job environment. The `VOLCENGINE_*` release credentials are not injected into the runtime.
 
 <Note>
 `${VAR}` replaces the older `AK_`-prefix injection: each variable is now declared explicitly in `envs` and read via `${VAR}`, which is clearer and reviewable. Secrets in the `auth`, `im`, and `frontend` blocks use `${VAR}` the same way.
@@ -241,4 +374,4 @@ Set `apmplus` to `true` to enable APMPlus monitoring.
 
 ## Build
 
-The `dockerfile` field sets the path to the Dockerfile used for the build, defaulting to `.agentkit/Dockerfile` (or `./Dockerfile` if one exists at the project root). For how the container starts and the requirement to listen on `0.0.0.0:8000`, see [Build & deploy · Container entrypoint and port](/productions/agentkit-cli/preview/en/commands/deploy#container-entrypoint-and-port).
+The `dockerfile` field sets the path to the Dockerfile used for the build, defaulting to `.agentkit/Dockerfile` (or `./Dockerfile` if one exists at the project root). The process inside the container must listen on `0.0.0.0:8000`; the runtime probes that port to decide whether an instance is ready.

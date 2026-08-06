@@ -2,60 +2,50 @@
 title: "Initialize a project"
 ---
 
-The `init` command scaffolds a new agent project from one of the built-in templates, organized by language bucket.
+`init` creates a new agent project from a built-in template, or wraps an `Agent` from an existing Python file as a deployable AgentKit app. The generated project includes an entry file, dependency file, `agentkit.yaml`, and `.dockerignore`; use `agentkit config` to adjust it, then `agentkit launch` to build and deploy.
 
 ## init
 
-Scaffold a new agent project from a template. When run without options, an interactive prompt guides you through the language and template selection.
+Create a project from a built-in template. When `--template` is omitted, the command lists templates and asks for an ID, key, or name; use `--list-templates` to only print the list and exit.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `[name]` | Project name (or `.` for the current directory). | — |
-| `-L, --language <id>` | Language bucket (`python`, `java`, `typescript`, `golang`). | — |
-| `-t, --template <id>` | Template id within the language. | — |
-| `-y, --yes` | Skip prompts and use defaults. | `false` |
-| `-f, --force` | Scaffold into a non-empty directory. | `false` |
-| `-l, --list` | List available languages and templates, then exit. | `false` |
+| `[project_name]` | Project name. | `simple_agent` |
+| `-t, --template <template>` | Template ID, key, or name. Available keys: `basic`, `basic_stream`, `a2a`, `eino_a2a`, `agent_server`, `langchain_basic_stream`, `basic_go`, `a2a_go`. | Interactive selection |
+| `--directory <path>` | Target directory. | `.` |
+| `--agent-name <name>` | Agent name. | `Agent` |
+| `--description <text>` | Agent description. | Template default |
+| `--system-prompt <text>` | Agent system prompt. | Template default |
+| `--model-name <name>` | Model name in Ark. | Template default |
+| `--model-api-base <url>` | Model API base URL. | — |
+| `--model-api-key <key>` | Model API key; written into runtime environment config. | — |
+| `--tools <list>` | Comma-separated tools to include. | — |
+| `--list-templates` | List template IDs, keys, and names, then exit. | `false` |
 
 ```bash
-agentkit init my-agent --language python --template default --yes
+agentkit init my-agent --template basic
+
+agentkit init go-agent --template basic_go --directory ./apps
 ```
 
-## Set up GitHub CI/CD
+## init --from-agent
 
-The scaffold includes a GitHub Actions workflow at `.github/workflows/deploy.yml`. Once credentials are configured, every push to the `main` branch (or a manual run from the repository's Actions page) builds the image in the cloud and idempotently creates or updates the corresponding AgentKit runtime.
+Wrap an existing Python file that defines a VeADK `Agent`. The CLI copies the source file, generates a wrapper entry point and `requirements.txt`, and creates lifecycle config.
 
-### Configure deploy credentials
-
-Add the following under the repository's Settings → Secrets and variables → Actions:
-
-| Name | Type | Description |
+| Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `VOLCENGINE_ACCESS_KEY` | Secret | Volcengine access key, used for deploy authentication. |
-| `VOLCENGINE_SECRET_KEY` | Secret | Volcengine secret key. |
-| `VOLCENGINE_REGION` | Variable (optional) | Deploy region; defaults to `cn-beijing`. |
+| `[project_name]` | Project name; generated from the source file when omitted. | `agentkit-<file>` |
+| `-f, --from-agent <path>` | Python file containing the `Agent` definition. | Required |
+| `--agent-var <name>` | `Agent` variable name in the file; auto-detected when omitted. | Auto-detected |
+| `--wrapper-type <type>` | Wrapper type: `basic` or `stream`. | `basic` |
+| `--directory <path>` | Target directory. | `.` |
 
-<Warning>
-  Never hard-code credentials in source or commit them to the repository. The project template already adds `.env` to `.gitignore`; supply credentials through repository secrets only.
-</Warning>
+```bash
+agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent
+```
 
-### Inject runtime environment variables
+After initialization, enter the project directory, review `agentkit.yaml`, then run:
 
-Environment variables the agent runtime needs (such as a model API key) are declared in `agentkit.yaml`'s `envs`, with values referenced from the environment via `${VAR}` (see [Build & deploy · Environment variables](/productions/agentkit-cli/preview/en/commands/deploy#environment-variables)). In CI, add those variables as repository secrets and export them into the environment of the deploy step — e.g. declaring `MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}` means adding a same-named `MODEL_AGENT_API_KEY` secret. `VOLCENGINE_*` are deploy credentials and are not injected into the runtime. To add a variable, add a `${VAR}` line in `agentkit.yaml` plus the matching repository secret; no workflow edits are required.
-
-<Note>
-  Single-line values can be added directly; multi-line values need GitHub Actions' multi-line secret form.
-</Note>
-
-### What the workflow does
-
-On each trigger, the workflow runs in order:
-
-- Checks out the code and installs the AgentKit CLI (the template installs it via `npm install -g agentkit-cli`; replace this with your distribution channel if you use an internal one).
-- Forwards the repository secrets into the job environment for `agentkit deploy` to read.
-- Runs `agentkit deploy`: reads `.agentkit/agentkit.yaml` and the `Dockerfile`, builds the image in the cloud, and idempotently creates or updates the runtime by name.
-- Smoke-tests the deployed runtime with `agentkit invoke`; a failure here does not block the workflow.
-
-<Note>
-  `.agentkit/agentkit.yaml` records the runtime name, region, and project, so commit it to the repository to ensure every CI deploy targets the same runtime. (`.agentkit/artifacts/` holds per-deploy build output and is ignored by default.) For more on the deploy pipeline, see [Deploy a project](/productions/agentkit-cli/preview/en/commands/deploy).
-</Note>
+```bash
+agentkit launch
+```

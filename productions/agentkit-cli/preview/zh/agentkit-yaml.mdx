@@ -2,7 +2,140 @@
 title: "agentkit.yaml"
 ---
 
-`agentkit.yaml` 是部署配置的唯一来源。先用 `agentkit init` 创建项目，再执行 `agentkit deploy config`，即会在项目的 `.agentkit/` 下生成它；`agentkit deploy`、`deploy build` 与 `deploy apply` 都从中读取，无需额外传参。生成的文件里必填与常用字段处于启用状态，其余可选字段以注释形式给出完整结构——取消注释并填值即可启用。
+AgentKit CLI 当前使用两类 `agentkit.yaml`：
+
+- 根目录 `agentkit.yaml`：由 `agentkit init` 或 `agentkit config --init` 创建，供 `build`、`deploy`、`launch`、`status` 与 `destroy` 读取，用于生命周期式构建与部署。
+- `.agentkit/agentkit.yaml`：由 `agentkit release config` 创建，供 `release`、`release build` 与 `release apply` 读取，用于包含消息渠道和前端 BFF 的完整云端发布流程。
+
+本页先说明根目录生命周期配置，再说明 `.agentkit/agentkit.yaml` 发布配置。两类配置不要混用：生命周期命令默认读取根目录 `agentkit.yaml`，`release` 默认读取 `.agentkit/agentkit.yaml`。
+
+## 生命周期配置
+
+根目录 `agentkit.yaml` 描述智能体应用如何构建、部署和查询状态。`common.launch_type` 决定当前使用的策略：`local` 表示本地 Docker 构建和本地容器部署，`cloud` 表示云端构建和云端运行时部署，`hybrid` 表示本地构建后部署到云端运行时。
+
+```yaml title="agentkit.yaml"
+common:
+  agent_name: my-agent
+  entry_point: agent.py
+  description: AgentKit project my-agent
+  language: Python
+  language_version: "3.12"
+  agent_type: Basic App
+  dependencies_file: requirements.txt
+  runtime_envs:
+    MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
+  launch_type: cloud
+  cloud_provider: volcengine
+
+launch_types:
+  cloud:
+    region: cn-beijing
+    tos_bucket: agentkit-platform-{{account_id}}
+    tos_prefix: agentkit-builds
+    image_tag: "{{timestamp}}"
+    cr_instance_name: agentkit-platform-{{account_id}}
+    cr_namespace_name: agentkit
+    cr_repo_name: my-agent
+    cr_auto_create_instance_type: Micro
+    build_timeout: 3600
+    cp_workspace_name: agentkit-cli-workspace
+    cp_pipeline_name: Auto
+    project_name: default
+    runtime_id: Auto
+    runtime_name: Auto
+    runtime_role_name: Auto
+    runtime_auth_type: key_auth
+    runtime_apikey_name: Auto
+    runtime_apikey: Auto
+    runtime_jwt_allowed_clients: []
+    runtime_envs: {}
+    runtime_bindings: {}
+    runtime_network: {}
+
+docker_build:
+  base_image:
+  build_script:
+```
+
+### 通用字段
+
+| 字段 | 说明 | 默认值 |
+| --- | --- | --- |
+| `common.agent_name` | 智能体应用名称，只能包含字母、数字、下划线和连字符。 | — |
+| `common.entry_point` | 应用入口文件，例如 `agent.py`、`main.go` 或 `build.sh`。 | `agent.py` |
+| `common.description` | 应用描述。 | — |
+| `common.language` | 应用语言，当前配置向导支持 `Python` 与 `Golang`。 | `Python` |
+| `common.language_version` | 语言版本；Python 默认 `3.12`，Go 默认 `1.24`。 | 按语言决定 |
+| `common.agent_type` | 应用类型说明。 | `Basic App` |
+| `common.dependencies_file` | 依赖文件；Python 默认 `requirements.txt`，Go 默认 `go.mod`。 | 按语言决定 |
+| `common.runtime_envs` | 所有发布模式共享的运行时环境变量。 | `{}` |
+| `common.launch_type` | 发布模式：`local`、`cloud` 或 `hybrid`。 | `cloud` |
+| `common.cloud_provider` | 云厂商：`volcengine` 或 `byteplus`。 | 当前云环境 |
+
+### 本地策略
+
+| 字段 | 说明 | 默认值 |
+| --- | --- | --- |
+| `launch_types.local.image_tag` | 本地镜像标签。 | `latest` |
+| `launch_types.local.invoke_port` | 应用调用端口。 | `8000` |
+| `launch_types.local.container_name` | 本地容器名；为空时按应用名生成。 | — |
+| `launch_types.local.ports` | Docker 端口映射列表。 | `["8000:8000"]` |
+| `launch_types.local.volumes` | Docker volume 挂载列表。 | `[]` |
+| `launch_types.local.restart_policy` | Docker 重启策略。 | `unless-stopped` |
+| `launch_types.local.memory_limit` | 本地容器内存限制。 | `1g` |
+| `launch_types.local.cpu_limit` | 本地容器 CPU 限制。 | `1` |
+| `launch_types.local.runtime_envs` | 本地策略专属运行时环境变量。 | `{}` |
+
+### 云端与混合策略
+
+`cloud` 与 `hybrid` 共用多数运行时、鉴权、网络和镜像仓库字段。`cloud` 还包含 TOS 与 Code Pipeline 字段；`hybrid` 使用本地构建结果，不包含这些云端构建字段。
+
+| 字段 | 说明 | 默认值 |
+| --- | --- | --- |
+| `region` | AgentKit Runtime 区域。 | 云厂商默认区域 |
+| `region_overrides` | 针对 `agentkit`、`cr`、`cp`、`tos` 等服务覆盖区域。 | `{}` |
+| `tos_bucket` | `cloud` 模式的构建产物 TOS bucket。 | `agentkit-platform-{{account_id}}` |
+| `tos_prefix` | `cloud` 模式的构建产物前缀。 | `agentkit-builds` |
+| `image_tag` | 镜像标签，支持 `{{timestamp}}`。 | `{{timestamp}}` |
+| `cr_instance_name` | Container Registry 实例名。 | `agentkit-platform-{{account_id}}` |
+| `cr_namespace_name` | Container Registry 命名空间。 | `agentkit` |
+| `cr_repo_name` | Container Registry 仓库名。 | 智能体应用名称 |
+| `cr_auto_create_instance_type` | 自动创建 CR 实例时的规格。 | `Micro` |
+| `build_timeout` | `cloud` 模式云端构建超时时间，单位秒。 | `3600` |
+| `cp_workspace_name` | `cloud` 模式 Code Pipeline 工作区名称。 | `agentkit-cli-workspace` |
+| `cp_pipeline_name` | `cloud` 模式 Code Pipeline 流水线名称。 | `Auto` |
+| `cp_pipeline_id` | 已创建的 Code Pipeline 流水线 ID。 | — |
+| `project_name` | AgentKit 项目名称。 | `default` |
+| `runtime_id` | 已部署运行时 ID；`Auto` 表示自动创建或解析。 | `Auto` |
+| `runtime_name` | 运行时名称；`Auto` 表示按应用名生成。 | `Auto` |
+| `runtime_role_name` | 运行时 IAM 角色名称。 | `Auto` |
+| `runtime_auth_type` | 运行时网关鉴权类型：`key_auth` 或 `custom_jwt`。 | `key_auth` |
+| `runtime_apikey_name` | `key_auth` 使用的 API Key 名称。 | `Auto` |
+| `runtime_apikey` | 部署后记录的 API Key 值。 | `Auto` |
+| `runtime_jwt_discovery_url` | `custom_jwt` 使用的 OIDC discovery URL。 | — |
+| `runtime_jwt_allowed_clients` | `custom_jwt` 允许的客户端 ID 列表。 | `[]` |
+| `runtime_endpoint` | 部署后记录的运行时端点。 | — |
+| `runtime_envs` | 当前策略专属运行时环境变量，会与 `common.runtime_envs` 合并。 | `{}` |
+| `runtime_bindings.knowledge_id` | 绑定的知识库 ID。 | — |
+| `runtime_bindings.memory_id` | 绑定的记忆库 ID。 | — |
+| `runtime_bindings.tool_id` | 绑定的工具 ID。 | — |
+| `runtime_bindings.mcp_toolset_id` | 绑定的 MCP 工具集 ID。 | — |
+| `runtime_network.mode` | 网络模式；设置为 `private` 时启用私有网络。 | 平台默认 |
+| `runtime_network.vpc_id` | 私有网络使用的 VPC ID。 | — |
+| `runtime_network.subnet_ids` | 私有网络使用的子网 ID 列表。 | `[]` |
+| `runtime_network.security_group_ids` | 私有网络使用的安全组 ID 列表。 | `[]` |
+| `runtime_network.enable_shared_internet_access` | 私有网络下是否启用共享公网出口。 | 平台默认 |
+
+### 构建字段
+
+| 字段 | 说明 | 默认值 |
+| --- | --- | --- |
+| `docker_build.base_image` | 生成 Dockerfile 时使用的基础镜像；为空时按语言和云厂商选择。 | — |
+| `docker_build.build_script` | 生成 Dockerfile 时使用的自定义构建脚本。 | — |
+
+## 发布配置
+
+`.agentkit/agentkit.yaml` 是 `release` 发布配置。先用 `agentkit release config` 生成它；`agentkit release`、`release build` 与 `release apply` 都从中读取。生成的文件里必填与常用字段处于启用状态，其余可选字段以注释形式给出完整结构，取消注释并填值即可启用。
 
 密钥不写入明文，而是用 `${VAR}` 引用部署环境，由 CLI 在部署时解析：
 
@@ -13,12 +146,12 @@ title: "agentkit.yaml"
 
 CLI 在解析前会先加载项目目录下的 `.env`，因此把取值写入 `.env` 即可，无需手动 `export`。已在 shell 中设置的变量优先级更高；`.env` 不会被上传到运行时。
 
-## 完整示例
+## 发布配置完整示例
 
-```yaml .agentkit/agentkit.yaml
-# agentkit.yaml — AgentKit deploy configuration (fully yaml-driven).
+```yaml title=".agentkit/agentkit.yaml"
+# agentkit.yaml — AgentKit release configuration (fully yaml-driven).
 #
-# `agentkit deploy` reads everything from this file — no flags required.
+# `agentkit release` reads everything from this file — no flags required.
 # Secrets are NOT written here in plaintext: reference the deploy environment
 # with ${VAR}. Forms: ${VAR} (required) · ${VAR:-default} · ${VAR:?message} ·
 # $$ for a literal $. Values are resolved by the CLI at deploy time.
@@ -145,7 +278,7 @@ envs:
   LOG_LEVEL: ${LOG_LEVEL:-info}
 ```
 
-供值方式见[构建与部署 · 环境变量](/productions/agentkit-cli/preview/zh/commands/deploy#环境变量)：本地部署可导出变量或写入本机 `.env`，持续部署则配成仓库 Secret。用于部署鉴权的 `VOLCENGINE_*` 不会注入运行时。
+本地发布时，可把变量导出到 shell，或写入本机 `.env`；持续部署则配成仓库 Secret，并在发布任务中导出到环境。用于发布鉴权的 `VOLCENGINE_*` 不会注入运行时。
 
 <Note>
 `${VAR}` 取代了旧的 `AK_` 前缀注入：现在每个变量在 `envs` 里显式声明、用 `${VAR}` 取值，更清晰、可审阅。`auth`、`im`、`frontend` 等块里的密钥同样用 `${VAR}`。
@@ -241,4 +374,4 @@ envs:
 
 ## 构建
 
-`dockerfile` 字段指定构建镜像所用的 Dockerfile 路径，默认为 `.agentkit/Dockerfile`；若项目根目录存在 `./Dockerfile` 则改用它。容器如何启动、以及必须监听 `0.0.0.0:8000` 的约定，见[构建与部署 · 容器入口与端口](/productions/agentkit-cli/preview/zh/commands/deploy#容器入口与端口)。
+`dockerfile` 字段指定构建镜像所用的 Dockerfile 路径，默认为 `.agentkit/Dockerfile`；若项目根目录存在 `./Dockerfile` 则改用它。容器内进程必须监听 `0.0.0.0:8000`，运行时会探测该端口以判断实例是否就绪。

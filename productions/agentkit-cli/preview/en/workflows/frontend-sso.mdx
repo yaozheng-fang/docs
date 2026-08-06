@@ -17,14 +17,15 @@ flowchart LR
 <Steps>
   <Step title="Scaffold a project">
     ```bash
-    agentkit init my-agent -L python -t basic-agent
+    agentkit init my-agent --template basic
     cd my-agent
+    agentkit release config --name my-agent
     ```
   </Step>
-  <Step title="Declare the frontend (edit agentkit.yaml)">
+  <Step title="Declare the frontend (edit .agentkit/agentkit.yaml)">
     Add a `frontend` block. Declare the user pool here only — the runtime's `custom_jwt` gateway auth is **derived from it automatically**, so you don't repeat `auth`, and the client secret is fetched automatically, so you don't declare it. Values use `${VAR}` and stay out of the repo:
 
-    ```yaml .agentkit/agentkit.yaml
+    ```yaml title=".agentkit/agentkit.yaml"
     frontend:
       enabled: true
       oauth2:
@@ -35,14 +36,14 @@ flowchart LR
   <Step title="Fill in the environment variables">
     Put the values in `.env` — the CLI loads it automatically on deploy:
 
-    ```bash .env
+    ```bash title=".env"
     USERPOOL_ID=...
     USERPOOL_CLIENT_ID=...
     ```
   </Step>
   <Step title="Deploy">
     ```bash
-    agentkit deploy
+    agentkit release
     ```
   </Step>
   <Step title="Open and use it">
@@ -55,6 +56,6 @@ Notes:
 - **No shared secret**: the client secret lives only on the frontend BFF's server side; the browser only holds a session cookie, and the BFF injects the user's JWT when calling the runtime.
 - **Callback auto-registered**: `<frontend-url>/oauth2/callback` is added to the user pool client's callback list automatically (the URL is known only after deploy; the CLI fills it back in).
 - **Gateway**: the frontend runs on a serverless gateway; by default an existing one is reused so it doesn't consume gateway quota. Pin a specific one with `frontend.gateway`.
-- **Python only**: the frontend UI is served by the VeADK Frontend (`veadk frontend`), so this flow currently supports Python projects. An agent scaffolded with `basic-agent` is already in a layout the frontend can discover (the agent is defined in a package exposing `root_agent`).
+- **Python only**: the frontend UI is served by the VeADK Frontend (`veadk frontend`), so this flow currently supports Python projects. An agent scaffolded with the `basic` template is already in a layout the frontend can discover (the agent is defined in a package exposing `root_agent`).
 
 When you only need a bot channel and no web login, use [Deploy as a Feishu bot](/productions/agentkit-cli/preview/en/workflows/feishu) instead.

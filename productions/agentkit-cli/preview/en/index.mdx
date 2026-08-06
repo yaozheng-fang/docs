@@ -21,7 +21,12 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
 | Group | What it manages |
 | --- | --- |
 | `init` | scaffold a new agent project |
-| `deploy` | build and deploy the project (`config` → `build` → `apply`) |
+| `config` | manage project lifecycle config and user-wide defaults |
+| `build` | build a runtime image from lifecycle config |
+| `deploy` | deploy an already built runtime from lifecycle config |
+| `launch` | build and deploy a lifecycle project in one command |
+| `status` | show runtime state for the current project |
+| `release` | run the full cloud release pipeline from `.agentkit/agentkit.yaml` |
 | `runtime` | deployed runtimes (list, show, logs, versions, release, update, delete) |
 | `knowledge` (`kb`) | knowledge bases |
 | `memory` (`mem`) | memory collections |
@@ -49,5 +54,7 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
   `agentkit eval dataset …`).
 - Most read commands accept `--json`; the region is auto-detected unless you
   pass `-r, --region`.
+- Every product command accepts global `--provider volcengine|byteplus` to
+  override the cloud provider for that command.
 - Destructive commands (`delete`, `remove`, `destroy`) prompt for confirmation;
   pass `-y` to skip.

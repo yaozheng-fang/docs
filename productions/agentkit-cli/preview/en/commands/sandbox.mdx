@@ -2,10 +2,10 @@
 title: "Use sandboxes"
 ---
 
-The `sandbox` command group creates and manages AgentKit sandbox tools, then uses sandbox sessions to run commands, invoke agents, transfer files, open web previews, or inject local model subscription credentials. Current sandbox tool types are `CodeEnv`, `SkillEnv`, and `Private`.
+The `sandbox` command group creates and manages AgentKit sandbox tools, then uses sandbox sessions to run commands, invoke agents, transfer files, open web previews, or inject local model subscription credentials. `sandbox create` and `sandbox config` accept `All-in-one`, `Skill`, `CodeEnv`, `DevEnv`, `ArkClawEnv`, `HermesEnv`, and `Private` as public tool types.
 
 <Note>
-Sandbox commands do not expose a `--region` flag. To set the AgentKit control-plane region, write it to `.agentkit/sandbox.yaml` with `agentkit sandbox config --set region=<region>`, or set `AGENTKIT_SANDBOX_REGION`. For TOS mounts, set `AGENTKIT_SANDBOX_TOS_REGION`; when it is omitted, the CLI infers the TOS region from the bucket or current cloud environment.
+Most sandbox commands read the AgentKit control-plane region from `.agentkit/sandbox.yaml` or `AGENTKIT_SANDBOX_REGION`; `sandbox dashboard` also accepts `--region` for the local dashboard session. For TOS mounts, set `AGENTKIT_SANDBOX_TOS_REGION`; when it is omitted, the CLI infers the TOS region from the bucket or current cloud environment.
 </Note>
 
 Session-oriented commands share the same tool and session selectors: `-s, --session-id <id>, --sid <id>` selects the user session id; `--tool-id <id>` selects a sandbox tool id; `--tool-name <name>` resolves by tool name; `--tool-type <type>` selects the tool type. If local config already stores `tool-id`, `tool-name`, `tool-type`, or `session-id`, commands use those defaults as described in each option table when the corresponding option is omitted.
@@ -19,6 +19,7 @@ Session-oriented commands share the same tool and session selectors: `-s, --sess
 | `config` | Read, write, or remove sandbox command defaults. |
 | `create` | Create a sandbox tool. |
 | `delete` | Delete a sandbox tool or a specific session. |
+| `dashboard` (`ui`) | Start a local sandbox web dashboard. |
 | `list` | List locally cached sandbox sessions. |
 | `mount` | Open a TOS-mounted sandbox session directory in TosBrowser. |
 | `exec` | Connect to a sandbox terminal and execute a command. |
@@ -97,7 +98,7 @@ Supported config keys are listed below.
 | `network-shared-internet` | boolean | `false` | Enable shared internet access for private networking. |
 | `network-vpc-id` | string | — | VPC ID for private networking. |
 | `network-subnet-ids` | string list | — | Subnet IDs for private networking, as CSV or a JSON array. |
-| `tool-type` | `CodeEnv` \| `SkillEnv` \| `Private` | `CodeEnv` | Default sandbox tool type. |
+| `tool-type` | `All-in-one` \| `Skill` \| `CodeEnv` \| `DevEnv` \| `ArkClawEnv` \| `HermesEnv` \| `Private` | `CodeEnv` | Default sandbox tool type. |
 | `tool-id` | string | — | Default sandbox tool id. |
 | `tool-name` | string | — | Default sandbox tool name. |
 | `region` | string | Current cloud environment region | AgentKit control-plane region. |
@@ -123,7 +124,7 @@ Create a sandbox tool. After creation, the CLI waits until the tool reaches `Rea
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `--tool-type <type>` | Tool type: `CodeEnv`, `SkillEnv`, or `Private`. | Config value or `CodeEnv` |
+| `--tool-type <type>` | Tool type: `All-in-one`, `Skill`, `CodeEnv`, `DevEnv`, `ArkClawEnv`, `HermesEnv`, or `Private`. | Config value or `CodeEnv` |
 | `--tool-name <name>` | Tool name; generated when omitted. | Auto-generated |
 | `--tos-bucket <bucket>` | TOS bucket to mount. | Config value or — |
 | `--tos-mount <path>` | TOS mount path inside the sandbox. | Config value or `/home/gem/workspace` |
@@ -157,6 +158,24 @@ agentkit sandbox create \
   --tool-type Private \
   --tool-name private-dev \
   --image-url cr.example.com/agentkit/custom-sandbox:latest
+```
+
+## sandbox dashboard
+
+Start a local web dashboard for viewing and operating sandbox tools and sessions. The command listens on a local port and opens a browser in an interactive terminal by default; in CI or with `--no-open`, it only prints the URL.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--host <host>` | Local bind host. | `127.0.0.1` |
+| `-p, --port <port>` | Local bind port; `0` chooses a free port. | `0` |
+| `-r, --region <region>` | AgentKit region. | Current cloud-environment region |
+| `--no-open` | Print the dashboard URL without opening a browser. | `false` |
+| `--json` | Print startup information as JSON. | `false` |
+
+```bash
+agentkit sandbox dashboard --port 0
+
+agentkit sandbox ui --no-open --json
 ```
 
 ## sandbox delete

@@ -31,7 +31,7 @@ agentkit --help
 
 ## Authentication
 
-The CLI signs every Volcengine OpenAPI request. Provide credentials one of two ways:
+The CLI signs every cloud OpenAPI request. Provide credentials for the cloud provider or login mode you use:
 
 <Tabs>
   <Tab title="AK/SK">
@@ -41,6 +41,15 @@ The CLI signs every Volcengine OpenAPI request. Provide credentials one of two w
     VOLCENGINE_ACCESS_KEY=...
     VOLCENGINE_SECRET_KEY=...
     VOLCENGINE_REGION=cn-beijing   # optional, defaults to cn-beijing
+    ```
+  </Tab>
+  <Tab title="BytePlus">
+    Set BytePlus credentials, then write the default cloud provider and region to user-wide config:
+
+    ```bash
+    BYTEPLUS_ACCESS_KEY=...
+    BYTEPLUS_SECRET_KEY=...
+    agentkit --provider byteplus config --global --region ap-southeast-1
     ```
   </Tab>
   <Tab title="SSO">
@@ -62,13 +71,13 @@ The CLI signs every Volcengine OpenAPI request. Provide credentials one of two w
 <Steps>
   <Step title="Scaffold a project">
     ```bash
-    agentkit init my-agent -L python -t basic-agent
+    agentkit init my-agent --template basic
     cd my-agent
     ```
   </Step>
   <Step title="Build & deploy">
     ```bash
-    agentkit deploy --name my-agent
+    agentkit launch
     ```
   </Step>
   <Step title="Invoke the runtime">
@@ -79,4 +88,4 @@ The CLI signs every Volcengine OpenAPI request. Provide credentials one of two w
 </Steps>
 
 See the [command reference](/productions/agentkit-cli/preview/en/commands), or run `agentkit tree`
-to print the command tree.
+to print the command tree. To switch cloud provider or region, run `agentkit config --cloud_provider byteplus --region ap-southeast-1` in the project.

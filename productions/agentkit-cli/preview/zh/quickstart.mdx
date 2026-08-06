@@ -31,7 +31,7 @@ agentkit --help
 
 ## 鉴权
 
-CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
+CLI 会对每一次云端 OpenAPI 请求签名。按使用的云厂商或登录方式提供凭证：
 
 <Tabs>
   <Tab title="AK/SK">
@@ -41,6 +41,15 @@ CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
     VOLCENGINE_ACCESS_KEY=...
     VOLCENGINE_SECRET_KEY=...
     VOLCENGINE_REGION=cn-beijing   # 可选，默认 cn-beijing
+    ```
+  </Tab>
+  <Tab title="BytePlus">
+    设置 BytePlus 凭证，并把默认云厂商与区域写入用户级配置：
+
+    ```bash
+    BYTEPLUS_ACCESS_KEY=...
+    BYTEPLUS_SECRET_KEY=...
+    agentkit --provider byteplus config --global --region ap-southeast-1
     ```
   </Tab>
   <Tab title="SSO">
@@ -62,13 +71,13 @@ CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
 <Steps>
   <Step title="脚手架项目">
     ```bash
-    agentkit init my-agent -L python -t basic-agent
+    agentkit init my-agent --template basic
     cd my-agent
     ```
   </Step>
   <Step title="构建并部署">
     ```bash
-    agentkit deploy --name my-agent
+    agentkit launch
     ```
   </Step>
   <Step title="调用运行时">
@@ -78,4 +87,4 @@ CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
   </Step>
 </Steps>
 
-完整命令见 [命令参考](/productions/agentkit-cli/preview/zh/commands)，或运行 `agentkit tree` 打印命令树。
+完整命令见 [命令参考](/productions/agentkit-cli/preview/zh/commands)，或运行 `agentkit tree` 打印命令树。需要切换云厂商或区域时，运行 `agentkit config --cloud_provider byteplus --region ap-southeast-1` 更新项目配置。

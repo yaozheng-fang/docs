@@ -1,0 +1,19 @@
+---
+title: "构建"
+---
+
+`build` 根据生命周期配置构建运行时镜像。构建策略由 `agentkit.yaml` 中的 `common.launch_type` 决定：`local` 使用本地 Docker 构建，`cloud` 使用云端构建，`hybrid` 本地构建后推送到云端镜像仓库。
+
+## build
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--config-file <path>` | 生命周期配置文件路径。 | `agentkit.yaml` |
+| `--platform <platform>` | Docker 构建目标平台，例如 `linux/amd64` 或 `linux/arm64`。 | 自动选择 |
+| `--regenerate-dockerfile` | 即使项目中已有 Dockerfile，也重新生成。 | `false` |
+
+```bash
+agentkit build --config-file agentkit.yaml --platform linux/amd64
+```
+
+构建成功后，CLI 会把镜像 ID、镜像地址、构建时间或云端构建产物写回 `agentkit.yaml`。若 Dockerfile 不存在，CLI 会根据语言、入口文件、依赖文件和云厂商生成默认 Dockerfile。
