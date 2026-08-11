@@ -91,6 +91,10 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
   When deploying to AgentKit, the root agent description is automatically normalized to a Runtime-compliant single-line description (at most 255 bytes, with line breaks, control characters, and unsafe symbols removed); the full description is kept in the project and is only used to produce the Runtime description. If the normalized description is rejected by Runtime, Studio retries creation without the description, leaving other configuration unaffected.
 </Note>
 
+<Note>
+  Model selection in custom creation is filtered by cloud provider. BytePlus mode shows only BytePlus-compatible models, while Volcengine mode shows all models. Switching cloud providers automatically migrates the current model and API endpoint to the corresponding provider defaults.
+</Note>
+
 ### Configure deployment settings
 
 In the deployment configuration area, select the region and network mode, and optionally set Runtime instance counts. Instance settings appear only when creating a new Runtime; they are hidden when updating an existing Runtime. When updating an existing Runtime, the region and network mode are read from the existing Runtime and remain unchanged.
@@ -223,7 +227,7 @@ The skill-space list returns every space visible to the current account across a
 
 The custom-creation build canvas offers a "smart generate" entry above the canvas. Describe your goal in one sentence, for example "Create a short-video production agent that performs trend research, script writing, asset production, video generation, and quality review in order," and select "smart generate".
 
-Studio calls the `doubao-seed-2-0-lite-260428` model to produce a validated, complete agent-configuration draft that is loaded onto the canvas. Generation consumes tokens.
+Studio calls the `doubao-seed-2-0-lite-260428` model (BytePlus uses `seed-2-0-lite-260228`) to produce a validated, complete agent-configuration draft that is loaded onto the canvas. Generation consumes tokens.
 
 <Note>
   The generated result replaces the current canvas and property configuration. When the canvas has unsaved changes, Studio asks for confirmation before continuing.
@@ -236,7 +240,7 @@ The generated configuration follows these rules:
 - The root agent is preferably an LLM agent so it can reason and respond directly to the user. An orchestrator is used as the root only when strict workflow control is essential to the requested result, not merely because the requirement involves multiple tasks or steps.
 - Orchestrator agents (sequential, parallel, loop) only schedule sub-agents and do not carry a model, instruction, tools, memory, knowledge base, or tracing configuration.
 - LLM agents are always leaf nodes. Their name, description, instruction, model, and tools are populated automatically, and they cannot contain sub-agents.
-- Every generated LLM agent uses the `doubao-seed-2-1-pro-260628` model.
+- Every generated LLM agent uses the Volcengine default model `doubao-seed-2-1-pro-260628` (BytePlus uses `seed-2-0-lite-260228`).
 - The iteration limit for orchestrator agents defaults to `3`; loop agents use the limit stated in the requirement.
 - All agent and custom-tool names are globally unique snake_case Python identifiers.
 - Tools are enabled only when the requirement needs them; review-only agents are not given media-generation tools.
@@ -1175,7 +1179,7 @@ Available style presets for each group:
 | Automation | Optimized for repeatable automation, deterministic steps, and minimal manual intervention. |
 | Custom | Describe your own expression style, rigor level, or output preferences. |
 
-The model list is read from the DevEnv Tool configuration; a model ID can also be entered manually.
+The model list is read from the DevEnv Tool configuration and filtered by the current cloud provider; a model ID can also be entered manually. BytePlus mode shows only BytePlus-compatible models.
 
 #### Generation workflow
 

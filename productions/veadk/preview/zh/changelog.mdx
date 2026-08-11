@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 模型选择 | 自定义创建、智能生成和技能生成中的模型选择按云服务商区分：使用 BytePlus 时仅显示 BytePlus 可用模型，火山引擎模式下显示全部模型；切换云服务商时，Studio 自动将模型和接入地址迁移到对应服务商的默认值。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 知识库 | 自定义创建智能体时，知识库新增 OpenViking 后端，可在创建页配置服务地址、API Key、知识库归属 ID、资源目录和资源索引，并写入生成项目的环境变量。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) · [使用 OpenViking 存储](/productions/veadk/preview/zh/components/knowledge/openviking) |
 | Studio 调用链路 | 对话页面的云端 Runtime 调用链路查询改为按当前云服务商选择 APMPlus OpenAPI 接入地址：火山引擎使用 `open.volcengineapi.com`，BytePlus 使用 `open.byteplusapi.com`，避免 BytePlus 模式下因使用错误入口导致链路查询失败。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 技能 | 通过 Harness、CLI 生成的智能体代码或 AgentKit 会话能力服务加载技能时，VeADK 自动为 `SkillToolset` 配置本地代码执行器，技能中的脚本可直接运行，无需额外配置。 | [技能](/productions/veadk/preview/zh/components/agent/skills) |
