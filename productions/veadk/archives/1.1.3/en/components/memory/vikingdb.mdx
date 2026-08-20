@@ -1,0 +1,115 @@
+---
+title: "Use VikingDB storage"
+---
+
+The `viking` backend uses Volcengine [VikingDB memory](https://www.volcengine.com/product/vikingdb) as long-term storage. It is a managed service requiring no self-hosted vector store or local embedding — **recommended for production**. This backend also supports user profiles (`get_user_profile`), the only backend that does.
+
+The earlier `viking_mem` backend is deprecated and is automatically mapped to `viking`; both have the same behavior.
+
+## When to use
+
+- Production with persistence and managed operations;
+- When you want Volcengine's memory capabilities, including user profiles;
+- You have a Volcengine account with the corresponding AK/SK or IAM credentials.
+
+## Usage
+
+```python
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+# index (collection name) must start with a letter, contain only letters/digits/underscores, length 1–128
+ltm = LongTermMemory(backend="viking", app_name="ltm_demo")
+
+agent = Agent(
+    name="demo",
+    instruction="Answer the user; when needed, use the `load_memory` tool to recall past conversations.",
+    long_term_memory=ltm,
+)
+```
+
+At init, if the collection does not exist, VeADK creates it from `memory_type`.
+
+<Note>
+When you select the VikingDB Memory backend in Studio's custom creation flow, you can browse and pick an existing VikingDB memory collection from the current account. Selecting an existing collection uses its name as the collection index, and Studio automatically fills the project, region, and memory-type environment variables. If you do not select one, the collection name is auto-generated from the agent name, and the collection is created at runtime if it does not exist. See the [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio#configure-memory).
+</Note>
+
+You can also pass config explicitly via `backend_config`:
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+ltm = LongTermMemory(
+    backend="viking",
+    index="ltm_demo",
+    backend_config={
+        "index": "ltm_demo",
+        "volcengine_access_key": "your-ak",
+        "volcengine_secret_key": "your-sk",
+        "region": "cn-beijing",
+        "volcengine_project": "default",
+        "memory_type": ["sys_event_v1", "sys_profile_v1"],
+    },
+)
+```
+
+### Get a user profile
+
+```python
+profile = ltm.get_user_profile(user_id="user-42")
+print(profile)
+```
+
+## Parameters
+
+### Constructor parameters
+
+`backend_config` supports the following settings:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | No default; provided by `LongTermMemory` | Memory collection name; must follow VikingDB naming rules. |
+| `volcengine_access_key` | `str \| None` | See below | Access key (AK). Reads `BYTEPLUS_ACCESS_KEY` in `byteplus` mode, otherwise `VOLCENGINE_ACCESS_KEY`. Falls back to VeFaaS IAM when absent. |
+| `volcengine_secret_key` | `str \| None` | See below | Secret key (SK). Reads `BYTEPLUS_SECRET_KEY` in `byteplus` mode, otherwise `VOLCENGINE_SECRET_KEY`. Falls back to VeFaaS IAM when absent. |
+| `session_token` | `str` | See below | STS temporary-credential token. Reads `BYTEPLUS_SESSION_TOKEN` in `byteplus` mode, otherwise `VOLCENGINE_SESSION_TOKEN`. |
+| `cloud_provider` | `str` | Reads env `CLOUD_PROVIDER`, defaults to `volces` | Cloud provider, `volces` or `byteplus`; affects the service host and region. In `byteplus` mode the region is fixed to `cn-hongkong`. |
+| `region` | `str` | See below | Region of the VikingDB memory. |
+| `volcengine_project` | `str` | Reads env `DATABASE_VIKINGMEM_PROJECT`, defaults to `default` | VikingDB memory project name. |
+| `memory_type` | `list[str]` | See below | Memory type list, used to create the collection and filter retrieval. |
+
+### Credential resolution order
+
+The backend prefers `volcengine_access_key` and `volcengine_secret_key` from explicit arguments or environment variables. When both are missing, it reads credentials from the VeFaaS IAM file, suitable for Volcengine cloud deployments.
+
+### Defaults for region and memory_type
+
+- `region`: in `byteplus` mode it is always `cn-hongkong`, ignoring the env var and any explicitly passed value; in other modes, when not set explicitly it reads `DATABASE_VIKING_REGION` and then `REGION`, defaulting to `cn-beijing` if neither is set.
+- `memory_type`: when not set explicitly, reads env `DATABASE_VIKINGMEM_MEMORY_TYPE` (a comma-separated string is parsed into a list); when still empty, defaults to `["sys_event_v1", "sys_profile_v1"]`.
+
+## Environment variables
+
+| Env var | Default | Description |
+| :--- | :--- | :--- |
+| `VOLCENGINE_ACCESS_KEY` | None | Volcengine Access Key. |
+| `VOLCENGINE_SECRET_KEY` | None | Volcengine Secret Key. |
+| `CLOUD_PROVIDER` | `volces` | Cloud provider, `volces` or `byteplus`. |
+| `DATABASE_VIKING_REGION` | `cn-beijing` (ignored in `byteplus` mode, which is fixed to `cn-hongkong`) | Memory region. Falls back to the `REGION` env var when not set. |
+| `DATABASE_VIKINGMEM_PROJECT` | `default` | Memory project name. |
+| `DATABASE_VIKINGMEM_MEMORY_TYPE` | `sys_event_v1,sys_profile_v1` | Memory types, comma-separated. |
+
+```bash
+export VOLCENGINE_ACCESS_KEY="your-ak"
+export VOLCENGINE_SECRET_KEY="your-sk"
+export CLOUD_PROVIDER="volces"
+export DATABASE_VIKING_REGION="cn-beijing"
+export DATABASE_VIKINGMEM_PROJECT="default"
+export DATABASE_VIKINGMEM_MEMORY_TYPE="sys_event_v1,sys_profile_v1"
+```
+
+<Note>
+`index` (the collection name) must follow VikingDB rules: start with an English letter, contain only letters, digits, and underscores, length 1–128; otherwise initialization fails.
+</Note>
+
+<Tip>
+`viking` is the only backend that supports `get_user_profile(user_id)`, returning the user's profile information; other backends return an empty string for that method.
+</Tip>
