@@ -191,6 +191,57 @@ pipeline = SequentialAgent(
 
 运行后，会话状态中的 `plan` 和 `draft` 分别保存规划智能体与写作智能体的最终回复。
 
+## 模型回调
+
+`Agent` 继承自 Google ADK 的 `LlmAgent`，可通过 `before_model_callback`、`after_model_callback` 与 `on_model_error_callback` 在模型调用的前后及异常时插入自定义逻辑。这些回调与 ADK 插件（继承 `BasePlugin`）的同名方法在所有运行时中均生效，包括默认的 ADK 运行时以及 `codex`、`piagent` 等外部运行时。在外部运行时中，回调按 ADK 顺序执行：先运行插件回调，再运行智能体回调。
+
+| 回调 | 说明 |
+| :--- | :--- |
+| `before_model_callback(callback_context, llm_request)` | 在调用模型前运行。可直接修改 `llm_request`（包括 `contents`、`config.system_instruction`、`output_schema` 与 `tools_dict`），外部运行时会使用修改后的请求构建实际输入。若返回 `LlmResponse`，则跳过本次模型调用，直接以该响应作为本轮结果。 |
+| `after_model_callback(callback_context, llm_response)` | 在模型输出最终文本回复后运行。外部运行时会将本轮的最终文本事件合并为一个 `LlmResponse` 再交由此回调处理；回调返回的 `LlmResponse` 会替换原始回复。仅当配置了 after 回调（智能体回调或插件覆盖）时才会启用最终文本缓冲。 |
+| `on_model_error_callback(callback_context, llm_request, error)` | 在模型调用过程中抛出异常时运行。若返回 `LlmResponse`，则以其作为本轮响应并正常结束；否则异常继续向上抛出。 |
+
+<Note>
+  外部运行时构建的 `LlmRequest` 仅包含回调所需的稳定字段（对话内容、系统指令、输出 schema、工具与生成配置），不会执行 ADK 完整的预处理流水线。依赖 ADK 内部预处理阶段的回调行为在外部运行时中可能不一致。
+</Note>
+
+回调可以是同步函数，也可以是异步函数（`async def`）。以下示例在 Codex 运行时中用 `before_model_callback` 把 PDF 附件渲染为图片，使视觉模型可以读取文档内容：
+
+```python title="agent.py"
+from veadk import Agent
+from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    before_model_callback=pdf_to_images_before_model_callback,
+)
+```
+
+使用 `on_model_error_callback` 在模型调用失败时返回兜底回复，避免异常直接抛给调用方：
+
+```python title="agent.py"
+from veadk import Agent
+from google.adk.models.llm_response import LlmResponse
+from google.genai import types
+
+def fallback_on_error(callback_context, llm_request, error):
+    return LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[types.Part(text="模型暂时不可用，请稍后重试。")],
+        )
+    )
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    on_model_error_callback=fallback_on_error,
+)
+```
+
 ## 请求处理
 
 在不侵入业务逻辑的前提下，可为每次执行插入统一的横切处理。将处理器传入 `run_processor` 即可，例如接入身份认证做登录态校验：
