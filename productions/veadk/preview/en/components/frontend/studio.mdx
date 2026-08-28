@@ -61,6 +61,10 @@ Both variables must be set for Studio to enable persistent storage. When not con
   The older `VEADK_VIDEO_TOS_*` and `DATABASE_TOS_*` environment variables remain as a temporary compatibility fallback: when both `VEADK_STUDIO_TOS_BUCKET` and `VEADK_STUDIO_TOS_REGION` are unset, Studio attempts to read the bucket, region, and endpoint from the legacy variables. New deployments only need the two `VEADK_STUDIO_TOS_*` variables.
 </Note>
 
+<Note>
+  When using Volcengine as the cloud provider without a custom TOS endpoint, Studio probes the default public endpoint (`tos-<region>.volces.com`) on first access. If the probe encounters a transport-level network error, Studio automatically switches to the corresponding intranet endpoint (`tos-<region>.ivolces.com`) and continues using the selected endpoint for subsequent requests. Authentication failures, permission errors, and other non-network TOS service errors do not trigger fallback. Browser-facing signed URLs always use the public endpoint to ensure external accessibility. BytePlus and custom endpoints are unaffected by this mechanism.
+</Note>
+
 Studio objects use a user-first, versioned key layout with the path format `veadk-studio/v1/users/<encoded-user-ID>/<namespace>/<scope>/<resource-ID>/`. Video reference assets use the `video/<asset-role>/<asset-ID>/` namespace and store file content and `metadata.json` below it.
 
 Optimization snapshots produced by automatic evaluation are stored at `veadk-studio/v1/evaluation-optimizations/<Runtime ID>/<app name>.json`, with the latest snapshot retained for each Runtime application.

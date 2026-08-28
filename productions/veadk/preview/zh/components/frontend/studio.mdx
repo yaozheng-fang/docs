@@ -61,6 +61,10 @@ veadk studio --agents-dir ./agents --open
   旧的 `VEADK_VIDEO_TOS_*` 和 `DATABASE_TOS_*` 环境变量仍作为临时兼容回退：当 `VEADK_STUDIO_TOS_BUCKET` 和 `VEADK_STUDIO_TOS_REGION` 均未设置时，Studio 会尝试从旧变量读取存储桶、地域和端点。新部署只需配置 `VEADK_STUDIO_TOS_*` 两个变量。
 </Note>
 
+<Note>
+  使用火山引擎作为云服务商且未自定义 TOS 端点时，Studio 会在首次访问 TOS 时探测默认的公网端点（`tos-<地域>.volces.com`）。若探测遇到传输层网络错误，Studio 自动切换到对应的内网端点（`tos-<地域>.ivolces.com`），后续访问继续使用所选端点。鉴权失败、权限不足等非网络类 TOS 服务错误不会触发回退。浏览器端获取的签名 URL 始终使用公网端点，确保外部可访问。BytePlus 和自定义端点不受此机制影响。
+</Note>
+
 Studio 对象使用用户优先的版本化布局，路径格式为 `veadk-studio/v1/users/<编码用户 ID>/<命名空间>/<范围>/<资源 ID>/`。视频参考素材使用 `video/<素材角色>/<素材 ID>/` 命名空间，存储在该路径下的文件内容及 `metadata.json`。
 
 自动评测生成的优化项快照存储在 `veadk-studio/v1/evaluation-optimizations/<Runtime ID>/<应用名>.json` 路径下，每个 Runtime 应用保留最新一份快照。
