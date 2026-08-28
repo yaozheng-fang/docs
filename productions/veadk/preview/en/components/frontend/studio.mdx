@@ -1019,6 +1019,55 @@ Updates are still governed by Studio role permissions: `admin` can update all St
   When updating a deployed agent, Studio rebuilds the editable draft exclusively from the Runtime's currently deployed configuration and does not merge in locally saved drafts. If the Runtime's agent configuration cannot be read due to a network or server error, the update entry shows a notice and disables the update temporarily; retry after a moment.
 </Note>
 
+### Update modes
+
+Studio supports two Runtime update modes, selected automatically based on the Runtime's current state:
+
+| Update mode | Description |
+| :--- | :--- |
+| Regenerate | Rebuilds the full project image from the edited draft and publishes it. Used for regular updates driven by the draft. |
+| Source-preserving | Keeps the deployed source image unchanged and publishes only the edited configuration (agent draft, skills, and MCP credentials) as an overlay on top of the existing image. Used when the deployed image structure is intact and only configuration needs adjustment. |
+
+Source-preserving updates do not rebuild the image, making publication faster, and skill files already baked into the image remain unchanged. This mode only supports editing skills on the root agent; modifying skills in sub-agents is not supported.
+
+<Note>
+  The update mode is determined automatically by Studio based on the Runtime's current image and configuration. If the deployed image structure does not support source-preserving updates, Studio falls back to regenerate mode.
+</Note>
+
+<Note>
+  In source-preserving mode, MCP credential updates rely on authentication references in the published draft. If MCP configuration has changed since publication, Studio prompts you to reopen the agent detail and confirm the latest configuration before updating.
+</Note>
+
+### Legacy Runtime recovery
+
+For Runtimes deployed before the update capability was introduced (missing a published configuration draft), Studio can recover the agent configuration from the deployed image and runtime environment, enabling updates for these older deployments. Recovery includes:
+
+- Rebuilding MCP tool configuration from runtime environment variables and MCP toolset;
+- Extracting deployed skill files from the image;
+- Generating an editable draft from the recovered configuration.
+
+<Warning>
+  Legacy Runtime recovery requires the Studio runtime identity to have read-only access to the container registry that hosts the deployed image. If the current identity lacks CR read access, skill files cannot be extracted, and Studio prompts you to grant read-only access to the corresponding CR instance or repository before retrying.
+</Warning>
+
+### Update safety checks
+
+When updating a Runtime, Studio performs safety checks before and after publishing to prevent concurrent modifications from overwriting the live configuration:
+
+- Before publishing, Studio verifies that the Runtime's version number and image identity match what was loaded during editing. If the Runtime has been modified by another operation in the meantime, the update is rejected and you are prompted to reopen the agent detail.
+- After publishing, Studio verifies that the Runtime version has incremented and the status is Ready. If the version did not increment or the status is abnormal, the update is marked as failed and you are prompted to refresh the detail to confirm the live state.
+
+<Note>
+  When a deployment or update task is already in progress on the same Runtime, new deploy or update requests are rejected with a prompt to wait for the current task to complete before retrying, preventing conflicts from concurrent deployments.
+</Note>
+
+<Note>
+  Deployment progress is streamed in real time. During long builds, Studio sends periodic heartbeat keepalive messages to prevent proxies or browsers from timing out on idle connections.
+</Note>
+
+<Note>
+  The update capability check may need to read runtime configuration. If the initial check takes too long, a "recovering" state is displayed and the update entry is temporarily disabled; it resumes automatically once the check completes.
+</Note>
 ## Deliver agents through GitHub
 
 Studio can deliver the source generated during custom creation to a GitHub repository with two delivery modes. "GitHub code sync" pushes the generated source directly to the target branch, while the Runtime is still published from the deploy button; "Attach continuous delivery" writes an AgentKit Runtime GitHub Actions workflow to the target branch, and subsequent pushes to that branch automatically build and publish to the bound Runtime. Both modes suit teams that need version control and continuous delivery.
