@@ -10,6 +10,10 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 更新 | 更新已部署的智能体时新增保留源码更新模式：保留已部署镜像不变，仅将编辑后的配置（智能体草稿、技能和 MCP 认证）作为覆盖层发布到原镜像之上，无需重新构建镜像。该模式由 Studio 根据 Runtime 当前状态自动选择，发布速度更快且镜像中已有技能保持不变。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 更新 | 对于在更新能力引入之前部署的 Runtime，Studio 现在可以从已部署镜像和运行时环境中恢复智能体配置（包括 MCP 工具和技能文件），使其同样支持更新。恢复需要 Studio 运行身份对镜像所在的容器镜像仓库具备只读权限。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 | 更新 Runtime 时新增发布前后安全校验：发布前检查 Runtime 版本和镜像标识是否与编辑时一致，发布后验证版本已递增且状态为 Ready，防止并发修改覆盖线上配置。同一 Runtime 上已有正在进行的部署任务时，新请求被拒绝并提示等待完成后再重试。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 | 部署进度流式连接新增心跳保活机制，长时间构建期间定期发送保活消息，防止代理或浏览器因空闲超时断开连接。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 运行时 | ADK 模型回调（`before_model_callback`、`after_model_callback`、`on_model_error_callback`）与 ADK 插件的同名方法现在在 `codex`、`piagent` 等外部运行时中同样生效，此前仅默认 ADK 运行时执行这些回调。`before_model_callback` 可修改请求（对话内容、系统指令、输出 schema、工具）并支持返回响应短路本轮调用；`after_model_callback` 在最终文本回复后执行；`on_model_error_callback` 在模型调用异常时运行并支持返回兜底响应。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
 | 运行时 | `output_key` 现在在所有运行时中均生效，包括 `codex` 和 `piagent` 等外部运行时；此前仅在使用默认 ADK 运行时时才会将最终回复写入会话状态。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
 | 长期记忆 | `Agent` 新增 `auto_save_memory_policy` 参数（默认 `"default"`），可控制自动保存时哪些事件写入长期记忆。支持 `"default"`、`"all"`、`"custom"` 三种预设，也可通过 `MemoryAutoSavePolicy` 类按角色、作者、事件类型等维度精细过滤。`add_session_to_memory` 同步接受 `auto_save_memory_policy` 关键字参数。自动保存改为增量写入，每次只持久化自上次保存以来新增的事件。 | [长期记忆](/productions/veadk/preview/zh/components/memory) |
