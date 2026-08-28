@@ -38,6 +38,7 @@ title: "更新日志"
 | Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.5` 更新为 `1.1.6`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 部署 | `veadk studio deploy` 的 `--studio-update-bucket` 默认值改为根据云服务商自动选择：火山引擎使用 `veadk-studio`，BytePlus 使用 `veadk-studio-byteplus`；此前固定使用 `veadk-studio`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 远程智能体 | 远程智能体（A2A 子智能体）支持 BytePlus 云服务商：选择 BytePlus 时，智能体中心的默认地域改为 `ap-southeast-1`，默认 OpenAPI 地址改为 `https://agentkit.ap-southeast-1.byteplusapi.com/`，凭证从 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 和可选的 `BYTEPLUS_SESSION_TOKEN` 解析；火山引擎模式不受影响。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 远程智能体 | 更新已部署的智能体时，Studio 现在从 Runtime 环境变量正确恢复 A2A 远程子智能体的智能体中心配置（`REGISTRY_SPACE_ID`、`REGISTRY_TOP_K`、`REGISTRY_REGION`、`REGISTRY_ENDPOINT`），并保留远程智能体类型不被覆盖；此前更新后这些配置可能丢失或显示为过时值。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 
 ## 1.1.6
 
