@@ -10,6 +10,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 运行时 | ADK 模型回调（`before_model_callback`、`after_model_callback`、`on_model_error_callback`）与 ADK 插件的同名方法现在在 `codex`、`piagent` 等外部运行时中同样生效，此前仅默认 ADK 运行时执行这些回调。`before_model_callback` 可修改请求（对话内容、系统指令、输出 schema、工具）并支持返回响应短路本轮调用；`after_model_callback` 在最终文本回复后执行；`on_model_error_callback` 在模型调用异常时运行并支持返回兜底响应。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
 | 运行时 | `output_key` 现在在所有运行时中均生效，包括 `codex` 和 `piagent` 等外部运行时；此前仅在使用默认 ADK 运行时时才会将最终回复写入会话状态。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
 | 长期记忆 | `Agent` 新增 `auto_save_memory_policy` 参数（默认 `"default"`），可控制自动保存时哪些事件写入长期记忆。支持 `"default"`、`"all"`、`"custom"` 三种预设，也可通过 `MemoryAutoSavePolicy` 类按角色、作者、事件类型等维度精细过滤。`add_session_to_memory` 同步接受 `auto_save_memory_policy` 关键字参数。自动保存改为增量写入，每次只持久化自上次保存以来新增的事件。 | [长期记忆](/productions/veadk/preview/zh/components/memory) |
 | Studio 工作区 | Studio 侧边栏新增「工作区」入口，用于将可复用的运行环境按用途组织为工作区。一个工作区可包含多个环境，同一环境可加入多个工作区；删除工作区只删除组合关系，不删除环境。被工作区引用的环境不能直接删除。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |

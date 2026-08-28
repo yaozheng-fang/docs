@@ -214,6 +214,71 @@ pipeline = SequentialAgent(
 After running, the session state keys `plan` and `draft` hold the final
 responses from the planner and the writer respectively.
 
+## Model callbacks
+
+`Agent` inherits from Google ADK's `LlmAgent`, so you can use
+`before_model_callback`, `after_model_callback`, and
+`on_model_error_callback` to inject custom logic before and after the model
+call and on errors. These callbacks, together with the same-named methods on
+ADK plugins (subclasses of `BasePlugin`), run in every runtime — the default
+ADK runtime and external runtimes such as `codex` and `piagent`. In external
+runtimes, callbacks run in ADK order: plugin callbacks first, then agent
+callbacks.
+
+| Callback | Description |
+| :--- | :--- |
+| `before_model_callback(callback_context, llm_request)` | Runs before the model is called. It can mutate `llm_request` directly (including `contents`, `config.system_instruction`, `output_schema`, and `tools_dict`); the external runtime builds the actual input from the mutated request. If it returns an `LlmResponse`, the model call is skipped and that response is used as the turn result. |
+| `after_model_callback(callback_context, llm_response)` | Runs after the model emits its final text response. External runtimes merge the turn's final text events into a single `LlmResponse` before passing it to this callback; a returned `LlmResponse` replaces the original reply. Final-text buffering is enabled only when an after callback is configured (an agent callback or a plugin override). |
+| `on_model_error_callback(callback_context, llm_request, error)` | Runs when the model call raises an exception. If it returns an `LlmResponse`, that response is used as the turn result and the run completes normally; otherwise the exception is re-raised. |
+
+<Note>
+  The `LlmRequest` built by an external runtime exposes only the stable fields
+  callbacks need (conversation contents, system instruction, output schema,
+  tools, and generation config); it does not run ADK's full preprocessing
+  pipeline. Callback behavior that depends on ADK-internal preprocessing stages
+  may therefore differ in external runtimes.
+</Note>
+
+Callbacks may be synchronous or asynchronous (`async def`). The following
+example uses `before_model_callback` in the Codex runtime to render PDF
+attachments into images so a vision-capable model can read the document:
+
+```python title="agent.py"
+from veadk import Agent
+from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    before_model_callback=pdf_to_images_before_model_callback,
+)
+```
+
+Use `on_model_error_callback` to return a fallback response when the model call
+fails, instead of letting the exception propagate to the caller:
+
+```python title="agent.py"
+from veadk import Agent
+from google.adk.models.llm_response import LlmResponse
+from google.genai import types
+
+def fallback_on_error(callback_context, llm_request, error):
+    return LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[types.Part(text="The model is temporarily unavailable. Please retry later.")],
+        )
+    )
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    on_model_error_callback=fallback_on_error,
+)
+```
+
 ## Request processing
 
 Without touching business logic, you can inject shared cross-cutting processing
