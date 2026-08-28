@@ -1,0 +1,87 @@
+---
+title: "Changelog"
+---
+
+## 0.52.0 - 2026-08-11
+
+- [Auth commands] The CLI can now read [`/.well-known/agentkit-cli` discovery documents](/productions/agentkit-cli/archives/0.52.0/en/commands/auth) from custom login addresses that include a single tenant path segment, with stricter validation for remote addresses, discovery fields, regions, cloud providers, and STS coordinates. When logging in through a remote discovery document, the CLI saves the profile only after login succeeds.
+- [Auth commands] [`auth admin publish`](/productions/agentkit-cli/archives/0.52.0/en/commands/auth#auth-admin-publish) now accepts existing `--issuer`, `--client-id`, `--role-trn`, and `--provider-trn` values, so cross-account identity setups can publish only the discovery document; it also supports `--domain` for returning a custom login domain whose CNAME and HTTPS certificate are already configured.
+- [Auth commands] [Auth Admin](/productions/agentkit-cli/archives/0.52.0/en/commands/auth) can use valid STS credentials from the current CLI SSO profile for management operations, and uses built-in service endpoints for those operations so project or user-wide endpoint overrides do not affect privileged setup.
+- [Installation] The [install flow](/productions/agentkit-cli/archives/0.52.0/en/quickstart#install) keeps the standalone CLI ahead of same-named commands installed through pip, pipx, venv, or Conda in zsh, bash, or fish, and uninstall restores original commands and shell configuration entries that are still managed by the installer.
+- [Configuration] [Config commands](/productions/agentkit-cli/archives/0.52.0/en/commands/config) validate region values, accepting only lowercase, hyphen-separated region codes so invalid regions cannot enter service endpoints or request signing.
+
+## 0.51.2 - 2026-08-11
+
+- [Model Gateway commands] [Model Gateway](/productions/agentkit-cli/archives/0.52.0/en/commands/model-gateway) supports gateway activation, model provider and consumer management, and generation of `curl`, OpenAI, Anthropic, or AgentKit calling examples from authorized models.
+- [invoke commands] [`invoke run`](/productions/agentkit-cli/archives/0.52.0/en/commands/invoke) now follows the Python SDK invocation contract, resolving targets from `agentkit.yaml`, Runtime IDs, or endpoints, accepting JSON payloads and headers, and selecting `/invoke`, ADK `/run_sse`, or A2A automatically; it can also print raw streaming events or show reasoning content when needed.
+- [harness commands] [`harness invoke`](/productions/agentkit-cli/archives/0.52.0/en/commands/harness#harness-invoke) directly invokes a deployed Harness with per-request overrides for the model, system prompt, tools, skills, runtime backend, A2A registry, and maximum LLM calls, with either `invoke` or `run_sse` transport.
+- [Auth commands] [Identity-only mode](/productions/agentkit-cli/archives/0.52.0/en/commands/auth) lets `login --identity-only` and `auth profile set --identity-only` store only the OIDC session. For matching `custom_jwt` Harness invocations, the CLI can forward that user identity without creating management credentials.
+- [Auth commands] [Auth Admin](/productions/agentkit-cli/archives/0.52.0/en/commands/auth) generated SSO policies now include permissions for listing sandbox sessions, restoring session snapshots, and querying tool types, so sandbox-related SSO workflows have the required access.
+- [Sandbox commands] [Creation, initialization, and preview flows](/productions/agentkit-cli/archives/0.52.0/en/commands/sandbox) are now more predictable: `sandbox create --envs` can inject repeatable environment variables, `sandbox init` writes the current built-in base image into generated Dockerfiles, and `sandbox web` opens the sandbox home directory in the remote browser. Initial `.agentkit/sandbox.yaml` files no longer persist inferred model defaults, and the Model Square default model is now `deepseek-v4-flash-ga-260731`.
+- [migrate commands] [Dify migration](/productions/agentkit-cli/archives/0.52.0/en/commands/migrate#dify-migration-scope) extracts Workflow and Chatflow nodes, edges, variables, features, and dependencies before migration while redacting sensitive fields.
+
+## 0.51.1 - 2026-08-06
+
+- Fixed missing bundled assets in standalone distributions so lifecycle commands and [`sandbox dashboard`](/productions/agentkit-cli/archives/0.52.0/en/commands/sandbox#sandbox-dashboard) can load templates and web terminal assets correctly after [installation](/productions/agentkit-cli/archives/0.52.0/en/quickstart#install).
+
+## 0.51.0 - 2026-08-05
+
+- Added `config`, `build`, `launch`, `status`, and `release` for a staged lifecycle from [project configuration](/productions/agentkit-cli/archives/0.52.0/en/commands/config) through [release](/productions/agentkit-cli/archives/0.52.0/en/commands/release).
+- Expanded [sandbox commands](/productions/agentkit-cli/archives/0.52.0/en/commands/sandbox) with additional tool creation, Dashboard, and terminal management.
+- Fixed BytePlus VikingDB [knowledge operations](/productions/agentkit-cli/archives/0.52.0/en/commands/knowledge) and the [migration](/productions/agentkit-cli/archives/0.52.0/en/commands/migrate) upload path.
+
+## 0.50.9 - 2026-08-03
+
+- Added global `--provider`, the top-level [`config`](/productions/agentkit-cli/archives/0.52.0/en/commands/config) command, and region selection for init, Harness, and migration.
+- Completed BytePlus project switching, MCP service mapping, build images, and [migration](/productions/agentkit-cli/archives/0.52.0/en/commands/migrate).
+
+## 0.50.8 - 2026-07-31
+
+- Added `deploy config --provider` for selecting the cloud provider when generating [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.0/en/agentkit-yaml).
+- Switched BytePlus [deployments](/productions/agentkit-cli/archives/0.52.0/en/commands/deploy) to the corresponding base images.
+
+## 0.50.7 - 2026-07-31
+
+- [Frontend SSO deployment](/productions/agentkit-cli/archives/0.52.0/en/workflows/frontend-sso) can discover existing serverless gateways across projects.
+
+## 0.50.6 - 2026-07-31
+
+- Automatically created gateways in [Frontend SSO deployment](/productions/agentkit-cli/archives/0.52.0/en/workflows/frontend-sso) now include their network specification.
+
+## 0.50.5 - 2026-07-31
+
+- [Frontend SSO deployment](/productions/agentkit-cli/archives/0.52.0/en/workflows/frontend-sso) can create a serverless gateway when none is available.
+- [Sandbox creation](/productions/agentkit-cli/archives/0.52.0/en/commands/sandbox#sandbox-create) added the `ArkClawEnv` and `HermesEnv` tool types.
+
+## 0.50.4 - 2026-07-30
+
+- Relaxed wording checks for [migration](/productions/agentkit-cli/archives/0.52.0/en/commands/migrate) plans to improve compatibility across source projects.
+
+## 0.50.3 - 2026-07-30
+
+- Added `sandbox attach` as an alias of `sandbox exec`; see [sandbox commands](/productions/agentkit-cli/archives/0.52.0/en/commands/sandbox#sandbox-exec).
+- [Arbitrary-source migration](/productions/agentkit-cli/archives/0.52.0/en/commands/migrate) now uses the built-in source-to-veadk capability.
+
+## 0.50.2 - 2026-07-29
+
+- Added BytePlus resource routing to [deployment configuration](/productions/agentkit-cli/archives/0.52.0/en/agentkit-yaml), establishing the base for the complete multi-cloud deployment flow.
+
+## 0.50.1 - 2026-07-29
+
+- Changed Runtime defaults to 2 vCPU, 4 GiB of memory, and one minimum instance; see [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.0/en/agentkit-yaml#runtime-resources).
+- Added [`migrate --project`](/productions/agentkit-cli/archives/0.52.0/en/commands/migrate) for selecting the project used by remote migration.
+
+## 0.50.0 - 2026-07-28
+
+- Added [Auth Admin](/productions/agentkit-cli/archives/0.52.0/en/commands/auth) credential management.
+- Added Skill Space references and request-level overrides to [Harness](/productions/agentkit-cli/archives/0.52.0/en/commands/harness).
+- Released the revised [sandbox commands](/productions/agentkit-cli/archives/0.52.0/en/commands/sandbox) for configuration, creation, terminal, file, and invocation workflows.
+
+## 0.46.7 - 2026-07-22
+
+- Added remote Dify and arbitrary-source support to [migration](/productions/agentkit-cli/archives/0.52.0/en/commands/migrate).
+- Added per-resource region and project overrides plus Runtime private-network settings to [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.0/en/agentkit-yaml).
+
+## 0.46.6 - 2026-07-19
+
+- Published the AgentKit CLI [command reference](/productions/agentkit-cli/archives/0.52.0/en/commands) and the `agentkit.yaml`-based build and deployment documentation.

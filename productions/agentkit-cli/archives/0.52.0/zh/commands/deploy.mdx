@@ -1,0 +1,45 @@
+---
+title: "部署"
+---
+
+`deploy` 根据当前项目的生命周期配置部署运行时。该命令不会先构建镜像；需要一次性完成构建与部署时，使用 [`launch`](/productions/agentkit-cli/preview/zh/commands/launch)。需要使用 `.agentkit/agentkit.yaml` 的云端发布配置、消息渠道或前端发布流程时，使用 [`release`](/productions/agentkit-cli/preview/zh/commands/release)。
+
+## deploy
+
+读取 `agentkit.yaml`，按 `common.launch_type` 选择本地、云端或混合部署策略，并把部署产生的运行时 ID、端点或本地容器状态写回配置文件。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--config-file <path>` | 生命周期配置文件路径。 | `agentkit.yaml` |
+| `--harness <name>` | 从当前目录的 `<name>.harness.json` 部署 Harness 运行时，而不是读取 `agentkit.yaml`。 | — |
+| `--region <region>` | Harness 部署使用的 AgentKit 区域。 | Harness 配置或当前云环境 |
+| `--volcengine-access-key <key>` | Harness 部署使用的 Volcengine Access Key。 | 环境变量或全局配置 |
+| `--volcengine-secret-key <key>` | Harness 部署使用的 Volcengine Secret Key。 | 环境变量或全局配置 |
+| `--discovery-url <url>` | Harness 部署使用的 OIDC discovery URL；传入后启用 OAuth2/JWT 鉴权。 | — |
+| `--allowed-id <ids>` | Harness OAuth2/JWT 允许的客户端 ID，多个值用逗号分隔。 | — |
+| `-y, --yes` | Harness 同名运行时已存在时跳过确认并更新。 | `false` |
+
+```bash
+agentkit deploy --config-file agentkit.yaml
+```
+
+<Note>
+`deploy` 会在部署前执行必要的服务预检。预检失败时，交互终端会提示是否继续；需要在自动化环境中控制预检行为时，使用 `launch --preflight-mode` 完成构建与部署。
+</Note>
+
+## Harness 部署
+
+传入 `--harness <name>` 时，CLI 会读取当前目录下的 `<name>.harness.json`，转换为运行时环境变量，临时生成生命周期配置并部署 Harness 运行时。若传入 `--discovery-url`，必须同时通过 `--allowed-id` 提供至少一个允许的客户端 ID。
+
+```bash
+agentkit deploy \
+  --harness support-bot \
+  --region cn-beijing \
+  --discovery-url https://identity.example.com/.well-known/openid-configuration \
+  --allowed-id web-client-id \
+  --yes
+```
+
+<Warning>
+Harness 部署会创建或更新云端运行时，并可能改写当前目录的 `harness.json` 以记录端点、运行时 ID 与鉴权信息。执行前确认当前目录、Harness 名称和目标项目。
+</Warning>

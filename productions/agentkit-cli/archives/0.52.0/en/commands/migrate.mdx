@@ -1,0 +1,168 @@
+---
+title: "Migrate an existing agent"
+---
+
+`migrate` supports two migration modes:
+
+- Run a local structured migration for LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore projects and generate an AgentKit app.
+- Start a remote migration job for a Dify Workflow, Dify Chatflow, or another type of agent project, then download the generated VeADK project when the job finishes.
+
+```bash
+agentkit migrate [project-dir] --framework langchain|langgraph|adk|strands|agentcore --entry <file.py:object> [options]
+agentkit migrate [project-dir] --framework dify|any create|list|status [job-id] [options]
+```
+
+## Dify Migration Scope
+
+With `--framework dify create`, the input directory should contain `workflow.yml` or `workflow.yaml`. Before the remote migration starts, the CLI reads the Dify DSL and provides read-only context to the migration process: DSL version, app mode, nodes and edges, variables, app features, dependencies, diagnostics, and locations of truncated content. Credential fields and common authentication text are redacted.
+
+Both Dify `workflow` and `advanced-chat` apps are in scope. For Chatflow, migration also pays attention to conversation variables, `sys.query`, `sys.files`, `sys.conversation_id`, LLM node memory windows, Answer node order, file upload, speech features, citation resources, and content moderation context.
+
+<Note>
+  This context helps migration understand the source graph; it does not mean every Dify node maps one-to-one to an AgentKit capability with the same name. Review the generated report and the source project behavior before accepting the result.
+</Note>
+
+## migrate
+
+A local structured migration analyzes the entry object, generates the service entry point, deployment configuration, and migration plan in the source project, and updates project dependencies. The command reports the files it creates, updates, or overwrites. Use `--dry-run` to inspect the plan only.
+
+<Warning>
+This command modifies the source project. `--force` overwrites existing generated files. Commit or back up existing changes and inspect the plan with `--dry-run` first.
+</Warning>
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[project-dir]` | Source project directory | Current directory |
+| `--framework <name>` | Source framework: `langchain` \| `langgraph` \| `adk` \| `strands` \| `agentcore` (required) | — |
+| `--entry <file.py:object\|langgraph.json[:graph_id]>` | Python object to wrap; in LangGraph Server mode, this can be `langgraph.json` and an optional graph ID (required) | — |
+| `-n, --name <name>` | AgentKit app name | Source project directory name |
+| `-o, --output <dir>` | Directory for the generated service entry point; it must be inside the source project. Other deployment files remain in the project root | Source project root |
+| `--input-key <key>` | Custom LangChain dictionary or LangGraph state field that contains user input; omit for standard LangGraph messages | — |
+| `--stream-node <node>` | LangGraph node whose events are streamed from `/run_sse`; repeatable | — |
+| `--compat <profile>` | Add compatibility serving routes: `langserve` \| `fastapi-mount` | Disabled |
+| `--compat-prefix <path>` | Mount path for compatibility routes | Depends on the profile |
+| `--legacy-app <file.py:app>` | Existing FastAPI app to mount; only valid with `--compat fastapi-mount` | — |
+| `--model-id <id>` | Ark or OpenAI-compatible target model ID for the generated app | — |
+| `--model-base-url <url>` | Ark or OpenAI-compatible base URL for the target model | — |
+| `--model-api-key-env <name>` | Name of the environment variable that contains the target model API key | — |
+| `-p, --project <name>` | AgentKit project used in the generated configuration | `default` |
+| `-r, --region <region>` | Cloud region used in the generated configuration | Current provider's default region |
+| `--server-mode <mode>` | Use `langgraph` to preserve a LangGraph Server app; omit to generate a standard AgentKit app | Standard AgentKit app |
+| `--allow-blocking` | Relax blocking I/O detection in LangGraph Server mode | `false` |
+| `--verify` | Import the generated app and run local endpoint checks | `false` |
+| `--dry-run` | Show the migration plan without writing files | `false` |
+| `-f, --force` | Overwrite existing generated files | `false` |
+| `--json` | Output the migration plan as raw JSON | `false` |
+
+```bash
+# LangChain agent
+agentkit migrate . --framework langchain --entry agent.py:agent --name support-agent
+
+# Inspect the plan only
+agentkit migrate . --framework langgraph --entry graph.py:agent --input-key question --dry-run
+
+# Preserve native LangGraph Server routes
+agentkit migrate . \
+  --framework langgraph \
+  --server-mode langgraph \
+  --entry langgraph.json:lead_agent \
+  --allow-blocking
+
+# Preserve an existing LangServe or FastAPI surface
+agentkit migrate . --framework langchain --entry agent.py:agent --compat langserve
+agentkit migrate . --framework langchain --entry agent.py:agent \
+  --compat fastapi-mount --legacy-app api.py:app
+
+# Configure a target model for the migrated AgentCore app
+agentkit migrate . \
+  --framework agentcore \
+  --entry deploy/agentcore/app.py:app \
+  --model-id doubao-seed-2-1-pro \
+  --model-api-key-env MODEL_AGENT_API_KEY
+
+# ADK and Strands agents
+agentkit migrate . --framework adk --entry agent.py:root_agent
+agentkit migrate . --framework strands --entry agent.py:build_agent
+```
+
+## migrate create
+
+Create a remote migration job for a Dify export or another agent project. The command uploads the source directory, creates a remote sandbox, returns the job ID, and leaves the job running in the background. If an active job already has the same workspace, source directory, and migration configuration, the command reuses it.
+
+<Warning>
+This operation uploads the source directory to a remote sandbox and may create billable cloud resources. Remove credentials, user data, and other files that must not be uploaded. The generated result must use a dedicated sibling directory; it cannot overwrite the source directory or be placed inside it.
+</Warning>
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[project-dir]` | Dify export or other agent project directory to upload (required) | — |
+| `--framework <name>` | Remote migration type: `dify` \| `any` (required) | — |
+| `[migrate-action]` | Remote action; use `create` to create a job (required) | — |
+| `-n, --name <name>` | Name of the generated AgentKit app | Source project directory name |
+| `-o, --output <dir>` | Dedicated sibling directory for downloaded results | Sibling directory named after the job ID |
+| `--model-id <id>` | Target model ID for the generated app | — |
+| `--model-base-url <url>` | Target model base URL for the generated app | — |
+| `--model-api-key-env <name>` | Name of the environment variable the generated app uses for its target model API key | — |
+| `-p, --project <name>` | AgentKit project used by the remote sandbox and generated configuration | `default` |
+| `--codex-model <id>` | Model ID used by the remote migration sandbox | Cloud model service default |
+| `--codex-model-provider <provider>` | Model provider used by the remote migration sandbox | Determined by the current cloud provider |
+| `--codex-api-key-env <name>` | Name of the environment variable containing the remote migration model API key; if omitted, `AGENTKIT_MIGRATE_MODEL_API_KEY` is read | `AGENTKIT_MIGRATE_MODEL_API_KEY` |
+
+```bash
+export ARK_API_KEY="<your-api-key>"
+
+# Migrate a Dify export
+agentkit migrate ./dify-export --framework dify create \
+  --name support-agent \
+  --output ../agentkit-support \
+  --project default \
+  --codex-model ep-xxxxxxxx \
+  --codex-api-key-env ARK_API_KEY \
+  --model-id doubao-seed-2-1-pro \
+  --model-api-key-env ARK_API_KEY
+
+# Migrate another type of agent project
+agentkit migrate ./source-agent --framework any create \
+  --output ../agentkit-agent \
+  --codex-model ep-xxxxxxxx \
+  --codex-api-key-env ARK_API_KEY
+```
+
+## migrate list
+
+List locally stored Dify or Any migration job metadata for the selected workspace. This action does not query other workspaces or create cloud resources.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[project-dir]` | Workspace that stores the migration job metadata | Current directory |
+| `--framework <name>` | Migration type to list: `dify` \| `any` (required) | — |
+| `[migrate-action]` | Remote action; use `list` to list jobs (required) | — |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit migrate ./dify-export --framework dify list
+agentkit migrate ./source-agent --framework any list --json
+```
+
+## migrate status
+
+Query a remote job. After a job succeeds, partially succeeds, or fails, this command downloads the result or failure report to the output directory selected at creation time. Later invocations reuse a local terminal result.
+
+<Warning>
+`--overwrite` replaces files that have already been downloaded to the result directory. Use it only when local changes do not need to be preserved.
+</Warning>
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[project-dir]` | Workspace that stores the migration job metadata | Current directory |
+| `--framework <name>` | Job migration type: `dify` \| `any` (required) | — |
+| `[migrate-action]` | Remote action; use `status` to query a job (required) | — |
+| `[job-id]` | Job ID; alternatively use `--job-id` (required) | — |
+| `--job-id <id>` | Job ID; alternatively pass it as the positional argument after `status` | — |
+| `--overwrite` | Replace an existing local result directory | `false` |
+| `--json` | Output raw JSON | `false` |
+
+```bash
+agentkit migrate ./dify-export --framework dify status <job-id>
+agentkit migrate ./source-agent --framework any status --job-id <job-id> --json
+```

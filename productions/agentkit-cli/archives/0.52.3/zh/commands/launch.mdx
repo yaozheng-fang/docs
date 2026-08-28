@@ -1,0 +1,19 @@
+---
+title: "启动发布"
+---
+
+`launch` 一次性执行构建与部署。它读取生命周期配置，先运行 `build`，成功后运行 `deploy`，适合从新项目或已修改代码直接发布运行时。
+
+## launch
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--config-file <path>` | 生命周期配置文件路径。 | `agentkit.yaml` |
+| `--platform <platform>` | 构建平台；传入 `auto` 时由 CLI 自动选择。 | `auto` |
+| `--preflight-mode <mode>` | 预检行为：`prompt`、`fail`、`warn` 或 `skip`。 | 全局配置 `defaults.preflight_mode`，未配置时为 `prompt` |
+
+```bash
+agentkit launch --config-file agentkit.yaml --preflight-mode fail
+```
+
+`prompt` 会在交互终端询问是否继续；`fail` 在预检不通过时直接失败；`warn` 打印警告后继续；`skip` 不执行预检。

@@ -2791,13 +2791,16 @@
                       "productions/agentkit-cli/preview/zh/commands/status",
                       "productions/agentkit-cli/preview/zh/commands/release",
                       "productions/agentkit-cli/preview/zh/commands/destroy",
+                      "productions/agentkit-cli/preview/zh/commands/chat",
                       "productions/agentkit-cli/preview/zh/commands/invoke",
                       "productions/agentkit-cli/preview/zh/commands/migrate",
                       {
                         "group": "评测",
                         "pages": [
+                          "productions/agentkit-cli/preview/zh/commands/eval/backend",
                           "productions/agentkit-cli/preview/zh/commands/eval/dataset",
                           "productions/agentkit-cli/preview/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/preview/zh/commands/eval/target",
                           "productions/agentkit-cli/preview/zh/commands/eval/run",
                           "productions/agentkit-cli/preview/zh/commands/eval/experiment",
                           "productions/agentkit-cli/preview/zh/commands/eval/target"
@@ -2806,6 +2809,7 @@
                       "productions/agentkit-cli/preview/zh/commands/runtime",
                       "productions/agentkit-cli/preview/zh/commands/knowledge",
                       "productions/agentkit-cli/preview/zh/commands/memory",
+                      "productions/agentkit-cli/preview/zh/commands/model-gateway",
                       "productions/agentkit-cli/preview/zh/commands/mcp",
                       "productions/agentkit-cli/preview/zh/commands/model-gateway",
                       "productions/agentkit-cli/preview/zh/commands/sandbox",
@@ -2819,6 +2823,709 @@
                   }
                 ],
                 "default": true
+              },
+              {
+                "version": "0.52.8",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/zh/index",
+                      "productions/agentkit-cli/archives/0.52.8/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.8/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.8/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.8/zh/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.8/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.8/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.8/zh/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.8/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.8/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/env",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.8/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.7",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/zh/index",
+                      "productions/agentkit-cli/archives/0.52.7/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.7/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.7/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.7/zh/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.7/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.7/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.7/zh/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.7/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.7/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/env",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.7/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.6",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/zh/index",
+                      "productions/agentkit-cli/archives/0.52.6/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.6/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.6/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.6/zh/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.6/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.6/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.6/zh/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.6/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.6/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.6/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.5",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/zh/index",
+                      "productions/agentkit-cli/archives/0.52.5/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.5/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.5/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.5/zh/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.5/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.5/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.5/zh/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.5/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.5/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.5/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.4",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/zh/index",
+                      "productions/agentkit-cli/archives/0.52.4/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.4/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.4/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.4/zh/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.4/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.4/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.4/zh/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.4/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.4/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.4/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.3",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/zh/index",
+                      "productions/agentkit-cli/archives/0.52.3/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.3/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.3/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.3/zh/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.3/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.3/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.3/zh/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.3/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.3/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.3/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.2",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/zh/index",
+                      "productions/agentkit-cli/archives/0.52.2/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.2/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.2/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.2/zh/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.2/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.2/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.2/zh/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.2/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.2/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.2/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.1",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/zh/index",
+                      "productions/agentkit-cli/archives/0.52.1/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.1/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.1/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.1/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.1/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.1/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.1/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.1/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.0",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/zh/index",
+                      "productions/agentkit-cli/archives/0.52.0/zh/changelog",
+                      "productions/agentkit-cli/archives/0.52.0/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.52.0/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.0/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.0/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.0/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.0/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.0/zh/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.51.2",
+                "groups": [
+                  {
+                    "group": "开始使用",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/zh/index",
+                      "productions/agentkit-cli/archives/0.51.2/zh/changelog",
+                      "productions/agentkit-cli/archives/0.51.2/zh/quickstart",
+                      "productions/agentkit-cli/archives/0.51.2/zh/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "最佳实践",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/harness",
+                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "命令参考",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/init",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/config",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/build",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/deploy",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/launch",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/status",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/release",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/destroy",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/invoke",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/migrate",
+                      {
+                        "group": "评测",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.51.2/zh/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.51.2/zh/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.51.2/zh/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.51.2/zh/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/runtime",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/memory",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/mcp",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/skill",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/harness",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/auth",
+                      "productions/agentkit-cli/archives/0.51.2/zh/commands/docs"
+                    ]
+                  }
+                ]
               },
               {
                 "version": "0.51.1",
@@ -6485,13 +7192,16 @@
                       "productions/agentkit-cli/preview/en/commands/status",
                       "productions/agentkit-cli/preview/en/commands/release",
                       "productions/agentkit-cli/preview/en/commands/destroy",
+                      "productions/agentkit-cli/preview/en/commands/chat",
                       "productions/agentkit-cli/preview/en/commands/invoke",
                       "productions/agentkit-cli/preview/en/commands/migrate",
                       {
                         "group": "Evaluation",
                         "pages": [
+                          "productions/agentkit-cli/preview/en/commands/eval/backend",
                           "productions/agentkit-cli/preview/en/commands/eval/dataset",
                           "productions/agentkit-cli/preview/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/preview/en/commands/eval/target",
                           "productions/agentkit-cli/preview/en/commands/eval/run",
                           "productions/agentkit-cli/preview/en/commands/eval/experiment",
                           "productions/agentkit-cli/preview/en/commands/eval/target"
@@ -6500,6 +7210,7 @@
                       "productions/agentkit-cli/preview/en/commands/runtime",
                       "productions/agentkit-cli/preview/en/commands/knowledge",
                       "productions/agentkit-cli/preview/en/commands/memory",
+                      "productions/agentkit-cli/preview/en/commands/model-gateway",
                       "productions/agentkit-cli/preview/en/commands/mcp",
                       "productions/agentkit-cli/preview/en/commands/model-gateway",
                       "productions/agentkit-cli/preview/en/commands/sandbox",
@@ -6513,6 +7224,709 @@
                   }
                 ],
                 "default": true
+              },
+              {
+                "version": "0.52.8",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/en/index",
+                      "productions/agentkit-cli/archives/0.52.8/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.8/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.8/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.8/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.8/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.8/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.8/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.8/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.8/en/commands",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.8/en/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.8/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.8/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.8/en/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.8/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.8/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/env",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.8/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.7",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/en/index",
+                      "productions/agentkit-cli/archives/0.52.7/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.7/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.7/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.7/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.7/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.7/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.7/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.7/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.7/en/commands",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.7/en/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.7/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.7/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.7/en/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.7/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.7/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/env",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.7/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.6",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/en/index",
+                      "productions/agentkit-cli/archives/0.52.6/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.6/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.6/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.6/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.6/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.6/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.6/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.6/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.6/en/commands",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.6/en/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.6/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.6/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.6/en/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.6/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.6/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.6/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.5",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/en/index",
+                      "productions/agentkit-cli/archives/0.52.5/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.5/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.5/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.5/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.5/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.5/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.5/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.5/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.5/en/commands",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.5/en/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.5/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.5/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.5/en/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.5/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.5/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.5/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.4",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/en/index",
+                      "productions/agentkit-cli/archives/0.52.4/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.4/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.4/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.4/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.4/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.4/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.4/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.4/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.4/en/commands",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.4/en/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.4/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.4/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.4/en/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.4/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.4/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.4/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.3",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/en/index",
+                      "productions/agentkit-cli/archives/0.52.3/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.3/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.3/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.3/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.3/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.3/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.3/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.3/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.3/en/commands",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.3/en/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.3/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.3/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.3/en/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.3/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.3/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.3/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.2",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/en/index",
+                      "productions/agentkit-cli/archives/0.52.2/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.2/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.2/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.2/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.2/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.2/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.2/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.2/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.2/en/commands",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/chat",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.2/en/commands/eval/backend",
+                          "productions/agentkit-cli/archives/0.52.2/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.2/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.2/en/commands/eval/target",
+                          "productions/agentkit-cli/archives/0.52.2/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.2/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.2/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.1",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/en/index",
+                      "productions/agentkit-cli/archives/0.52.1/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.1/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.1/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.1/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.1/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.1/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.1/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.1/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.1/en/commands",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.1/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.1/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.1/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.1/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.1/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.52.0",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/en/index",
+                      "productions/agentkit-cli/archives/0.52.0/en/changelog",
+                      "productions/agentkit-cli/archives/0.52.0/en/quickstart",
+                      "productions/agentkit-cli/archives/0.52.0/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.52.0/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.52.0/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.52.0/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.52.0/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.52.0/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.52.0/en/commands",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/init",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/config",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/build",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/status",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/release",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.52.0/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.52.0/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.52.0/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.52.0/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.52.0/en/commands/docs"
+                    ]
+                  }
+                ]
+              },
+              {
+                "version": "0.51.2",
+                "groups": [
+                  {
+                    "group": "Getting Started",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/en/index",
+                      "productions/agentkit-cli/archives/0.51.2/en/changelog",
+                      "productions/agentkit-cli/archives/0.51.2/en/quickstart",
+                      "productions/agentkit-cli/archives/0.51.2/en/agentkit-yaml",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/upgrade",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/tree"
+                    ]
+                  },
+                  {
+                    "group": "Best practices",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/en/workflows/harness",
+                      "productions/agentkit-cli/archives/0.51.2/en/workflows/high-code",
+                      "productions/agentkit-cli/archives/0.51.2/en/workflows/frontend-sso",
+                      "productions/agentkit-cli/archives/0.51.2/en/workflows/feishu",
+                      "productions/agentkit-cli/archives/0.51.2/en/workflows/codex-sandbox",
+                      "productions/agentkit-cli/archives/0.51.2/en/workflows/evaluation"
+                    ]
+                  },
+                  {
+                    "group": "AI-Friendly",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/onboard"
+                    ]
+                  },
+                  {
+                    "group": "Command reference",
+                    "pages": [
+                      "productions/agentkit-cli/archives/0.51.2/en/commands",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/init",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/config",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/build",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/deploy",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/launch",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/status",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/release",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/destroy",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/invoke",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/migrate",
+                      {
+                        "group": "Evaluation",
+                        "pages": [
+                          "productions/agentkit-cli/archives/0.51.2/en/commands/eval/dataset",
+                          "productions/agentkit-cli/archives/0.51.2/en/commands/eval/evaluator",
+                          "productions/agentkit-cli/archives/0.51.2/en/commands/eval/run",
+                          "productions/agentkit-cli/archives/0.51.2/en/commands/eval/experiment"
+                        ]
+                      },
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/runtime",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/knowledge",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/memory",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/model-gateway",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/mcp",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/sandbox",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/skill",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/harness",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/auth",
+                      "productions/agentkit-cli/archives/0.51.2/en/commands/docs"
+                    ]
+                  }
+                ]
               },
               {
                 "version": "0.51.1",

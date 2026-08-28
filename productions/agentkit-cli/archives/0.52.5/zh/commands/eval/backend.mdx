@@ -1,0 +1,53 @@
+---
+title: "查看评测后端"
+---
+
+`eval backend` 用于解析当前凭据对应的评测后端，并刷新本地缓存。后续评测命令会根据该结果选择 Coze 或 TEA 评测平台；TEA 后端会返回工作区、项目、账号和 `session_key` 等必要坐标。
+
+<Note>
+评测后端结果按当前身份与评测网关缓存，默认缓存 7 天。需要跳过缓存时，可在任意 `eval` 命令组或顶层 `dataset` 命令组上使用 `--cache-refresh`。
+</Note>
+
+## eval backend
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit eval backend
+
+agentkit eval backend --json
+```
+
+## 评测网关配置
+
+默认评测网关使用 `agentkit.cn-beijing.volcengineapi.com`、签名服务 `agentkit` 与区域 `cn-beijing`。如需在测试环境中覆盖网关，可设置以下环境变量。
+
+| 环境变量 | 说明 | 默认值 |
+| --- | --- | --- |
+| `AGENTKIT_EVAL_HOST` | 评测网关主机。 | `agentkit.cn-beijing.volcengineapi.com` |
+| `AGENTKIT_EVAL_SERVICE` | 请求签名使用的服务名。 | `agentkit` |
+| `AGENTKIT_EVAL_REGION` | 请求签名使用的区域。 | `cn-beijing` |
+| `AGENTKIT_TEA_ACCOUNT_ID` | TEA 评测转发时使用的账号 ID；未设置时从当前 SSO 会话或 STS 身份解析。 | 自动解析 |
+| `EXTRA_HEADER` | 额外请求头，多个请求头以分号分隔，格式为 `Name: Value`。 | — |
+
+```bash
+AGENTKIT_EVAL_HOST=agentkit-ppe.cn-beijing.volcengineapi.com \
+AGENTKIT_EVAL_SERVICE=agentkit_ppe \
+agentkit eval backend --json
+```
+
+## 调试选项
+
+`eval` 命令组和顶层 `dataset` 命令组支持以下调试选项。它们用于评测后端缓存和 TEA 请求排查，不是全局选项。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--cache-refresh` | 忽略本地缓存并重新解析评测后端。 | `false` |
+| `--verbose` | 将完整 TEA 请求打印到 stderr；`session_key` cookie 会被脱敏。 | `false` |
+
+```bash
+agentkit eval --cache-refresh backend
+agentkit eval --verbose dataset list
+```

@@ -2,123 +2,103 @@
 title: "Run an experiment"
 ---
 
-`eval run` submits an evaluation experiment: it selects one evaluation dataset version, one or more evaluator versions, and evaluates a specific version of the target. The command resolves the evaluation backend from the current account; on the TEA backend, `--dataset-version`, `--evaluator-version`, `--target-type`, and `--target-version` let you pin the exact resources.
+`eval run` is the core command that ties the evaluation loop together: it takes an evaluation dataset and one or more evaluators, then submits an experiment against a deployed Runtime or TEA source evaluation target. The dataset, evaluators, and target can all be specified by ID or name, and field mapping is automatic by default.
 
 ```bash
 agentkit eval run \
   --dataset qa-set \
-  --dataset-version 0.0.8 \
   --evaluator relevance \
-  --evaluator-version 0.1.2 \
-  --target qa-agent \
-  --target-version 1.0.0
+  --evaluator-version 0.0.1 \
+  --target my-agent
 ```
 
-## eval backend
-
-Show and refresh the evaluation backend resolved for the current account. The result is written to a local cache and reused by subsequent `eval` subcommands.
-
-| Flag / Argument | Description | Default |
-| --- | --- | --- |
-| `--json` | Output raw JSON. | `false` |
-
-```bash
-agentkit eval backend
-agentkit eval backend --json
-```
-
-Backend resolution uses the current login state and environment variables. To force a cache refresh or debug requests, put the debug flag after `eval` and before the subcommand:
-
-| Flag / Argument | Description | Default |
-| --- | --- | --- |
-| `--cache-refresh` | Ignore the local cache and fetch fresh backend information. | `false` |
-| `--verbose` | Print full TEA requests to stderr with sensitive cookies masked. | `false` |
-
-```bash
-agentkit eval --cache-refresh backend
-agentkit eval --verbose run --dataset qa-set --evaluator relevance --target qa-agent --dry-run
-```
+<Note>
+The CLI first resolves the evaluation backend for the current account. On TEA, every `--evaluator` must have a corresponding `--evaluator-version`; on Coze, the command continues to use the evaluator's current version. To inspect the current backend, run [`eval backend`](/productions/agentkit-cli/preview/en/commands/eval/backend).
+</Note>
 
 ## eval run
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `--dataset <id\|name>` | Evaluation dataset ID or exact name. Required. | None |
-| `--dataset-version <id\|name>` | TEA dataset version ID or exact version string, for example `0.0.1`. If omitted, the current version is used. | Current version |
-| `--evaluator <id\|name>` | Evaluator ID or name. Required and repeatable. | None |
-| `--evaluator-version <id\|name>` | TEA evaluator version ID or exact version string. Repeatable, and should align one-to-one with `--evaluator`. | Current version |
-| `--target <runtime name\|id>` | Runtime or eval target to evaluate. Required. | None |
-| `--target-type <n>` | TEA Source Eval Target type. | `101` |
-| `--target-version <version>` | TEA Source Eval Target version. If omitted, the latest version from the version list is used. | Latest version |
+| `--dataset <id\|name>` | Evaluation set ID or exact name. | Required |
+| `--dataset-version <id\|name>` | TEA dataset version ID or version string; when omitted, the CLI uses an existing committed version and auto-publishes a draft version when needed. | — |
+| `--evaluator <id\|name>` | Evaluator ID or exact name; repeatable. | Required |
+| `--evaluator-version <id\|name>` | TEA evaluator version ID or version string; must be provided once for each `--evaluator`. | — |
+| `--target <runtime name\|id>` | Deployed Runtime or TEA source evaluation target to evaluate. | Required |
+| `--target-type <n>` | TEA source evaluation target type. | `101` |
+| `--target-version <version>` | TEA source evaluation target version; when omitted, the CLI uses the latest version from the version list. | Latest version |
 | `--name <name>` | Experiment name. | `<dataset>-<timestamp>` |
-| `--description <text>` | Experiment description. | None |
-| `--concurrency <n>` | Number of cases to run concurrently; must be a positive integer. | `5` |
-| `--map <spec>` | Override field mapping. Repeatable. TEA and Coze backends use different syntax; see below. | Automatic mapping |
+| `--description <text>` | Experiment description. | — |
+| `--concurrency <n>` | Number of cases run concurrently. | `5` |
+| `--map <spec>` | Override field mapping, repeatable; syntax below. | Automatic |
 | `--dry-run` | Print the request that would be submitted without starting an experiment. | `false` |
-| `-p, --project <name>` | Project name; ignored by the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent --dry-run
+agentkit eval run \
+  --dataset qa-set \
+  --dataset-version 0.0.1 \
+  --evaluator relevance \
+  --evaluator-version 0.0.1 \
+  --target my-agent \
+  --target-version <target-version> \
+  --concurrency 8
 ```
 
-<Note>
-The TEA backend requires a concrete version for each evaluator. If you omit `--evaluator-version`, the CLI resolves the evaluator's current version; when you pass multiple evaluators, pass the same number of `--evaluator-version` values in the same order.
-</Note>
+## Automatic Field Mapping
 
-## Field mapping
+An experiment has three layers of data to align: dataset fields, target input and output, and evaluator inputs. `eval run` connects them automatically by convention:
+
+- The target Runtime typically uses `user_input` as its input field and `actual_output` as its output field; the dataset's primary input field, such as `input`, is passed to the target's `user_input`.
+- The evaluator field that represents the model answer, such as `output`, is supplied by the target output `actual_output`; the remaining fields, such as `input` and `reference_output`, are taken from the dataset by matching name.
 
 An experiment has three layers of data to align: dataset fields, target input and output, and evaluator inputs. By default, the CLI passes the dataset's primary input to the target input and passes the target output to the evaluator answer field. Use `--map` when field names differ.
 
-The TEA backend uses arrow syntax:
+### `--map` Syntax
+
+The TEA backend uses prefixed arrow syntax:
 
 | Form | Meaning |
 | --- | --- |
-| `evaluator.<slot> <- dataset.<col>` | Evaluator input field comes from a dataset field. |
-| `evaluator.<slot> <- target.<field>` | Evaluator input field comes from a target output field. |
-| `target.<slot> <- dataset.<col>` | Target input field comes from a dataset field. |
+| `evaluator.<field> <- dataset.<field>` | Evaluator input comes from a dataset field. |
+| `evaluator.<field> <- target.<field>` | Evaluator input comes from a target output field. |
+| `target.<field> <- dataset.<field>` | Target input comes from a dataset field. |
+
+```bash
+agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target my-agent \
+  --map "evaluator.output <- target.actual_output" \
+  --map "target.user_input <- dataset.question"
+```
+
+The Coze backend uses equals syntax:
+
+| Form | Meaning |
+| --- | --- |
+| `<evaluatorField>=<datasetField>` | Evaluator input comes from a dataset field. |
+| `<evaluatorField>=target:<targetOutput>` | Evaluator input comes from a target output field. |
+| `target:<targetInput>=<datasetField>` | Target input comes from a dataset field. |
+
+## Check With Dry Run First
+
+It is recommended to add `--dry-run` before your first run, to confirm the resolved dataset version, evaluator versions, target version, and field mapping:
 
 ```bash
 agentkit eval run \
   --dataset qa-set \
-  --dataset-version 0.0.8 \
   --evaluator relevance \
-  --evaluator-version 0.1.2 \
-  --target qa-agent \
-  --map "target.user_input <- dataset.question" \
-  --map "evaluator.input <- dataset.question" \
-  --map "evaluator.reference_output <- dataset.answer" \
-  --map "evaluator.output <- target.actual_output"
+  --evaluator-version 0.0.1 \
+  --target my-agent \
+  --dry-run
 ```
 
-The Coze backend keeps the equals-sign syntax:
+<Note>
+An experiment requires a committed dataset version. When `--dataset-version` is omitted and the dataset only has an uncommitted draft, `eval run` auto-publishes a version before submitting. When `--dataset-version` is provided, that version is used.
+</Note>
 
-| Form | Meaning |
-| --- | --- |
-| `evaluatorField=datasetField` | Evaluator input comes from a dataset field. |
-| `evaluatorField=target:targetOutput` | Evaluator input comes from a target output field. |
-| `target:targetInput=datasetField` | Target input comes from a dataset field. |
+Once submitted successfully it returns an experiment ID; on TEA it also returns a run ID. Track it with [`eval experiment show`](/productions/agentkit-cli/preview/en/commands/eval/experiment#eval-experiment-show):
 
 ```bash
-agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent \
-  --map "output=target:actual_output" \
-  --map "target:user_input=question"
+agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target my-agent --json
+# → { "experimentId": "75901...", "runId": "75902...", "name": "qa-set-<timestamp>" }
 ```
-
-## Check before submitting
-
-For the first run, add `--dry-run` to confirm the resolved dataset version, evaluator versions, target version, and field mapping:
-
-```bash
-agentkit eval run \
-  --dataset qa-set \
-  --dataset-version 0.0.8 \
-  --evaluator relevance \
-  --evaluator-version 0.1.2 \
-  --target qa-agent \
-  --target-version 1.0.0 \
-  --dry-run \
-  --json
-```
-
-After a successful submission, the command returns an experiment ID. Track it with [`eval experiment show`](/productions/agentkit-cli/preview/en/commands/eval/experiment), or inspect results with [`eval experiment results`](/productions/agentkit-cli/preview/en/commands/eval/experiment).

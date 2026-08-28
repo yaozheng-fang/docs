@@ -1,0 +1,18 @@
+---
+title: "状态"
+---
+
+`status` 查询当前生命周期配置对应的运行时状态。`local` 模式读取本地容器状态，`cloud` 与 `hybrid` 模式查询 AgentKit Runtime。
+
+## status
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--config-file <path>` | 生命周期配置文件路径。 | `agentkit.yaml` |
+| `-v, --verbose` | 输出详细元数据。 | `false` |
+
+```bash
+agentkit status --config-file agentkit.yaml --verbose
+```
+
+输出会包含可用的端点、容器 ID、运行时 ID、镜像、运行时间和健康检查结果。详细元数据以 JSON 格式打印，便于排查配置或运行时状态。

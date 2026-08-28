@@ -1,0 +1,103 @@
+---
+title: "Manage knowledge bases"
+---
+
+The `knowledge` command group manages AgentKit knowledge bases, covering listing, inspection, creation, update, and deletion. The command is also available under the `kb` and `knowledgebase` aliases.
+
+## knowledge list
+
+List all knowledge bases.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-p, --project <name>` | Project name. | default |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit knowledge list --project demo
+```
+
+## knowledge show
+
+Show details of a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit knowledge show kb-12345678
+```
+
+## knowledge create
+
+Create a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-n, --name <name>` | Knowledge base name. | — |
+| `--provider-knowledge-id <id>` | Existing provider-side knowledge id to register; omit to auto-provision (viking only). | — |
+| `--provider-type <type>` | Provider type, e.g. `viking`. | `viking` |
+| `--viking-project <name>` | Viking project for auto-provisioning. | `$DATABASE_VIKING_PROJECT` or `default` |
+| `--viking-version <n>` | Viking collection version: `2` \| `4`. | `2` |
+| `-d, --description <text>` | Knowledge base description. | — |
+| `-p, --project <name>` | Project name. | default |
+| `-r, --region <region>` | Volcengine region. | from env/default |
+| `--json <jsonString>` | Advanced: a JSON object merged into the request body (overrides options). | — |
+
+```bash
+agentkit knowledge create --name docs-kb --provider-type viking --provider-knowledge-id pk-123
+```
+
+## knowledge add
+
+Add documents to a knowledge base — upload local files or directories (directories recurse), or register documents by public URL.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<kb>` | Knowledge base name or id. Required. | — |
+| `[paths...]` | Local files or directories to upload (directories recurse). | — |
+| `--url <url>` | Add a document by public URL instead of a local file (repeatable). | `[]` |
+| `--doc-type <type>` | Document type hint for `--url` (e.g. `md`, `pdf`). | — |
+| `--tos-bucket <name>` | TOS bucket for uploads. | `agentkit-platform-<account-id>` |
+| `-p, --project <name>` | Project name. | default |
+| `-r, --region <region>` | Volcengine region. | from env/default |
+
+```bash
+agentkit knowledge add docs-kb ./docs ./README.md
+agentkit knowledge add docs-kb --url https://example.com/guide.pdf --doc-type pdf
+```
+
+## knowledge update
+
+Update a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
+| `-d, --description <text>` | New description. | — |
+| `--vpc-id <id>` | VPC id to attach. | — |
+| `--subnet-ids <ids>` | Comma-separated subnet ids (requires `--vpc-id`). | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `--json <jsonString>` | Advanced: a JSON object merged into the request body (overrides options). | — |
+
+```bash
+agentkit knowledge update kb-12345678 --description "Updated docs"
+```
+
+## knowledge delete
+
+Delete a knowledge base.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-y, --yes` | Skip the confirmation prompt. | `false` |
+
+```bash
+agentkit knowledge delete kb-12345678 --yes
+```

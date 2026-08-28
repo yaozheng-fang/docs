@@ -2,62 +2,52 @@
 title: "管理评估器"
 ---
 
-`eval evaluator` 命令组用于管理评估器：浏览预置模板、查看模板详情、列出和查看已有评估器、创建评估器、更新 TEA 评估器草稿、提交评估器版本以及删除评估器。评估器通常是一段带评分标准的提示词，配合一个评判模型，接收若干输入字段（如 `input`、`output`、`reference_output`）后给出分数。
+`eval evaluator` 命令组用于管理评估器：浏览内置模板、列出和查看已有评估器、创建评估器、更新 TEA 草稿、提交 TEA 版本，以及删除评估器。评估器通常是一段带评分标准的提示词，配合评判模型，接收若干输入字段后给出分数或分布。
 
-## evaluator templates
-
-浏览平台预置的评估器模板，作为创建自己评估器的起点。该命令是 `eval evaluator template list` 的兼容入口。
-
-| 标志/参数 | 说明 | 默认值 |
-| --- | --- | --- |
-| `--type <type>` | TEA 预置模板类型：`prompt` 或数字类型值。 | `prompt` |
-| `--locale <locale>` | TEA 模板语言；`cn` 或 `zh-CN` 会追加中文语言参数。 | `zh-CN` |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
-| `--json` | 输出原始 JSON。 | `false` |
-
-```bash
-agentkit eval evaluator templates
-```
+<Note>
+`--project` 只用于 Coze 评测后端；TEA 后端会忽略该参数。TEA 版本相关命令仅在 TEA 评测后端可用。
+</Note>
 
 ## evaluator template list
 
-列出预置评估器模板。
+列出内置评估器模板。`evaluator templates` 是兼容入口，等价于 `evaluator template list`。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--type <type>` | TEA 预置模板类型：`prompt` 或数字类型值。 | `prompt` |
-| `--locale <locale>` | TEA 模板语言；`cn` 或 `zh-CN` 会追加中文语言参数。 | `zh-CN` |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `--type <type>` | TEA 内置模板类型；可传 `prompt` 或数字类型。 | `prompt` |
+| `--locale <locale>` | TEA 模板语言；`cn` 或 `zh-CN` 会追加中文 locale。 | `zh-CN` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
-agentkit eval evaluator template list --type prompt
+agentkit eval evaluator template list
+agentkit eval evaluator templates --type prompt
 ```
 
 ## evaluator template show
 
-查看某个预置评估器模板的详情，包括输入 schema 和提示词内容。
+查看内置评估器模板详情，包括提示词和输入字段。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<key>` | TEA 模板 key，或 Coze 模板 ID / 名称。 | 必填 |
-| `--type <type>` | TEA 预置模板类型：`prompt` 或数字类型值。 | `prompt` |
+| `--type <type>` | TEA 内置模板类型；可传 `prompt` 或数字类型。 | `prompt` |
 | `--language <type>` | TEA 代码模板的 `language_type`。 | — |
-| `--locale <locale>` | TEA 模板语言；`cn` 或 `zh-CN` 会追加中文语言参数。 | `zh-CN` |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `--locale <locale>` | TEA 模板语言；`cn` 或 `zh-CN` 会追加中文 locale。 | `zh-CN` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
-agentkit eval evaluator template show relevance --type prompt
+agentkit eval evaluator template show relevance
 ```
 
-## evaluator list
+## evaluator template list
 
-列出当前项目下的评估器。
+列出当前项目或工作区下的评估器。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
@@ -66,39 +56,51 @@ agentkit eval evaluator list
 
 ## evaluator show
 
-查看某个评估器的详情：评分标准提示词、模型配置、输入字段以及版本信息。TEA 后端可通过 `--evaluator-version` 查看指定版本。
+查看某个评估器的详情：评分标准提示词、模型配置与输入字段。TEA 后端可指定要查看的评估器版本。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<id\|name>` | 评估器 ID 或精确名称。 | 必填 |
-| `--evaluator-version <id\|name>` | TEA 评估器版本 ID 或版本号，例如 `0.0.1`。 | 当前版本 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `--evaluator-version <id\|name>` | TEA 评估器版本 ID 或版本号，例如 `0.0.1`。 | — |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
 agentkit eval evaluator show 相关性
+
 agentkit eval evaluator show 相关性 --evaluator-version 0.0.1
 ```
 
 ## evaluator create
 
-创建评估器。最简单的方式是从预置模板克隆评分标准与输入 schema，再指定评判模型。
+创建评估器。可以从内置模板克隆评分标准与输入 schema，也可以用自定义提示词文件定义评估器。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--name <name>` | 评估器名称。 | 必填 |
-| `--from-template <key\|id\|name>` | 从预置模板克隆评分标准与输入 schema。 | — |
-| `--model <name\|id>` | 评判模型；TEA 后端接受内置模型名称或 ID，Coze 后端接受方舟端点 ID。 | — |
-| `--prompt-file <path>` | 自定义评分标准文本文件，会覆盖模板提示词。 | — |
+| `--from-template <key\|id\|name>` | 从内置模板克隆评分标准与 schema。TEA 使用模板 key；Coze 使用模板 ID 或名称。 | — |
+| `--model <name\|id>` | 评判模型。TEA 可用 `Doubao 2.0 Lite`、`Doubao 2.0 Pro`、`Doubao 2.0 Mini` 或模型 ID `1`、`2`、`3`；Coze 使用方舟端点 ID。 | — |
+| `--prompt-file <path>` | 自定义评分标准文本文件。 | — |
 | `--description <text>` | 评估器描述。 | — |
-| `--input-schemas <keys>` | TEA 输入 schema 字段，使用逗号分隔。 | 从模板或提示词推断 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `--input-schemas <keys>` | 逗号分隔的输入字段 key；仅 TEA 后端使用。 | — |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-使用 Coze 后端时，需至少提供 `--from-template` 或 `--prompt-file` 之一。
+Coze 后端需至少提供 `--from-template` 或 `--prompt-file` 之一。TEA 后端可以从模板创建，也可以使用自定义提示词和输入字段创建。
 
 ```bash
-agentkit eval evaluator create --name 相关性 --from-template "相关性" --model "Doubao 2.0 Lite"
+agentkit eval evaluator create \
+  --name 相关性 \
+  --from-template relevance \
+  --model "Doubao 2.0 Pro"
+```
+
+```bash
+agentkit eval evaluator create \
+  --name 自定义评分 \
+  --prompt-file ./rubric.txt \
+  --input-schemas input,output,reference_output \
+  --model 2
 ```
 
 <Tip>
@@ -107,22 +109,25 @@ agentkit eval evaluator create --name 相关性 --from-template "相关性" --mo
 
 ## evaluator update-draft
 
-更新 TEA 评估器草稿。可以分别更新提示词、模型和输入 schema，也可以通过 `--evaluator-content-file` 提供完整评估器内容 JSON。
+更新 TEA 评估器草稿。传入 `--evaluator-content-file` 时，该 JSON 文件会作为完整评估器内容使用，并覆盖 `--prompt-file`、`--model` 与 `--input-schemas-json`。
+
+<Note>
+`evaluator update-draft` 仅支持 TEA 评测后端。
+</Note>
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<id>` | 评估器 ID。 | 必填 |
 | `--prompt-file <path>` | 自定义评分标准文本文件。 | — |
-| `--model <name\|id>` | 评判模型名称或 ID。 | — |
-| `--input-schemas-json <json>` | 输入 schema 的 JSON 数组。 | — |
-| `--evaluator-content-file <path>` | 完整 `evaluator_content` JSON 文件；会覆盖 `--prompt-file`、`--model` 和 `--input-schemas-json`。 | — |
-| `--evaluator-type <type>` | 评估器类型；省略时保持不变。 | — |
+| `--model <name\|id>` | 评判模型：`Doubao 2.0 Lite`、`Doubao 2.0 Pro`、`Doubao 2.0 Mini` 或模型 ID `1`、`2`、`3`。 | — |
+| `--input-schemas-json <json>` | 输入字段 schema 的 JSON 数组。 | — |
+| `--evaluator-content-file <path>` | 完整 `evaluator_content` JSON 文件。 | — |
+| `--evaluator-type <type>` | 评估器类型；未传时保持不变。 | 保持不变 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
-agentkit eval evaluator update-draft 75902xxxxxxxxxxxxx \
-  --prompt-file rubric.md \
-  --model "Doubao 2.0 Pro" \
+agentkit eval evaluator update-draft <evaluator-id> \
+  --prompt-file ./rubric.txt \
   --input-schemas-json '[{"key":"input"},{"key":"output"},{"key":"reference_output"}]'
 ```
 
@@ -133,7 +138,7 @@ agentkit eval evaluator update-draft 75902xxxxxxxxxxxxx \
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--evaluator <id\|name>` | 评估器 ID 或精确名称。 | 必填 |
-| `-r, --region <region>` | Volcengine 区域。 | 环境变量与评测端点默认区域 |
+| `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
@@ -142,7 +147,7 @@ agentkit eval evaluator version list --evaluator 相关性
 
 ## evaluator version submit
 
-提交 TEA 评估器草稿为新版本。提交后可在 `eval run --evaluator-version` 中选择该版本。
+提交 TEA 评估器草稿为一个版本。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -150,7 +155,7 @@ agentkit eval evaluator version list --evaluator 相关性
 | `--evaluator <id\|name>` | 评估器 ID 或精确名称。 | 必填 |
 | `--description <text>` | 版本描述。 | — |
 | `--desc <text>` | `--description` 的别名。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 环境变量与评测端点默认区域 |
+| `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
@@ -168,7 +173,7 @@ agentkit eval evaluator version submit 0.0.2 --evaluator 相关性 --description
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<id\|name>` | 评估器 ID 或精确名称。 | 必填 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 
 ```bash

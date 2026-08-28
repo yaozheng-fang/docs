@@ -1,0 +1,29 @@
+---
+title: "检查更新"
+---
+
+`upgrade` 命令（别名 `update`）检查当前 CLI 是否落后于已发布的最新版本；若落后，可在确认后自动安装最新版。
+
+## upgrade
+
+检查并升级 AgentKit CLI 到最新发布版本。不带选项运行时，会先比较版本，若存在新版则询问是否立即安装。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--check` | 仅检查，不安装；提示可用的更新与安装命令 | `false` |
+| `--json` | 以 JSON 输出检查结果（`{ current, latest, behind }`） | `false` |
+
+```bash
+# 检查，并在确认后升级
+agentkit upgrade
+
+# 仅检查是否有新版
+agentkit update --check
+
+# 以 JSON 输出版本对比，便于脚本判断
+agentkit update --json
+```
+
+<Note>
+升级通过官方发布渠道的安装脚本完成（等价于运行 `wget -qO- <release>/install.sh | sh`）。若无法联网访问发布渠道，检查会失败；此时可参照 `--check` 打印的命令手动安装。
+</Note>

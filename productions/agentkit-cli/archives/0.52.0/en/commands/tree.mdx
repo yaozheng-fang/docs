@@ -1,0 +1,18 @@
+---
+title: "View the command tree"
+---
+
+The `tree` command prints the CLI's full command tree, optionally expanding each command's arguments and options, or emitting machine-readable JSON.
+
+## tree
+
+Print the full command tree.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--json` | Output the tree as JSON | `false` |
+| `-a, --all` | Also show each command's arguments and options | `false` |
+
+```bash
+agentkit tree --all
+```

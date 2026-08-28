@@ -27,18 +27,19 @@ title: "概述"
 | `runtime` | 已部署的运行时（list、show、logs、versions、release、update、delete） |
 | `knowledge` (`kb`) | 知识库 |
 | `memory` (`mem`) | 记忆库 |
-| `model-gateway` (`mgw`) | Model Gateway、模型提供方与消费者 |
+| `model-gateway` (`mgw`) | 统一模型网关、模型提供方和调用方 |
 | `harness` | 由 `harness.yaml` 定义的 Harness |
-| `chat` | 调用租户发布的共享 OAuth Harness |
+| `chat` | 通过租户别名使用共享 OAuth Harness 聊天 |
 | `invoke` | 调用已部署的运行时 |
 | `auth` | SSO 登录、身份、登录 profile 与组织级 SSO 接入配置 |
 | `onboard` | 将内置技能安装到本地编码智能体 |
-| `eval` | 评测集、评估器与评测实验 |
+| `eval` | 评测后端、评测集、评估器、目标与评测实验 |
 | `migrate` | 将已有的智能体应用迁移为 AgentKit 应用 |
 | `mcp service` | MCP 服务的创建、查询与删除 |
 | `sandbox` | 在沙箱中运行命令并管理会话 |
-| `env` (`environment`) | 创建与查看自托管沙箱运行环境 |
+| `env` (`environment`) | 管理 Claude 自托管沙箱环境的 Runtime |
 | `skill` | AgentKit 技能平台上的技能 |
+| `skills` | 本地 AgentKit 技能包 |
 | `destroy` | 删除已部署的运行时 |
 | `upgrade` | 检查并升级 AgentKit CLI |
 | `tree` | 打印完整命令树 |

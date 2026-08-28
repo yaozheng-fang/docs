@@ -1,0 +1,19 @@
+---
+title: "Build"
+---
+
+`build` builds the runtime image described by the lifecycle config. The build strategy comes from `common.launch_type` in `agentkit.yaml`: `local` builds with local Docker, `cloud` builds in the cloud, and `hybrid` builds locally before pushing to the cloud container registry.
+
+## build
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--config-file <path>` | Lifecycle config file path. | `agentkit.yaml` |
+| `--platform <platform>` | Docker build target platform, such as `linux/amd64` or `linux/arm64`. | Auto-detected |
+| `--regenerate-dockerfile` | Regenerate the Dockerfile even when one already exists. | `false` |
+
+```bash
+agentkit build --config-file agentkit.yaml --platform linux/amd64
+```
+
+After a successful build, the CLI writes image id, image URL, build timestamp, or cloud build artifact state back to `agentkit.yaml`. If no Dockerfile exists, the CLI generates a default Dockerfile from the language, entry point, dependency file, and cloud provider.

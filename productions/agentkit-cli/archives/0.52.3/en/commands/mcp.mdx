@@ -1,0 +1,133 @@
+---
+title: "Manage MCP services"
+---
+
+The `mcp service` command group manages AgentKit MCP services. An MCP service deploys a containerized MCP server as an AgentKit cloud resource with network and authentication settings. The current release supports listing, inspecting, creating, and deleting services. Creation supports only the `custom-private` backend and the MCP protocol.
+
+## Command overview
+
+| Command | Description |
+| --- | --- |
+| `agentkit mcp service list` | List MCP services |
+| `agentkit mcp service show <service>` | Show an MCP service by name or ID |
+| `agentkit mcp service create` | Create an MCP service from a container image |
+| `agentkit mcp service delete <service>` | Delete an MCP service |
+
+## mcp service list
+
+List MCP services in a project. When no region is specified, the CLI detects the region automatically. Use `--json` to return raw JSON for scripts.
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-p, --project <name>` | AgentKit project name. | `default` |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit mcp service list --project default
+```
+
+## mcp service show
+
+Show an MCP service's status, backend type, protocol, access path, project, and tags. `<service>` can be a service name or ID. A name must be unique within the project.
+
+| Flag/argument | Description | Default |
+| --- | --- | --- |
+| `<service>` | MCP service name or ID. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-p, --project <name>` | AgentKit project name, used when resolving by name. | `default` |
+| `--json` | Output raw JSON, including network, authentication, and backend configuration. | `false` |
+
+```bash
+agentkit mcp service show customer-tools
+```
+
+## mcp service create
+
+Create an MCP service from a container image. Before starting, prepare an image that AgentKit can pull and make sure its startup command runs the MCP server. On success, the command prints the service name and ID.
+
+<Note>
+Only the `custom-private` backend and `mcp` protocol are currently available. `--backend-type` recognizes reserved values for other backends, but creation rejects backends that are not yet supported.
+</Note>
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | MCP service name. Required. | — |
+| `--description <text>` | Service description. | — |
+| `-p, --project <name>` | AgentKit project name. | `default` |
+| `-r, --region <region>` | Volcengine region. | environment setting |
+| `--client-token <token>` | Client token used to make repeated requests idempotent. | — |
+| `--backend-type <type>` | Backend type: `custom-private`, `custom-public`, `function`, `domain`, `ecs`, or `vke`. Only `custom-private` is currently supported. | `custom-private` |
+| `--image-url <url>` | Container image URL for the `custom-private` backend. Required. | — |
+| `--command <cmd>` | Container startup command. | `./run.sh` |
+| `--env <key=value>` | Container environment variable. Repeatable; keys must be unique. | empty |
+| `--enable-apmplus` | Enable APMPlus and the logging service. | `true` |
+| `--no-enable-apmplus` | Disable APMPlus and the logging service. | — |
+| `--network <mode>` | Network mode: `public`, `private`, or `hybrid`. | `public` |
+| `--vpc-id <id>` | VPC ID for private or hybrid networking. | — |
+| `--subnet-id <id>` | Subnet ID for private or hybrid networking. | — |
+| `--inbound-auth <type>` | Inbound authentication: `api-key` or `custom-jwt`. | `api-key` |
+| `--inbound-api-key-name <name>` | Inbound API key name. Required with `api-key`; repeat 1–5 times. | empty |
+| `--inbound-api-key <key>` | Inbound API key value. Optional; if provided, supply one for every name. | empty |
+| `--inbound-api-key-param <name>` | Header used to pass the inbound API key. | `Authorization` |
+| `--inbound-discovery-url <url>` | OIDC discovery URL for `custom-jwt`. | — |
+| `--inbound-allowed-client <id>` | Client ID allowed by `custom-jwt`. Required and repeatable. | empty |
+| `--outbound-credential-provider <name>` | Credential provider for outbound OAuth2 user federation. | — |
+| `--tag <key=value>` | Custom tag. Repeatable; keys must be unique. | empty |
+| `--path <path>` | MCP service access path. | `/mcp` |
+| `--protocol <type>` | Protocol type; only `mcp` is currently supported. | `mcp` |
+
+The following example creates a public service with inbound API key authentication:
+
+```bash
+agentkit mcp service create \
+  --name customer-tools \
+  --image-url cr-cn-beijing.volces.com/agentkit/customer-tools:latest \
+  --inbound-api-key-name primary-key \
+  --env LOG_LEVEL=INFO \
+  --tag team=customer-service
+```
+
+### Configure networking
+
+The `public` mode cannot be combined with a VPC or subnet. Both `private` and `hybrid` require `--vpc-id` and `--subnet-id`; `hybrid` enables public and private access.
+
+```bash
+agentkit mcp service create \
+  --name internal-tools \
+  --image-url cr-cn-beijing.volces.com/agentkit/internal-tools:latest \
+  --network private \
+  --vpc-id vpc-xxxxxxxx \
+  --subnet-id subnet-xxxxxxxx \
+  --inbound-api-key-name internal-key
+```
+
+### Configure custom JWT
+
+With `custom-jwt`, provide an OIDC discovery URL and at least one allowed client ID. Do not pass API key flags in the same command.
+
+```bash
+agentkit mcp service create \
+  --name jwt-protected-tools \
+  --image-url cr-cn-beijing.volces.com/agentkit/jwt-tools:latest \
+  --inbound-auth custom-jwt \
+  --inbound-discovery-url https://identity.example.com/.well-known/openid-configuration \
+  --inbound-allowed-client web-client
+```
+
+## mcp service delete
+
+<Warning>
+Deleting an MCP service cannot be undone. Verify the name or ID, project, and region before continuing. In automation, `--yes` skips the confirmation prompt.
+</Warning>
+
+| Flag/argument | Description | Default |
+| --- | --- | --- |
+| `<service>` | MCP service name or ID. Required. | — |
+| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-p, --project <name>` | AgentKit project name, used when resolving by name. | `default` |
+| `-y, --yes` | Skip the deletion confirmation. | `false` |
+
+```bash
+agentkit mcp service delete customer-tools
+```

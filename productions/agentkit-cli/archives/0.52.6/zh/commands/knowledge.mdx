@@ -1,0 +1,103 @@
+---
+title: "管理知识库"
+---
+
+`knowledge` 命令组用于管理 AgentKit 知识库，涵盖列表、详情查看、创建、更新与删除等操作。该命令同时提供 `kb` 与 `knowledgebase` 别名。
+
+## knowledge list
+
+列出所有知识库。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-p, --project <name>` | 项目名称。 | default |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit knowledge list --project demo
+```
+
+## knowledge show
+
+查看知识库的详情。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 知识库 id，例如 `kb-xxxxxxxx`。必填。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit knowledge show kb-12345678
+```
+
+## knowledge create
+
+创建知识库。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 知识库名称。 | — |
+| `--provider-knowledge-id <id>` | 待注册的、已存在于提供方侧的知识库 id；省略则自动开通（仅 viking）。 | — |
+| `--provider-type <type>` | 提供方类型，例如 `viking`。 | `viking` |
+| `--viking-project <name>` | 自动开通时使用的 viking 项目。 | `$DATABASE_VIKING_PROJECT` 或 `default` |
+| `--viking-version <n>` | viking 集合版本：`2` \| `4`。 | `2` |
+| `-d, --description <text>` | 知识库描述。 | — |
+| `-p, --project <name>` | 项目名称。 | default |
+| `-r, --region <region>` | Volcengine 区域。 | 来自环境变量/默认值 |
+| `--json <jsonString>` | 高级：合并进请求体的 JSON 对象（覆盖各选项）。 | — |
+
+```bash
+agentkit knowledge create --name docs-kb --provider-type viking --provider-knowledge-id pk-123
+```
+
+## knowledge add
+
+向知识库添加文档——上传本地文件或目录（目录递归），或通过公开 URL 注册文档。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<kb>` | 知识库名称或 id。必填。 | — |
+| `[paths...]` | 要上传的本地文件或目录（目录递归）。 | — |
+| `--url <url>` | 通过公开 URL 添加文档，替代本地文件（可重复）。 | `[]` |
+| `--doc-type <type>` | `--url` 的文档类型提示（如 `md`、`pdf`）。 | — |
+| `--tos-bucket <name>` | 上传所用的 TOS 桶。 | `agentkit-platform-<account-id>` |
+| `-p, --project <name>` | 项目名称。 | default |
+| `-r, --region <region>` | Volcengine 区域。 | 来自环境变量/默认值 |
+
+```bash
+agentkit knowledge add docs-kb ./docs ./README.md
+agentkit knowledge add docs-kb --url https://example.com/guide.pdf --doc-type pdf
+```
+
+## knowledge update
+
+更新知识库。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 知识库 id，例如 `kb-xxxxxxxx`。必填。 | — |
+| `-d, --description <text>` | 新的描述。 | — |
+| `--vpc-id <id>` | 要挂载的 VPC id。 | — |
+| `--subnet-ids <ids>` | 逗号分隔的子网 id（需配合 `--vpc-id`）。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `--json <jsonString>` | 高级：合并进请求体的 JSON 对象（覆盖各选项）。 | — |
+
+```bash
+agentkit knowledge update kb-12345678 --description "更新后的文档库"
+```
+
+## knowledge delete
+
+删除知识库。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 知识库 id，例如 `kb-xxxxxxxx`。必填。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-y, --yes` | 跳过确认提示。 | `false` |
+
+```bash
+agentkit knowledge delete kb-12345678 --yes
+```

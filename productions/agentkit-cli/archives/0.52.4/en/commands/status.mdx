@@ -1,0 +1,18 @@
+---
+title: "Status"
+---
+
+`status` shows the runtime state for the current lifecycle config. `local` mode reads the local container state; `cloud` and `hybrid` modes query AgentKit Runtime.
+
+## status
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--config-file <path>` | Lifecycle config file path. | `agentkit.yaml` |
+| `-v, --verbose` | Print detailed metadata. | `false` |
+
+```bash
+agentkit status --config-file agentkit.yaml --verbose
+```
+
+Output includes available endpoint, container id, runtime id, image, uptime, and health check state. Detailed metadata is printed as JSON for troubleshooting config or runtime state.

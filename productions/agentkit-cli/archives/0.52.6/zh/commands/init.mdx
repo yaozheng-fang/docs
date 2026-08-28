@@ -1,0 +1,51 @@
+---
+title: "初始化项目"
+---
+
+`init` 基于内置模板创建新的智能体项目，也可以把已有 Python 文件中的 `Agent` 包装为可部署的 AgentKit 应用。生成结果包含入口文件、依赖文件、`agentkit.yaml` 和 `.dockerignore`；随后可用 `agentkit config` 调整配置，并用 `agentkit launch` 构建与部署。
+
+## init
+
+从内置模板创建项目。不传 `--template` 时，命令会展示模板列表并要求输入模板 ID、Key 或名称；也可以用 `--list-templates` 只查看模板后退出。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[project_name]` | 项目名称。 | `simple_agent` |
+| `-t, --template <template>` | 模板 ID、Key 或名称。可用 Key：`basic`、`basic_stream`、`a2a`、`eino_a2a`、`agent_server`、`langchain_basic_stream`、`basic_go`、`a2a_go`。 | 交互选择 |
+| `--directory <path>` | 目标目录。 | `.` |
+| `--agent-name <name>` | 智能体名称。 | `Agent` |
+| `--description <text>` | 智能体描述。 | 模板默认值 |
+| `--system-prompt <text>` | 智能体系统提示词。 | 模板默认值 |
+| `--model-name <name>` | 火山方舟模型名称。 | 模板默认值 |
+| `--model-api-base <url>` | 模型 API Base URL。 | — |
+| `--model-api-key <key>` | 模型 API Key；会写入运行时环境变量配置。 | — |
+| `--tools <list>` | 要包含的工具列表，多个值用逗号分隔。 | — |
+| `--list-templates` | 列出模板 ID、Key 和名称后退出。 | `false` |
+
+```bash
+agentkit init my-agent --template basic
+
+agentkit init go-agent --template basic_go --directory ./apps
+```
+
+## init --from-agent
+
+从已有 Python 文件包装一个 VeADK `Agent`。CLI 会复制原文件，生成包装入口和 `requirements.txt`，并创建生命周期配置。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[project_name]` | 项目名称；省略时按源文件名生成。 | `agentkit-<file>` |
+| `-f, --from-agent <path>` | 包含 `Agent` 定义的 Python 文件路径。 | 必填 |
+| `--agent-var <name>` | 文件中的 `Agent` 变量名；省略时自动检测。 | 自动检测 |
+| `--wrapper-type <type>` | 包装类型：`basic` 或 `stream`。 | `basic` |
+| `--directory <path>` | 目标目录。 | `.` |
+
+```bash
+agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent
+```
+
+初始化后进入项目目录，检查 `agentkit.yaml`，再执行：
+
+```bash
+agentkit launch
+```

@@ -2,7 +2,7 @@
 title: "使用沙箱"
 ---
 
-`sandbox` 命令组用于创建和管理 AgentKit 沙箱工具，并在沙箱会话中执行命令、调用智能体、传输文件、打开 Web 预览或注入本地模型订阅凭据。`sandbox create` 与 `sandbox config` 对外支持的工具类型包括 `All-in-one`、`Skill`、`CodeEnv`、`DevEnv`、`ArkClawEnv`、`HermesEnv` 和 `Private`。
+`sandbox` 命令组用于创建和管理 AgentKit 沙箱工具，并在沙箱会话中执行命令、调用智能体、传输文件、打开 Web 预览或注入本地模型订阅凭据。它也可以初始化 Claude 自托管沙箱项目，并把 Tool 信息交给 [`env`](/productions/agentkit-cli/preview/zh/commands/env) 创建对应 Runtime。`sandbox create` 与 `sandbox config` 对外支持的工具类型包括 `All-in-one`、`Skill`、`CodeEnv`、`DevEnv`、`ArkClawEnv`、`HermesEnv` 和 `Private`。
 
 <Note>
 多数沙箱命令从 `.agentkit/sandbox.yaml` 或 `AGENTKIT_SANDBOX_REGION` 读取 AgentKit 控制面区域；`sandbox dashboard` 还支持用 `--region` 指定本地控制台会话的区域。TOS 挂载区域可通过 `AGENTKIT_SANDBOX_TOS_REGION` 指定；未设置时，CLI 会根据 TOS bucket 或当前云环境推断。
@@ -10,17 +10,19 @@ title: "使用沙箱"
 
 常用会话命令使用同一组工具和会话定位参数：`-s, --session-id <id>, --sid <id>` 指定用户会话 ID；`--tool-id <id>` 指定沙箱工具 ID；`--tool-name <name>` 按工具名称查找；`--tool-type <type>` 指定工具类型。若本地配置中已经保存 `tool-id`、`tool-name`、`tool-type` 或 `session-id`，相关命令会按各自参数表在未显式传参时读取配置默认值。
 
+工具选择通常按显式 CLI 参数、`.agentkit/sandbox.yaml`、`AGENTKIT_SANDBOX_TOOL_ID`、本地缓存或远端 `Ready` 工具的顺序解析；具体命令是否允许自动创建或提示选择，以对应命令说明为准。
+
 ## 命令总览
 
 | 子命令 | 说明 |
 | --- | --- |
-| `build` | 在云端 Code Pipeline 中构建自定义沙箱镜像，并写入 `Private` 工具配置。 |
-| `init` | 生成沙箱 Dockerfile 模板，或初始化自托管沙箱项目。 |
+| `build` | 在云端 Code Pipeline 中构建自定义沙箱镜像，并写入 `Private` 工具配置和构建状态。 |
+| `init` | 生成沙箱 Dockerfile 模板，或初始化 Claude 自托管沙箱项目文件。 |
 | `config` | 读取、写入或删除沙箱命令默认值。 |
 | `create` | 创建沙箱工具。 |
 | `delete` | 删除沙箱工具或指定会话。 |
 | `dashboard` (`ui`) | 启动本地沙箱 Web 控制台。 |
-| `list` | 列出本地或云端沙箱会话，也可列出沙箱 Tool。 |
+| `list` | 列出沙箱会话或工具，可查看本地缓存或远端数据。 |
 | `mount` | 使用 TosBrowser 打开已挂载 TOS 的沙箱会话目录。 |
 | `exec` | 连接沙箱终端并执行命令。 |
 | `invoke` | 通过 A2A 调用 `SkillEnv` 沙箱中的智能体。 |
@@ -33,7 +35,7 @@ title: "使用沙箱"
 
 ## sandbox build
 
-在云端 Code Pipeline 中构建自定义沙箱镜像。构建完成后，CLI 会把 `tool-type` 设置为 `Private`，并把生成的镜像地址写入 `.agentkit/sandbox.yaml`，便于后续 `sandbox create` 使用。
+在云端 Code Pipeline 中构建自定义沙箱镜像。构建完成后，CLI 会把 `tool-type` 设置为 `Private`，把生成的镜像地址与构建状态写入 `.agentkit/sandbox.yaml`，便于后续 `sandbox create` 使用。若 `.agentkit/sandbox.yaml` 包含 `build` 配置，`sandbox build` 会从中读取构建上下文、Dockerfile、镜像名称、命名空间和标签；命令行标志优先于配置文件。
 
 <Warning>
 `sandbox build` 会使用 TOS、Container Registry 和 Code Pipeline 等云资源，可能产生费用。执行前确认账号权限、项目目录和镜像命名。
@@ -54,37 +56,46 @@ agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name cust
 
 ## sandbox init
 
-生成沙箱 Dockerfile 模板。未指定模板时，默认生成 `skill` 模板；传入 `self-host` 时会同时生成 `Dockerfile`、`.agentkit/sandbox.yaml`、`.gitignore`、`.dockerignore` 和 `README.md`，用于自托管沙箱环境。
+生成沙箱 Dockerfile 模板。未指定模板时，默认生成 `skill` 模板。普通模板会按模板对应的工具类型解析当前内置基础镜像，并把实际镜像地址写入生成的 Dockerfile。`self-host` 模板会初始化 Claude 自托管沙箱项目，写入 `Dockerfile`、`.gitignore`、`.dockerignore`、`README.md` 和 `.agentkit/sandbox.yaml`。
+
+<Note>
+  除 `self-host` 外，解析内置基础镜像需要可用的 AgentKit 控制面凭据和区域配置。离线环境或无权限环境无法生成带实际基础镜像的普通模板。
+</Note>
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-t, --template <name>` | Dockerfile 模板名称：`skill`、`skills`、`aio`、`code`、`code-install-package`、`code-install-skills`、`code-web-server`、`self-host`。 | `skill` |
-| `-o, --output <path>` | 输出 Dockerfile 路径。 | 模板默认路径 |
-| `-f, --force` | 覆盖已经存在的输出文件。 | `false` |
+| `-o, --output <path>` | 输出 Dockerfile 路径；`self-host` 模板固定写入项目约定文件，不使用该参数。 | 模板默认路径 |
+| `-f, --force` | 覆盖已经存在的输出文件；`self-host` 模板中还会覆盖 `.agentkit/sandbox.yaml`。 | `false` |
 
 ```bash
 agentkit sandbox init --template code-web-server --output Dockerfile.sandbox
+
 agentkit sandbox init -t self-host
 ```
 
+`self-host` 模板生成的 `.agentkit/sandbox.yaml` 包含 `project_type: self-host`、构建配置、`Private` Tool 默认规格和 `self_host` 配置块。运行 `agentkit env create` 前，先把 `self_host.environment.environment_base_url`、`self_host.environment.environment_id` 与 `self_host.environment.environment_key` 替换为实际 Anthropic 环境参数；保留生成占位符会导致创建失败。
+
 ## sandbox config
 
-配置沙箱命令的本地默认值。配置文件位于当前项目的 `.agentkit/sandbox.yaml`，`--list` 会输出合并默认值后的 YAML，并自动隐藏模型 API Key 和 WebSearch API Key。
+配置沙箱命令的本地默认值。配置文件位于当前项目的 `.agentkit/sandbox.yaml`，`--list` 会输出当前配置文件内容，并自动隐藏模型 API Key、WebSearch API Key 和 Claude 自托管环境密钥。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--set <KEY=VALUE>` | 写入配置值，可重复。 | — |
 | `--unset <KEY>` | 删除配置值，可重复。 | — |
-| `--list` | 输出当前有效配置。 | `false` |
+| `--list` | 输出当前配置文件内容。 | `false` |
 
 ```bash
 agentkit sandbox config \
   --set tool-type=CodeEnv \
   --set session-id=dev \
-  --set model-name=glm-5-2-260617
+  --set model-name=deepseek-v4-flash-ga-260731
 
 agentkit sandbox config --list
 ```
+
+首次写入 `.agentkit/sandbox.yaml` 时，CLI 只保存网络、工具类型、CPU、快照和会话 TTL 等基础默认值；模型提供方、模型名称和模型 Base URL 会在读取有效配置时按云环境补齐，只有用户通过 `sandbox config --set model-*` 或命令行标志显式设置后才会持久化。
 
 支持的配置键如下。
 
@@ -114,27 +125,44 @@ agentkit sandbox config --list
 | `session-id` | string | 随机生成 | 默认用户会话 ID。 |
 | `ttl` | integer | `28800` | 会话 TTL，单位为秒。 |
 | `git-config` | `local` 或文件路径 | — | 注入沙箱会话的 Git 身份来源。 |
-| `self-host-project-name` | string | `default` | 自托管 Tool 与 Runtime 使用的 AgentKit 项目。 |
-| `self-host-poll-interval-seconds` | integer | `5` | 自托管 Tool 与 Runtime 就绪检查的轮询间隔。 |
-| `self-host-environment-base-url` | string | — | 自托管环境网关地址。 |
-| `self-host-environment-id` | string | — | 自托管环境 ID。 |
-| `self-host-environment-key` | string | — | 自托管环境密钥；列表输出会隐藏该值。 |
-| `self-host-sandbox-id` | string | `sandbox create` 写入 | 自托管 Runtime 绑定的沙箱 Tool ID。 |
-| `self-host-sandbox-name` | string | `sandbox create` 写入 | 自托管 Runtime 绑定的沙箱 Tool 名称。 |
-| `self-host-runtime-image-url` | string | 内置运行时镜像 | 自托管 Runtime 镜像地址。 |
-| `self-host-runtime-name` | string | `agentkit-selfhost-runtime` | 自托管 Runtime 名称前缀。 |
-| `self-host-runtime-role-name` | string | `AgentKit_Runtime_Default_ServiceRole` | 自托管 Runtime 使用的 IAM 角色。 |
-| `self-host-runtime-cpu-milli` | integer | `2000` | 自托管 Runtime CPU，单位为毫核。 |
-| `self-host-runtime-memory-mb` | integer | `4096` | 自托管 Runtime 内存，单位为 MB。 |
-| `self-host-runtime-min-instance` | integer | `1` | 自托管 Runtime 最小实例数。 |
-| `self-host-runtime-max-instance` | integer | `1` | 自托管 Runtime 最大实例数。 |
-| `self-host-runtime-max-concurrency` | integer | `10` | 自托管 Runtime 单实例最大并发数。 |
-| `self-host-runtime-timeout-seconds` | integer | `1200` | 自托管 Runtime 请求超时时间。 |
-| `self-host-runtime-api-key-name` | string | `Authorization` | 自托管 Runtime API Key 请求头名称。 |
+| `self-host-project-name` | string | `default` | Claude 自托管沙箱创建 Tool 与 Runtime 时使用的 AgentKit 项目名称。 |
+| `self-host-poll-interval-seconds` | integer | `5` | 等待 Tool 或 Runtime 状态变化时的轮询间隔，单位为秒。 |
+| `self-host-environment-base-url` | string | — | Anthropic 环境网关 Base URL；`env create` 必填，生成占位符必须替换。 |
+| `self-host-environment-id` | string | — | Anthropic 环境 ID；`env create` 必填，生成占位符必须替换。 |
+| `self-host-environment-key` | string | — | Anthropic 环境密钥；`env create` 必填，生成占位符必须替换。 |
+| `self-host-sandbox-id` | string | — | Claude 自托管沙箱 Tool ID；`sandbox create` 在自托管项目中会自动写入。 |
+| `self-host-sandbox-name` | string | — | Claude 自托管沙箱 Tool 名称；`sandbox create` 在自托管项目中会自动写入。 |
+| `self-host-runtime-image-url` | string | `enterprise-public-cn-beijing.cr.volces.com/vefaas-public/agentkit-selfhostsandbox:runtime-0.0.1` | `env create` 创建 Runtime 时使用的镜像地址。 |
+| `self-host-runtime-name` | string | `agentkit-selfhost-runtime` | Runtime 名称前缀。 |
+| `self-host-runtime-role-name` | string | `AgentKit_Runtime_Default_ServiceRole` | Runtime 使用的 IAM 角色名称。 |
+| `self-host-runtime-cpu-milli` | integer | `2000` | Runtime CPU，单位为 milli-core。 |
+| `self-host-runtime-memory-mb` | integer | `4096` | Runtime 内存，单位为 MB。 |
+| `self-host-runtime-min-instance` | integer | `1` | Runtime 最小实例数，可为 `0`。 |
+| `self-host-runtime-max-instance` | integer | `1` | Runtime 最大实例数，必须大于 `0` 且不小于最小实例数。 |
+| `self-host-runtime-max-concurrency` | integer | `10` | Runtime 单实例最大并发数。 |
+| `self-host-runtime-timeout-seconds` | integer | `1200` | 等待 Runtime 就绪的最长时间，单位为秒。 |
+| `self-host-runtime-api-key-name` | string | `Authorization` | Runtime 网关 API Key 的请求头名称。 |
+
+## 模型环境变量
+
+`sandbox create` 和 `sandbox exec` 的模型参数会转换为多组环境变量，供 Codex、OpenCode 和读取 `MODEL_AGENT_*` 的运行时或工具共用。
+
+| 输入 | 注入的环境变量 |
+| --- | --- |
+| `--model-provider <provider>` 或 `model-provider` | `AGENTKIT_SANDBOX_MODEL_PROVIDER` |
+| `--model-name <name>` 或 `model-name` | `CODEX_MODEL`、`OPENCODE_MODEL`、`MODEL_AGENT_NAME` |
+| `--model-api-key <key>` 或 `model-api-key` | `CODEX_API_KEY`、`OPENCODE_API_KEY`、`MODEL_AGENT_API_KEY` |
+| `--model-base-url <url>` 或 `model-base-url` | `CODEX_BASE_URL`、`OPENCODE_BASE_URL`、`MODEL_BASE_URL`、`MODEL_AGENT_BASE_URL` |
+
+若 `--model-base-url` 指向非内置模型端点，需要同时传入 `--model-provider`。对于已有的 `CodeEnv` 会话，`sandbox exec` 中显式传入的模型名称、API Key 或 Base URL 会同步更新会话内的 `/home/gem/.env`、Codex 配置和 OpenCode 配置，后续终端可以复用同一组设置。
+
+<Note>
+生成的 Codex 配置会写入沙箱会话内的 `/home/gem/.codex/config.toml`。通用模型参数不会自动生成 `ANTHROPIC_*` 变量，也不再通过 `CODEX_CONFIG_TOML` 或 `CODEX_MODEL_CATALOG_JSON` 环境变量传递生成配置；如需自定义 Codex 配置，请在会话内编辑该配置文件，或使用 `sandbox codex-login` 重新写入订阅登录配置。
+</Note>
 
 ## sandbox create
 
-创建沙箱工具。创建完成后，CLI 会等待工具进入 `Ready` 状态，并把工具 ID 与名称写入本地沙箱配置。
+创建沙箱工具。创建完成后，CLI 会等待工具进入 `Ready` 状态，并把工具 ID 与名称写入本地沙箱配置。对于 `project_type: self-host` 的项目，创建结果会写入 `self_host.sandbox.id` 和 `self_host.sandbox.name`，供 [`env create`](/productions/agentkit-cli/preview/zh/commands/env#env-create) 创建 Runtime。
 
 <Warning>
 `sandbox create` 会在云端创建计算资源，资源存续期间可能产生费用。创建前确认工具类型、规格、网络、镜像和 TOS 挂载配置；不再使用时，通过 `sandbox delete --tool-id <id> --force` 删除工具。
@@ -161,14 +189,35 @@ agentkit sandbox config --list
 | `--no-network-private` | 禁用私有 VPC 访问。 | — |
 | `--network-shared-internet` | 私有网络下启用共享公网出口。 | 配置值或 `false` |
 | `--no-network-shared-internet` | 禁用共享公网出口。 | — |
-| `--network-vpc-id <id>` | 私有网络使用的 VPC ID；启用 `--network-private` 时必填。 | 配置值或 — |
+| `--network-vpc-id <id>` | 私有网络使用的 VPC ID。 | 配置值或 — |
 | `--network-subnet-ids <ids>` | 逗号分隔的子网 ID。 | 配置值或 — |
-| `--llm-shield-app-id <app-id>` | 为 `Skill` 工具启用 LLM Shield，并注入指定 App ID。 | — |
-| `--envs <KEY=VALUE>` | 注入到沙箱工具的环境变量；可重复。重复键会报错。 | — |
+| `--llm-shield-app-id <app-id>` | 为 `Skill` 沙箱工具启用 LLM Shield，并注入指定应用 ID。 | — |
+| `--envs <KEY=VALUE>` | 注入沙箱工具的环境变量；可重复传入。与内置变量同名时，本标志传入的值覆盖内置值。 | — |
 | `--json` | 输出 JSON。 | `false` |
 
 ```bash
 agentkit sandbox create --tool-type CodeEnv --tool-name dev-code --cpu 4
+
+agentkit sandbox create \
+  --tool-type CodeEnv \
+  --tool-name dev-code \
+  --envs NODE_ENV=development \
+  --envs FEATURE_FLAG=enabled
+```
+
+启用 `--network-private` 时，如果命令行或 `.agentkit/sandbox.yaml` 已提供完整的 `network-vpc-id` 与 `network-subnet-ids`，CLI 会直接复用该配置。若配置不完整，CLI 会查询当前区域下的 VPC 与可用子网，交互式选择后写回 `.agentkit/sandbox.yaml`，再继续创建工具。
+
+```bash
+agentkit sandbox create --tool-type CodeEnv --network-private
+```
+
+为 `Skill` 工具启用 LLM Shield 时，必须显式传入应用 ID。该参数只支持 `Skill` 工具类型。
+
+```bash
+agentkit sandbox create \
+  --tool-type Skill \
+  --tool-name guarded-skill \
+  --llm-shield-app-id <app-id>
 ```
 
 创建自定义 `Private` 工具时需要先准备镜像地址：
@@ -180,33 +229,22 @@ agentkit sandbox create \
   --image-url cr.example.com/agentkit/custom-sandbox:latest
 ```
 
-为 `Skill` 工具启用 LLM Shield 或注入自定义环境变量时，可在创建工具时传入对应标志：
-
-```bash
-agentkit sandbox create \
-  --tool-type Skill \
-  --tool-name guarded-skill \
-  --llm-shield-app-id app-xxxxxxxx \
-  --envs FEATURE_FLAG=enabled
-```
-
-## 自托管沙箱流程
-
-自托管项目使用 `sandbox init -t self-host` 生成配置，再通过 `sandbox build`、`sandbox create` 和 [`env create`](/productions/agentkit-cli/preview/zh/commands/env) 创建完整环境。`sandbox create` 会读取 `project_type: self-host`，使用自托管工具命名规则，并把创建出的 Tool ID 写入 `self_host.sandbox.id`。
+Claude 自托管沙箱通常使用 `sandbox init -t self-host` 生成配置，再按生成的 `build` 配置构建镜像并创建 `Private` Tool：
 
 ```bash
 agentkit sandbox init -t self-host
-agentkit sandbox config --set self-host-environment-base-url=https://gateway.example.com
-agentkit sandbox config --set self-host-environment-id=env-xxxxxxxx
-agentkit sandbox config --set self-host-environment-key=${SELF_HOST_ENVIRONMENT_KEY}
+# 编辑 .agentkit/sandbox.yaml 中的 self_host.environment.*
 agentkit sandbox build
 agentkit sandbox create
-agentkit env create
 ```
 
 ## sandbox dashboard
 
 启动本地 Web 控制台，用于查看和操作沙箱工具与会话。该命令会在本机监听一个端口，默认在交互终端中打开浏览器；在 CI 或传入 `--no-open` 时只输出访问地址。
+
+<Note>
+通过安装脚本或 `agentkit upgrade` 安装的独立二进制已包含控制台终端界面所需资源，无需额外安装 Node.js 依赖。若手动解压独立发行包，请保留 `vendor/` 目录与 `ak` 在同一安装目录，否则控制台页面可能无法加载终端组件。
+</Note>
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -245,26 +283,32 @@ agentkit sandbox delete --tool-name private-dev --force
 
 ## sandbox list
 
-列出沙箱会话或沙箱 Tool，并输出 JSON。默认读取本地缓存；传入 `--remote` 时从云端查询，列出远端会话时必须提供 `--tool-id`。
+列出沙箱会话或工具，并始终输出 JSON。未传 `--tools` 或 `--sessions` 时默认按 `--sessions --local` 工作，读取本地会话缓存；传入 `--tools` 时默认读取本地工具缓存。需要查询远端数据时显式传入 `--remote`。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-s, --session-id <id>, --sid <id>` | 要查找的用户会话 ID。 | — |
-| `--tool-id <id>` | 按沙箱 Tool ID 过滤；远端会话列表必填。 | — |
-| `--sessions` | 列出沙箱会话。 | 默认模式 |
-| `--tools` | 列出沙箱 Tool。 | `false` |
-| `--tool-name <name>` | `--tools` 模式下按 Tool 名称过滤。 | — |
-| `--tool-type <type>` | `--tools` 模式下按 Tool 类型过滤。 | — |
-| `--status <status>` | `--tools` 模式下按状态过滤。 | — |
-| `--local` | 仅查询本地缓存。 | 默认 |
-| `--remote` | 仅查询云端数据。 | `false` |
+| `--tool-id <id>` | 按沙箱工具 ID 过滤会话；与 `--tools` 一起使用时按工具 ID 过滤工具。远端会话查询必填。 | — |
+| `--sessions` | 列出沙箱会话。 | `true`（未传 `--tools` 时） |
+| `--tools` | 列出沙箱工具，而不是会话。 | `false` |
+| `--tool-name <name>` | 按工具名称过滤工具，仅可与 `--tools` 搭配使用。 | — |
+| `--tool-type <type>` | 按工具类型过滤工具，仅可与 `--tools` 搭配使用。 | — |
+| `--status <status>` | 按工具状态过滤工具，仅可与 `--tools` 搭配使用。 | — |
+| `--local` | 仅读取本地缓存。 | `true`（未传 `--remote` 时） |
+| `--remote` | 查询远端数据；查询远端会话时必须同时传入 `--tool-id`。 | `false` |
+
+<Note>
+`sandbox list` 是查看类命令，不会按常用会话命令的工具解析链自动创建或选择沙箱工具。`--tools` 与 `--sessions` 互斥，`--local` 与 `--remote` 互斥；`--tool-name`、`--tool-type` 和 `--status` 只适用于工具模式。
+</Note>
 
 ```bash
 agentkit sandbox list
 
 agentkit sandbox list --tool-id tool-123 --session-id dev
 
-agentkit sandbox list --tools --remote --tool-name private-dev
+agentkit sandbox list --tools --tool-type CodeEnv --status Ready
+
+agentkit sandbox list --tools --remote --tool-name dev-code
 
 agentkit sandbox list --sessions --remote --tool-id tool-123
 ```
@@ -327,7 +371,7 @@ agentkit sandbox exec \
 | `--prompt <prompt>` | 发送给沙箱 A2A 智能体的提示词；未传 `--task-id` 时必填。 | — |
 | `--tool-id <id>` | 沙箱工具 ID。 | 配置值、`AGENTKIT_SANDBOX_TOOL_ID` 或 — |
 | `--tool-name <name>` | 沙箱工具名称。 | 配置值或 — |
-| `--tool-type <type>` | 沙箱工具类型。 | 配置值或 `SkillEnv` |
+| `--tool-type <type>` | 沙箱工具类型；未传时优先读取配置值，否则使用 `SkillEnv`。 | 配置值或 `SkillEnv` |
 | `--async` | 创建任务后立即返回。 | `false` |
 | `--task-id <id>` | 轮询已有 A2A 任务 ID。 | — |
 | `--ttl <seconds>` | 沙箱会话 TTL。 | 配置值或 `28800` |
@@ -392,7 +436,7 @@ agentkit sandbox shell --session-id dev --command "python --version"
 
 ## sandbox web
 
-打开沙箱 Web 预览，并输出包含 URL、工具 ID、会话 ID 与会话是否新建的 JSON。默认会先在沙箱浏览器中打开 `/home/gem/` 文件路径，再打开本机 noVNC 页面。
+打开沙箱 Web 预览，并输出包含 URL、工具 ID、会话 ID 与会话是否新建的 JSON。默认打开浏览器时，CLI 会同时请求远端沙箱浏览器打开 `/home/gem/`，便于直接查看会话文件；传入 `--no-open` 时只返回 Web URL。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -413,6 +457,8 @@ agentkit sandbox web --session-id dev --no-open
 <Warning>
 `sandbox codex-login` 和 `sandbox model-login` 会把本地订阅凭据复制到远端沙箱会话。仅在受信任的沙箱和专用会话中使用，避免共享该会话；使用完成后删除会话或沙箱工具。
 </Warning>
+
+使用 `--provider codex` 时，CLI 会在沙箱会话内写入 `/home/gem/.codex/config.toml`，配置 OAuth 登录使用的 `codex_login` 模型提供方，并把默认模型 `gpt-5.5` 同步到 `CODEX_MODEL`、`OPENCODE_MODEL` 与 `MODEL_AGENT_NAME`。本地 API Key 不会随订阅凭据注入。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |

@@ -1,0 +1,168 @@
+---
+title: "迁移已有智能体"
+---
+
+`migrate` 支持两种迁移方式：
+
+- 对 LangChain、LangGraph、ADK、Strands 和 Bedrock AgentCore 项目执行本地结构化迁移，生成 AgentKit 应用文件。
+- 对 Dify Workflow、Dify Chatflow 或其他类型的智能体项目启动远程迁移任务，并在任务结束后下载生成的 VeADK 项目。
+
+```bash
+agentkit migrate [project-dir] --framework langchain|langgraph|adk|strands|agentcore --entry <file.py:object> [options]
+agentkit migrate [project-dir] --framework dify|any create|list|status [job-id] [options]
+```
+
+## Dify 迁移范围
+
+使用 `--framework dify create` 时，输入目录应包含 `workflow.yml` 或 `workflow.yaml`。CLI 会在远程迁移开始前读取 Dify DSL，向迁移过程提供只读上下文：DSL 版本、应用模式、节点与边、变量、App Features、依赖、诊断信息以及被截断内容的位置。凭证字段和常见认证文本会被脱敏。
+
+Dify `workflow` 与 `advanced-chat` 都属于迁移范围。对于 Chatflow，迁移会额外关注会话变量、`sys.query`、`sys.files`、`sys.conversation_id`、LLM 节点记忆窗口、Answer 节点顺序、文件上传、语音、引用溯源和内容审核等上下文。
+
+<Note>
+  这些上下文用于提高迁移时对源图的理解，不代表所有 Dify 节点都会一比一映射为同名 AgentKit 能力。迁移结果仍需要按生成报告和源项目行为逐项核对。
+</Note>
+
+## migrate
+
+本地结构化迁移会分析入口对象并在源项目中生成服务入口、部署配置和迁移计划，同时更新项目依赖。命令会输出新建、更新或覆盖的文件；使用 `--dry-run` 可以只查看计划。
+
+<Warning>
+该命令会修改源项目。`--force` 会覆盖已存在的生成文件；执行前请提交或备份现有改动，并先使用 `--dry-run` 核对计划。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[project-dir]` | 源项目目录 | 当前目录 |
+| `--framework <name>` | 源框架：`langchain` \| `langgraph` \| `adk` \| `strands` \| `agentcore`（必填） | — |
+| `--entry <file.py:object\|langgraph.json[:graph_id]>` | 要封装的 Python 对象；使用 LangGraph Server 模式时也可指定 `langgraph.json` 和可选图 ID（必填） | — |
+| `-n, --name <name>` | AgentKit 应用名称 | 源项目目录名 |
+| `-o, --output <dir>` | 服务入口的生成目录，必须位于源项目内；其他部署文件仍写入项目根目录 | 源项目根目录 |
+| `--input-key <key>` | 读取用户输入的自定义 LangChain 字典或 LangGraph state 字段；标准 LangGraph messages 无需指定 | — |
+| `--stream-node <node>` | 指定向 `/run_sse` 输出事件的 LangGraph 节点；可重复传入 | — |
+| `--compat <profile>` | 增加兼容服务路由：`langserve` \| `fastapi-mount` | 不启用 |
+| `--compat-prefix <path>` | 兼容路由的挂载路径 | 由 profile 决定 |
+| `--legacy-app <file.py:app>` | 要挂载的已有 FastAPI 应用；仅用于 `--compat fastapi-mount` | — |
+| `--model-id <id>` | 为生成应用配置的火山方舟或 OpenAI 兼容目标模型 ID | — |
+| `--model-base-url <url>` | 目标模型的火山方舟或 OpenAI 兼容 Base URL | — |
+| `--model-api-key-env <name>` | 保存目标模型 API Key 的环境变量名称 | — |
+| `-p, --project <name>` | 生成配置使用的 AgentKit 项目 | `default` |
+| `-r, --region <region>` | 生成配置使用的云区域 | 当前云厂商的默认区域 |
+| `--server-mode <mode>` | 使用 `langgraph` 保留 LangGraph Server 应用；省略时生成标准 AgentKit 应用 | 标准 AgentKit 应用 |
+| `--allow-blocking` | 在 LangGraph Server 模式下放宽阻塞 I/O 检查 | `false` |
+| `--verify` | 导入生成的应用并执行本地端点检查 | `false` |
+| `--dry-run` | 只显示迁移计划，不写入文件 | `false` |
+| `-f, --force` | 覆盖已存在的生成文件 | `false` |
+| `--json` | 以原始 JSON 输出迁移计划 | `false` |
+
+```bash
+# LangChain 智能体
+agentkit migrate . --framework langchain --entry agent.py:agent --name support-agent
+
+# 仅核对计划
+agentkit migrate . --framework langgraph --entry graph.py:agent --input-key question --dry-run
+
+# 保留 LangGraph Server 原生路由
+agentkit migrate . \
+  --framework langgraph \
+  --server-mode langgraph \
+  --entry langgraph.json:lead_agent \
+  --allow-blocking
+
+# 保留已有的 LangServe 或 FastAPI 服务
+agentkit migrate . --framework langchain --entry agent.py:agent --compat langserve
+agentkit migrate . --framework langchain --entry agent.py:agent \
+  --compat fastapi-mount --legacy-app api.py:app
+
+# 为迁移后的 AgentCore 应用配置目标模型
+agentkit migrate . \
+  --framework agentcore \
+  --entry deploy/agentcore/app.py:app \
+  --model-id doubao-seed-2-1-pro \
+  --model-api-key-env MODEL_AGENT_API_KEY
+
+# ADK 与 Strands 智能体
+agentkit migrate . --framework adk --entry agent.py:root_agent
+agentkit migrate . --framework strands --entry agent.py:build_agent
+```
+
+## migrate create
+
+为 Dify 导出目录或其他智能体项目创建远程迁移任务。命令会上传源目录、创建远程沙箱并返回任务 ID；任务在后台继续执行。相同工作区、源目录和迁移配置已有进行中的任务时，命令会复用该任务。
+
+<Warning>
+该操作会把源目录上传到远程沙箱，并可能创建产生费用的云资源。请先移除密钥、用户数据和其他不应上传的文件。生成结果必须写入源目录的同级专用目录，不能覆盖源目录或写入其内部。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[project-dir]` | 要上传的 Dify 导出目录或其他智能体项目目录（必填） | — |
+| `--framework <name>` | 远程迁移类型：`dify` \| `any`（必填） | — |
+| `[migrate-action]` | 远程操作，创建任务时为 `create`（必填） | — |
+| `-n, --name <name>` | 生成的 AgentKit 应用名称 | 源项目目录名 |
+| `-o, --output <dir>` | 下载结果的专用目录，必须与源目录同级 | 以任务 ID 命名的同级目录 |
+| `--model-id <id>` | 生成应用使用的目标模型 ID | — |
+| `--model-base-url <url>` | 生成应用使用的目标模型 Base URL | — |
+| `--model-api-key-env <name>` | 生成应用读取目标模型 API Key 的环境变量名称 | — |
+| `-p, --project <name>` | 远程沙箱和生成配置使用的 AgentKit 项目 | `default` |
+| `--codex-model <id>` | 远程迁移沙箱使用的模型 ID | 云端模型服务默认值 |
+| `--codex-model-provider <provider>` | 远程迁移沙箱使用的模型服务 | 由当前云厂商决定 |
+| `--codex-api-key-env <name>` | 保存远程迁移模型 API Key 的环境变量名称；未指定时读取 `AGENTKIT_MIGRATE_MODEL_API_KEY` | `AGENTKIT_MIGRATE_MODEL_API_KEY` |
+
+```bash
+export ARK_API_KEY="<your-api-key>"
+
+# 迁移 Dify 导出项目
+agentkit migrate ./dify-export --framework dify create \
+  --name support-agent \
+  --output ../agentkit-support \
+  --project default \
+  --codex-model ep-xxxxxxxx \
+  --codex-api-key-env ARK_API_KEY \
+  --model-id doubao-seed-2-1-pro \
+  --model-api-key-env ARK_API_KEY
+
+# 迁移其他类型的智能体项目
+agentkit migrate ./source-agent --framework any create \
+  --output ../agentkit-agent \
+  --codex-model ep-xxxxxxxx \
+  --codex-api-key-env ARK_API_KEY
+```
+
+## migrate list
+
+列出指定工作区本地保存的 Dify 或 Any 迁移任务元数据。该操作不会查询其他工作区，也不会创建云资源。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[project-dir]` | 保存迁移任务元数据的工作区 | 当前目录 |
+| `--framework <name>` | 要列出的迁移类型：`dify` \| `any`（必填） | — |
+| `[migrate-action]` | 远程操作，列出任务时为 `list`（必填） | — |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit migrate ./dify-export --framework dify list
+agentkit migrate ./source-agent --framework any list --json
+```
+
+## migrate status
+
+查询远程任务状态。任务成功、部分成功或失败后，该命令会把结果或失败报告下载到创建任务时确定的输出目录；再次执行时会复用本地终态结果。
+
+<Warning>
+`--overwrite` 会替换已经下载到结果目录中的文件。仅在确认不需要保留本地修改时使用。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[project-dir]` | 保存迁移任务元数据的工作区 | 当前目录 |
+| `--framework <name>` | 任务的迁移类型：`dify` \| `any`（必填） | — |
+| `[migrate-action]` | 远程操作，查询任务时为 `status`（必填） | — |
+| `[job-id]` | 任务 ID；也可以使用 `--job-id`（必填） | — |
+| `--job-id <id>` | 任务 ID；也可以作为 `status` 后的位置参数传入 | — |
+| `--overwrite` | 替换已经存在的本地结果目录 | `false` |
+| `--json` | 输出原始 JSON | `false` |
+
+```bash
+agentkit migrate ./dify-export --framework dify status <job-id>
+agentkit migrate ./source-agent --framework any status --job-id <job-id> --json
+```

@@ -2,20 +2,20 @@
 title: "管理评测集"
 ---
 
-`eval dataset` 命令组用于管理评测集：列出、查看、创建、更新、删除评测集，为评测集增删用例，并管理 TEA 评测后端中的评测集版本。评测集是实验的数据来源，其字段（如 `input`、`reference_output`）会在 [`eval run`](/productions/agentkit-cli/preview/zh/commands/eval/run) 中映射到目标与评估器。
+`eval dataset` 命令组用于管理评测集：列出、查看、创建、更新和删除评测集，为评测集增删用例，并管理 TEA 评测集版本。评测集是实验的数据来源，其字段（如 `input`、`reference_output`）会在 [`eval run`](/productions/agentkit-cli/preview/zh/commands/eval/run) 中映射到评测目标与评估器。
 
 <Note>
-这些子命令同时提供顶层别名，`eval` 前缀可省略：`agentkit eval dataset list` 等价于 `agentkit dataset list`。下文示例使用较短的 `agentkit dataset ...` 形式。标注为 TEA-only 的能力仅在当前账号解析到 TEA 评测后端时可用。
+这些子命令同时提供顶层别名，`eval` 前缀可省略：`agentkit eval dataset list` 等价于 `agentkit dataset list`。下文示例使用较短的 `agentkit dataset ...` 形式。`--project` 只用于 Coze 评测后端；TEA 后端会忽略该参数。
 </Note>
 
 ## dataset list
 
-列出评测数据集。
+列出评测集。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
@@ -24,33 +24,34 @@ agentkit dataset list
 
 ## dataset show
 
-查看某个评测数据集的详情，包括其用例条目。TEA 后端可通过 `--dataset-version` 查看指定版本。
+查看某个评测集的详情，包括 schema、版本信息和用例条目。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<id\|name>` | 评测集 ID 或精确名称。 | 必填 |
-| `--dataset-version <id\|name>` | TEA 评测集版本 ID 或版本号，例如 `0.0.1`。 | 当前版本 |
-| `--items <n>` | 最多列出 N 条用例；`0` 表示不列出用例。 | `20` |
+| `--dataset-version <id\|name>` | TEA 评测集版本 ID 或版本号，例如 `0.0.1`。 | — |
+| `--items <n>` | 最多列出 N 条用例；传 `0` 跳过用例列表。 | `20` |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
 agentkit dataset show qa-set --items 50
-agentkit dataset show qa-set --dataset-version 0.0.1
+
+agentkit dataset show qa-set --dataset-version 0.0.1 --json
 ```
 
 ## dataset create
 
-创建一个评测数据集。字段一经创建即固定，用例的键必须与其一致。
+创建评测集。字段一经创建即固定，用例的键必须与其一致。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `--name <name>` | 数据集名称。 | 必填 |
+| `--name <name>` | 评测集名称。 | 必填 |
 | `--schema <fields>` | 逗号分隔的字段名。 | `input,reference_output,output` |
-| `--description <text>` | 数据集描述。 | — |
+| `--description <text>` | 评测集描述。 | — |
 | `-r, --region <region>` | Volcengine 区域。 | 环境变量与当前云环境 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
@@ -58,37 +59,41 @@ agentkit dataset create --name qa-set --schema "input,reference_output"
 ```
 
 <Tip>
-`output`（模型的实际输出）通常由被评测目标在实验中产生，因此不必放进数据集 schema。数据集一般只需 `input` 与 `reference_output`。
+`output` 通常由被评测的目标 Runtime 在实验中产生，因此不必放进评测集 schema。评测集一般只需 `input` 与 `reference_output`。
 </Tip>
 
 ## dataset update
 
-更新评测集名称或描述。该命令仅适用于 TEA 评测后端。
+更新 TEA 评测集的名称或描述。
+
+<Note>
+`dataset update` 仅支持 TEA 评测后端。
+</Note>
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<id>` | 评测集 ID。 | 必填 |
-| `--name <name>` | 新的数据集名称。 | — |
-| `--description <text>` | 新的数据集描述。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 环境变量与评测端点默认区域 |
+| `--name <name>` | 新的评测集名称。 | — |
+| `--description <text>` | 新的评测集描述。 | — |
+| `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
-agentkit dataset update 75900xxxxxxxxxxxxx --name qa-regression
+agentkit dataset update <dataset-id> --name qa-set-v2 --description "客服问答评测集"
 ```
 
 ## dataset add
 
-向评测数据集添加一个或多个用例。TEA 后端支持标准轮次对象，可通过 `--items-json` 直接传入，或通过 `--file` 读取 JSON 文件。
+向评测集添加一个或多个用例。Coze 后端可使用扁平 `{field: value}` 对象；TEA 后端可使用完整 turn 结构，也可用 `--field` 构造单轮文本用例。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<id\|name>` | 评测集 ID 或精确名称。 | 必填 |
-| `--field <key=value>` | 用例字段；可重复。 | — |
-| `--file <path>` | JSON 文件：Coze 后端接受扁平对象或对象数组；TEA 后端接受轮次对象或对象数组。 | — |
-| `--items-json <json>` | 原始 TEA 用例对象数组。 | — |
+| `--field <key=value>` | 用例字段，可重复；在 TEA 后端会写入单轮文本用例。 | — |
+| `--file <path>` | JSON 文件；Coze 使用扁平对象或对象数组，TEA 使用完整 item 对象或数组。 | — |
+| `--items-json <json>` | TEA 原始 item 对象数组；优先级高于 `--file`。 | — |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
@@ -96,9 +101,35 @@ agentkit dataset add qa-set --field "input=法国的首都是？" --field "refer
 agentkit dataset add qa-set --file cases.json
 ```
 
+```json title="items.json"
+[
+  {
+    "turns": [
+      {
+        "field_data_list": [
+          {
+            "key": "input",
+            "name": "input",
+            "content": {
+              "content_type": "Text",
+              "format": 1,
+              "text": "法国的首都是？"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+```bash
+agentkit dataset add qa-set --file ./items.json
+```
+
 ## dataset remove
 
-从评测数据集中移除一个或多个用例。
+从评测集中移除一个或多个用例。
 
 <Warning>
 该命令会从评测集中删除指定用例。执行前核对评测集和用例 ID；省略 `--yes` 时 CLI 会要求确认。
@@ -109,7 +140,7 @@ agentkit dataset add qa-set --file cases.json
 | `<id\|name>` | 评测集 ID 或精确名称。 | 必填 |
 | `<itemIds...>` | 要移除的用例条目 ID，可传多个。 | 必填 |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 | `--json` | 输出原始 JSON。 | `false` |
 
@@ -119,7 +150,7 @@ agentkit dataset remove qa-set item-1 item-2 -y
 
 ## dataset delete
 
-删除一个评测数据集。
+删除一个评测集。
 
 <Warning>
 该命令会删除整个评测集。执行前核对目标；省略 `--yes` 时 CLI 会要求确认。
@@ -129,7 +160,7 @@ agentkit dataset remove qa-set item-1 item-2 -y
 | --- | --- | --- |
 | `<id\|name>` | 评测集 ID 或精确名称。 | 必填 |
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
-| `-p, --project <name>` | 项目名称；TEA 后端会忽略该值。 | `default` |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 
 ```bash
@@ -138,21 +169,25 @@ agentkit dataset delete qa-set -y
 
 ## dataset version list
 
-列出 TEA 评测集中已经创建的版本。
+列出 TEA 评测集版本。
+
+<Note>
+`dataset version` 子命令仅支持 TEA 评测后端。
+</Note>
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `--dataset <id\|name>` | 评测集 ID 或精确名称。 | 必填 |
-| `-r, --region <region>` | Volcengine 区域。 | 环境变量与评测端点默认区域 |
+| `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
-agentkit eval dataset version list --dataset qa-set
+agentkit dataset version list --dataset qa-set
 ```
 
 ## dataset version create
 
-为 TEA 评测集创建版本。版本创建后可在 `eval run --dataset-version` 中显式选择。
+为 TEA 评测集创建一个已提交版本。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -160,9 +195,9 @@ agentkit eval dataset version list --dataset qa-set
 | `--dataset <id\|name>` | 评测集 ID 或精确名称。 | 必填 |
 | `--description <text>` | 版本描述。 | — |
 | `--desc <text>` | `--description` 的别名。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 环境变量与评测端点默认区域 |
+| `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash
-agentkit eval dataset version create 0.0.2 --dataset qa-set --description "回归评测集"
+agentkit dataset version create 0.0.2 --dataset qa-set --description "补充边界用例"
 ```

@@ -1,0 +1,113 @@
+---
+title: "使用 Codex 沙箱开发应用"
+---
+
+AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智能体开发应用。工具定义计算规格与网络等环境属性；会话保存一次开发过程的文件和运行状态。完整参数见[使用沙箱](/productions/agentkit-cli/preview/zh/commands/sandbox)。
+
+<Note>
+开始前请配置 AK/SK，或通过 `agentkit login` 获取有效的短期 STS 凭证。若要把本地 Codex 订阅凭据注入沙箱，还需先在本机完成 `codex login`。
+</Note>
+
+<Warning>
+创建沙箱工具会分配云端计算资源，可能产生费用。沙箱中的命令可以访问该会话可见的文件、网络和凭据；只处理可信代码，并按最小权限配置。删除会话或工具不可恢复，清理前先下载需要保留的文件。
+</Warning>
+
+## 端到端流程
+
+<Steps>
+  <Step title="创建开发工具">
+    创建一个 `CodeEnv` 工具。CLI 会等待工具就绪，并把工具 ID 与名称写入当前项目的 `.agentkit/sandbox.yaml`。
+
+    ```bash
+    agentkit sandbox create --tool-type CodeEnv --tool-name dev-sandbox
+    ```
+
+    若项目已有可用工具，可以跳过此步骤，并在后续命令中用 `--tool-id` 或 `--tool-name` 选择它。
+  </Step>
+
+  <Step title="注入 Codex 登录凭据">
+    将本地 Codex 订阅凭据注入专用会话。`--session-id` 用于在后续命令中复用同一会话。
+
+    <Warning>
+    `sandbox codex-login` 会把本地订阅凭据复制到远端会话。不要共享该会话；使用完成后删除会话或工具。可先加 `--dry-run` 查看脱敏后的注入操作。
+    </Warning>
+
+    ```bash
+    agentkit sandbox codex-login \
+      --tool-name dev-sandbox \
+      --session-id dev \
+      --provider codex
+    ```
+
+    需要使用其他凭据文件时，传入 `--auth-file` 或 `--codex-home`。将 provider 改为 `claude`，可注入本地 Claude 订阅凭据。
+  </Step>
+
+  <Step title="上传项目并进入终端">
+    `sandbox exec` 提供交互终端。`--copy` 在连接前上传项目，`--mode tmux` 创建或接入与会话 ID 同名的持久终端。
+
+    ```bash
+    agentkit sandbox exec \
+      --tool-name dev-sandbox \
+      --session-id dev \
+      --mode tmux \
+      --copy ./my-app sandbox:/home/gem/my-app \
+      --command "cd /home/gem/my-app && codex"
+    ```
+
+    按 Ctrl-] 脱离终端；再次运行相同命令可返回该会话。若已在 `.agentkit/sandbox.yaml` 中保存工具名称，后续可省略 `--tool-name`。
+  </Step>
+
+  <Step title="传输文件">
+    会话建立后，用 `sandbox scp` 在本地和沙箱之间复制文件或目录。远端路径以 `sandbox:` 开头。
+
+    ```bash
+    # 上传
+    agentkit sandbox scp ./local.txt sandbox:/home/gem/my-app/local.txt --session-id dev
+
+    # 下载
+    agentkit sandbox scp sandbox:/home/gem/my-app/result.json ./result.json --session-id dev
+    ```
+  </Step>
+
+  <Step title="打开 Web 预览">
+    在持久终端中启动监听公网可访问端口的 Web 服务，然后打开预览地址：
+
+    ```bash
+    agentkit sandbox web --tool-name dev-sandbox --session-id dev
+    ```
+
+    在不希望自动打开浏览器的环境中加 `--no-open`，命令会输出预览 URL。
+  </Step>
+
+  <Step title="清理资源">
+    先确认所需文件已下载。只删除开发会话时同时指定工具与会话；不再使用工具时省略会话 ID，删除整个工具。
+
+    ```bash
+    # 删除会话
+    agentkit sandbox delete --tool-name dev-sandbox --session-id dev --force
+
+    # 删除工具及其资源
+    agentkit sandbox delete --tool-name dev-sandbox --force
+    ```
+  </Step>
+</Steps>
+
+## 脚本化执行
+
+`sandbox shell` 在会话中执行单条非交互命令并输出 JSON，适合脚本调用：
+
+```bash
+agentkit sandbox shell \
+  --tool-name dev-sandbox \
+  --session-id dev \
+  --command "cd /home/gem/my-app && npm test"
+```
+
+需要编排多条 `sandbox exec` 任务时，将条目写入 `agentkit-sandbox-run.yaml`，再运行 `agentkit sandbox run --config agentkit-sandbox-run.yaml`。配置格式见[沙箱命令参考](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-run)。
+
+## 实践建议
+
+- 以固定的 `--session-id` 复用开发环境；使用 `agentkit sandbox list` 查看本地缓存的会话。
+- 项目中存在多个工具时，显式传入 `--tool-id` 或 `--tool-name`，避免连接到错误环境。
+- 长时间运行的交互任务使用 `sandbox exec --mode tmux`，并定期把重要结果下载到本地或持久存储。
+- 不再使用会话或工具时及时删除，避免继续占用云端资源。

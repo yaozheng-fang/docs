@@ -1,0 +1,112 @@
+---
+title: "Changelog"
+---
+
+## 0.52.3 - 2026-08-18
+
+- [Sandbox commands] [`sandbox list`](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox#sandbox-list) can inspect sandbox sessions or tools: it reads the local session cache by default, supports `--tools` for the local tool cache, supports `--remote` for remote tools or remote sessions under a specified tool, and filters by tool id, name, type, and status.
+- [Harness Sidecar] [Managed Harness Sidecar release](/productions/agentkit-cli/archives/0.52.3/en/commands/release#release-apply) improves release recovery. After the runtime reaches `Ready`, the CLI waits for the `key_auth` APIG binding; when the release API response is ambiguous but the runtime has already started releasing or the new version is ready, the CLI continues the flow instead of triggering release again.
+- [Harness Sidecar] [Managed Harness Sidecar runtime recovery](/productions/agentkit-cli/archives/0.52.3/en/commands/release#release-apply) can preserve the current serving version and update in place when it is still the only serving version and every newer version has failed; when safe recovery cannot be confirmed, the command fails and requires explicit reconciliation.
+- [Harness Sidecar] [Release builds](/productions/agentkit-cli/archives/0.52.3/en/commands/release#release-build) preserve application-declared `veadk-python` and `agentkit_sdk_python` dependencies for managed Sidecar builds, remove the retired standalone `agentkit-harness-sidecar-integration` package, and change TOS build-context uploads to a 120-second timeout with one retry for retryable network errors.
+
+## 0.52.2 - 2026-08-14
+
+- [chat commands] [`chat`](/productions/agentkit-cli/archives/0.52.3/en/commands/chat) starts OAuth-bound conversations with shared Harnesses published through tenant login discovery aliases, with sessions isolated by verified user identity.
+- [eval commands] [eval backend](/productions/agentkit-cli/archives/0.52.3/en/commands/eval/backend) resolves Coze or TEA through the AgentKit evaluation gateway by default and provides `--cache-refresh` and `--verbose` for inspecting backend coordinates and troubleshooting TEA requests.
+- [eval commands] [dataset, evaluator, and target commands](/productions/agentkit-cli/archives/0.52.3/en/commands/eval/dataset) expand TEA evaluation support with dataset updates and versions, evaluator template details, draft updates and version submission, plus source evaluation target and target-version listing.
+- [eval commands] [`eval run`](/productions/agentkit-cli/archives/0.52.3/en/commands/eval/run) supports explicit TEA dataset versions, evaluator versions, source target types, and target versions, and returns the TEA run ID with the experiment ID.
+- [Harness] [Harness configuration](/productions/agentkit-cli/archives/0.52.3/en/commands/harness) supports private networking, capacity, shared database sessions, and managed model egress for shared OAuth Harnesses, and verifies identity, image, and scaling bindings after deployment.
+- [invoke commands] [`invoke run`](/productions/agentkit-cli/archives/0.52.3/en/commands/invoke#custom_jwt-authentication) no longer reuses the login session `id_token` automatically for `custom_jwt` Runtimes; generic invocation now requires an explicit OAuth token through `--headers`, while shared OAuth Harness chat uses `chat`.
+- [Sandbox commands] [`sandbox create`](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox#sandbox-create) provides `--llm-shield-app-id` for enabling LLM Shield on `Skill` sandbox tools.
+
+## 0.52.1 - 2026-08-12
+
+- [Harness Sidecar] [Harness Sidecar commands](/productions/agentkit-cli/archives/0.52.3/en/commands/harness#harness-sidecar-catalog) provide `harness sidecar catalog` and `harness sidecar resolve` for printing the Product Component Catalog and resolving profiles plus component switches into a verifiable Sidecar plan before release.
+- [Harness Sidecar] [Release configuration](/productions/agentkit-cli/archives/0.52.3/en/agentkit-yaml#harness-sidecar) supports managed `harness_sidecar` config, provides runtime descriptions, create-time tags, and Code Pipeline workspace / pipeline pinning fields, and derives `Auto` TOS buckets from the cloud provider, region, and account.
+- [Harness Sidecar] [`release`](/productions/agentkit-cli/archives/0.52.3/en/commands/release#release) provides `--json` for managed Harness Sidecar releases, emitting newline-delimited build, deploy, runtime-id, and final-result events and verifying the Sidecar, model proxy, and required MCP gateway after release.
+- [Harness Sidecar] [Release flow](/productions/agentkit-cli/archives/0.52.3/en/commands/release#release) now matches existing Runtimes by exact name. For managed Harness Sidecar releases, states that require recreation now require explicit reconciliation instead of automatically deleting an existing runtime.
+- [Sandbox commands] [`sandbox config --list`](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox#sandbox-config) now prints the current `.agentkit/sandbox.yaml` file instead of listing inferred default model, network, and tool settings.
+
+## 0.52.0 - 2026-08-11
+
+- [Auth commands] The CLI can now read [`/.well-known/agentkit-cli` discovery documents](/productions/agentkit-cli/archives/0.52.3/en/commands/auth) from custom login addresses that include a single tenant path segment, with stricter validation for remote addresses, discovery fields, regions, cloud providers, and STS coordinates. When logging in through a remote discovery document, the CLI saves the profile only after login succeeds.
+- [Auth commands] [`auth admin publish`](/productions/agentkit-cli/archives/0.52.3/en/commands/auth#auth-admin-publish) now accepts existing `--issuer`, `--client-id`, `--role-trn`, and `--provider-trn` values, so cross-account identity setups can publish only the discovery document; it also supports `--domain` for returning a custom login domain whose CNAME and HTTPS certificate are already configured.
+- [Auth commands] [Auth Admin](/productions/agentkit-cli/archives/0.52.3/en/commands/auth) can use valid STS credentials from the current CLI SSO profile for management operations, and uses built-in service endpoints for those operations so project or user-wide endpoint overrides do not affect privileged setup.
+- [Installation] The [install flow](/productions/agentkit-cli/archives/0.52.3/en/quickstart#install) keeps the standalone CLI ahead of same-named commands installed through pip, pipx, venv, or Conda in zsh, bash, or fish, and uninstall restores original commands and shell configuration entries that are still managed by the installer.
+- [Configuration] [Config commands](/productions/agentkit-cli/archives/0.52.3/en/commands/config) validate region values, accepting only lowercase, hyphen-separated region codes so invalid regions cannot enter service endpoints or request signing.
+
+## 0.51.2 - 2026-08-11
+
+- [Model Gateway commands] [Model Gateway](/productions/agentkit-cli/archives/0.52.3/en/commands/model-gateway) supports gateway activation, model provider and consumer management, and generation of `curl`, OpenAI, Anthropic, or AgentKit calling examples from authorized models.
+- [invoke commands] [`invoke run`](/productions/agentkit-cli/archives/0.52.3/en/commands/invoke) now follows the Python SDK invocation contract, resolving targets from `agentkit.yaml`, Runtime IDs, or endpoints, accepting JSON payloads and headers, and selecting `/invoke`, ADK `/run_sse`, or A2A automatically; it can also print raw streaming events or show reasoning content when needed.
+- [harness commands] [`harness invoke`](/productions/agentkit-cli/archives/0.52.3/en/commands/harness#harness-invoke) directly invokes a deployed Harness with per-request overrides for the model, system prompt, tools, skills, runtime backend, A2A registry, and maximum LLM calls, with either `invoke` or `run_sse` transport.
+- [Auth commands] [Identity-only mode](/productions/agentkit-cli/archives/0.52.3/en/commands/auth) lets `login --identity-only` and `auth profile set --identity-only` store only the OIDC session. For matching `custom_jwt` Harness invocations, the CLI can forward that user identity without creating management credentials.
+- [Auth commands] [Auth Admin](/productions/agentkit-cli/archives/0.52.3/en/commands/auth) generated SSO policies now include permissions for listing sandbox sessions, restoring session snapshots, and querying tool types, so sandbox-related SSO workflows have the required access.
+- [Sandbox commands] [Creation, initialization, and preview flows](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox) are now more predictable: `sandbox create --envs` can inject repeatable environment variables, `sandbox init` writes the current built-in base image into generated Dockerfiles, and `sandbox web` opens the sandbox home directory in the remote browser. Initial `.agentkit/sandbox.yaml` files no longer persist inferred model defaults, and the Model Square default model is now `deepseek-v4-flash-ga-260731`.
+- [migrate commands] [Dify migration](/productions/agentkit-cli/archives/0.52.3/en/commands/migrate#dify-migration-scope) extracts Workflow and Chatflow nodes, edges, variables, features, and dependencies before migration while redacting sensitive fields.
+
+## 0.51.1 - 2026-08-06
+
+- Fixed missing bundled assets in standalone distributions so lifecycle commands and [`sandbox dashboard`](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox#sandbox-dashboard) can load templates and web terminal assets correctly after [installation](/productions/agentkit-cli/archives/0.52.3/en/quickstart#install).
+
+## 0.51.0 - 2026-08-05
+
+- Added `config`, `build`, `launch`, `status`, and `release` for a staged lifecycle from [project configuration](/productions/agentkit-cli/archives/0.52.3/en/commands/config) through [release](/productions/agentkit-cli/archives/0.52.3/en/commands/release).
+- Expanded [sandbox commands](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox) with additional tool creation, Dashboard, and terminal management.
+- Fixed BytePlus VikingDB [knowledge operations](/productions/agentkit-cli/archives/0.52.3/en/commands/knowledge) and the [migration](/productions/agentkit-cli/archives/0.52.3/en/commands/migrate) upload path.
+
+## 0.50.9 - 2026-08-03
+
+- Added global `--provider`, the top-level [`config`](/productions/agentkit-cli/archives/0.52.3/en/commands/config) command, and region selection for init, Harness, and migration.
+- Completed BytePlus project switching, MCP service mapping, build images, and [migration](/productions/agentkit-cli/archives/0.52.3/en/commands/migrate).
+
+## 0.50.8 - 2026-07-31
+
+- Added `deploy config --provider` for selecting the cloud provider when generating [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.3/en/agentkit-yaml).
+- Switched BytePlus [deployments](/productions/agentkit-cli/archives/0.52.3/en/commands/deploy) to the corresponding base images.
+
+## 0.50.7 - 2026-07-31
+
+- [Frontend SSO deployment](/productions/agentkit-cli/archives/0.52.3/en/workflows/frontend-sso) can discover existing serverless gateways across projects.
+
+## 0.50.6 - 2026-07-31
+
+- Automatically created gateways in [Frontend SSO deployment](/productions/agentkit-cli/archives/0.52.3/en/workflows/frontend-sso) now include their network specification.
+
+## 0.50.5 - 2026-07-31
+
+- [Frontend SSO deployment](/productions/agentkit-cli/archives/0.52.3/en/workflows/frontend-sso) can create a serverless gateway when none is available.
+- [Sandbox creation](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox#sandbox-create) added the `ArkClawEnv` and `HermesEnv` tool types.
+
+## 0.50.4 - 2026-07-30
+
+- Relaxed wording checks for [migration](/productions/agentkit-cli/archives/0.52.3/en/commands/migrate) plans to improve compatibility across source projects.
+
+## 0.50.3 - 2026-07-30
+
+- Added `sandbox attach` as an alias of `sandbox exec`; see [sandbox commands](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox#sandbox-exec).
+- [Arbitrary-source migration](/productions/agentkit-cli/archives/0.52.3/en/commands/migrate) now uses the built-in source-to-veadk capability.
+
+## 0.50.2 - 2026-07-29
+
+- Added BytePlus resource routing to [deployment configuration](/productions/agentkit-cli/archives/0.52.3/en/agentkit-yaml), establishing the base for the complete multi-cloud deployment flow.
+
+## 0.50.1 - 2026-07-29
+
+- Changed Runtime defaults to 2 vCPU, 4 GiB of memory, and one minimum instance; see [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.3/en/agentkit-yaml#runtime-resources).
+- Added [`migrate --project`](/productions/agentkit-cli/archives/0.52.3/en/commands/migrate) for selecting the project used by remote migration.
+
+## 0.50.0 - 2026-07-28
+
+- Added [Auth Admin](/productions/agentkit-cli/archives/0.52.3/en/commands/auth) credential management.
+- Added Skill Space references and request-level overrides to [Harness](/productions/agentkit-cli/archives/0.52.3/en/commands/harness).
+- Released the revised [sandbox commands](/productions/agentkit-cli/archives/0.52.3/en/commands/sandbox) for configuration, creation, terminal, file, and invocation workflows.
+
+## 0.46.7 - 2026-07-22
+
+- Added remote Dify and arbitrary-source support to [migration](/productions/agentkit-cli/archives/0.52.3/en/commands/migrate).
+- Added per-resource region and project overrides plus Runtime private-network settings to [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.3/en/agentkit-yaml).
+
+## 0.46.6 - 2026-07-19
+
+- Published the AgentKit CLI [command reference](/productions/agentkit-cli/archives/0.52.3/en/commands) and the `agentkit.yaml`-based build and deployment documentation.

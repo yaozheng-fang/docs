@@ -1,0 +1,88 @@
+---
+title: "配置"
+---
+
+`config` 管理生命周期项目的 `agentkit.yaml`，也可通过 `--global` 管理用户级默认配置 `~/.agentkit/config.yaml`。项目级配置用于 `build`、`deploy`、`launch`、`status` 与 `destroy`；全局配置用于默认云厂商、区域、凭证和基础设施默认值。
+
+## config
+
+不带 `--global` 时，命令读取或更新当前项目的生命周期配置。若未传入具体字段且终端支持交互，CLI 会进入配置向导；非交互场景可通过标志显式写入字段。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-c, --config <path>` | 项目配置文件路径。 | `agentkit.yaml` |
+| `--init` | 初始化生命周期配置文件。 | `false` |
+| `-i, --interactive` | 强制进入交互配置向导。 | `false` |
+| `--dry-run` | 只预览变更，不保存。 | `false` |
+| `-s, --show` | 显示当前配置。 | `false` |
+| `--region <region>` | 云区域。 | 当前云环境默认值 |
+| `--agent_name <name>` | 智能体应用名称。 | — |
+| `--entry_point <path>` | 智能体应用入口文件。 | — |
+| `--description <text>` | 应用描述。 | — |
+| `--language <language>` | 应用语言，例如 `Python` 或 `Golang`。 | — |
+| `--language_version <version>` | 语言版本。 | — |
+| `--python_version <version>` | Python 版本；等价写入 `language_version`。 | — |
+| `--dependencies_file <path>` | 依赖文件路径。 | — |
+| `--launch_type <type>` | 启动模式：`local`、`cloud` 或 `hybrid`。 | 当前配置值 |
+| `--cloud_provider <provider>` / `--cloud-provider <provider>` | 云厂商：`volcengine` 或 `byteplus`。 | 当前云环境默认值 |
+| `-e, --runtime_envs <KEY=VALUE>` | 通用运行时环境变量，可重复。 | — |
+| `--strategy-runtime-envs <KEY=VALUE>` | 当前启动模式专属运行时环境变量，可重复。 | — |
+| `--image_tag <tag>` | 镜像标签。 | 当前配置值 |
+| `--tos_bucket <bucket>` | 云端构建产物使用的 TOS bucket。 | 当前配置值 |
+| `--cr_instance_name <name>` / `--ve_cr_instance_name <name>` | Container Registry 实例名。 | 当前配置值 |
+| `--cr_namespace_name <name>` / `--ve_cr_namespace_name <name>` | Container Registry 命名空间。 | 当前配置值 |
+| `--cr_repo_name <name>` / `--ve_cr_repo_name <name>` | Container Registry 仓库名。 | 当前配置值 |
+| `--cr_auto_create_instance_type <type>` | 自动创建 CR 实例时的规格，例如 `Micro` 或 `Enterprise`。 | 当前配置值 |
+| `--project_name <name>` / `--project-name <name>` | AgentKit 项目名称。 | 当前配置值 |
+| `--runtime_name <name>` / `--ve_runtime_name <name>` | 运行时名称。 | 当前配置值 |
+| `--runtime_role_name <name>` / `--ve_runtime_role_name <name>` | 运行时 IAM 角色名称。 | 当前配置值 |
+| `--runtime_apikey_name <name>` / `--ve_runtime_apikey_name <name>` | `key_auth` 使用的 API Key 名称。 | 当前配置值 |
+| `--runtime_auth_type <type>` | 运行时网关鉴权类型：`key_auth` 或 `custom_jwt`。 | 当前配置值 |
+| `--runtime_jwt_discovery_url <url>` | `custom_jwt` 使用的 OIDC discovery URL。 | — |
+| `--runtime_jwt_allowed_clients <id>` | `custom_jwt` 允许的客户端 ID，可重复或用逗号分隔。 | — |
+| `--memory_id <id>` | 绑定的记忆库 ID。 | — |
+| `--knowledge_id <id>` | 绑定的知识库 ID。 | — |
+| `--tool_id <id>` | 绑定的工具 ID。 | — |
+| `--mcp_toolset_id <id>` | 绑定的 MCP 工具集 ID。 | — |
+| `--runtime_network_mode <mode>` / `--runtime-network-mode <mode>` | 运行时网络模式，例如 `private`。 | 当前配置值 |
+| `--runtime_vpc_id <id>` / `--runtime-vpc-id <id>` | 私有网络使用的 VPC ID。 | — |
+| `--runtime_subnet_ids <id>` / `--runtime-subnet-ids <id>` | 子网 ID，可重复或用逗号分隔。 | — |
+| `--runtime_subnet_id <id>` / `--runtime-subnet-id <id>` | 单个子网 ID。 | — |
+| `--runtime_enable_shared_internet_access` | 私有网络下启用共享公网出口。 | 当前配置值 |
+| `--no-runtime_enable_shared_internet_access` | 私有网络下禁用共享公网出口。 | — |
+| `--runtime-enable-shared-internet-access` | `--runtime_enable_shared_internet_access` 的 kebab-case 写法。 | 当前配置值 |
+| `--no-runtime-enable-shared-internet-access` | `--no-runtime_enable_shared_internet_access` 的 kebab-case 写法。 | — |
+
+```bash
+agentkit config --init --agent_name my-agent --cloud_provider volcengine --region cn-beijing
+
+agentkit config \
+  --launch_type cloud \
+  --runtime_auth_type custom_jwt \
+  --runtime_jwt_discovery_url https://identity.example.com/.well-known/openid-configuration \
+  --runtime_jwt_allowed_clients web-client-id
+```
+
+## config --global
+
+传入 `--global` 后，命令读取或更新 `~/.agentkit/config.yaml`。项目级字段（例如 `--cloud_provider`）不能与 `--global` 同用；需要切换默认云厂商时，通过 `--provider` 全局标志或 `--set defaults.cloud_provider=<provider>`。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-g, --global` | 使用用户级配置。 | `false` |
+| `--init` | 创建用户级配置模板；若文件已存在则提示保留。 | `false` |
+| `-s, --show` | 显示用户级配置并对密钥脱敏。 | `false` |
+| `--region <region>` | 默认区域。 | 当前用户级配置 |
+| `--set <key=value>` | 写入用户级配置键，可重复。 | — |
+
+```bash
+agentkit config --global --init
+
+agentkit --provider byteplus config --global --region ap-southeast-1
+
+agentkit config --global --set defaults.cloud_provider=byteplus
+```
+
+<Note>
+命令执行时会先读取环境变量，再读取项目配置和用户级配置。所有产品命令都支持全局 `--provider volcengine|byteplus`，可临时覆盖本次命令使用的云厂商。区域值必须是小写、以连字符分隔的区域代码，例如 `cn-beijing` 或 `ap-southeast-1`；包含路径、查询参数、大写字母或非区域主机名的值会被拒绝。
+</Note>

@@ -1,0 +1,19 @@
+---
+title: "Launch"
+---
+
+`launch` runs build and deploy in one command. It reads the lifecycle config, runs `build`, then runs `deploy` if the build succeeds, making it the normal command for publishing a new project or updated code.
+
+## launch
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--config-file <path>` | Lifecycle config file path. | `agentkit.yaml` |
+| `--platform <platform>` | Build platform; `auto` lets the CLI choose. | `auto` |
+| `--preflight-mode <mode>` | Preflight behavior: `prompt`, `fail`, `warn`, or `skip`. | Global `defaults.preflight_mode`, or `prompt` when unset |
+
+```bash
+agentkit launch --config-file agentkit.yaml --preflight-mode fail
+```
+
+`prompt` asks before continuing in an interactive terminal; `fail` exits when preflight checks fail; `warn` prints warnings and continues; `skip` disables preflight checks.

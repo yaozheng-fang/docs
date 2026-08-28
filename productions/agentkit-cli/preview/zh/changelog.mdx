@@ -8,55 +8,85 @@ title: "更新日志"
 
 ## 0.52.8 - 2026-08-26
 
-- 完善[自托管沙箱环境](/productions/agentkit-cli/preview/zh/commands/env)创建流程，统一自托管环境密钥、沙箱 Tool 标识与 Runtime 状态的本地存储。
-- [`sandbox config`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-config)新增自托管沙箱与 Runtime 相关配置键，便于用同一配置文件完成 Tool 与环境创建。
-- [`skills secure`](/productions/agentkit-cli/preview/zh/commands/skill#skills-secure)新增本地技能目录批量转换能力，可生成适用于托管智能体的安全版 Skill 包。
+- [skills 命令] [`skills secure`](/productions/agentkit-cli/preview/zh/commands/skill#skills-secure) 可从本地技能目录批量生成面向托管智能体安装的安全壳 Skill，保留 `name` 与 `description`，但不复制真实 Skill 的 Prompt、references、scripts、依赖或凭证。
+- [沙箱命令] [Claude 自托管沙箱流程](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-init) 改为以 `.agentkit/sandbox.yaml` 作为配置来源：`sandbox init -t self-host` 不再生成 dotenv 模板，`sandbox create` 会创建 `Private` Tool 并写入 `self_host.sandbox.id` 与 `self_host.sandbox.name`，随后 [`env create`](/productions/agentkit-cli/preview/zh/commands/env#env-create) 只创建绑定该 Tool 的 Runtime，并可用 `--tool-id` 覆盖 Tool ID。
+- [沙箱命令] [`sandbox create --network-private`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-create) 在缺少完整 VPC 与子网配置时会交互式选择当前区域下的 VPC 和可用子网，并把选择结果写回 `.agentkit/sandbox.yaml`。
+- [沙箱命令] [`sandbox config`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-config) 提供 self-host 配置键，并在 `--list` 输出中隐藏 `self-host-environment-key`；非自托管沙箱的 `tool-id` / `tool-name` 配置会统一写入 `tool_info`，便于后续命令稳定复用 Tool 绑定信息。
 
 ## 0.52.7 - 2026-08-25
 
-- [`sandbox init -t self-host`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-init)新增自托管沙箱项目模板，并支持通过 [`env create`](/productions/agentkit-cli/preview/zh/commands/env#env-create)创建与沙箱 Tool 绑定的 Runtime。
-- [`sandbox create`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-create)新增 `--envs` 和 `--llm-shield-app-id`，可在创建 Tool 时注入自定义环境变量，并为 Skill Tool 配置 LLM Shield 应用。
+- [env 命令] [`env`](/productions/agentkit-cli/preview/zh/commands/env) 命令组面向 Claude 自托管沙箱环境。项目完成 `sandbox build` 后，可通过 `env create` 基于构建镜像与 `.env` 创建 Private Tool 和调度 Runtime，并用 `env status` 刷新本地环境状态。
+- [沙箱命令] [`sandbox init -t self-host`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-init) 支持初始化 Claude 自托管沙箱项目，生成 Dockerfile、`.env`、`.env.example`、忽略文件、README 和 `.agentkit/sandbox.yaml`；`sandbox build` 会读取构建配置并写入镜像地址与构建状态，供 `env create` 使用。
+- [init 命令] [`init --from-agent`](/productions/agentkit-cli/preview/zh/commands/init) 支持 `agent_server` 包装类型，并可通过 `--template basic|basic_stream|agent_server` 选择兼容的包装模板；模板与 `--wrapper-type` 不匹配时会立即停止执行。
+- [Harness Sidecar] [托管 Harness Sidecar 配置](/productions/agentkit-cli/preview/zh/agentkit-yaml#harness-sidecar) 改为按解析后的组件计划决定模型代理是否启用；MCP-only 计划可只启用 MCP 网关，发布校验也只检查实际启用的网关。
+- [Harness Sidecar] [`release build`](/productions/agentkit-cli/preview/zh/commands/release#release-build) 在托管 Sidecar 场景下会校验显式指定的 Code Pipeline 是否兼容当前构建契约，未找到或不兼容时直接失败；托管基础镜像中的 SDK、ADK、MCP 与 Starlette 版本边界也会在构建中校验。
+- [runtime 命令] [`runtime show --json`](/productions/agentkit-cli/preview/zh/commands/runtime#runtime-show) 在运行时绑定 Tool 时返回 `toolId`，便于脚本关联 Runtime 与 Tool。
 
 ## 0.52.6 - 2026-08-20
 
-- 修复 [Runtime 部署](/productions/agentkit-cli/preview/zh/commands/deploy)使用 hybrid 网络模式时未启用私网的问题。
+- [配置] [生命周期配置](/productions/agentkit-cli/preview/zh/agentkit-yaml#云端与混合策略) 中的 `runtime_network.mode: hybrid` 会同时启用公网入口和私有网络，避免混合网络运行时在部署后只保留公网访问。
+
+## 0.52.5 - 2026-08-20
+
+- [配置] [`config --init`](/productions/agentkit-cli/preview/zh/commands/config#config) 会把同一条命令中的项目级参数写入新建的 `agentkit.yaml`，便于在非交互环境中一次性生成完整生命周期配置。
+- [配置] [`config`](/productions/agentkit-cli/preview/zh/commands/config#config) 补充生命周期配置字段的帮助说明；交互式向导会根据终端宽度收敛选项表格，减少窄终端中的换行溢出。
+- [沙箱命令] [模型环境变量](/productions/agentkit-cli/preview/zh/commands/sandbox#模型环境变量) 统一注入 Codex、OpenCode 与 `MODEL_AGENT_*` 模型环境变量，并停止为通用模型参数生成 `ANTHROPIC_*`、`CODEX_CONFIG_TOML` 与 `CODEX_MODEL_CATALOG_JSON` 环境变量，减少不同编码智能体和运行时之间的配置差异。
+- [沙箱命令] [`sandbox exec`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-exec) 在已有 `CodeEnv` 会话中显式更新模型名称、API Key 或 Base URL 时，会同步写入会话内的 `.env`、Codex 配置和 OpenCode 配置，后续终端可以复用同一组设置。
+- [沙箱命令] [`sandbox codex-login`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-codex-login) 在沙箱会话内直接写入 Codex OAuth 配置，再注入本地订阅凭据，使订阅登录配置不依赖会话环境变量传递。
 
 ## 0.52.4 - 2026-08-19
 
-- 改进 [`config init`](/productions/agentkit-cli/preview/zh/commands/config) 的初始化提示与默认值处理。
-- [迁移](/productions/agentkit-cli/preview/zh/commands/migrate)支持按文件内容识别 Dify DSL，降低导出文件名不规范时的迁移失败概率。
-- [记忆库创建](/productions/agentkit-cli/preview/zh/commands/memory#memory-create)在 BytePlus 下默认使用 `VIKINGDB_MEMORY`，避免选择 BytePlus 不支持的 `MEM0`。
+- [memory 命令] [`memory create`](/productions/agentkit-cli/preview/zh/commands/memory#memory-create) 在 BytePlus 上默认创建 `VIKINGDB_MEMORY` 记忆库，并在显式或通过 `--json` 传入 `MEM0` 时提前失败；Volcengine 默认仍为 `MEM0`。
+- [migrate 命令] [Dify 迁移](/productions/agentkit-cli/preview/zh/commands/migrate#dify-迁移范围) 改为按 YAML 内容识别 Dify DSL，可处理任意文件名和子目录中的 Dify 导出，同时避免把同名普通 YAML 误判为 Dify。
+- [Harness Sidecar] [发布构建](/productions/agentkit-cli/preview/zh/commands/release#release-build) 优化托管 Harness Sidecar 构建：使用符合当前结构的 CLI 托管 Dockerfile，按托管基础镜像摘要隔离并启用 Code Pipeline 缓存，并根据归档大小调整 TOS 上传超时。
+- [Harness Sidecar] [`harness sidecar resolve`](/productions/agentkit-cli/preview/zh/commands/harness#harness-sidecar-resolve) 在 `ops` profile 关闭 `mcp_resilience` 时输出 SQL 只读保护已关闭的警告，便于发布前识别风险选择。
 
 ## 0.52.3 - 2026-08-18
 
-- [`sandbox list`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-list)新增 Tool 列表与远端会话查询模式，并支持 Tool 名称、类型和状态过滤。
-- 沙箱会话中的模型环境变量别名与默认模型写入行为更加一致，避免在 `sandbox.yaml` 中持久化不必要的模型默认值。
+- [沙箱命令] [`sandbox list`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-list) 可查看沙箱会话或工具：默认读取本地会话缓存，支持 `--tools` 查看工具缓存，支持 `--remote` 查询远端工具或指定工具下的远端会话，并可按工具 ID、名称、类型和状态过滤。
+- [Harness Sidecar] [托管 Harness Sidecar 发布](/productions/agentkit-cli/preview/zh/commands/release#release-apply) 提升发布恢复能力：运行时进入 `Ready` 后会等待 `key_auth` APIG 绑定；发布接口结果不明确但已观察到运行时进入发布流程或新版本就绪时，CLI 会继续完成流程，避免重复触发发布。
+- [Harness Sidecar] [托管 Harness Sidecar 运行时恢复](/productions/agentkit-cli/preview/zh/commands/release#release-apply) 在当前版本仍是唯一可服务版本且所有更新版本均失败时，可保留当前服务版本并原地更新；无法确认安全恢复条件时会失败并要求显式处理。
+- [Harness Sidecar] [发布构建](/productions/agentkit-cli/preview/zh/commands/release#release-build) 在托管 Sidecar 场景下保留应用声明的 `veadk-python` 与 `agentkit_sdk_python` 依赖，移除已废弃的 `agentkit-harness-sidecar-integration` 独立包，并将 TOS 构建上下文上传调整为 120 秒超时与一次可重试网络错误重试。
 
 ## 0.52.2 - 2026-08-14
 
-- [评测命令](/productions/agentkit-cli/preview/zh/commands/eval/run#eval-backend)默认解析到 AgentKit 评测网关，并新增后端查看、缓存刷新和 TEA 请求调试能力。
-- [评测集](/productions/agentkit-cli/preview/zh/commands/eval/dataset)与[评估器](/productions/agentkit-cli/preview/zh/commands/eval/evaluator)支持 TEA 版本管理、模板查看、草稿更新和版本提交。
-- [`eval run`](/productions/agentkit-cli/preview/zh/commands/eval/run)支持固定评测集版本、评估器版本、目标版本、目标类型、实验描述和 TEA 字段映射。
-- 新增 [`eval target`](/productions/agentkit-cli/preview/zh/commands/eval/target)，用于列出 TEA Source Eval Target 与目标版本。
-- 新增 [`chat`](/productions/agentkit-cli/preview/zh/commands/chat)，可通过 Identity 登录态与已启用 `custom_jwt` 的 Harness 共享会话。
+- [chat 命令] [`chat`](/productions/agentkit-cli/preview/zh/commands/chat) 可通过租户登录发现文档中的共享 Harness 别名发起 OAuth 绑定聊天，并按已验证用户身份隔离会话。
+- [eval 命令] [eval backend](/productions/agentkit-cli/preview/zh/commands/eval/backend) 默认使用 AgentKit 评测网关解析 Coze 或 TEA 后端，并提供 `--cache-refresh` 与 `--verbose`，便于查看后端坐标和排查 TEA 请求。
+- [eval 命令] [dataset、evaluator 与 target 命令](/productions/agentkit-cli/preview/zh/commands/eval/dataset) 补充 TEA 评测能力：支持评测集更新与版本管理、评估器模板查看、草稿更新与版本提交，以及源评测目标列表和版本列表。
+- [eval 命令] [`eval run`](/productions/agentkit-cli/preview/zh/commands/eval/run) 支持指定 TEA 评测集版本、评估器版本、源评测目标类型和目标版本，并在结果中返回 TEA run ID。
+- [Harness] [Harness 配置](/productions/agentkit-cli/preview/zh/commands/harness) 支持共享 OAuth Harness 的私有网络、容量、共享数据库会话和托管模型出口，并在部署后校验身份、镜像与扩缩容绑定。
+- [invoke 命令] [`invoke run`](/productions/agentkit-cli/preview/zh/commands/invoke#custom_jwt-鉴权) 调用 `custom_jwt` Runtime 时不再自动复用登录会话中的 `id_token`；通用调用需要通过 `--headers` 显式传入 OAuth token，共享 OAuth Harness 的受控聊天入口改用 `chat`。
+- [沙箱命令] [`sandbox create`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-create) 提供 `--llm-shield-app-id`，可为 `Skill` 沙箱工具启用 LLM Shield。
 
 ## 0.52.1 - 2026-08-12
 
-- [Harness](/productions/agentkit-cli/preview/zh/commands/harness)新增托管 Sidecar 组件目录与解析命令，并支持 `harness invoke` 直接调用已部署 Harness。
+- [Harness Sidecar] [Harness Sidecar 命令](/productions/agentkit-cli/preview/zh/commands/harness#harness-sidecar-catalog) 提供 `harness sidecar catalog` 与 `harness sidecar resolve`，可输出 Product Component Catalog，并在发布前把 profile 与组件开关解析为可校验的 Sidecar plan。
+- [Harness Sidecar] [发布配置](/productions/agentkit-cli/preview/zh/agentkit-yaml#harness-sidecar) 支持托管 `harness_sidecar` 配置，提供运行时描述、创建标签和 Code Pipeline 工作区 / 流水线固定字段，并将 `Auto` TOS bucket 改为按云厂商、区域和账号生成默认名称。
+- [Harness Sidecar] [`release`](/productions/agentkit-cli/preview/zh/commands/release#release) 提供 `--json`，用于托管 Harness Sidecar 发布时按行输出构建、部署、运行时 ID 与最终结果事件，并在发布后校验 Sidecar、模型代理和所需 MCP 网关状态。
+- [Harness Sidecar] [发布流程](/productions/agentkit-cli/preview/zh/commands/release#release) 在匹配已有 Runtime 时改为使用精确名称筛选；托管 Harness Sidecar 发布遇到需要重建的状态时会要求显式处理，避免自动删除已有运行时。
+- [沙箱命令] [`sandbox config --list`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-config) 改为输出当前 `.agentkit/sandbox.yaml` 文件内容，不再把推断得到的默认模型、网络和工具配置写入列表输出。
 
 ## 0.52.0 - 2026-08-11
 
-- 新增 [`model-gateway`](/productions/agentkit-cli/preview/zh/commands/model-gateway) 命令组，用于启用 Model Gateway、管理模型提供方和消费者，并生成调用示例。
-- [认证命令](/productions/agentkit-cli/preview/zh/commands/auth)支持面向租户控制面的登录地址与 `--identity-only` 登录，用于只获取用户身份登录态的场景。
-- `auth admin publish` 支持发布跨账号登录发现配置，并可通过 `--domain` 指定发布域名。
+- [Auth 命令] 支持通过带单段租户路径的 [自定义登录地址](/productions/agentkit-cli/preview/zh/commands/auth) 读取 `/.well-known/agentkit-cli` 发现文档，并对远程地址、发现文档字段、区域、云厂商和 STS 坐标执行更严格校验；通过远程发现文档登录时，CLI 只会在登录成功后保存 profile。
+- [Auth 命令] [`auth admin publish`](/productions/agentkit-cli/preview/zh/commands/auth#auth-admin-publish) 支持传入已有 `--issuer`、`--client-id`、`--role-trn` 与 `--provider-trn`，可在跨账号身份配置场景下仅发布发现文档；同时支持 `--domain` 返回已完成 CNAME 与 HTTPS 配置的自定义登录域名。
+- [Auth 命令] [Auth Admin](/productions/agentkit-cli/preview/zh/commands/auth) 可使用当前 CLI SSO profile 中有效的 STS 凭据执行管理操作，并在管理调用中使用内置服务端点，避免被项目或用户级端点覆盖影响。
+- [安装] [安装流程](/productions/agentkit-cli/preview/zh/quickstart#安装) 会让独立 CLI 在 zsh、bash 或 fish 中优先于 pip、pipx、venv 或 Conda 安装的同名命令，并在卸载时恢复被安装脚本管理的原命令与 shell 配置。
+- [配置] [配置命令](/productions/agentkit-cli/preview/zh/commands/config) 会校验区域值，只接受小写、以连字符分隔的区域代码，避免无效区域进入服务端点或请求签名。
 
 ## 0.51.2 - 2026-08-11
 
-- [运行时调用](/productions/agentkit-cli/preview/zh/commands/invoke)改为 `invoke run` 子命令，支持从 `agentkit.yaml`、Runtime ID 或端点地址解析调用信息。
+- [Model Gateway 命令] [Model Gateway](/productions/agentkit-cli/preview/zh/commands/model-gateway) 支持启用网关、管理模型提供方和调用方，并基于已授权模型生成 `curl`、OpenAI、Anthropic 或 AgentKit 调用示例。
+- [invoke 命令] [`invoke run`](/productions/agentkit-cli/preview/zh/commands/invoke) 对齐 Python SDK 调用约定，支持从 `agentkit.yaml`、Runtime ID 或端点解析调用目标，传入 JSON payload 与 headers，并按 `/invoke`、ADK `/run_sse` 或 A2A 自动选择调用方式；需要时可输出原始流式事件或显示 reasoning 内容。
+- [harness 命令] [`harness invoke`](/productions/agentkit-cli/preview/zh/commands/harness#harness-invoke) 可直接调用已部署 Harness，按请求覆盖模型、系统提示词、工具、技能、运行时后端、A2A registry 和最大 LLM 调用次数，并可选择 `invoke` 或 `run_sse` 传输。
+- [Auth 命令] [身份仅登录模式](/productions/agentkit-cli/preview/zh/commands/auth) 可通过 `login --identity-only` 与 `auth profile set --identity-only` 只保存 OIDC 会话；在匹配的 `custom_jwt` Harness 调用中，CLI 可使用该会话转发用户身份，而不创建管理凭据。
+- [Auth 命令] [Auth Admin](/productions/agentkit-cli/preview/zh/commands/auth) 生成的 SSO 权限策略补充沙箱会话列表、会话快照恢复和工具类型查询权限，使沙箱相关 SSO 工作流具备所需权限。
+- [沙箱命令] [创建、初始化和预览流程](/productions/agentkit-cli/preview/zh/commands/sandbox) 行为更明确：`sandbox create --envs` 可重复注入环境变量，`sandbox init` 生成 Dockerfile 时写入当前内置基础镜像，`sandbox web` 打开预览时会定位到沙箱主目录；首次初始化 `.agentkit/sandbox.yaml` 时不再持久化推断的模型默认值，并将 Model Square 默认模型更新为 `deepseek-v4-flash-ga-260731`。
+- [migrate 命令] [Dify 迁移](/productions/agentkit-cli/preview/zh/commands/migrate#dify-迁移范围) 会在迁移前提取 Workflow 与 Chatflow 的节点、边、变量、Features 和依赖信息，并对敏感字段脱敏。
 
 ## 0.51.1 - 2026-08-06
 
-- 修复独立发行包缺少 Runtime 资源的问题，确保[构建、启动与发布](/productions/agentkit-cli/preview/zh/commands/build)所需文件随 CLI 一同安装。
+- 修复独立发行包缺少随包资源的问题，确保[安装](/productions/agentkit-cli/preview/zh/quickstart#安装)后生命周期命令与 [`sandbox dashboard`](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-dashboard) 可以正常读取模板和 Web 终端资源。
 
 ## 0.51.0 - 2026-08-05
 - TypeScript版`config`、`build`、`launch`、`release`与`deploy`命令与 Python 版完成对齐，统一命令体系、参数风格与行为语义。

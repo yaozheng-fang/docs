@@ -1,0 +1,466 @@
+---
+title: "Harness"
+---
+
+The `harness` command group creates an agent without writing any application code: initialize a `harness.yaml`, set its fields, then deploy it directly as a runtime.
+
+## harness init
+
+Create a harness directory (`harness.yaml` + `.env.example`) for a Harness.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[name]` | Harness name (or `.` for the current directory) | None |
+| `-r, --region <region>` | Deployment region. | Selected provider's default region |
+| `-y, --yes` | Skip prompts and use defaults | `false` |
+| `-f, --force` | Scaffold into a non-empty directory / overwrite `harness.yaml` | `false` |
+
+```bash
+agentkit harness init my-harness
+agentkit --provider byteplus harness init my-harness --region ap-southeast-1
+```
+
+`harness.yaml` is the single source of configuration for a code-free agent; `harness deploy` expands it into the runtime's environment variables. In the generated file, common fields are active and each component's optional params are shown commented-out, grouped by backend — set a component's `type`, then uncomment the params under that backend. The complete file looks like this:
+
+```yaml title="harness.yaml"
+# =============================================================================
+# AgentKit harness configuration (code-free agent).
+#
+# `agentkit harness deploy` converts this file into the runtime's environment
+# variables: top-level fields and `model` are flattened (model.name -> MODEL_NAME,
+# tools -> TOOLS, ...); each component's `type` selects its backend, and the
+# component's other params map to the env vars that backend reads (e.g. viking
+# `project` -> DATABASE_VIKING_PROJECT). Empty values are skipped, so the server
+# falls back to its own defaults.
+#
+# Configure with `agentkit harness set ...` or by editing this file. For a
+# component, uncomment the params under the backend you set as `type`.
+# =============================================================================
+
+# Harness / runtime name (also the knowledgebase & long-term-memory index name).
+#   env: HARNESS_NAME          flag: --name
+harness_name: "my-harness"
+
+# Deployment cloud selected by `agentkit harness init`.
+cloud:
+  provider: volcengine
+  region: cn-beijing
+  # A horizontally scaled OAuth Harness should use a private connection to its
+  # shared session database. Keep public network enabled for authenticated APIG
+  # ingress, and use a dedicated least-privilege security group.
+  # network:
+  #   enable_public_network: true
+  #   enable_private_network: true
+  #   vpc_id: ${HARNESS_RUNTIME_VPC_ID}
+  #   subnet_ids: [${HARNESS_RUNTIME_SUBNET_ID}]
+  #   security_group_ids: [${HARNESS_RUNTIME_SECURITY_GROUP_ID}]
+  #   enable_shared_internet_access: true
+
+# Reasoning model. Direct mode preserves the legacy Runtime-IAM key lookup.
+# For a shared OAuth Harness, obo_broker sends a short-lived user+Runtime TIP to
+# a fixed APIG model egress; the gateway/Broker replaces it with the hosted
+# downstream credential, so the real provider key never enters this process.
+#   env: MODEL_*               flag: --model-name
+model:
+  name: ""
+  # provider: openai
+  # api_base: https://<model-egress-apig>/v1
+  # credential_mode: obo_broker
+  # target_alias: model
+  # target_audience: trn:agentkit:model-gateway
+  # workload_discovery_url: https://<workload-issuer>/.well-known/openid-configuration
+  # workload_issuer: https://<workload-issuer>
+  # workload_pool: default
+  # identity_region: cn-beijing
+
+# Runtime and model-call admission capacity. In OAuth mode, max_instance > 1
+# requires a shared MySQL/PostgreSQL short-term-memory backend; local/sqlite
+# sessions cannot safely span replicas. The model limits are per Runtime
+# instance; enforce tenant-wide TPM/TPD again at Model Gateway.
+capacity:
+  # cpu_milli: 4000
+  # memory_mb: 8192
+  # min_instance: 4
+  # max_instance: 10
+  # max_concurrency: 32
+  # model_max_inflight: 12
+  # model_max_inflight_per_user: 1
+  # model_queue_timeout_seconds: 45
+  # model_request_timeout_seconds: 120
+  # model_max_output_tokens: 1024
+  # session_db_pool_size: 5
+  # session_db_max_overflow: 3
+  # session_db_pool_timeout_seconds: 10
+  # session_db_pool_recycle_seconds: 300
+
+# Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
+tools: []
+
+# Skill Hub slugs, ss-... spaces, or ss-...:s-... refs.
+#   env: SKILLS  flag: --skills (comma-separated)
+skills: []
+
+# Agent instruction (empty = server default).
+#   env: SYSTEM_PROMPT         flag: --system-prompt
+system_prompt: ""
+
+# Agent description, used by discovery and generated AgentCards.
+#   env: DESCRIPTION           flag: --description
+description: ""
+
+# Agent runtime backend: adk (default) | codex.
+#   env: RUNTIME               flag: --runtime
+runtime: adk
+
+# Per-run defaults. Both can be overridden by `agentkit harness invoke` flags.
+#   env: MAX_LLM_CALLS         flag: --max-llm-calls
+# max_llm_calls: 20
+
+# Tool-call behavior.
+# structured_tool_calls: false
+# include_tools_every_turn: true
+
+# Managed Harness Sidecar optimizations (optional). SQL readonly protection is
+# server-owned and is enabled automatically with mcp_resilience.
+# sidecar:
+#   enabled: true
+#   profile: default
+#   component_overrides:
+#     context_engine: true
+#     compressor: false
+#     verifier: false
+#     long_run_control: false
+#     mcp_resilience: false
+
+# --- A2A registry (optional) ------------------------------------------------
+# Configure with --registry / --registry-space-id / --registry-space-name.
+# registry:
+#   type: agentkit_a2a
+#   space_id: ""
+#   top_k: 3
+#   endpoint: https://open.volcengineapi.com/
+#   region: cn-beijing
+
+# --- Knowledge base ----------------------------------------------------------
+#   type -> env: KNOWLEDGEBASE_TYPE   flag: --knowledgebase-type
+#   "" disables it. Supported: viking | opensearch | redis
+knowledgebase:
+  type: ""
+  # -- viking --      flags: --knowledgebase-project / --knowledgebase-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --knowledgebase-host / -port / -username / -password / -use-ssl
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # use_ssl: true
+  # -- redis --       flags: --knowledgebase-host / -port / -username / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # username: default
+  # password: ""
+  # db: 0
+
+# --- Long-term memory --------------------------------------------------------
+#   type -> env: LONG_TERM_MEMORY_TYPE   flag: --long-term-memory-type
+#   "" disables it. Supported: viking | opensearch | redis | mem0
+long_term_memory:
+  type: ""
+  # -- viking --      flags: --long-term-memory-project / --long-term-memory-region
+  # project: my-project
+  # region: cn-beijing
+  # -- opensearch --  flags: --long-term-memory-host / -port / -username / -password
+  # host: 1.2.3.4
+  # port: 9200
+  # username: admin
+  # password: ""
+  # -- redis --       flags: --long-term-memory-host / -port / -password / -db
+  # host: 1.2.3.4
+  # port: 6379
+  # password: ""
+  # db: 0
+  # -- mem0 --        flags: --long-term-memory-api-key / -api-key-id / -project-id / -base-url
+  # api_key: ""
+  # api_key_id: ""
+  # project_id: ""
+  # base_url: https://api.mem0.ai/v1
+
+# --- Short-term memory (session store) ---------------------------------------
+#   type -> env: SHORT_TERM_MEMORY_TYPE   flag: --short-term-memory-type
+#   local (default) | sqlite | mysql | postgresql
+short_term_memory:
+  type: local
+  # -- mysql --       flags: --short-term-memory-host / -user / -password / -database / -charset
+  # host: 1.2.3.4
+  # user: root
+  # password: ""
+  # database: harness
+  # charset: utf8
+  # -- postgresql --  flags: --short-term-memory-host / -port / -user / -password / -database / -schema
+  # host: 1.2.3.4
+  # port: 5432
+  # user: postgres
+  # password: ""
+  # database: harness
+  # schema: pdsa_shared_harness
+
+# --- Authentication (optional) -----------------------------------------------
+# Omit this block to deploy with the default API-key auth (key_auth). Add it to
+# gate the runtime with OAuth2/JWT (custom_jwt): the API gateway then only accepts
+# tokens issued by `discovery_url`'s user pool whose audience is one of
+# `allowed_ids`. Set up the user pool / client in the selected cloud's Identity console.
+#   flags: --discovery-url / --allowed-id
+# auth:
+#   discovery_url: "https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com/.well-known/openid-configuration"
+#   allowed_ids: ["<client-id>"]
+```
+
+Field reference:
+
+- **`harness_name`**: the harness and runtime name, also used as the knowledge-base and long-term-memory index name (env `HARNESS_NAME`, flag `--name`).
+- **`cloud`**: deployment cloud provider and region written by `harness init`; provider is `volcengine` or `byteplus`.
+- **`cloud.network`** (optional): Runtime networking. `enable_public_network` controls public ingress, `enable_private_network` enables private VPC networking, `vpc_id`, `subnet_ids`, and `security_group_ids` select private network resources, and `enable_shared_internet_access` controls shared internet egress from the private network. VPC and subnet IDs are required when private networking is enabled.
+- **`model.name`**: the reasoning model (env `MODEL_NAME`, flag `--model-name`).
+- **`model.credential_mode`** (optional): set to `obo_broker` for a shared OAuth Harness with managed model egress. This mode requires `auth` and the fields `model.provider`, `model.api_base`, `model.target_alias`, `model.target_audience`, `model.workload_discovery_url`, and `model.workload_issuer`; do not set a model API key in this mode.
+- **`capacity`** (optional): Runtime resources, concurrency, and model-admission settings. Supported fields are `cpu_milli`, `memory_mb`, `min_instance`, `max_instance`, `max_concurrency`, `model_max_inflight`, `model_max_inflight_per_user`, `model_queue_timeout_seconds`, `model_request_timeout_seconds`, `model_max_output_tokens`, `session_db_pool_size`, `session_db_max_overflow`, `session_db_pool_timeout_seconds`, and `session_db_pool_recycle_seconds`.
+- **`tools`**: built-in tool names (env `TOOLS`, flag `--tools`).
+- **`skills`**: Skill Hub slugs, spaces, or `space:skill` references (env `SKILLS`, flag `--skills`).
+- **`system_prompt`**: the agent instruction; empty uses the server default (env `SYSTEM_PROMPT`, flag `--system-prompt`).
+- **`description`**: agent description used for discovery and generated AgentCards (env `DESCRIPTION`, flag `--description`).
+- **`runtime`**: the agent runtime backend, `adk` (default) or `codex` (env `RUNTIME`, flag `--runtime`).
+- **`max_llm_calls`**: default maximum LLM calls per run; `agentkit harness invoke --max-llm-calls` can override it for one request.
+- **`structured_tool_calls`** / **`include_tools_every_turn`**: control the tool-call format and whether tool definitions are sent on every model turn.
+- **`sidecar`** (optional): managed Harness Sidecar configuration. `profile` selects the component profile, and `component_overrides` controls components such as `context_engine`, `compressor`, `verifier`, `long_run_control`, and `mcp_resilience`.
+- **`registry`**: optional A2A registry. `space_id` selects a space, `top_k` limits AgentCard retrieval, and `endpoint` plus `region` locate the service.
+- **`knowledgebase`**: a knowledge base. An empty `type` disables it; supported backends are `viking`, `opensearch`, `redis` — set `type`, then uncomment that backend's connection params.
+- **`long_term_memory`**: long-term memory. An empty `type` disables it; supported backends are `viking`, `opensearch`, `redis`, `mem0`.
+- **`short_term_memory`**: the session store. `type` is `local` (default), `sqlite`, `mysql`, or `postgresql`.
+- **`auth`** (optional): omit it to use the default API-key auth (`key_auth`); set `discovery_url` and `allowed_ids` to switch to OAuth2/JWT (`custom_jwt`), where the gateway only accepts tokens issued by that user pool whose audience is on the allow-list.
+
+The following fields are edited directly in `harness.yaml`; `harness set` does not currently generate them.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `cloud.network.enable_public_network` | boolean | `true` | Whether to keep the Runtime public ingress. |
+| `cloud.network.enable_private_network` | boolean | `false` | Whether to enable private VPC networking. |
+| `cloud.network.vpc_id` | string | — | VPC ID for private networking; required when private networking is enabled. |
+| `cloud.network.subnet_ids` | string[] | — | Subnet IDs for private networking, up to 5; required when private networking is enabled. |
+| `cloud.network.security_group_ids` | string[] | — | Security group IDs for private networking, up to 5. |
+| `cloud.network.enable_shared_internet_access` | boolean | `false` | Whether private networking can use shared internet egress. |
+| `model.provider` | string | — | Model provider identifier for managed model egress. |
+| `model.api_base` | string | — | HTTPS API base URL for managed model egress. |
+| `model.credential_mode` | `obo_broker` | — | Enable user-on-behalf-of managed model credential brokering; requires `auth`. |
+| `model.target_alias` | string | — | Fixed lowercase alias for the model egress target. |
+| `model.target_audience` | string | — | Target audience checked by model egress. |
+| `model.workload_discovery_url` | string | — | Workload identity OIDC discovery URL; must belong to `model.workload_issuer`. |
+| `model.workload_issuer` | string | — | Workload identity issuer. |
+| `model.workload_pool` | string | `default` | Workload identity pool. |
+| `model.identity_region` | string | Deploy region | Workload identity region. |
+| `capacity.cpu_milli` | integer | Platform default | Runtime CPU, from `250` to `32000`. |
+| `capacity.memory_mb` | integer | Platform default | Runtime memory, from `512` to `131072`. |
+| `capacity.min_instance` | integer | `1` when OAuth or Sidecar is enabled | Minimum Runtime instances, from `1` to `100`. |
+| `capacity.max_instance` | integer | `1` when OAuth or Sidecar is enabled | Maximum Runtime instances, from `1` to `100`. |
+| `capacity.max_concurrency` | integer | Platform default | Per-instance Runtime concurrency, from `1` to `1000`. |
+| `capacity.model_max_inflight` | integer | — | Per-Runtime-instance concurrent model request limit, from `1` to `1000`. |
+| `capacity.model_max_inflight_per_user` | integer | — | Per-user concurrent model request limit, from `1` to `100`; cannot exceed `model_max_inflight`. |
+| `capacity.model_queue_timeout_seconds` | integer | — | Seconds a model request may wait in queue, from `1` to `600`. |
+| `capacity.model_request_timeout_seconds` | integer | — | Seconds a model request may execute, from `1` to `900`. |
+| `capacity.model_max_output_tokens` | integer | — | Maximum output tokens per model response, from `128` to `16384`. |
+| `capacity.session_db_pool_size` | integer | — | Shared session database pool size per Runtime replica, from `1` to `100`. |
+| `capacity.session_db_max_overflow` | integer | — | Extra shared session database connections per Runtime replica, from `0` to `100`. |
+| `capacity.session_db_pool_timeout_seconds` | integer | — | Seconds to wait for a shared session database connection, from `1` to `120`. |
+| `capacity.session_db_pool_recycle_seconds` | integer | — | Shared session database connection recycle seconds, from `30` to `3600`. |
+
+<Note>
+  Expansion: `harness deploy` flattens top-level fields and `model` into environment variables (e.g. `model.name` → `MODEL_NAME`) and maps component params to the `DATABASE_<BACKEND>_*` variables that backend reads; empty values are skipped and the server falls back to its defaults. `auth`, `cloud`, `capacity`, and Sidecar configuration are used by the deployment control plane rather than being passed as ordinary user configuration into the agent process. The `.env.example` written by `harness init` contains only optional cloud-provider AK/SK placeholders — all agent configuration lives in `harness.yaml`.
+</Note>
+
+## harness set
+
+Set fields in `harness.yaml` (partial update; only the flags you pass are changed). Run with no flags to list the current fields. Fields fall into groups: core (model / tools / skills / prompt / runtime), knowledgebase, long-term-memory, short-term-memory, and auth. When configuring a component, set its `--<comp>-type` first, then its connection parameters.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | Harness/runtime name | None |
+| `--model-name <name>` | Reasoning model name | None |
+| `--tools <list>` | Comma-separated built-in tools | None |
+| `--skills <list>` | Comma-separated skill hub names | None |
+| `--system-prompt <text>` | Agent instruction | None |
+| `--description <text>` | Agent description used for discovery and AgentCards. | None |
+| `--runtime <backend>` | Agent runtime backend: `adk` \| `codex` | None |
+| `--max-llm-calls <n>` | Default maximum LLM calls per run; must be a positive integer. | None |
+| `--knowledgebase-type <type>` | knowledgebase backend type (`""` disables it) | None |
+| `--knowledgebase-project <value>` | knowledgebase project | None |
+| `--knowledgebase-region <value>` | knowledgebase region | None |
+| `--knowledgebase-host <value>` | knowledgebase host | None |
+| `--knowledgebase-port <value>` | knowledgebase port | None |
+| `--knowledgebase-username <value>` | knowledgebase username | None |
+| `--knowledgebase-password <value>` | knowledgebase password | None |
+| `--knowledgebase-use-ssl` | knowledgebase use_ssl | `false` |
+| `--knowledgebase-cert-path <value>` | knowledgebase cert_path | None |
+| `--knowledgebase-secret-token <value>` | knowledgebase secret_token | None |
+| `--knowledgebase-db <value>` | knowledgebase db | None |
+| `--long-term-memory-type <type>` | long_term_memory backend type (`""` disables it) | None |
+| `--long-term-memory-project <value>` | long_term_memory project | None |
+| `--long-term-memory-region <value>` | long_term_memory region | None |
+| `--long-term-memory-host <value>` | long_term_memory host | None |
+| `--long-term-memory-port <value>` | long_term_memory port | None |
+| `--long-term-memory-username <value>` | long_term_memory username | None |
+| `--long-term-memory-password <value>` | long_term_memory password | None |
+| `--long-term-memory-use-ssl` | long_term_memory use_ssl | `false` |
+| `--long-term-memory-cert-path <value>` | long_term_memory cert_path | None |
+| `--long-term-memory-secret-token <value>` | long_term_memory secret_token | None |
+| `--long-term-memory-db <value>` | long_term_memory db | None |
+| `--long-term-memory-api-key <value>` | long_term_memory api_key | None |
+| `--long-term-memory-api-key-id <value>` | long_term_memory api_key_id | None |
+| `--long-term-memory-project-id <value>` | long_term_memory project_id | None |
+| `--long-term-memory-base-url <value>` | long_term_memory base_url | None |
+| `--short-term-memory-type <type>` | short_term_memory backend type (`""` disables it) | None |
+| `--short-term-memory-host <value>` | short_term_memory host | None |
+| `--short-term-memory-user <value>` | short_term_memory user | None |
+| `--short-term-memory-password <value>` | short_term_memory password | None |
+| `--short-term-memory-database <value>` | short_term_memory database | None |
+| `--short-term-memory-charset <value>` | short_term_memory charset | None |
+| `--short-term-memory-port <value>` | short_term_memory port | None |
+| `--discovery-url <url>` | OAuth2/JWT OIDC discovery URL (enables custom_jwt) | None |
+| `--allowed-id <ids>` | Comma-separated allowed client IDs | None |
+| `--structured-tool-calls` | Use structured tool calls. | Current config |
+| `--no-structured-tool-calls` | Disable structured tool calls. | Current config |
+| `--include-tools-every-turn` | Send tool definitions on every model turn. | Current config |
+| `--reuse-tool-context` | Reuse tool context instead of resending definitions every turn. | Current config |
+| `--registry <uri>` | A2A registry: `default`, `disabled`, `agentkit://...`, or an HTTP(S) URL. | None |
+| `--registry-space-id <id>` | AgentKit A2A space ID. | None |
+| `--registry-space-name <name>` | AgentKit A2A space name; it must be unique. | None |
+| `--registry-top-k <n>` | Maximum AgentCards to retrieve; must be a positive integer. | None |
+| `--registry-endpoint <url>` | AgentKit A2A registry endpoint. | Current cloud environment's AgentKit endpoint |
+| `--registry-region <region>` | AgentKit A2A registry region. | `cloud.region` |
+
+```bash
+agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
+
+agentkit harness set --registry default --registry-space-name Default --registry-top-k 3
+```
+
+<Tip>
+Only the flags you pass are changed. To configure a component, set its `--<comp>-type` first, then supply its connection parameters.
+</Tip>
+
+## harness dev
+
+Start the Harness service locally from `harness.yaml` for development and debugging. By default, it listens on `127.0.0.1:8000`. Set a different host explicitly if other devices need to access it.
+
+| Flag | Description | Default |
+| --- | --- | --- |
+| `-p, --port <port>` | Port to listen on. | `8000` |
+| `--host <host>` | Host address to bind. | `127.0.0.1` |
+| `--reload` | Restart when the service code changes. | `false` |
+| `--python <bin>` | Python interpreter used to start the service. | `python3` |
+
+```bash
+agentkit harness dev --reload --port 8000
+```
+
+## harness deploy
+
+Build the harness image and create or update the runtime from `harness.yaml`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-r, --region <region>` | Runtime deploy region | None |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--discovery-url <url>` | OIDC discovery URL (enables OAuth2/JWT, overrides `harness.yaml`) | None |
+| `--allowed-id <ids>` | Comma-separated allowed client IDs (overrides `harness.yaml`) | None |
+
+```bash
+agentkit harness deploy --project default --region cn-beijing
+```
+
+When `auth` is configured, deployment creates a `custom_jwt` Runtime. After deployment, publish the returned Runtime ID and HTTPS endpoint in `shared_harnesses` on the tenant login discovery document; users can then access it with [`agentkit chat <alias>`](/productions/agentkit-cli/preview/en/commands/chat).
+
+```json
+{
+  "shared_harnesses": {
+    "harness": {
+      "runtime_id": "r-1234567890abcdef",
+      "endpoint": "https://runtime.example.com"
+    }
+  }
+}
+```
+
+## harness invoke
+
+Invoke a deployed Harness and optionally override its model, system prompt, tools, skills, runtime backend, or A2A registry for this request. Overrides affect only the current request and do not modify `harness.yaml`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<name>` | Harness or Runtime name (required). | — |
+| `<message>` | User message to send (required). | — |
+| `-r, --region <region>` | Cloud region. | Auto-sense |
+| `--rev <n>` | Runtime version to invoke. | Current version |
+| `--user-id <id>` | `user_id` for this run. | `agentkit_user` |
+| `--session-id <id>` | `session_id` for this run; generated when omitted. | Generated |
+| `--token <jwt>` | Bearer token for a `custom_jwt` Harness. | — |
+| `--tip-token-key <key>` | TIP token key forwarded to the Harness request context. | — |
+| `--apikey <key>` | Explicit bearer API key. | — |
+| `--raw` | Print the raw Harness response or streaming events. | `false` |
+| `--model-name <name>` | Model name for this request. | Config value |
+| `--system-prompt <text>` | System prompt for this request. | Config value |
+| `--tools <list>` | Comma-separated tools for this request. | Config value |
+| `--skills <list>` | Skill Hub slugs, spaces, or `space:skill` references for this request. | Config value |
+| `--runtime <backend>` | Runtime backend for this request: `adk` or `codex`. | Config value |
+| `--max-llm-calls <n>` | Maximum LLM calls for this request; must be a positive integer. | Config value |
+| `--registry <uri>` | A2A registry for this request: `default`, `agentkit://...`, or an HTTP(S) URL. | Config value |
+| `--registry-space-id <id>` | A2A registry space ID. | Config value |
+| `--registry-space-name <name>` | A2A registry space name. | Config value |
+| `--registry-top-k <n>` | A2A AgentCard retrieval limit; must be a positive integer. | Config value |
+| `--registry-endpoint <url>` | A2A registry endpoint. | Config value |
+| `--registry-region <region>` | A2A registry region. | Runtime region |
+| `--protocol <protocol>` | Transport protocol: `invoke` or `run_sse`. | `run_sse` |
+
+```bash
+agentkit harness invoke my-harness "Hello, introduce yourself"
+
+agentkit harness invoke my-harness "Summarize this session" \
+  --model-name doubao-pro \
+  --max-llm-calls 10 \
+  --registry default
+```
+
+For a Harness protected by `custom_jwt`, pass a bearer token explicitly with `--token`, or first run `agentkit login --identity-only <sso-address>` to save the OIDC session. The CLI forwards the cached `id_token` only when the Runtime endpoint uses HTTPS, the Runtime discovery URL matches the active login issuer, and the active OAuth client ID is in the allowed list.
+
+## harness sidecar catalog
+
+Print the Harness Sidecar Product Component Catalog. This command only prints JSON and does not create or modify cloud resources. Use it from Studio, CI, or scripts to show selectable components, availability, and the default selection for a profile.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--profile <profile>` | Product Component profile: `default` or `ops`. | `ops` |
+
+```bash
+agentkit harness sidecar catalog --profile ops
+```
+
+The output includes `schema_version`, `catalog_version`, `profiles`, `selected_profile`, `components`, `total_component_count`, and `selectable_component_count`. `components[].selected_by_profile` indicates whether the current profile selects the component by default, and `components[].availability.available` indicates whether the current Runtime contract can use it.
+
+## harness sidecar resolve
+
+Resolve a profile and component switches into a deterministic Harness Sidecar plan. This command only prints the JSON plan. It exits non-zero when the plan is invalid, which makes it suitable for validating `harness_sidecar.component_overrides` before release.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--profile <profile>` | Product Component profile: `default` or `ops`. | `ops` |
+| `--disabled` | Disable Sidecar selection and output an empty effective component list. | `false` |
+| `--component <id=true\|false>` | Override one selectable component; repeatable. Supported IDs are `context_engine`, `compressor`, `verifier`, `long_run_control`, and `mcp_resilience`. | — |
+| `--catalog-version <version>` | Expected Catalog version. | `2026.07.1` |
+| `--runtime-version <version>` | Target managed Runtime version; omitted to let the platform choose. | — |
+
+```bash
+agentkit harness sidecar resolve \
+  --profile default \
+  --component context_engine=true \
+  --component mcp_resilience=true
+```
+
+In the output, `effective_components` is the final enabled component list, `activation_targets` describes whether runtime components, the model proxy, and the MCP gateway are enabled, and `plan_hash` is used after release to verify the plan loaded by the runtime. `mcp_resilience` automatically includes SQL read-only protection; `sql_readonly` cannot be selected directly with `--component`.

@@ -1,0 +1,51 @@
+---
+title: "Initialize a project"
+---
+
+`init` creates a new agent project from a built-in template, or wraps an `Agent` from an existing Python file as a deployable AgentKit app. The generated project includes an entry file, dependency file, `agentkit.yaml`, and `.dockerignore`; use `agentkit config` to adjust it, then `agentkit launch` to build and deploy.
+
+## init
+
+Create a project from a built-in template. When `--template` is omitted, the command lists templates and asks for an ID, key, or name; use `--list-templates` to only print the list and exit.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[project_name]` | Project name. | `simple_agent` |
+| `-t, --template <template>` | Template ID, key, or name. Available keys: `basic`, `basic_stream`, `a2a`, `eino_a2a`, `agent_server`, `langchain_basic_stream`, `basic_go`, `a2a_go`. | Interactive selection |
+| `--directory <path>` | Target directory. | `.` |
+| `--agent-name <name>` | Agent name. | `Agent` |
+| `--description <text>` | Agent description. | Template default |
+| `--system-prompt <text>` | Agent system prompt. | Template default |
+| `--model-name <name>` | Model name in Ark. | Template default |
+| `--model-api-base <url>` | Model API base URL. | — |
+| `--model-api-key <key>` | Model API key; written into runtime environment config. | — |
+| `--tools <list>` | Comma-separated tools to include. | — |
+| `--list-templates` | List template IDs, keys, and names, then exit. | `false` |
+
+```bash
+agentkit init my-agent --template basic
+
+agentkit init go-agent --template basic_go --directory ./apps
+```
+
+## init --from-agent
+
+Wrap an existing Python file that defines a VeADK `Agent`. The CLI copies the source file, generates a wrapper entry point and `requirements.txt`, and creates lifecycle config.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[project_name]` | Project name; generated from the source file when omitted. | `agentkit-<file>` |
+| `-f, --from-agent <path>` | Python file containing the `Agent` definition. | Required |
+| `--agent-var <name>` | `Agent` variable name in the file; auto-detected when omitted. | Auto-detected |
+| `--wrapper-type <type>` | Wrapper type: `basic` or `stream`. | `basic` |
+| `--directory <path>` | Target directory. | `.` |
+
+```bash
+agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent
+```
+
+After initialization, enter the project directory, review `agentkit.yaml`, then run:
+
+```bash
+agentkit launch
+```

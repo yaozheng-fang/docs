@@ -1,0 +1,249 @@
+---
+title: "Authentication & login"
+---
+
+The `auth` command group handles SSO authentication: log in through the browser and store short-lived STS credentials or only the user's OIDC session, clear the session, show the current identity, manage login profiles, and prepare CLI SSO login resources for an organization. `login`, `logout`, and `whoami` are also available as top-level commands (e.g. `agentkit login`).
+
+## auth login
+
+Authenticate through browser SSO. The default mode exchanges the OIDC login result for short-lived STS credentials. `--identity-only` stores only the user's OIDC session, allowing `harness invoke` to automatically forward the user `id_token` to a matching `custom_jwt` Runtime, but it does not create AgentKit management credentials. Generic `invoke run` calls to a `custom_jwt` Runtime still need an explicit `Authorization` header through `--headers`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[address]` | Login address | None |
+| `-p, --profile <name>` | Use a named, pre-seeded profile instead of an address | None |
+| `--duration <seconds>` | Requested STS credential lifetime (seconds) | `3600` |
+| `--identity-only` | Store only the user's OIDC session without performing the STS role exchange. | `false` |
+| `--no-open` | Don't open a browser — just print the login URL (headless/SSH) | `false` |
+
+```bash
+agentkit auth login
+agentkit auth login --identity-only <sso-address>
+```
+
+### Login addresses and discovery documents
+
+When `[address]` is provided, the CLI reads the login discovery document from `/.well-known/agentkit-cli` under that address. You may omit `https://`; production remote addresses must use HTTPS, while only local test addresses may use `http://localhost`, `http://127.0.0.1`, or `http://[::1]`. The address must not contain a username, password, query string, or fragment. For a shared login domain, append one tenant path segment, such as `https://login.example.com/team-a`; the path must be a single lowercase slug, without nested paths, traversal, or encoded path separators. Remote discovery must return a JSON object directly, without redirects, and the response body must not exceed 64 KiB.
+
+Custom tenant addresses allow only these discovery-document fields:
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `issuer` | UserPool issuer. Must be the HTTPS origin of an official UserPool. | Required |
+| `client_id` | Public OAuth client id. | Required |
+| `role_trn` | STS role TRN. Required for regular login; optional for identity-only login. | — |
+| `provider_trn` | IAM OIDC provider TRN. Provide it together with `role_trn`, or omit both. | — |
+| `cloud_provider` | Cloud provider: `volcengine` or `byteplus`; must match `issuer`. | Required |
+| `region` | Cloud region; must match the region in `issuer`. | Required |
+| `transport` | Must be `sts` when STS coordinates are present. | — |
+| `scope` | OAuth scope list. Must include `openid`. | `openid profile email offline_access` |
+
+```bash
+agentkit auth login https://login.example.com/team-a
+agentkit auth login --identity-only ./local-discovery.json
+```
+
+<Note>
+  Identity-only login does not provide control-plane permissions. To resolve Runtimes, manage resources, or query projects, configure AK/SK separately or use regular `agentkit login` to obtain STS credentials. When logging in through a remote discovery document, the CLI saves the discovered profile only after browser login and subsequent credential handling succeed.
+</Note>
+
+## auth logout
+
+Clear the stored SSO session (refresh token + cached STS credentials).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO profile name | Active profile |
+| `--all` | Clear every profile's session | `false` |
+
+```bash
+agentkit auth logout
+```
+
+## auth whoami
+
+Show the identity behind the current credentials.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO profile name | Active profile |
+
+```bash
+agentkit auth whoami
+```
+
+## auth profile set
+
+Create or update a profile's login coordinates (non-secret).
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<name>` | Profile name (required) | None |
+| `--issuer <url>` | OIDC issuer URL | None |
+| `--client-id <id>` | Public OAuth client id | None |
+| `--role-trn <trn>` | STS role TRN; required unless `--identity-only` is used. | None |
+| `--provider-trn <trn>` | IAM OIDC provider TRN | None |
+| `--region <region>` | Region | `cn-beijing` |
+| `--identity-only` | Save an OIDC-only profile without an STS role. | `false` |
+
+```bash
+agentkit auth profile set my-profile \
+  --issuer https://example.com \
+  --client-id abc123 \
+  --identity-only
+```
+
+Login state is stored under `~/.agentkit/auth`. The long-lived refresh token is written to the OS keyring when available; when the keyring is unavailable, session files are written locally with `0600` permissions. Identity-only sessions do not retain the OAuth access token, and the CLI never prints stored tokens.
+
+## auth profile list
+
+List saved profiles.
+
+This command takes no arguments or options.
+
+```bash
+agentkit auth profile list
+```
+
+## auth profile show
+
+Show a profile's coordinates.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `[name]` | Profile name | Active profile |
+
+```bash
+agentkit auth profile show my-profile
+```
+
+`auth admin` subcommands require cloud credentials that can manage Identity, IAM, and TOS resources. You can provide AK/SK credentials, or use valid STS credentials from the current CLI SSO profile. To keep privileged setup predictable, `auth admin` uses built-in service endpoints instead of project or user-wide endpoint overrides.
+
+## auth admin doctor
+
+Run read-only checks that determine whether the account is ready for CLI SSO setup, including identity permissions and credential-hosting prerequisites. Failed checks produce a nonzero exit code and remediation guidance.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--account <account>` | Expected account ID; refuse to continue when the active credentials belong to another account | — |
+| `--region <region>` | Cloud region | Current provider's default region |
+| `--data-plane` | Also check credential-hosting prerequisites | `true` |
+| `--no-data-plane` | Skip credential-hosting prerequisite checks | — |
+
+```bash
+agentkit auth admin doctor --account <account-id> --region cn-beijing
+```
+
+## auth admin create-userpool
+
+Create a user pool for CLI SSO login and output its ID as JSON.
+
+<Warning>
+This command creates an identity resource in the selected account and region. Run `auth admin doctor` first to check the account, region, and permissions.
+</Warning>
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--name <name>` | User pool name (required) | — |
+| `--account <account>` | Expected account ID; refuse to continue when the active credentials belong to another account | — |
+| `--region <region>` | Cloud region | Current provider's default region |
+
+```bash
+agentkit auth admin create-userpool --name agentkit-cli-pool --account <account-id>
+```
+
+## auth admin provision
+
+Create or reuse a public CLI client, IAM OIDC provider, and STS role for an existing user pool, then output the login discovery configuration.
+
+<Warning>
+This command modifies user-pool and IAM resources. Confirm that the user pool belongs to the target account and region, and grant the role only the permissions required by CLI users.
+</Warning>
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool <uid>` | User pool ID (required) | — |
+| `--account <account>` | Expected account ID; refuse to continue when the active credentials belong to another account | — |
+| `--region <region>` | Cloud region | Current provider's default region |
+
+```bash
+agentkit auth admin provision --user-pool <user-pool-id> --account <account-id>
+```
+
+## auth admin sso-setup
+
+Prepare the user pool, public CLI client, IAM OIDC provider, STS role, and TOS-hosted login discovery document in one flow. The command prints an `agentkit login <address>` address that can be distributed to CLI users. In an interactive terminal it asks whether to reuse a user pool, configure an upstream identity provider, and use a custom domain. Non-interactive runs use defaults or explicit flags.
+
+<Warning>
+This command creates or modifies identity, IAM, and TOS resources and publishes a publicly accessible login discovery document. An upstream identity provider secret is sensitive. Prefer entering it through the hidden interactive prompt instead of saving it in a repository or shell history.
+</Warning>
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-y, --yes` | Run non-interactively with defaults and explicitly provided flags | `false` |
+| `--user-pool <uid>` | Reuse an existing user pool | — |
+| `--create-pool <name>` | Create a user pool with this name | `agentkit-cli-pool` |
+| `--account <account>` | Expected account ID; refuse to continue when the active credentials belong to another account | Account for the active credentials |
+| `--region <region>` | Cloud region | Current provider's default region |
+| `--idp <type>` | Upstream identity provider: `bytedance` \| `feishu` | No upstream identity provider |
+| `--idp-client-id <id>` | Upstream identity provider client ID; in non-interactive mode, use it with `--idp-secret` | — |
+| `--idp-secret <secret>` | Upstream identity provider client secret | — |
+| `--bucket <bucket>` | TOS bucket that hosts the login discovery document | `agentkit-cli-<account-id>` |
+| `--domain <domain>` | Custom login domain with CNAME and HTTPS certificate already configured. Pass only the hostname, without scheme, port, or path. | HTTPS address of the TOS bucket |
+| `--client-name <name>` | Public CLI user-pool client name | Built-in CLI name |
+| `--provider-name <name>` | IAM OIDC provider name | Built-in CLI name |
+| `--role-name <name>` | STS role name | Built-in CLI name |
+
+```bash
+# Interactive setup; enter sensitive upstream credentials in the hidden prompt
+agentkit auth admin sso-setup --account <account-id> --region cn-beijing
+
+# Reuse an existing user pool in automation
+agentkit auth admin sso-setup --yes \
+  --user-pool <user-pool-id> \
+  --account <account-id> \
+  --bucket <discovery-bucket>
+```
+
+<Note>
+When `--domain` is set, the command reads the discovery document back through that HTTPS domain and verifies its content after publishing. Configure the CNAME and certificate first; if public verification fails, the command does not print the custom domain as the final login address.
+</Note>
+
+## auth admin publish
+
+Create or reuse the CLI login resources for an existing user pool and publish the `/.well-known/agentkit-cli` discovery document to a selected TOS bucket. You can also pass existing OIDC and IAM coordinates to publish only the discovery document, without creating the CLI client, OIDC provider, or role again.
+
+<Warning>
+Without explicit coordinates, this command modifies identity and IAM resources and writes public login configuration to the selected bucket. Confirm that the bucket, account, user pool, and explicit coordinates all belong to the target environment; configure the CNAME and HTTPS certificate before using `--domain`.
+</Warning>
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool <uid>` | User pool ID (required) | — |
+| `--bucket <bucket>` | TOS bucket that hosts the discovery document (required) | — |
+| `--account <account>` | Expected account ID; refuse to continue when the active credentials belong to another account | — |
+| `--region <region>` | Cloud region | Current provider's default region |
+| `--domain <domain>` | Custom login domain with CNAME and HTTPS certificate already configured. The output includes the TOS domain that the CNAME should point to. | HTTPS address of the TOS bucket |
+| `--issuer <url>` | Existing OIDC issuer. Passing it together with `--client-id`, `--role-trn`, and `--provider-trn` enables publish-only mode. | — |
+| `--client-id <id>` | Existing public OAuth client id; required in publish-only mode. | — |
+| `--role-trn <trn>` | Existing target-account STS role TRN; required in publish-only mode and must belong to the authenticated account. | — |
+| `--provider-trn <trn>` | Existing target-account IAM OIDC provider TRN; required in publish-only mode and must belong to the authenticated account. | — |
+
+```bash
+agentkit auth admin publish \
+  --user-pool <user-pool-id> \
+  --bucket <discovery-bucket> \
+  --account <account-id>
+
+agentkit auth admin publish \
+  --user-pool <user-pool-id> \
+  --bucket <discovery-bucket> \
+  --domain login.example.com \
+  --issuer https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com \
+  --client-id <client-id> \
+  --role-trn trn:iam::<account-id>:role/<role-name> \
+  --provider-trn trn:iam::<account-id>:oidc-provider/<provider-name> \
+  --account <account-id>
+```
+
+Publish-only mode requires `--issuer`, `--client-id`, `--role-trn`, and `--provider-trn` together. `--issuer` must be an HTTPS URL without username, password, query string, or fragment; `--role-trn` and `--provider-trn` must belong to the currently authenticated account. `--bucket` must be a TOS bucket name with 3 to 63 lowercase letters, digits, or hyphens, starting and ending with a letter or digit.

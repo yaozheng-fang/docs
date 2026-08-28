@@ -1,0 +1,204 @@
+---
+title: "鉴权与登录"
+---
+
+`auth` 命令组用于 SSO 鉴权：通过浏览器登录并存储短时 STS 凭据或仅保存用户 OIDC 会话、清除会话、查看当前身份、管理登录配置，以及为组织准备 CLI SSO 登录资源。`login`、`logout`、`whoami` 同时提供为顶层命令（如 `agentkit login`）。
+
+## auth login
+
+通过浏览器 SSO 完成鉴权。默认模式会使用 OIDC 登录结果换取短时 STS 凭据；`--identity-only` 只保存用户 OIDC 会话，可供 `harness invoke` 在匹配的 `custom_jwt` Runtime 上自动转发用户 `id_token`，但不创建 AgentKit 管理凭据。通用 `invoke run` 调用 `custom_jwt` Runtime 时仍需通过 `--headers` 显式传入 `Authorization`。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[address]` | 登录地址 | 无 |
+| `-p, --profile <name>` | 使用预置的命名配置，替代直接传入地址 | 无 |
+| `--duration <seconds>` | 请求的 STS 凭据有效期（秒） | `3600` |
+| `--identity-only` | 只保存用户 OIDC 会话，不执行 STS 角色交换。 | `false` |
+| `--no-open` | 不打开浏览器，仅打印登录 URL（用于无头环境/SSH） | `false` |
+
+```bash
+agentkit auth login
+agentkit auth login --identity-only <sso-address>
+```
+
+<Note>
+  身份仅登录不会提供控制面权限。需要解析 Runtime、管理资源或查询项目时，请另外配置 AK/SK，或使用普通 `agentkit login` 获取 STS 凭据。
+</Note>
+
+## auth logout
+
+清除已存储的 SSO 会话（刷新令牌与缓存的 STS 凭据）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO 配置名称 | 当前活跃配置 |
+| `--all` | 清除所有配置的会话 | `false` |
+
+```bash
+agentkit auth logout
+```
+
+## auth whoami
+
+显示当前凭据背后的身份。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-p, --profile <name>` | SSO 配置名称 | 当前活跃配置 |
+
+```bash
+agentkit auth whoami
+```
+
+## auth profile set
+
+创建或更新某个配置的登录坐标（非机密信息）。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<name>` | 配置名称（必填） | 无 |
+| `--issuer <url>` | OIDC issuer URL | 无 |
+| `--client-id <id>` | 公开的 OAuth client id | 无 |
+| `--role-trn <trn>` | STS role TRN；未使用 `--identity-only` 时必填。 | 无 |
+| `--provider-trn <trn>` | IAM OIDC provider TRN | 无 |
+| `--region <region>` | 区域 | `cn-beijing` |
+| `--identity-only` | 保存无需 STS 角色的 OIDC-only profile。 | `false` |
+
+```bash
+agentkit auth profile set my-profile \
+  --issuer https://example.com \
+  --client-id abc123 \
+  --identity-only
+```
+
+登录状态保存在 `~/.agentkit/auth`。长效 refresh token 会优先写入操作系统密钥环；无法使用密钥环时，CLI 将会话文件以 `0600` 权限写入本地。身份仅会话不会保留 OAuth access token，CLI 也不会打印已存储的 token。
+
+## auth profile list
+
+列出已保存的配置。
+
+该命令不接受任何参数或选项。
+
+```bash
+agentkit auth profile list
+```
+
+## auth profile show
+
+显示某个配置的坐标。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `[name]` | 配置名称 | 当前活跃配置 |
+
+```bash
+agentkit auth profile show my-profile
+```
+
+## auth admin doctor
+
+以只读方式检查账号能否完成 CLI SSO 接入，包括身份资源权限与凭证托管前置条件。检查未通过时命令返回非零退出码，并输出修复建议。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--account <account>` | 预期的账号 ID；当前凭证不属于该账号时拒绝继续 | — |
+| `--region <region>` | 云区域 | 当前云厂商的默认区域 |
+| `--data-plane` | 同时检查凭证托管前置条件 | `true` |
+| `--no-data-plane` | 跳过凭证托管前置条件检查 | — |
+
+```bash
+agentkit auth admin doctor --account <account-id> --region cn-beijing
+```
+
+## auth admin create-userpool
+
+创建用于 CLI SSO 登录的用户池，并以 JSON 输出用户池 ID。
+
+<Warning>
+该命令会在指定账号和区域创建身份资源。执行前先用 `auth admin doctor` 检查账号、区域和权限。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--name <name>` | 用户池名称（必填） | — |
+| `--account <account>` | 预期的账号 ID；当前凭证不属于该账号时拒绝继续 | — |
+| `--region <region>` | 云区域 | 当前云厂商的默认区域 |
+
+```bash
+agentkit auth admin create-userpool --name agentkit-cli-pool --account <account-id>
+```
+
+## auth admin provision
+
+为已有用户池创建或复用公开 CLI 客户端、IAM OIDC provider 和 STS 角色，并输出可发布的登录发现配置。
+
+<Warning>
+该命令会修改用户池和 IAM 资源。确认用户池属于目标账号与区域，并仅授予终端用户所需的角色权限。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool <uid>` | 用户池 ID（必填） | — |
+| `--account <account>` | 预期的账号 ID；当前凭证不属于该账号时拒绝继续 | — |
+| `--region <region>` | 云区域 | 当前云厂商的默认区域 |
+
+```bash
+agentkit auth admin provision --user-pool <user-pool-id> --account <account-id>
+```
+
+## auth admin sso-setup
+
+一次性准备用户池、公开 CLI 客户端、IAM OIDC provider、STS 角色和 TOS 登录发现文档，最后输出可分发给终端用户的 `agentkit login <address>` 地址。交互终端会询问是否复用用户池、是否配置上游身份提供方和是否使用自定义域名；非交互环境使用默认值或显式标志。
+
+<Warning>
+该命令会创建或修改身份、IAM 和 TOS 资源，并发布可公开访问的登录发现文档。上游身份提供方的 secret 属于敏感凭证；优先在交互提示中输入，避免把它写入仓库或 shell 历史。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-y, --yes` | 非交互执行，接受默认值和显式传入的标志 | `false` |
+| `--user-pool <uid>` | 复用已有用户池 | — |
+| `--create-pool <name>` | 创建指定名称的用户池 | `agentkit-cli-pool` |
+| `--account <account>` | 预期的账号 ID；当前凭证不属于该账号时拒绝继续 | 当前凭证所属账号 |
+| `--region <region>` | 云区域 | 当前云厂商的默认区域 |
+| `--idp <type>` | 上游身份提供方：`bytedance` \| `feishu` | 不配置上游身份提供方 |
+| `--idp-client-id <id>` | 上游身份提供方 Client ID；非交互模式下与 `--idp-secret` 一同使用 | — |
+| `--idp-secret <secret>` | 上游身份提供方 Client Secret | — |
+| `--bucket <bucket>` | 托管登录发现文档的 TOS bucket | `agentkit-cli-<account-id>` |
+| `--domain <domain>` | 自定义 HTTPS 登录域名 | TOS bucket 的 HTTPS 地址 |
+| `--client-name <name>` | 公开 CLI 用户池客户端名称 | CLI 内置名称 |
+| `--provider-name <name>` | IAM OIDC provider 名称 | CLI 内置名称 |
+| `--role-name <name>` | STS 角色名称 | CLI 内置名称 |
+
+```bash
+# 交互配置；敏感的上游身份凭证可在隐藏输入提示中填写
+agentkit auth admin sso-setup --account <account-id> --region cn-beijing
+
+# 在自动化环境中复用已有用户池
+agentkit auth admin sso-setup --yes \
+  --user-pool <user-pool-id> \
+  --account <account-id> \
+  --bucket <discovery-bucket>
+```
+
+## auth admin publish
+
+为已有用户池创建或复用 CLI 登录资源，并把 `/.well-known/agentkit-cli` 发现文档发布到指定 TOS bucket。
+
+<Warning>
+该命令会修改身份和 IAM 资源，并向指定 bucket 写入公开登录配置。确认 bucket、账号和用户池均属于目标环境。
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool <uid>` | 用户池 ID（必填） | — |
+| `--bucket <bucket>` | 托管发现文档的 TOS bucket（必填） | — |
+| `--account <account>` | 预期的账号 ID；当前凭证不属于该账号时拒绝继续 | — |
+| `--region <region>` | 云区域 | 当前云厂商的默认区域 |
+
+```bash
+agentkit auth admin publish \
+  --user-pool <user-pool-id> \
+  --bucket <discovery-bucket> \
+  --account <account-id>
+```

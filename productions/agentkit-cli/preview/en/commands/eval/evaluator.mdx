@@ -2,62 +2,52 @@
 title: "Manage evaluators"
 ---
 
-The `eval evaluator` command group manages evaluators: browse built-in templates, inspect template details, list and show existing evaluators, create evaluators, update TEA evaluator drafts, submit evaluator versions, and delete evaluators. An evaluator is typically a prompt with a scoring rubric backed by a judge model; it receives input fields such as `input`, `output`, and `reference_output`, then returns scores.
+The `eval evaluator` command group manages evaluators: browse built-in templates, list and show existing evaluators, create evaluators, update TEA drafts, submit TEA versions, and delete evaluators. An evaluator is typically a rubric prompt backed by a judge model; it receives input fields and produces a score or distribution.
 
-## evaluator templates
-
-Browse built-in evaluator templates as a starting point for your own evaluator. This command is a compatibility entry point for `eval evaluator template list`.
-
-| Flag / Argument | Description | Default |
-| --- | --- | --- |
-| `--type <type>` | TEA built-in template type: `prompt` or a numeric type value. | `prompt` |
-| `--locale <locale>` | TEA template locale; `cn` or `zh-CN` appends the Chinese locale parameter. | `zh-CN` |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
-| `--json` | Output raw JSON. | `false` |
-
-```bash
-agentkit eval evaluator templates
-```
+<Note>
+`--project` applies only to the Coze evaluation backend; the TEA backend ignores it. TEA version commands are available only on the TEA evaluation backend.
+</Note>
 
 ## evaluator template list
 
-List built-in evaluator templates.
+List built-in evaluator templates. `evaluator templates` is a compatibility entry point equivalent to `evaluator template list`.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `--type <type>` | TEA built-in template type: `prompt` or a numeric type value. | `prompt` |
-| `--locale <locale>` | TEA template locale; `cn` or `zh-CN` appends the Chinese locale parameter. | `zh-CN` |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `--type <type>` | TEA built-in template type; use `prompt` or a numeric type. | `prompt` |
+| `--locale <locale>` | TEA template locale; `cn` or `zh-CN` appends the Chinese locale. | `zh-CN` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit eval evaluator template list --type prompt
+agentkit eval evaluator template list
+agentkit eval evaluator templates --type prompt
 ```
 
 ## evaluator template show
 
-Show details for a built-in evaluator template, including its input schema and prompt content.
+Show a built-in evaluator template, including its prompt and input fields.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<key>` | TEA template key, or Coze template ID / name. | Required |
-| `--type <type>` | TEA built-in template type: `prompt` or a numeric type value. | `prompt` |
+| `--type <type>` | TEA built-in template type; use `prompt` or a numeric type. | `prompt` |
 | `--language <type>` | TEA code template `language_type`. | — |
-| `--locale <locale>` | TEA template locale; `cn` or `zh-CN` appends the Chinese locale parameter. | `zh-CN` |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `--locale <locale>` | TEA template locale; `cn` or `zh-CN` appends the Chinese locale. | `zh-CN` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit eval evaluator template show relevance --type prompt
+agentkit eval evaluator template show relevance
 ```
 
-## evaluator list
+## evaluator template list
 
-List evaluators in the current project.
+List evaluators in the current project or workspace.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
@@ -66,39 +56,51 @@ agentkit eval evaluator list
 
 ## evaluator show
 
-Show evaluator details: rubric prompt, model configuration, input fields, and version information. On the TEA backend, use `--evaluator-version` to inspect a specific version.
+Show an evaluator's details: rubric prompt, model configuration, and input fields. On TEA, you can select a specific evaluator version.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id\|name>` | Evaluator id or exact name. | Required |
-| `--evaluator-version <id\|name>` | TEA evaluator version id or version string, such as `0.0.1`. | Current version |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `<id\|name>` | Evaluator ID or exact name. | Required |
+| `--evaluator-version <id\|name>` | TEA evaluator version ID or version string, such as `0.0.1`. | — |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
 agentkit eval evaluator show relevance
+
 agentkit eval evaluator show relevance --evaluator-version 0.0.1
 ```
 
 ## evaluator create
 
-Create an evaluator. The simplest path is to clone the rubric and input schema from a built-in template, then select the judge model.
+Create an evaluator. You can clone rubric and input schema from a built-in template, or define the evaluator with a custom prompt file.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `--name <name>` | Evaluator name. | Required |
-| `--from-template <key\|id\|name>` | Clone the rubric and input schema from a built-in template. | — |
-| `--model <name\|id>` | Judge model; TEA accepts built-in model names or IDs, while Coze accepts an Ark endpoint ID. | — |
-| `--prompt-file <path>` | Custom rubric text file; overrides the template prompt. | — |
+| `--from-template <key\|id\|name>` | Clone the rubric and schema from a built-in template. TEA uses the template key; Coze uses the template ID or name. | — |
+| `--model <name\|id>` | Judge model. TEA accepts `Doubao 2.0 Lite`, `Doubao 2.0 Pro`, `Doubao 2.0 Mini`, or model IDs `1`, `2`, `3`; Coze uses an Ark endpoint ID. | — |
+| `--prompt-file <path>` | Custom rubric text file. | — |
 | `--description <text>` | Evaluator description. | — |
-| `--input-schemas <keys>` | TEA input schema keys, comma-separated. | Inferred from template or prompt |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `--input-schemas <keys>` | Comma-separated input field keys; used only on TEA. | — |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-On the Coze backend, provide at least one of `--from-template` or `--prompt-file`.
+On Coze, provide at least one of `--from-template` or `--prompt-file`. On TEA, you can create from a template or from a custom prompt and input fields.
 
 ```bash
-agentkit eval evaluator create --name relevance --from-template "relevance" --model "Doubao 2.0 Lite"
+agentkit eval evaluator create \
+  --name relevance \
+  --from-template relevance \
+  --model "Doubao 2.0 Pro"
+```
+
+```bash
+agentkit eval evaluator create \
+  --name custom-score \
+  --prompt-file ./rubric.txt \
+  --input-schemas input,output,reference_output \
+  --model 2
 ```
 
 <Tip>
@@ -107,22 +109,25 @@ Reference input fields in the prompt with placeholders like <code>{'{{input}}'}<
 
 ## evaluator update-draft
 
-Update a TEA evaluator draft. You can update the prompt, model, and input schema separately, or pass a full evaluator content JSON file with `--evaluator-content-file`.
+Update a TEA evaluator draft. When `--evaluator-content-file` is passed, that JSON file is used as the complete evaluator content and overrides `--prompt-file`, `--model`, and `--input-schemas-json`.
+
+<Note>
+`evaluator update-draft` is supported only on the TEA evaluation backend.
+</Note>
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id>` | Evaluator id. | Required |
+| `<id>` | Evaluator ID. | Required |
 | `--prompt-file <path>` | Custom rubric text file. | — |
-| `--model <name\|id>` | Judge model name or ID. | — |
-| `--input-schemas-json <json>` | Input schemas as a JSON array. | — |
-| `--evaluator-content-file <path>` | Full `evaluator_content` JSON file; overrides `--prompt-file`, `--model`, and `--input-schemas-json`. | — |
-| `--evaluator-type <type>` | Evaluator type; unchanged when omitted. | — |
+| `--model <name\|id>` | Judge model: `Doubao 2.0 Lite`, `Doubao 2.0 Pro`, `Doubao 2.0 Mini`, or model IDs `1`, `2`, `3`. | — |
+| `--input-schemas-json <json>` | JSON array of input field schemas. | — |
+| `--evaluator-content-file <path>` | Complete `evaluator_content` JSON file. | — |
+| `--evaluator-type <type>` | Evaluator type; unchanged when omitted. | Unchanged |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit eval evaluator update-draft 75902xxxxxxxxxxxxx \
-  --prompt-file rubric.md \
-  --model "Doubao 2.0 Pro" \
+agentkit eval evaluator update-draft <evaluator-id> \
+  --prompt-file ./rubric.txt \
   --input-schemas-json '[{"key":"input"},{"key":"output"},{"key":"reference_output"}]'
 ```
 
@@ -132,8 +137,8 @@ List TEA evaluator versions.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `--evaluator <id\|name>` | Evaluator id or exact name. | Required |
-| `-r, --region <region>` | Volcengine region. | Environment and evaluation endpoint default |
+| `--evaluator <id\|name>` | Evaluator ID or exact name. | Required |
+| `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
@@ -142,19 +147,19 @@ agentkit eval evaluator version list --evaluator relevance
 
 ## evaluator version submit
 
-Submit a TEA evaluator draft as a new version. After submission, select it with `eval run --evaluator-version`.
+Submit a TEA evaluator draft as a version.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<version>` | Version string, such as `0.0.2`. | Required |
-| `--evaluator <id\|name>` | Evaluator id or exact name. | Required |
+| `--evaluator <id\|name>` | Evaluator ID or exact name. | Required |
 | `--description <text>` | Version description. | — |
 | `--desc <text>` | Alias for `--description`. | — |
-| `-r, --region <region>` | Volcengine region. | Environment and evaluation endpoint default |
+| `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit eval evaluator version submit 0.0.2 --evaluator relevance --description "Updated rubric"
+agentkit eval evaluator version submit 0.0.2 --evaluator relevance --description "Update rubric"
 ```
 
 ## evaluator delete
@@ -167,8 +172,8 @@ This command deletes the evaluator. Check the target first; the CLI prompts for 
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id\|name>` | Evaluator id or exact name. | Required |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `<id\|name>` | Evaluator ID or exact name. | Required |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
 ```bash

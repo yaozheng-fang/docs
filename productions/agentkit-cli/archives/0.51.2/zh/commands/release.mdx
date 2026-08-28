@@ -1,0 +1,67 @@
+---
+title: "发布"
+---
+
+`release` 使用 `.agentkit/agentkit.yaml` 执行完整发布流程：生成发布配置、云端构建镜像、创建或更新 AgentKit Runtime，并按配置发布飞书、企业微信、钉钉代理或前端 BFF。若只使用根目录 `agentkit.yaml` 的生命周期配置，请使用 [`launch`](/productions/agentkit-cli/preview/zh/commands/launch)。
+
+## release
+
+不带子命令时，`release` 执行完整流程。若当前项目没有 `.agentkit/agentkit.yaml`，命令会先生成配置并提示检查后再次执行。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 配置阶段使用的运行时或应用名称。 | 当前目录名 |
+| `-r, --region <region>` | 配置阶段使用的云区域。 | 云厂商默认区域 |
+| `-p, --project <name>` | AgentKit 项目。 | `default` |
+| `--im-feishu` | 运行时发布后发布飞书机器人代理。 | `false` |
+| `--im-feishu-app-id <id>` | 飞书代理使用的 App ID。 | `im.feishu.app_id` 或 `FEISHU_APP_ID` |
+| `--im-feishu-app-secret <secret>` | 飞书代理使用的 App Secret；推荐改用 `FEISHU_APP_SECRET`。 | `im.feishu.app_secret` 或 `FEISHU_APP_SECRET` |
+
+```bash
+agentkit release --name my-agent --region cn-beijing --project default
+```
+
+<Warning>
+`release` 会创建或更新云端运行时，并可能创建 VeFaaS 函数、网关、镜像仓库、TOS 对象和身份相关配置。执行前确认 `.agentkit/agentkit.yaml`、凭证、区域和项目。
+</Warning>
+
+## release config
+
+生成 `.agentkit/agentkit.yaml` 与 Dockerfile。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 运行时或应用名称。 | 当前目录名 |
+| `-r, --region <region>` | 云区域。 | 云厂商默认区域 |
+| `-p, --project <name>` | AgentKit 项目。 | `default` |
+| `-f, --force` | 覆盖已有生成文件。 | `false` |
+
+```bash
+agentkit release config --name my-agent --force
+```
+
+## release build
+
+根据 `.agentkit/agentkit.yaml` 在云端构建镜像，并把构建产物写入 `.agentkit/artifacts/`。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit release build
+```
+
+## release apply
+
+基于最新构建产物创建或更新运行时。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit release apply
+```
+
+消息渠道与前端发布配置仍写在 `.agentkit/agentkit.yaml`，字段说明见 [agentkit.yaml](/productions/agentkit-cli/preview/zh/agentkit-yaml)。

@@ -1,0 +1,91 @@
+---
+title: "Quickstart"
+---
+
+## Install
+
+No Node.js required — one command installs the standalone binary and puts `agentkit` (and its alias `ak`) on your PATH:
+
+<Tabs>
+  <Tab title="wget">
+    ```bash
+    wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
+    ```
+  </Tab>
+  <Tab title="curl">
+    ```bash
+    curl -fsSL https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
+    ```
+  </Tab>
+</Tabs>
+
+Verify the install:
+
+```bash
+agentkit --help
+```
+
+<Tip>
+  The binary installs to `~/.agentkit`, with `agentkit` and `ak` symlinks in `~/.local/bin`. The install directory also contains required runtime assets such as `templates/`, `lifecycle-templates/`, `harness/`, `skills/`, `im-proxies/`, and `vendor/`; when manually moving or extracting a standalone release, keep these directories beside `ak` in the same install directory. If the command isn't found, add `~/.local/bin` to your PATH. To install a specific version, set the `AGENTKIT_VERSION` environment variable (defaults to `latest`).
+</Tip>
+
+## Authentication
+
+The CLI signs every cloud OpenAPI request. Provide credentials for the cloud provider or login mode you use:
+
+<Tabs>
+  <Tab title="AK/SK">
+    Set these in your environment or a local `.env` (git-ignored):
+
+    ```bash
+    VOLCENGINE_ACCESS_KEY=...
+    VOLCENGINE_SECRET_KEY=...
+    VOLCENGINE_REGION=cn-beijing   # optional, defaults to cn-beijing
+    ```
+  </Tab>
+  <Tab title="BytePlus">
+    Set BytePlus credentials, then write the default cloud provider and region to user-wide config:
+
+    ```bash
+    BYTEPLUS_ACCESS_KEY=...
+    BYTEPLUS_SECRET_KEY=...
+    agentkit --provider byteplus config --global --region ap-southeast-1
+    ```
+  </Tab>
+  <Tab title="SSO">
+    Browser login that stores short-lived STS credentials.
+
+    ```bash
+    agentkit login <sso-address>
+    agentkit whoami
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+  SSO login caches short-lived STS credentials. When AK/SK credentials are not explicitly configured, runtime, knowledge, memory, tool, and other cloud commands use valid credentials from the active login profile. Run `agentkit login` again after the credentials expire.
+</Tip>
+
+## Deploy in three steps
+
+<Steps>
+  <Step title="Scaffold a project">
+    ```bash
+    agentkit init my-agent --template basic
+    cd my-agent
+    ```
+  </Step>
+  <Step title="Build & deploy">
+    ```bash
+    agentkit launch
+    ```
+  </Step>
+  <Step title="Invoke the runtime">
+    ```bash
+    agentkit invoke run "hello"
+    ```
+  </Step>
+</Steps>
+
+See the [command reference](/productions/agentkit-cli/preview/en/commands), or run `agentkit tree`
+to print the command tree. To switch cloud provider or region, run `agentkit config --cloud_provider byteplus --region ap-southeast-1` in the project.

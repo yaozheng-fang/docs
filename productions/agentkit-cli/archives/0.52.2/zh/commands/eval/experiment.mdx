@@ -1,0 +1,84 @@
+---
+title: "查看实验与结果"
+---
+
+`eval experiment` 命令组（别名 `exp`）用于查看由 [`eval run`](/productions/agentkit-cli/preview/zh/commands/eval/run) 提交的实验：列出实验、查看某个实验的状态与汇总分数、拉取逐条结果。TEA 后端会在详情中展示目标、评估器版本、聚合分数和字段映射；Coze 后端继续按项目查询实验。
+
+<Note>
+`--project` 只用于 Coze 评测后端；TEA 后端会忽略该参数。
+</Note>
+
+## eval experiment list
+
+列出项目或工作区下的实验：ID、名称、状态、开始时间、创建人和汇总分数。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit eval experiment list
+
+agentkit eval exp list --json
+```
+
+## eval experiment show
+
+查看某个实验的详情：状态、评测集、目标、评估器、汇总分数和字段映射。`get` 是 `show` 的别名。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 实验 ID。 | 必填 |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit eval experiment show 75901xxxxxxxxxxxxx
+agentkit eval experiment get 75901xxxxxxxxxxxxx
+```
+
+```text
+ID              75901xxxxxxxxxxxxx
+Name            qa-set-<timestamp>
+Status          Success
+Dataset         qa-set (75900xxxxxxxxxxxxx)
+Target          my-agent
+Overall score   1.00
+
+Evaluators:
+  相关性 @0.0.1  avg 1.00
+    1.00: 2 (100%)
+
+Field mappings:
+  target: user_input <- dataset.input
+  相关性: output <- target.actual_output, reference_output <- dataset.reference_output
+```
+
+## eval experiment results
+
+拉取逐条结果：每条评测集用例、目标输出、以及各评估器的分数与理由。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 实验 ID。 | 必填 |
+| `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
+| `--limit <n>` | 每页条数；上限为 20。 | `20` |
+| `--page <n>` | 页码。 | `1` |
+| `--json` | 输出原始 JSON。 | `false` |
+
+```bash
+agentkit eval experiment results 75901xxxxxxxxxxxxx --json
+```
+
+## 实验状态
+
+| 状态 | 含义 |
+| --- | --- |
+| `Success` | 所有用例执行完成。 |
+| `Failed` | 有用例执行失败，例如目标未响应。 |
+| `Draining` / `Processing` | 仍在执行中。 |
+
+<Tip>
+用例失败但没有实验级错误信息时，通常是目标运行时未正常响应（未部署、未就绪或鉴权失败），而非评测配置问题；请先确认 `--target` 指向的运行时处于运行状态。
+</Tip>

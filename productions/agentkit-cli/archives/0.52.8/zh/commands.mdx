@@ -1,0 +1,55 @@
+---
+title: "概述"
+---
+
+AgentKit CLI 的命令按组组织，下方每一组单独成篇，逐个命令列出选项与示例。随时运行 `agentkit tree` 可打印完整命令树（`--all` 展开参数与选项，`--json` 输出机器可读格式）。
+
+## 全局选项
+
+全局选项写在子命令之前，对当前命令生效。
+
+| 选项 | 默认值 | 说明 |
+| --- | --- | --- |
+| `-v, --version` | - | 输出当前 CLI 版本并退出。 |
+| `--provider <provider>` | 未设置 | 覆盖当前命令使用的云厂商，可选值为 `volcengine` 或 `byteplus`。 |
+
+云厂商按以下顺序确定：`--provider`、`AGENTKIT_CLOUD_PROVIDER`、`CLOUD_PROVIDER`、项目配置、用户级默认配置，最后回退到 `volcengine`。
+
+```bash
+agentkit --version
+agentkit --provider byteplus runtime list
+```
+
+<CardGroup cols={2}>
+  <Card title="init" href="/productions/agentkit-cli/preview/zh/commands/init">从模板脚手架新项目</Card>
+  <Card title="config" href="/productions/agentkit-cli/preview/zh/commands/config">管理生命周期配置</Card>
+  <Card title="build" href="/productions/agentkit-cli/preview/zh/commands/build">构建运行时镜像</Card>
+  <Card title="deploy" href="/productions/agentkit-cli/preview/zh/commands/deploy">部署已构建的运行时</Card>
+  <Card title="launch" href="/productions/agentkit-cli/preview/zh/commands/launch">构建并部署生命周期项目</Card>
+  <Card title="status" href="/productions/agentkit-cli/preview/zh/commands/status">查看运行时状态</Card>
+  <Card title="release" href="/productions/agentkit-cli/preview/zh/commands/release">执行完整云端发布流程</Card>
+  <Card title="runtime" href="/productions/agentkit-cli/preview/zh/commands/runtime">管理运行时</Card>
+  <Card title="destroy" href="/productions/agentkit-cli/preview/zh/commands/destroy">删除已部署的运行时</Card>
+  <Card title="knowledge" href="/productions/agentkit-cli/preview/zh/commands/knowledge">管理知识库</Card>
+  <Card title="memory" href="/productions/agentkit-cli/preview/zh/commands/memory">管理记忆库</Card>
+  <Card title="model-gateway" href="/productions/agentkit-cli/preview/zh/commands/model-gateway">管理 Model Gateway、模型提供方和调用方</Card>
+  <Card title="mcp service" href="/productions/agentkit-cli/preview/zh/commands/mcp">管理 MCP 服务</Card>
+  <Card title="sandbox" href="/productions/agentkit-cli/preview/zh/commands/sandbox">创建沙箱、执行命令、管理会话</Card>
+  <Card title="env" href="/productions/agentkit-cli/preview/zh/commands/env">管理自托管沙箱环境</Card>
+  <Card title="skill / skills" href="/productions/agentkit-cli/preview/zh/commands/skill">管理平台技能与本地技能包</Card>
+  <Card title="harness" href="/productions/agentkit-cli/preview/zh/commands/harness">Harness</Card>
+  <Card title="chat" href="/productions/agentkit-cli/preview/zh/commands/chat">通过租户别名使用共享 OAuth Harness 聊天</Card>
+  <Card title="invoke" href="/productions/agentkit-cli/preview/zh/commands/invoke">调用已部署的运行时</Card>
+  <Card title="eval backend" href="/productions/agentkit-cli/preview/zh/commands/eval/backend">查看评测后端</Card>
+  <Card title="eval dataset" href="/productions/agentkit-cli/preview/zh/commands/eval/dataset">管理评测集及用例</Card>
+  <Card title="eval evaluator" href="/productions/agentkit-cli/preview/zh/commands/eval/evaluator">管理评估器</Card>
+  <Card title="eval target" href="/productions/agentkit-cli/preview/zh/commands/eval/target">管理 TEA 评测目标</Card>
+  <Card title="eval run" href="/productions/agentkit-cli/preview/zh/commands/eval/run">提交评测实验</Card>
+  <Card title="eval experiment" href="/productions/agentkit-cli/preview/zh/commands/eval/experiment">查看实验与结果</Card>
+  <Card title="migrate" href="/productions/agentkit-cli/preview/zh/commands/migrate">迁移已有智能体应用</Card>
+  <Card title="auth" href="/productions/agentkit-cli/preview/zh/commands/auth">SSO 鉴权、登录 profile 与组织接入配置</Card>
+  <Card title="onboard" href="/productions/agentkit-cli/preview/zh/commands/onboard">安装内置技能</Card>
+  <Card title="tree" href="/productions/agentkit-cli/preview/zh/commands/tree">查看完整命令树</Card>
+  <Card title="upgrade" href="/productions/agentkit-cli/preview/zh/commands/upgrade">检查并安装 CLI 更新</Card>
+  <Card title="docs" href="/productions/agentkit-cli/preview/zh/commands/docs">在浏览器中查看文档</Card>
+</CardGroup>

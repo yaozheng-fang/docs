@@ -2,10 +2,10 @@
 title: "Manage datasets"
 ---
 
-The `eval dataset` command group manages evaluation sets: list, show, create, update, and delete datasets, add or remove cases, and manage dataset versions on the TEA evaluation backend. A dataset is the data source for an experiment; its fields, such as `input` and `reference_output`, are mapped to the target and evaluator during [`eval run`](/productions/agentkit-cli/preview/en/commands/eval/run).
+The `eval dataset` command group manages evaluation sets: list, show, create, update, and delete datasets, add or remove cases, and manage TEA dataset versions. A dataset is the data source for an experiment; its fields, such as `input` and `reference_output`, are mapped to the evaluation target and evaluator during [`eval run`](/productions/agentkit-cli/preview/en/commands/eval/run).
 
 <Note>
-These subcommands are also available as top-level aliases, so the `eval` prefix may be omitted: `agentkit eval dataset list` is equivalent to `agentkit dataset list`. The examples below use the shorter `agentkit dataset ...` form. Features marked TEA-only are available only when the current account resolves to the TEA evaluation backend.
+These subcommands are also available as top-level aliases, so the `eval` prefix may be omitted: `agentkit eval dataset list` is equivalent to `agentkit dataset list`. The examples below use the shorter `agentkit dataset ...` form. `--project` applies only to the Coze evaluation backend; the TEA backend ignores it.
 </Note>
 
 ## dataset list
@@ -15,7 +15,7 @@ List evaluation datasets.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `-r, --region <region>` | Volcengine region. | Auto-detect |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
@@ -24,20 +24,21 @@ agentkit dataset list
 
 ## dataset show
 
-Show details of an evaluation dataset, including its case items. On the TEA backend, use `--dataset-version` to inspect a specific version.
+Show details of an evaluation dataset, including schema, version information, and case items.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id\|name>` | Evaluation set id or exact name. | Required |
-| `--dataset-version <id\|name>` | TEA dataset version id or version string, such as `0.0.1`. | Current version |
-| `--items <n>` | List up to N case items; `0` skips items. | `20` |
+| `<id\|name>` | Evaluation set ID or exact name. | Required |
+| `--dataset-version <id\|name>` | TEA dataset version ID or version string, such as `0.0.1`. | — |
+| `--items <n>` | List up to N case items; pass `0` to skip the item list. | `20` |
 | `-r, --region <region>` | Volcengine region. | Auto-detect |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
 agentkit dataset show qa-set --items 50
-agentkit dataset show qa-set --dataset-version 0.0.1
+
+agentkit dataset show qa-set --dataset-version 0.0.1 --json
 ```
 
 ## dataset create
@@ -50,7 +51,7 @@ Create an evaluation dataset. The schema is fixed once created, and a case's key
 | `--schema <fields>` | Comma-separated field names. | `input,reference_output,output` |
 | `--description <text>` | Dataset description. | — |
 | `-r, --region <region>` | Volcengine region. | Environment and current cloud context |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
@@ -58,42 +59,72 @@ agentkit dataset create --name qa-set --schema "input,reference_output"
 ```
 
 <Tip>
-`output`, the model's actual answer, is usually produced by the evaluated target during the experiment, so it does not need to be part of the dataset schema. A dataset typically only needs `input` and `reference_output`.
+`output` is usually produced by the evaluated target Runtime during the experiment, so it does not need to be part of the dataset schema. A dataset typically only needs `input` and `reference_output`.
 </Tip>
 
 ## dataset update
 
-Update the name or description of a dataset. This command is TEA-only.
+Update the name or description of a TEA evaluation dataset.
+
+<Note>
+`dataset update` is supported only on the TEA evaluation backend.
+</Note>
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id>` | Evaluation set id. | Required |
+| `<id>` | Evaluation set ID. | Required |
 | `--name <name>` | New dataset name. | — |
 | `--description <text>` | New dataset description. | — |
-| `-r, --region <region>` | Volcengine region. | Environment and evaluation endpoint default |
+| `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit dataset update 75900xxxxxxxxxxxxx --name qa-regression
+agentkit dataset update <dataset-id> --name qa-set-v2 --description "Customer-support QA set"
 ```
 
 ## dataset add
 
-Add one or more cases to an evaluation dataset. The TEA backend supports standard turn objects through `--items-json` or a JSON file passed with `--file`.
+Add one or more cases to an evaluation dataset. The Coze backend accepts flat `{field: value}` objects; the TEA backend accepts full turn-shaped items, and can also build a single-turn text item from `--field`.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id\|name>` | Evaluation set id or exact name. | Required |
-| `--field <key=value>` | Case field; repeatable. | — |
-| `--file <path>` | JSON file: a flat object or object array for Coze; a turn object or object array for TEA. | — |
-| `--items-json <json>` | Raw JSON array of TEA item objects. | — |
+| `<id\|name>` | Evaluation set ID or exact name. | Required |
+| `--field <key=value>` | Case field, repeatable; on TEA this becomes a single-turn text item. | — |
+| `--file <path>` | JSON file; Coze uses a flat object or object array, TEA uses full item objects or arrays. | — |
+| `--items-json <json>` | Raw TEA item object array; takes precedence over `--file`. | — |
 | `-r, --region <region>` | Volcengine region. | Auto-detect |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
 agentkit dataset add qa-set --field "input=What is the capital of France?" --field "reference_output=Paris"
 agentkit dataset add qa-set --file cases.json
+```
+
+```json title="items.json"
+[
+  {
+    "turns": [
+      {
+        "field_data_list": [
+          {
+            "key": "input",
+            "name": "input",
+            "content": {
+              "content_type": "Text",
+              "format": 1,
+              "text": "What is the capital of France?"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+```bash
+agentkit dataset add qa-set --file ./items.json
 ```
 
 ## dataset remove
@@ -106,10 +137,10 @@ This command removes the selected cases from the dataset. Check the dataset and 
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id\|name>` | Evaluation set id or exact name. | Required |
-| `<itemIds...>` | Case item ids to remove; accepts multiple values. | Required |
+| `<id\|name>` | Evaluation set ID or exact name. | Required |
+| `<itemIds...>` | Case item IDs to remove; accepts one or more. | Required |
 | `-r, --region <region>` | Volcengine region. | Auto-detect |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 | `--json` | Output raw JSON. | `false` |
 
@@ -127,9 +158,9 @@ This command deletes the entire dataset. Check the target first; the CLI prompts
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `<id\|name>` | Evaluation set id or exact name. | Required |
+| `<id\|name>` | Evaluation set ID or exact name. | Required |
 | `-r, --region <region>` | Volcengine region. | Auto-detect |
-| `-p, --project <name>` | Project name; ignored on the TEA backend. | `default` |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
 ```bash
@@ -138,31 +169,35 @@ agentkit dataset delete qa-set -y
 
 ## dataset version list
 
-List versions created for a TEA evaluation dataset.
+List TEA dataset versions.
+
+<Note>
+`dataset version` subcommands are supported only on the TEA evaluation backend.
+</Note>
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `--dataset <id\|name>` | Evaluation set id or exact name. | Required |
-| `-r, --region <region>` | Volcengine region. | Environment and evaluation endpoint default |
+| `--dataset <id\|name>` | Evaluation set ID or exact name. | Required |
+| `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit eval dataset version list --dataset qa-set
+agentkit dataset version list --dataset qa-set
 ```
 
 ## dataset version create
 
-Create a version for a TEA evaluation dataset. After creating it, select it explicitly with `eval run --dataset-version`.
+Create a committed version for a TEA evaluation dataset.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<version>` | Version string, such as `0.0.2`. | Required |
-| `--dataset <id\|name>` | Evaluation set id or exact name. | Required |
+| `--dataset <id\|name>` | Evaluation set ID or exact name. | Required |
 | `--description <text>` | Version description. | — |
 | `--desc <text>` | Alias for `--description`. | — |
-| `-r, --region <region>` | Volcengine region. | Environment and evaluation endpoint default |
+| `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash
-agentkit eval dataset version create 0.0.2 --dataset qa-set --description "Regression set"
+agentkit dataset version create 0.0.2 --dataset qa-set --description "Add edge cases"
 ```

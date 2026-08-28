@@ -1,0 +1,84 @@
+---
+title: "View experiments and results"
+---
+
+The `eval experiment` command group (alias `exp`) is used to view experiments submitted by [`eval run`](/productions/agentkit-cli/preview/en/commands/eval/run): list experiments, inspect an experiment's status and aggregate scores, and fetch per-case results. On TEA, details include targets, evaluator versions, aggregate scores, and field mappings; on Coze, the commands continue to query by project.
+
+<Note>
+`--project` applies only to the Coze evaluation backend; the TEA backend ignores it.
+</Note>
+
+## eval experiment list
+
+List experiments in a project or workspace: ID, name, status, start time, creator, and aggregate score.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit eval experiment list
+
+agentkit eval exp list --json
+```
+
+## eval experiment show
+
+Show an experiment's details: status, dataset, target, evaluators, aggregate scores, and field mappings. `get` is an alias of `show`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Experiment ID. | Required |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit eval experiment show 75901xxxxxxxxxxxxx
+agentkit eval experiment get 75901xxxxxxxxxxxxx
+```
+
+```text
+ID              75901xxxxxxxxxxxxx
+Name            qa-set-<timestamp>
+Status          Success
+Dataset         qa-set (75900xxxxxxxxxxxxx)
+Target          my-agent
+Overall score   1.00
+
+Evaluators:
+  relevance @0.0.1  avg 1.00
+    1.00: 2 (100%)
+
+Field mappings:
+  target: user_input <- dataset.input
+  relevance: output <- target.actual_output, reference_output <- dataset.reference_output
+```
+
+## eval experiment results
+
+Fetch per-case results: each dataset case, the target output, and each evaluator's score and reasoning.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Experiment ID. | Required |
+| `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
+| `--limit <n>` | Items per page; capped at 20. | `20` |
+| `--page <n>` | Page number. | `1` |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit eval experiment results 75901xxxxxxxxxxxxx --json
+```
+
+## Experiment Status
+
+| Status | Meaning |
+| --- | --- |
+| `Success` | All cases finished executing. |
+| `Failed` | Some cases failed to execute, such as when the target did not respond. |
+| `Draining` / `Processing` | Still running. |
+
+<Tip>
+When a case fails but there is no experiment-level error message, it is usually because the target Runtime did not respond correctly (not deployed, not ready, or authentication failed), rather than an evaluation configuration issue. First confirm that the Runtime pointed to by `--target` is running.
+</Tip>

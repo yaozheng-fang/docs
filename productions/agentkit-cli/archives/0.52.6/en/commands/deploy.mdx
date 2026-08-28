@@ -1,0 +1,45 @@
+---
+title: "Deploy"
+---
+
+`deploy` deploys the runtime described by the current project's lifecycle config. It does not build an image first; use [`launch`](/productions/agentkit-cli/preview/en/commands/launch) when you want build and deploy in one command. Use [`release`](/productions/agentkit-cli/preview/en/commands/release) for the `.agentkit/agentkit.yaml` cloud release pipeline, IM channels, or frontend release flow.
+
+## deploy
+
+Read `agentkit.yaml`, select the local, cloud, or hybrid strategy from `common.launch_type`, and write deployment state such as runtime id, endpoint, or local container state back to the config file.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--config-file <path>` | Lifecycle config file path. | `agentkit.yaml` |
+| `--harness <name>` | Deploy a Harness runtime from `<name>.harness.json` in the current directory instead of reading `agentkit.yaml`. | — |
+| `--region <region>` | AgentKit region for Harness deploy. | Harness config or current cloud environment |
+| `--volcengine-access-key <key>` | Volcengine Access Key for Harness deploy. | Environment or global config |
+| `--volcengine-secret-key <key>` | Volcengine Secret Key for Harness deploy. | Environment or global config |
+| `--discovery-url <url>` | OIDC discovery URL for Harness deploy; enables OAuth2/JWT auth. | — |
+| `--allowed-id <ids>` | OAuth2/JWT allowed client IDs for Harness deploy, comma-separated. | — |
+| `-y, --yes` | Update an existing same-name Harness runtime without prompting. | `false` |
+
+```bash
+agentkit deploy --config-file agentkit.yaml
+```
+
+<Note>
+`deploy` runs service preflight checks before deployment. In an interactive terminal it prompts when required services are not enabled; use `launch --preflight-mode` when an automated build-and-deploy flow must control preflight behavior explicitly.
+</Note>
+
+## Harness Deploy
+
+With `--harness <name>`, the CLI reads `<name>.harness.json` from the current directory, converts it into runtime environment variables, creates a temporary lifecycle config, and deploys a Harness runtime. If you pass `--discovery-url`, also pass at least one allowed client id through `--allowed-id`.
+
+```bash
+agentkit deploy \
+  --harness support-bot \
+  --region cn-beijing \
+  --discovery-url https://identity.example.com/.well-known/openid-configuration \
+  --allowed-id web-client-id \
+  --yes
+```
+
+<Warning>
+Harness deploy creates or updates a cloud runtime and may rewrite `harness.json` in the current directory with endpoint, runtime id, and auth information. Confirm the working directory, Harness name, and target project before running it.
+</Warning>

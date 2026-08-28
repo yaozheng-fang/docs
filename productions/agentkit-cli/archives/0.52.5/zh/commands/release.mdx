@@ -1,0 +1,84 @@
+---
+title: "发布"
+---
+
+`release` 使用 `.agentkit/agentkit.yaml` 执行完整发布流程：生成发布配置、云端构建镜像、创建或更新 AgentKit Runtime，并按配置发布飞书、企业微信、钉钉代理或前端 BFF。若只使用根目录 `agentkit.yaml` 的生命周期配置，请使用 [`launch`](/productions/agentkit-cli/preview/zh/commands/launch)。
+
+## release
+
+不带子命令时，`release` 执行完整流程。若当前项目没有 `.agentkit/agentkit.yaml`，命令会先生成配置并提示检查后再次执行。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 配置阶段使用的运行时或应用名称。 | 当前目录名 |
+| `-r, --region <region>` | 配置阶段使用的云区域。 | 云厂商默认区域 |
+| `-p, --project <name>` | AgentKit 项目。 | `default` |
+| `--im-feishu` | 运行时发布后发布飞书机器人代理。 | `false` |
+| `--im-feishu-app-id <id>` | 飞书代理使用的 App ID。 | `im.feishu.app_id` 或 `FEISHU_APP_ID` |
+| `--im-feishu-app-secret <secret>` | 飞书代理使用的 App Secret；推荐改用 `FEISHU_APP_SECRET`。 | `im.feishu.app_secret` 或 `FEISHU_APP_SECRET` |
+| `--json` | 为托管 Harness Sidecar 发布输出机器可读的 NDJSON 事件。 | `false` |
+
+```bash
+agentkit release --name my-agent --region cn-beijing --project default
+```
+
+<Warning>
+`release` 会创建或更新云端运行时，并可能创建 VeFaaS 函数、网关、镜像仓库、TOS 对象和身份相关配置。执行前确认 `.agentkit/agentkit.yaml`、凭证、区域和项目。
+</Warning>
+
+`--json` 仅用于已在 `.agentkit/agentkit.yaml` 中解析出 `harness_sidecar` 的托管 Sidecar 发布流程。标准发布配置使用该标志会返回失败结果。输出按行写入 JSON 事件，包含 `progress`、`runtime` 和最终 `result`，便于 Studio 或 CI 按阶段展示构建、部署和发布状态。
+
+```bash
+agentkit release --json
+```
+
+## release config
+
+生成 `.agentkit/agentkit.yaml` 与 Dockerfile。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-n, --name <name>` | 运行时或应用名称。 | 当前目录名 |
+| `-r, --region <region>` | 云区域。 | 云厂商默认区域 |
+| `-p, --project <name>` | AgentKit 项目。 | `default` |
+| `-f, --force` | 覆盖已有生成文件。 | `false` |
+
+```bash
+agentkit release config --name my-agent --force
+```
+
+## release build
+
+根据 `.agentkit/agentkit.yaml` 在云端构建镜像，并把构建产物写入 `.agentkit/artifacts/`。
+
+启用托管 Harness Sidecar 时，构建阶段会把应用依赖作为应用层依赖安装在平台托管基础镜像之上。`requirements.txt` 中的 `agentkit_sdk_python` 会随应用一起保留，以便选择明确的公开 SDK 版本；`veadk-python` 与已废弃的 `agentkit-harness-sidecar-integration` 独立包会从构建上下文中移除，避免与托管基础镜像中的 VeADK 源码冲突。构建会验证托管基础镜像中的公开 VeADK 源码与 `agentkit-sdk-python` 版本边界。
+
+托管 Sidecar 构建必须使用当前 CLI 生成的 `.agentkit/Dockerfile`。如果项目使用用户自定义的根目录 `Dockerfile`，或旧版 `.agentkit/Dockerfile` 不符合当前托管构建结构，`release build` 会在构建前失败；重新运行 `agentkit release config --force` 可生成当前模板，执行前请先保留需要手动维护的 Dockerfile 修改。
+
+云端构建需要先将构建上下文上传到 TOS。CLI 会根据压缩包大小设置上传超时，最短 120 秒，最长 10 分钟，并在连接重置、临时解析失败或超时等可重试网络错误后自动重试一次。托管 Sidecar 构建还会为 TOS bucket 读取检查启用一次瞬时错误重试，并使用启用缓存的专用 Code Pipeline；该流水线按托管基础镜像摘要隔离，避免与普通无缓存构建或其他基础镜像复用缓存。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit release build
+```
+
+## release apply
+
+基于最新构建产物创建或更新运行时。
+
+对于托管 Harness Sidecar 发布，`release apply` 会在运行时进入 `Ready` 后等待 `key_auth` APIG 绑定可用，再执行 Sidecar、模型代理和 MCP 网关校验。如果发布接口返回结果不明确，但运行时已经进入发布中或新版本已就绪，CLI 会继续按已观察到的运行时状态完成流程，避免重复触发发布。
+
+当已有 Sidecar 运行时处于 `Error`，但当前版本仍是唯一可服务的 `Ready` 版本，且所有更新的版本都已经失败时，CLI 会保留当前服务版本并直接更新到新版本。若存在更新的非失败版本、多个可服务实例，或无法确认安全恢复条件，命令会失败并要求先显式处理该运行时。
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无选项）_ | 该子命令不接受任何选项。 | — |
+
+```bash
+agentkit release apply
+```
+
+消息渠道与前端发布配置仍写在 `.agentkit/agentkit.yaml`，字段说明见 [agentkit.yaml](/productions/agentkit-cli/preview/zh/agentkit-yaml)。

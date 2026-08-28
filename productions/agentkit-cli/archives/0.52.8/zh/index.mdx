@@ -1,0 +1,56 @@
+---
+title: "概述"
+---
+
+`agentkit` 是 AgentKit 的命令行工具，面向智能体的开发与运维：从脚手架项目、构建并部署运行时，到调用已部署的智能体，再到管理其依赖的 MCP 服务、知识库、记忆、沙箱、技能与评测，均可在终端完成。
+
+<CardGroup cols={2}>
+  <Card title="快速开始" icon="rocket" href="/productions/agentkit-cli/preview/zh/quickstart">
+    安装、登录，三步部署你的第一个智能体。
+  </Card>
+  <Card title="命令参考" icon="terminal" href="/productions/agentkit-cli/preview/zh/commands">
+    每个命令一句话说明加一个示例。
+  </Card>
+</CardGroup>
+
+## 命令分组
+
+| 分组 | 管理内容 |
+| --- | --- |
+| `init` | 从模板脚手架一个新项目 |
+| `config` | 管理项目生命周期配置和用户级默认配置 |
+| `build` | 按生命周期配置构建运行时镜像 |
+| `deploy` | 按生命周期配置部署已经构建的运行时 |
+| `launch` | 一次性构建并部署生命周期项目 |
+| `status` | 查看当前项目对应的运行时状态 |
+| `release` | 使用 `.agentkit/agentkit.yaml` 执行完整云端发布流程 |
+| `runtime` | 已部署的运行时（list、show、logs、versions、release、update、delete） |
+| `knowledge` (`kb`) | 知识库 |
+| `memory` (`mem`) | 记忆库 |
+| `model-gateway` (`mgw`) | 统一模型网关、模型提供方和调用方 |
+| `harness` | 由 `harness.yaml` 定义的 Harness |
+| `chat` | 通过租户别名使用共享 OAuth Harness 聊天 |
+| `invoke` | 调用已部署的运行时 |
+| `auth` | SSO 登录、身份、登录 profile 与组织级 SSO 接入配置 |
+| `onboard` | 将内置技能安装到本地编码智能体 |
+| `eval` | 评测后端、评测集、评估器、目标与评测实验 |
+| `migrate` | 将已有的智能体应用迁移为 AgentKit 应用 |
+| `mcp service` | MCP 服务的创建、查询与删除 |
+| `sandbox` | 在沙箱中运行命令并管理会话 |
+| `env` (`environment`) | 管理 Claude 自托管沙箱环境的 Runtime |
+| `skill` | AgentKit 技能平台上的技能 |
+| `skills` | 本地 AgentKit 技能包 |
+| `destroy` | 删除已部署的运行时 |
+| `upgrade` | 检查并升级 AgentKit CLI |
+| `tree` | 打印完整命令树 |
+| `docs` | 打开或输出 AgentKit CLI 文档地址 |
+
+## 约定
+
+- `agentkit` 也可以用 `ak` 调用。
+- `login`、`logout`、`whoami` 可直接作为顶层命令使用，也可以写成 `auth login`、`auth logout`、`auth whoami`。
+- `knowledge` 的别名为 `kb` 和 `knowledgebase`，`memory` 的别名为 `mem`，
+  `eval` 前缀可省略（`agentkit dataset …` 等价于 `agentkit eval dataset …`）。
+- 大多数读命令支持 `--json`；region 默认自动探测，可用 `-r, --region` 指定。
+- 所有产品命令都支持全局 `--provider volcengine|byteplus`，用于临时覆盖本次命令的云厂商。
+- 破坏性命令（`delete`、`remove`、`destroy`）默认二次确认，`-y` 跳过。

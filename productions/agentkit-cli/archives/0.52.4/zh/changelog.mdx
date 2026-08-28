@@ -1,0 +1,119 @@
+---
+title: "更新日志"
+---
+
+## 0.52.4 - 2026-08-19
+
+- [memory 命令] [`memory create`](/productions/agentkit-cli/archives/0.52.4/zh/commands/memory#memory-create) 在 BytePlus 上默认创建 `VIKINGDB_MEMORY` 记忆库，并在显式或通过 `--json` 传入 `MEM0` 时提前失败；Volcengine 默认仍为 `MEM0`。
+- [migrate 命令] [Dify 迁移](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate#dify-迁移范围) 改为按 YAML 内容识别 Dify DSL，可处理任意文件名和子目录中的 Dify 导出，同时避免把同名普通 YAML 误判为 Dify。
+- [Harness Sidecar] [发布构建](/productions/agentkit-cli/archives/0.52.4/zh/commands/release#release-build) 优化托管 Harness Sidecar 构建：使用符合当前结构的 CLI 托管 Dockerfile，按托管基础镜像摘要隔离并启用 Code Pipeline 缓存，并根据归档大小调整 TOS 上传超时。
+- [Harness Sidecar] [`harness sidecar resolve`](/productions/agentkit-cli/archives/0.52.4/zh/commands/harness#harness-sidecar-resolve) 在 `ops` profile 关闭 `mcp_resilience` 时输出 SQL 只读保护已关闭的警告，便于发布前识别风险选择。
+
+## 0.52.3 - 2026-08-18
+
+- [沙箱命令] [`sandbox list`](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox#sandbox-list) 可查看沙箱会话或工具：默认读取本地会话缓存，支持 `--tools` 查看工具缓存，支持 `--remote` 查询远端工具或指定工具下的远端会话，并可按工具 ID、名称、类型和状态过滤。
+- [Harness Sidecar] [托管 Harness Sidecar 发布](/productions/agentkit-cli/archives/0.52.4/zh/commands/release#release-apply) 提升发布恢复能力：运行时进入 `Ready` 后会等待 `key_auth` APIG 绑定；发布接口结果不明确但已观察到运行时进入发布流程或新版本就绪时，CLI 会继续完成流程，避免重复触发发布。
+- [Harness Sidecar] [托管 Harness Sidecar 运行时恢复](/productions/agentkit-cli/archives/0.52.4/zh/commands/release#release-apply) 在当前版本仍是唯一可服务版本且所有更新版本均失败时，可保留当前服务版本并原地更新；无法确认安全恢复条件时会失败并要求显式处理。
+- [Harness Sidecar] [发布构建](/productions/agentkit-cli/archives/0.52.4/zh/commands/release#release-build) 在托管 Sidecar 场景下保留应用声明的 `veadk-python` 与 `agentkit_sdk_python` 依赖，移除已废弃的 `agentkit-harness-sidecar-integration` 独立包，并将 TOS 构建上下文上传调整为 120 秒超时与一次可重试网络错误重试。
+
+## 0.52.2 - 2026-08-14
+
+- [chat 命令] [`chat`](/productions/agentkit-cli/archives/0.52.4/zh/commands/chat) 可通过租户登录发现文档中的共享 Harness 别名发起 OAuth 绑定聊天，并按已验证用户身份隔离会话。
+- [eval 命令] [eval backend](/productions/agentkit-cli/archives/0.52.4/zh/commands/eval/backend) 默认使用 AgentKit 评测网关解析 Coze 或 TEA 后端，并提供 `--cache-refresh` 与 `--verbose`，便于查看后端坐标和排查 TEA 请求。
+- [eval 命令] [dataset、evaluator 与 target 命令](/productions/agentkit-cli/archives/0.52.4/zh/commands/eval/dataset) 补充 TEA 评测能力：支持评测集更新与版本管理、评估器模板查看、草稿更新与版本提交，以及源评测目标列表和版本列表。
+- [eval 命令] [`eval run`](/productions/agentkit-cli/archives/0.52.4/zh/commands/eval/run) 支持指定 TEA 评测集版本、评估器版本、源评测目标类型和目标版本，并在结果中返回 TEA run ID。
+- [Harness] [Harness 配置](/productions/agentkit-cli/archives/0.52.4/zh/commands/harness) 支持共享 OAuth Harness 的私有网络、容量、共享数据库会话和托管模型出口，并在部署后校验身份、镜像与扩缩容绑定。
+- [invoke 命令] [`invoke run`](/productions/agentkit-cli/archives/0.52.4/zh/commands/invoke#custom_jwt-鉴权) 调用 `custom_jwt` Runtime 时不再自动复用登录会话中的 `id_token`；通用调用需要通过 `--headers` 显式传入 OAuth token，共享 OAuth Harness 的受控聊天入口改用 `chat`。
+- [沙箱命令] [`sandbox create`](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox#sandbox-create) 提供 `--llm-shield-app-id`，可为 `Skill` 沙箱工具启用 LLM Shield。
+
+## 0.52.1 - 2026-08-12
+
+- [Harness Sidecar] [Harness Sidecar 命令](/productions/agentkit-cli/archives/0.52.4/zh/commands/harness#harness-sidecar-catalog) 提供 `harness sidecar catalog` 与 `harness sidecar resolve`，可输出 Product Component Catalog，并在发布前把 profile 与组件开关解析为可校验的 Sidecar plan。
+- [Harness Sidecar] [发布配置](/productions/agentkit-cli/archives/0.52.4/zh/agentkit-yaml#harness-sidecar) 支持托管 `harness_sidecar` 配置，提供运行时描述、创建标签和 Code Pipeline 工作区 / 流水线固定字段，并将 `Auto` TOS bucket 改为按云厂商、区域和账号生成默认名称。
+- [Harness Sidecar] [`release`](/productions/agentkit-cli/archives/0.52.4/zh/commands/release#release) 提供 `--json`，用于托管 Harness Sidecar 发布时按行输出构建、部署、运行时 ID 与最终结果事件，并在发布后校验 Sidecar、模型代理和所需 MCP 网关状态。
+- [Harness Sidecar] [发布流程](/productions/agentkit-cli/archives/0.52.4/zh/commands/release#release) 在匹配已有 Runtime 时改为使用精确名称筛选；托管 Harness Sidecar 发布遇到需要重建的状态时会要求显式处理，避免自动删除已有运行时。
+- [沙箱命令] [`sandbox config --list`](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox#sandbox-config) 改为输出当前 `.agentkit/sandbox.yaml` 文件内容，不再把推断得到的默认模型、网络和工具配置写入列表输出。
+
+## 0.52.0 - 2026-08-11
+
+- [Auth 命令] 支持通过带单段租户路径的 [自定义登录地址](/productions/agentkit-cli/archives/0.52.4/zh/commands/auth) 读取 `/.well-known/agentkit-cli` 发现文档，并对远程地址、发现文档字段、区域、云厂商和 STS 坐标执行更严格校验；通过远程发现文档登录时，CLI 只会在登录成功后保存 profile。
+- [Auth 命令] [`auth admin publish`](/productions/agentkit-cli/archives/0.52.4/zh/commands/auth#auth-admin-publish) 支持传入已有 `--issuer`、`--client-id`、`--role-trn` 与 `--provider-trn`，可在跨账号身份配置场景下仅发布发现文档；同时支持 `--domain` 返回已完成 CNAME 与 HTTPS 配置的自定义登录域名。
+- [Auth 命令] [Auth Admin](/productions/agentkit-cli/archives/0.52.4/zh/commands/auth) 可使用当前 CLI SSO profile 中有效的 STS 凭据执行管理操作，并在管理调用中使用内置服务端点，避免被项目或用户级端点覆盖影响。
+- [安装] [安装流程](/productions/agentkit-cli/archives/0.52.4/zh/quickstart#安装) 会让独立 CLI 在 zsh、bash 或 fish 中优先于 pip、pipx、venv 或 Conda 安装的同名命令，并在卸载时恢复被安装脚本管理的原命令与 shell 配置。
+- [配置] [配置命令](/productions/agentkit-cli/archives/0.52.4/zh/commands/config) 会校验区域值，只接受小写、以连字符分隔的区域代码，避免无效区域进入服务端点或请求签名。
+
+## 0.51.2 - 2026-08-11
+
+- [Model Gateway 命令] [Model Gateway](/productions/agentkit-cli/archives/0.52.4/zh/commands/model-gateway) 支持启用网关、管理模型提供方和调用方，并基于已授权模型生成 `curl`、OpenAI、Anthropic 或 AgentKit 调用示例。
+- [invoke 命令] [`invoke run`](/productions/agentkit-cli/archives/0.52.4/zh/commands/invoke) 对齐 Python SDK 调用约定，支持从 `agentkit.yaml`、Runtime ID 或端点解析调用目标，传入 JSON payload 与 headers，并按 `/invoke`、ADK `/run_sse` 或 A2A 自动选择调用方式；需要时可输出原始流式事件或显示 reasoning 内容。
+- [harness 命令] [`harness invoke`](/productions/agentkit-cli/archives/0.52.4/zh/commands/harness#harness-invoke) 可直接调用已部署 Harness，按请求覆盖模型、系统提示词、工具、技能、运行时后端、A2A registry 和最大 LLM 调用次数，并可选择 `invoke` 或 `run_sse` 传输。
+- [Auth 命令] [身份仅登录模式](/productions/agentkit-cli/archives/0.52.4/zh/commands/auth) 可通过 `login --identity-only` 与 `auth profile set --identity-only` 只保存 OIDC 会话；在匹配的 `custom_jwt` Harness 调用中，CLI 可使用该会话转发用户身份，而不创建管理凭据。
+- [Auth 命令] [Auth Admin](/productions/agentkit-cli/archives/0.52.4/zh/commands/auth) 生成的 SSO 权限策略补充沙箱会话列表、会话快照恢复和工具类型查询权限，使沙箱相关 SSO 工作流具备所需权限。
+- [沙箱命令] [创建、初始化和预览流程](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox) 行为更明确：`sandbox create --envs` 可重复注入环境变量，`sandbox init` 生成 Dockerfile 时写入当前内置基础镜像，`sandbox web` 打开预览时会定位到沙箱主目录；首次初始化 `.agentkit/sandbox.yaml` 时不再持久化推断的模型默认值，并将 Model Square 默认模型更新为 `deepseek-v4-flash-ga-260731`。
+- [migrate 命令] [Dify 迁移](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate#dify-迁移范围) 会在迁移前提取 Workflow 与 Chatflow 的节点、边、变量、Features 和依赖信息，并对敏感字段脱敏。
+
+## 0.51.1 - 2026-08-06
+
+- 修复独立发行包缺少随包资源的问题，确保[安装](/productions/agentkit-cli/archives/0.52.4/zh/quickstart#安装)后生命周期命令与 [`sandbox dashboard`](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox#sandbox-dashboard) 可以正常读取模板和 Web 终端资源。
+
+## 0.51.0 - 2026-08-05
+
+- 新增 `config`、`build`、`launch`、`status` 与 `release` 命令，形成从[项目配置](/productions/agentkit-cli/archives/0.52.4/zh/commands/config)到[发布](/productions/agentkit-cli/archives/0.52.4/zh/commands/release)的分阶段生命周期。
+- 扩展[沙箱命令](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox)的工具创建能力，增加 Dashboard 与终端管理。
+- 修复 BytePlus VikingDB [知识库操作](/productions/agentkit-cli/archives/0.52.4/zh/commands/knowledge)以及[迁移](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate)上传路径。
+
+## 0.50.9 - 2026-08-03
+
+- 新增全局 `--provider` 与顶层 [`config`](/productions/agentkit-cli/archives/0.52.4/zh/commands/config) 命令，并为初始化、Harness 和迁移补充区域选择。
+- 完善 BytePlus 的项目切换、MCP 服务映射、构建镜像与[迁移](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate)流程。
+
+## 0.50.8 - 2026-07-31
+
+- `deploy config` 新增 `--provider`，可在生成 [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.4/zh/agentkit-yaml) 时选择云厂商。
+- BytePlus [部署](/productions/agentkit-cli/archives/0.52.4/zh/commands/deploy)改用对应的基础镜像。
+
+## 0.50.7 - 2026-07-31
+
+- [前端 SSO 部署](/productions/agentkit-cli/archives/0.52.4/zh/workflows/frontend-sso)可跨项目查找已有 serverless 网关。
+
+## 0.50.6 - 2026-07-31
+
+- [前端 SSO 部署](/productions/agentkit-cli/archives/0.52.4/zh/workflows/frontend-sso)自动创建网关时会携带网络规格，避免网关网络配置不完整。
+
+## 0.50.5 - 2026-07-31
+
+- [前端 SSO 部署](/productions/agentkit-cli/archives/0.52.4/zh/workflows/frontend-sso)在没有可用 serverless 网关时可自动创建网关。
+- [沙箱创建](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox#sandbox-create)新增 `ArkClawEnv` 与 `HermesEnv` 工具类型。
+
+## 0.50.4 - 2026-07-30
+
+- 放宽[迁移](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate)计划的措辞检查，提高不同来源项目的兼容性。
+
+## 0.50.3 - 2026-07-30
+
+- `sandbox exec` 新增 `sandbox attach` 别名，详见[沙箱命令](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox#sandbox-exec)。
+- [任意来源迁移](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate)改用内置的 source-to-veadk 能力。
+
+## 0.50.2 - 2026-07-29
+
+- [部署配置](/productions/agentkit-cli/archives/0.52.4/zh/agentkit-yaml)支持按 BytePlus 路由资源，为后续完整的多云部署链路提供基础。
+
+## 0.50.1 - 2026-07-29
+
+- Runtime 默认规格调整为 2 vCPU、4 GiB 内存和 1 个最小实例，详见 [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.4/zh/agentkit-yaml#运行时资源)。
+- [`migrate`](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate) 新增 `--project`，可指定远程迁移使用的项目。
+
+## 0.50.0 - 2026-07-28
+
+- 新增 [Auth Admin](/productions/agentkit-cli/archives/0.52.4/zh/commands/auth) 凭据管理能力。
+- [Harness](/productions/agentkit-cli/archives/0.52.4/zh/commands/harness)支持 Skill Space 引用和请求级覆盖参数。
+- 发布新版[沙箱命令](/productions/agentkit-cli/archives/0.52.4/zh/commands/sandbox)，覆盖配置、创建、终端、文件与调用工作流。
+
+## 0.46.7 - 2026-07-22
+
+- [迁移](/productions/agentkit-cli/archives/0.52.4/zh/commands/migrate)支持远程 Dify 项目和任意来源项目。
+- [`agentkit.yaml`](/productions/agentkit-cli/archives/0.52.4/zh/agentkit-yaml)支持按资源覆盖区域和项目，并支持 Runtime 私有网络配置。
+
+## 0.46.6 - 2026-07-19
+
+- 发布 AgentKit CLI 的[命令参考](/productions/agentkit-cli/archives/0.52.4/zh/commands)与基于 `agentkit.yaml` 的构建部署文档。

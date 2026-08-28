@@ -1,0 +1,113 @@
+---
+title: "Develop apps in a Codex sandbox"
+---
+
+AgentKit sandboxes provide cloud development environments where you can build applications with coding agents such as Codex. A tool defines environment properties such as compute and networking, while a session retains the files and running state for one development flow. See [Use sandboxes](/productions/agentkit-cli/preview/en/commands/sandbox) for all options.
+
+<Note>
+Configure AK/SK credentials or obtain valid short-lived STS credentials through `agentkit login`. To inject a local Codex subscription into the sandbox, first complete `codex login` on your machine.
+</Note>
+
+<Warning>
+Creating a sandbox tool allocates cloud compute resources and may incur charges. Commands can access the files, network, and credentials visible to the session. Work only with trusted code and least-privilege access. Session and tool deletion cannot be undone, so download required files before cleanup.
+</Warning>
+
+## End-to-end flow
+
+<Steps>
+  <Step title="Create a development tool">
+    Create a `CodeEnv` tool. The CLI waits for it to become ready and writes its ID and name to `.agentkit/sandbox.yaml` in the current project.
+
+    ```bash
+    agentkit sandbox create --tool-type CodeEnv --tool-name dev-sandbox
+    ```
+
+    If the project already has a suitable tool, skip this step and select it in later commands with `--tool-id` or `--tool-name`.
+  </Step>
+
+  <Step title="Inject Codex login credentials">
+    Inject the local Codex subscription into a dedicated session. Reuse the same `--session-id` in later commands to return to that session.
+
+    <Warning>
+    `sandbox codex-login` copies local subscription credentials to a remote session. Do not share that session, and delete the session or tool after use. Add `--dry-run` first to inspect the redacted injection operation.
+    </Warning>
+
+    ```bash
+    agentkit sandbox codex-login \
+      --tool-name dev-sandbox \
+      --session-id dev \
+      --provider codex
+    ```
+
+    Use `--auth-file` or `--codex-home` to select another credential source. Set the provider to `claude` to inject a local Claude subscription instead.
+  </Step>
+
+  <Step title="Upload the project and open a terminal">
+    `sandbox exec` provides an interactive terminal. `--copy` uploads the project before connection, and `--mode tmux` creates or attaches to a persistent terminal named after the session ID.
+
+    ```bash
+    agentkit sandbox exec \
+      --tool-name dev-sandbox \
+      --session-id dev \
+      --mode tmux \
+      --copy ./my-app sandbox:/home/gem/my-app \
+      --command "cd /home/gem/my-app && codex"
+    ```
+
+    Press Ctrl-] to detach. Run the same command again to return to the session. After saving the tool name in `.agentkit/sandbox.yaml`, later commands can omit `--tool-name`.
+  </Step>
+
+  <Step title="Transfer files">
+    After the session exists, use `sandbox scp` to copy files or directories between local and sandbox paths. Prefix remote paths with `sandbox:`.
+
+    ```bash
+    # Upload
+    agentkit sandbox scp ./local.txt sandbox:/home/gem/my-app/local.txt --session-id dev
+
+    # Download
+    agentkit sandbox scp sandbox:/home/gem/my-app/result.json ./result.json --session-id dev
+    ```
+  </Step>
+
+  <Step title="Open a web preview">
+    Start a web server that listens on an externally accessible port in the persistent terminal, then open its preview:
+
+    ```bash
+    agentkit sandbox web --tool-name dev-sandbox --session-id dev
+    ```
+
+    Add `--no-open` when a browser should not open automatically; the command outputs the preview URL.
+  </Step>
+
+  <Step title="Clean up resources">
+    Confirm that required files have been downloaded. To delete only the development session, identify both the tool and session. To delete the entire tool, omit the session ID.
+
+    ```bash
+    # Delete the session
+    agentkit sandbox delete --tool-name dev-sandbox --session-id dev --force
+
+    # Delete the tool and its resources
+    agentkit sandbox delete --tool-name dev-sandbox --force
+    ```
+  </Step>
+</Steps>
+
+## Scripted execution
+
+`sandbox shell` runs one non-interactive command in a session and outputs JSON, making it suitable for scripts:
+
+```bash
+agentkit sandbox shell \
+  --tool-name dev-sandbox \
+  --session-id dev \
+  --command "cd /home/gem/my-app && npm test"
+```
+
+To orchestrate multiple `sandbox exec` tasks, write entries in `agentkit-sandbox-run.yaml`, then run `agentkit sandbox run --config agentkit-sandbox-run.yaml`. See the [sandbox command reference](/productions/agentkit-cli/preview/en/commands/sandbox#sandbox-run) for the configuration format.
+
+## Practical guidance
+
+- Reuse a fixed `--session-id` for the development environment, and inspect locally cached sessions with `agentkit sandbox list`.
+- When a project has multiple tools, pass `--tool-id` or `--tool-name` explicitly to avoid connecting to the wrong environment.
+- Use `sandbox exec --mode tmux` for long-running interactive work, and regularly download important results to local or persistent storage.
+- Delete sessions and tools when they are no longer needed to stop consuming cloud resources.

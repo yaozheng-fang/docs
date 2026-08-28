@@ -1,0 +1,53 @@
+---
+title: "View evaluation backend"
+---
+
+`eval backend` resolves the evaluation backend for the current credentials and refreshes the local cache. Later evaluation commands use this result to choose the Coze or TEA evaluation platform. For TEA, the result includes the workspace, project, account, and `session_key` coordinates required by evaluation requests.
+
+<Note>
+The backend result is cached by identity and evaluation gateway for 7 days. To bypass the cache, pass `--cache-refresh` on the `eval` command group or on the top-level `dataset` command group.
+</Note>
+
+## eval backend
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--json` | Output raw JSON. | `false` |
+
+```bash
+agentkit eval backend
+
+agentkit eval backend --json
+```
+
+## Evaluation Gateway Configuration
+
+The default evaluation gateway uses `agentkit.cn-beijing.volcengineapi.com`, signing service `agentkit`, and region `cn-beijing`. Set these environment variables when you need to point evaluation commands at a test environment.
+
+| Environment variable | Description | Default |
+| --- | --- | --- |
+| `AGENTKIT_EVAL_HOST` | Evaluation gateway host. | `agentkit.cn-beijing.volcengineapi.com` |
+| `AGENTKIT_EVAL_SERVICE` | Service name used for request signing. | `agentkit` |
+| `AGENTKIT_EVAL_REGION` | Region used for request signing. | `cn-beijing` |
+| `AGENTKIT_TEA_ACCOUNT_ID` | Account ID forwarded to TEA evaluation; when omitted, the CLI resolves it from the active SSO session or STS identity. | Resolved automatically |
+| `EXTRA_HEADER` | Additional request headers, separated with semicolons and formatted as `Name: Value`. | — |
+
+```bash
+AGENTKIT_EVAL_HOST=agentkit-ppe.cn-beijing.volcengineapi.com \
+AGENTKIT_EVAL_SERVICE=agentkit_ppe \
+agentkit eval backend --json
+```
+
+## Debug Options
+
+The `eval` command group and top-level `dataset` command group support these debug options. They are scoped to evaluation backend caching and TEA request troubleshooting, and are not global options.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `--cache-refresh` | Ignore the local cache and resolve the evaluation backend again. | `false` |
+| `--verbose` | Print full TEA requests to stderr; the `session_key` cookie is masked. | `false` |
+
+```bash
+agentkit eval --cache-refresh backend
+agentkit eval --verbose dataset list
+```

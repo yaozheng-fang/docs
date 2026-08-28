@@ -1,0 +1,74 @@
+---
+title: "Release"
+---
+
+`release` runs the full `.agentkit/agentkit.yaml` release pipeline: scaffold release config, build the image in the cloud, create or update the AgentKit Runtime, and optionally release Feishu, WeCom, DingTalk proxies or a frontend BFF. If you use the root `agentkit.yaml` lifecycle config, use [`launch`](/productions/agentkit-cli/preview/en/commands/launch) instead.
+
+## release
+
+Without a subcommand, `release` runs the full pipeline. If `.agentkit/agentkit.yaml` is missing, it first generates the config and asks you to review it before running the command again.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-n, --name <name>` | Runtime or app name used during config. | Current directory name |
+| `-r, --region <region>` | Cloud region used during config. | Provider default region |
+| `-p, --project <name>` | AgentKit project. | `default` |
+| `--im-feishu` | Release a Feishu bot proxy after the runtime release. | `false` |
+| `--im-feishu-app-id <id>` | Feishu App ID for the proxy. | `im.feishu.app_id` or `FEISHU_APP_ID` |
+| `--im-feishu-app-secret <secret>` | Feishu App Secret for the proxy; prefer `FEISHU_APP_SECRET`. | `im.feishu.app_secret` or `FEISHU_APP_SECRET` |
+| `--json` | Emit machine-readable NDJSON events for a managed Harness Sidecar release. | `false` |
+
+```bash
+agentkit release --name my-agent --region cn-beijing --project default
+```
+
+<Warning>
+`release` creates or updates cloud runtimes and may create VeFaaS functions, gateways, container registry resources, TOS objects, and identity configuration. Confirm `.agentkit/agentkit.yaml`, credentials, region, and project before running it.
+</Warning>
+
+`--json` is only for managed Sidecar releases where `.agentkit/agentkit.yaml` resolves a `harness_sidecar` configuration. Using this flag with a standard release configuration returns a failure result. Output is newline-delimited JSON with `progress`, `runtime`, and terminal `result` events, so Studio or CI can render build, deploy, and publish status by phase.
+
+```bash
+agentkit release --json
+```
+
+## release config
+
+Generate `.agentkit/agentkit.yaml` and a Dockerfile.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| `-n, --name <name>` | Runtime or app name. | Current directory name |
+| `-r, --region <region>` | Cloud region. | Provider default region |
+| `-p, --project <name>` | AgentKit project. | `default` |
+| `-f, --force` | Overwrite existing generated files. | `false` |
+
+```bash
+agentkit release config --name my-agent --force
+```
+
+## release build
+
+Build the image in the cloud from `.agentkit/agentkit.yaml` and write build artifacts under `.agentkit/artifacts/`.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| _(no options)_ | This subcommand takes no options. | — |
+
+```bash
+agentkit release build
+```
+
+## release apply
+
+Create or update the runtime from the latest built artifact.
+
+| Flag / Argument | Description | Default |
+| --- | --- | --- |
+| _(no options)_ | This subcommand takes no options. | — |
+
+```bash
+agentkit release apply
+```
+
+IM channel and frontend release settings still live in `.agentkit/agentkit.yaml`; see [agentkit.yaml](/productions/agentkit-cli/preview/en/agentkit-yaml) for field details.
