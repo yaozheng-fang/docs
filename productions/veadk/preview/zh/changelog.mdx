@@ -10,6 +10,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 内置工具 | 新增 `CreateAgentToolset` 动态智能体委派工具集：主智能体在运行时调用 `collect_resources` 收集技能、知识库与 VeADK 内置工具并按任务关键词检索公共 Skill Hub，再调用 `create_agents` 根据蓝图创建一个或多个子智能体并通过 `transfer_to_agent` 移交任务。子智能体使用同一会话上下文并直接输出最终回答。支持 `llm`、`sequential`、`parallel`、`loop` 节点，并在 Google ADK 2.0.0 及以上版本支持 `workflow` 节点。LLM 节点可显式挂载资源 ref 与可信 Python 工具。 | [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
 | Studio 存储 | 使用火山引擎作为云服务商且未自定义 TOS 端点时，Studio 在首次访问 TOS 时探测默认的公网端点，若遇到传输层网络错误则自动切换到对应的内网端点（`tos-<地域>.ivolces.com`），后续访问继续使用所选端点。鉴权失败、权限不足等非网络类错误不触发回退。浏览器端签名 URL 始终使用公网端点。BytePlus 和自定义端点不受影响。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 更新 | 更新已部署的智能体时新增保留源码更新模式：保留已部署镜像不变，仅将编辑后的配置（智能体草稿、技能和 MCP 认证）作为覆盖层发布到原镜像之上，无需重新构建镜像。该模式由 Studio 根据 Runtime 当前状态自动选择，发布速度更快且镜像中已有技能保持不变。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 更新 | 对于在更新能力引入之前部署的 Runtime，Studio 现在可以从已部署镜像和运行时环境中恢复智能体配置（包括 MCP 工具和技能文件），使其同样支持更新。恢复需要 Studio 运行身份对镜像所在的容器镜像仓库具备只读权限。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
