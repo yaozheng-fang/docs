@@ -1,0 +1,140 @@
+---
+title: "Skill tasks"
+---
+
+## Overview
+
+`invoke_skill` and `poll_skill` provide non-blocking skill task execution. `invoke_skill` sends a non-blocking request to the AgentKit skills sandbox via the A2A protocol, creates a skill task, and returns the initial task object immediately. `poll_skill` fetches the current status snapshot of a task by its task ID. Used together, they let you start a long-running skill workflow without blocking the agent's reasoning and poll for status on demand.
+
+Compared to `execute_skills`:
+
+| Tool | Behavior | Return value |
+| :--- | :--- | :--- |
+| `execute_skills` | Sends the request, then polls until the task reaches a terminal state or times out, blocking the caller. | The task's final output text string. |
+| `invoke_skill` | Sends a non-blocking request and returns immediately without polling. | The initial task object (`dict`). |
+| `poll_skill` | Sends a single status query without polling. | The current task object (`dict`). |
+
+Use cases:
+
+- The skill workflow takes a long time and you do not want to block a single tool call waiting for completion;
+- You need to perform other work after starting a skill task and check the result later;
+- You need custom control over how and when to poll.
+
+<Note>
+`invoke_skill` and `poll_skill` reuse the sandbox infrastructure and credential configuration of `execute_skills`. Environment variables, Tool IDs, inbound identity credentials, and other prerequisites are the same as those described on the [Code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox) page.
+</Note>
+
+## Usage
+
+Import path:
+
+```python
+from veadk.tools.builtin_tools.invoke_skill import invoke_skill
+from veadk.tools.builtin_tools.poll_skill import poll_skill
+```
+
+Register both tools on the `Agent` `tools` list. The agent can then call `invoke_skill` to start a skill task and `poll_skill` to query its status during reasoning.
+
+```python title="skill_tasks_agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.invoke_skill import invoke_skill
+from veadk.tools.builtin_tools.poll_skill import poll_skill
+
+agent = Agent(
+    name="skill_task_agent",
+    instruction="Call skills to execute tasks for the user and query task status when needed.",
+    skills=["space:your-skill-space-id"],
+    skills_mode="skills_sandbox",
+    tools=[invoke_skill, poll_skill],
+)
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("Use the skill workflow to read the knowledge base and generate a summary")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Task object
+
+Both `invoke_skill` and `poll_skill` return an A2A task object (`dict`) containing the following key fields:
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | `str` | Task ID, returned by `invoke_skill` and used as the `task_id` argument to `poll_skill`. |
+| `status` | `dict` | Task status, containing a `state` field. |
+| `status.state` | `str` | Current task state. |
+| `kind` | `str` | Object type, always `task`. |
+
+Task states:
+
+| State | Description |
+| :--- | :--- |
+| `working` | The task is in progress and has not ended. |
+| `completed` | The task completed successfully. |
+| `failed` | The task failed. |
+| `canceled` | The task was canceled. |
+| `rejected` | The task was rejected. |
+| `input-required` | The task requires additional input. |
+| `auth-required` | The task requires authentication. |
+
+`working` is a non-terminal state; all others are terminal. Once a task reaches a terminal state, subsequent `poll_skill` calls return the same snapshot.
+
+## invoke_skill
+
+Creates an A2A skill task and returns the initial task object. Sends a non-blocking `message/send` request without waiting for the task to complete.
+
+```python
+def invoke_skill(
+    workflow_prompt: str,
+    tool_context: ToolContext = None,
+    timeout: int = 1800,
+) -> dict:
+    ...
+```
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `workflow_prompt` | `str` | — | Skill workflow instruction. |
+| `tool_context` | `ToolContext` | `None` | Tool runtime context, injected automatically by VeADK; required at call time. |
+| `timeout` | `int` | `1800` | Task execution timeout in seconds. Must be between 1 and 1800. |
+
+<Note>
+`tool_context` is marked optional in the signature but is required at call time; omitting it raises an error. VeADK injects it automatically during agent execution — you do not need to pass it manually.
+</Note>
+
+## poll_skill
+
+Fetches the current status snapshot of an A2A skill task. Sends a `tasks/get` request and returns the task object.
+
+```python
+def poll_skill(
+    task_id: str,
+    tool_context: ToolContext = None,
+    timeout: int = 1800,
+) -> dict:
+    ...
+```
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `task_id` | `str` | — | Task ID, taken from the `id` field of the task object returned by `invoke_skill`. |
+| `tool_context` | `ToolContext` | `None` | Tool runtime context, injected automatically by VeADK; required at call time. |
+| `timeout` | `int` | `1800` | Request timeout in seconds. Must be between 1 and 1800. |
+
+<Note>
+`tool_context` is marked optional in the signature but is required at call time; omitting it raises an error. VeADK injects it automatically during agent execution — you do not need to pass it manually.
+</Note>
+
+## Security
+
+<Warning>
+`invoke_skill` and `poll_skill` execute workflows in a remote skills sandbox. Code in the sandbox can access services reachable from the sandbox network and read or write files. Before running, confirm that the skill source is trusted and restrict the data, network, and permissions available to the sandbox. The inbound identity credential (credential key `inbound_auth`) is forwarded to the skills sandbox in the `inbound_auth` request header so the sandbox workflow runs under the original user identity; when the current request carries no inbound credential, the header is omitted and the sandbox runs anonymously. See [Inbound authentication](/productions/veadk/preview/en/components/security/inbound) for the source and configuration of inbound identity credentials.
+</Warning>
