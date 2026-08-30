@@ -1,0 +1,140 @@
+---
+title: "技能任务"
+---
+
+## 功能说明
+
+`invoke_skill` 和 `poll_skill` 提供非阻塞的技能任务执行能力。`invoke_skill` 通过 A2A 协议向 AgentKit 技能沙箱发送非阻塞请求，创建一个技能任务并立即返回初始任务对象；`poll_skill` 根据任务 ID 获取任务的当前状态快照。两者配合使用，开发者可以在不阻塞智能体推理的情况下启动长时间运行的技能工作流，并按需轮询任务状态。
+
+与 `execute_skills` 的区别：
+
+| 工具 | 行为 | 返回值 |
+| :--- | :--- | :--- |
+| `execute_skills` | 发送请求后持续轮询，直到任务达到终态或超时，阻塞调用方 | 任务最终输出的文本字符串 |
+| `invoke_skill` | 发送非阻塞请求后立即返回，不轮询 | 初始任务对象（`dict`） |
+| `poll_skill` | 发送一次状态查询请求，不轮询 | 当前任务对象（`dict`） |
+
+适用场景：
+
+- 技能工作流执行时间较长，不希望在单次工具调用中阻塞等待；
+- 需要在启动技能任务后执行其他操作，再在合适时机查询结果；
+- 需要对任务状态进行自定义的轮询控制。
+
+<Note>
+`invoke_skill` 和 `poll_skill` 复用 `execute_skills` 的沙箱基础设施与凭证配置。环境变量、Tool ID、入站身份凭证等前提条件与[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)页面中的说明一致，此处不再重复。
+</Note>
+
+## 使用方法
+
+导入路径：
+
+```python
+from veadk.tools.builtin_tools.invoke_skill import invoke_skill
+from veadk.tools.builtin_tools.poll_skill import poll_skill
+```
+
+将两个工具直接注册到 `Agent` 的 `tools` 列表，智能体即可在推理过程中按需调用：先通过 `invoke_skill` 启动技能任务，再通过 `poll_skill` 查询任务状态。
+
+```python title="skill_tasks_agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.invoke_skill import invoke_skill
+from veadk.tools.builtin_tools.poll_skill import poll_skill
+
+agent = Agent(
+    name="skill_task_agent",
+    instruction="根据用户需求调用技能执行任务，并在需要时查询任务执行状态。",
+    skills=["space:your-skill-space-id"],
+    skills_mode="skills_sandbox",
+    tools=[invoke_skill, poll_skill],
+)
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("使用技能工作流读取知识库并生成摘要")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 任务对象
+
+`invoke_skill` 和 `poll_skill` 均返回 A2A 任务对象（`dict`），包含以下关键字段：
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `id` | `str` | 任务 ID，由 `invoke_skill` 返回，用作 `poll_skill` 的 `task_id` 参数。 |
+| `status` | `dict` | 任务状态，包含 `state` 字段。 |
+| `status.state` | `str` | 任务当前状态。 |
+| `kind` | `str` | 对象类型，固定为 `task`。 |
+
+任务状态包括：
+
+| 状态 | 说明 |
+| :--- | :--- |
+| `working` | 任务执行中，尚未结束。 |
+| `completed` | 任务已完成。 |
+| `failed` | 任务执行失败。 |
+| `canceled` | 任务已取消。 |
+| `rejected` | 任务被拒绝。 |
+| `input-required` | 任务需要额外输入。 |
+| `auth-required` | 任务需要身份认证。 |
+
+`working` 为非终态，其余状态为终态。任务达到终态后，再次调用 `poll_skill` 返回的快照不再变化。
+
+## invoke_skill
+
+创建一个 A2A 技能任务并返回初始任务对象。调用时发送非阻塞的 `message/send` 请求，不等待任务完成。
+
+```python
+def invoke_skill(
+    workflow_prompt: str,
+    tool_context: ToolContext = None,
+    timeout: int = 1800,
+) -> dict:
+    ...
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `workflow_prompt` | `str` | — | 技能工作流指令。 |
+| `tool_context` | `ToolContext` | `None` | 工具运行时上下文，由 VeADK 自动注入；调用时必须提供。 |
+| `timeout` | `int` | `1800` | 任务执行的超时时间，单位为秒。取值范围为 1–1800。 |
+
+<Note>
+`tool_context` 在签名中标记为可选，但实际调用时必须提供，否则会报错。VeADK 在智能体运行时自动注入该参数，无需手动传入。
+</Note>
+
+## poll_skill
+
+获取一个 A2A 技能任务的当前状态快照。调用时发送 `tasks/get` 请求，返回任务对象。
+
+```python
+def poll_skill(
+    task_id: str,
+    tool_context: ToolContext = None,
+    timeout: int = 1800,
+) -> dict:
+    ...
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `task_id` | `str` | — | 任务 ID，取自 `invoke_skill` 返回的任务对象中的 `id` 字段。 |
+| `tool_context` | `ToolContext` | `None` | 工具运行时上下文，由 VeADK 自动注入；调用时必须提供。 |
+| `timeout` | `int` | `1800` | 请求的超时时间，单位为秒。取值范围为 1–1800。 |
+
+<Note>
+`tool_context` 在签名中标记为可选，但实际调用时必须提供，否则会报错。VeADK 在智能体运行时自动注入该参数，无需手动传入。
+</Note>
+
+## 安全边界
+
+<Warning>
+`invoke_skill` 和 `poll_skill` 在远端技能沙箱中执行工作流，沙箱中的代码可以访问沙箱网络可达的服务并读写文件。运行前应确认技能来源可信，并限制沙箱可访问的数据、网络和权限。入站身份凭证（凭证键 `inbound_auth`）会以 `inbound_auth` 请求头转发给技能沙箱，使沙箱中的工作流能够以原始用户身份执行；当前请求未携带入站凭证时不附加该请求头，沙箱以匿名方式执行。入站身份凭证的来源与配置方式参见[入站认证](/productions/veadk/preview/zh/components/security/inbound)。
+</Warning>
