@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 对话 | 云端模式下连接 Runtime 并发送消息后，对话输入框下方新增「查看日志」入口，打开「实例日志」面板实时查看当前对话请求所在 VeFaaS 实例的运行日志：展示连接状态、实例 ID、控制台链接与请求 ID，自动刷新并保留最近 1000 行，按日志级别着色，支持自动跟随与错误重试；日志在服务端完成凭据脱敏与篇幅截断。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 创建 | 自定义创建新增「快速创建」模式：启用后生成的智能体项目内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下 `requirements.txt` 固定使用 `veadk-python` 1.1.7 并附带兼容模块。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) · [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
 | Studio 部署 | 快速创建模式部署到 AgentKit 时，若 Runtime 使用 Studio 自动生成的默认运行角色，Studio 自动为该角色附加 `AgentKitFullAccess` 策略，使子智能体具备 AgentKit 资源访问权限；自定义运行角色不自动修改。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 动态智能体委派 | `CreateAgentToolset` 新增离线模式：当用户明确禁止联网、知识库和外部资源访问时，可跳过 `collect_resources`，直接传入空字符串作为 `collection_id`，子智能体仅使用自身模型能力完成任务。 | [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
