@@ -32,13 +32,50 @@ title: "内容安全护栏"
 
 ## 环境变量与前提
 
-使用前先购买实例、添加资产并获取 AppID。设置环境变量 `TOOL_LLM_SHIELD_APP_ID`，或在 `config.yaml` 中配置：
+使用前先购买实例、添加资产并获取 AppID，再通过环境变量或 `config.yaml` 配置访问信息。`content_safety` 在初始化时读取以下配置项。
+
+| 环境变量 | config.yaml 配置项 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `TOOL_LLM_SHIELD_APP_ID` | `tool.llm_shield.app_id` | — | 火山大模型应用防火墙实例的 AppID，必填。 |
+| `TOOL_LLM_SHIELD_URL` | `tool.llm_shield.url` | `https://<region>.sdk.access.llm-shield.omini-shield.com` | 内容审查服务的访问地址。当地址路径包含 `/OpenTOP/V1/Lumen/Moderate` 时使用 Lumen Moderate 端点，否则使用默认防火墙端点。 |
+| `TOOL_LLM_SHIELD_API_KEY` | `tool.llm_shield.api_key` | — | 用于 API Key 鉴权。详见下方「端点与鉴权」。 |
+| `TOOL_LLM_SHIELD_REGION` | `tool.llm_shield.region` | `cn-beijing`（未设置时回退到环境变量 `REGION`） | 服务区域，用于生成默认访问地址与 AK/SK 签名。 |
+
+在 `config.yaml` 中配置：
 
 ```yaml title="config.yaml"
 tool:
   llm_shield:
     app_id: <your_app_id>
+    url: <your_llm_shield_url>
+    api_key: <your_api_key>
+    region: cn-beijing
 ```
+
+<Note>
+已通过环境变量设置的值优先于 `config.yaml` 中的同名配置项。
+</Note>
+
+## 端点与鉴权
+
+`content_safety` 支持两种内容审查端点，按 `TOOL_LLM_SHIELD_URL` 自动选择。
+
+### 默认防火墙端点
+
+当 `TOOL_LLM_SHIELD_URL` 的路径不包含 `/OpenTOP/V1/Lumen/Moderate` 时使用此端点（即不设置 `url` 时的默认行为）。请求发送到 `<url>/v2/moderate`，鉴权方式按以下顺序选择：
+
+- 配置了 `TOOL_LLM_SHIELD_API_KEY` 时，使用 API Key 鉴权（请求头携带 `x-api-key`）。
+- 未配置 API Key 时，使用火山引擎 AK/SK 鉴权：优先读取环境变量 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`；若两者缺失，则从运行环境的 IAM 角色获取临时凭证。请求头携带服务区域与服务标识。
+
+### Lumen Moderate 端点
+
+当 `TOOL_LLM_SHIELD_URL` 的路径包含 `/OpenTOP/V1/Lumen/Moderate` 时使用此端点。请求直接发送到所配置的完整地址，以 AppID 作为端点标识、API Key 作为端点密钥进行鉴权。
+
+<Warning>
+使用 Lumen Moderate 端点前必须配置 `TOOL_LLM_SHIELD_API_KEY`，否则请求将因缺少有效密钥而失败。
+</Warning>
+
+与默认端点相比，Lumen Moderate 端点在工具调用审查时会附带当前会话标识与调用标识，便于在审计侧关联同一会话内的多次审查。模型输入审查、模型输出审查与工具入参、工具返回审查分别在对应回调点发起请求，拦截行为与默认端点一致。
 
 ## 使用方法
 
@@ -71,4 +108,12 @@ print(response)
 # Your request has been blocked due to: Model Misuse. Please modify your input and try again.
 ```
 
-## 额外说明
+切换到 Lumen Moderate 端点时，在环境变量或 `config.yaml` 中指定对应的访问地址与 API Key 即可，调用方式不变：
+
+```yaml title="config.yaml"
+tool:
+  llm_shield:
+    app_id: <your_app_id>
+    url: https://<your-lumen-host>/OpenTOP/V1/Lumen/Moderate
+    api_key: <your_api_key>
+```

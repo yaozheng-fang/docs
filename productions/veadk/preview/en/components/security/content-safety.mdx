@@ -32,13 +32,50 @@ Notes:
 
 ## Environment & prerequisites
 
-Before using `content_safety`, purchase an instance, add assets, and obtain its AppID. Set the environment variable `TOOL_LLM_SHIELD_APP_ID`, or configure it in `config.yaml`:
+Before using `content_safety`, purchase an instance, add assets, and obtain its AppID, then configure the access information through environment variables or `config.yaml`. `content_safety` reads the following settings at initialization.
+
+| Environment variable | config.yaml key | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `TOOL_LLM_SHIELD_APP_ID` | `tool.llm_shield.app_id` | — | AppID of the Volcengine LLM Application Firewall instance. Required. |
+| `TOOL_LLM_SHIELD_URL` | `tool.llm_shield.url` | `https://<region>.sdk.access.llm-shield.omini-shield.com` | Access address of the content-moderation service. Uses the Lumen Moderate endpoint when the path contains `/OpenTOP/V1/Lumen/Moderate`; otherwise uses the default firewall endpoint. |
+| `TOOL_LLM_SHIELD_API_KEY` | `tool.llm_shield.api_key` | — | Used for API key authentication. See "Endpoints & authentication" below. |
+| `TOOL_LLM_SHIELD_REGION` | `tool.llm_shield.region` | `cn-beijing` (falls back to the `REGION` environment variable when unset) | Service region, used to build the default access address and to sign AK/SK requests. |
+
+Configure in `config.yaml`:
 
 ```yaml title="config.yaml"
 tool:
   llm_shield:
     app_id: <your_app_id>
+    url: <your_llm_shield_url>
+    api_key: <your_api_key>
+    region: cn-beijing
 ```
+
+<Note>
+Values set through environment variables take precedence over the matching keys in `config.yaml`.
+</Note>
+
+## Endpoints & authentication
+
+`content_safety` supports two content-moderation endpoints, selected automatically based on `TOOL_LLM_SHIELD_URL`.
+
+### Default firewall endpoint
+
+Used when the `TOOL_LLM_SHIELD_URL` path does not contain `/OpenTOP/V1/Lumen/Moderate` (the default behavior when `url` is not set). Requests are sent to `<url>/v2/moderate`, with authentication chosen as follows:
+
+- When `TOOL_LLM_SHIELD_API_KEY` is configured, API key authentication is used (the `x-api-key` request header is sent).
+- When no API key is configured, Volcengine AK/SK authentication is used: the `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` environment variables are read first; if both are missing, temporary credentials are obtained from the IAM role of the runtime environment. The request headers carry the service region and service identifier.
+
+### Lumen Moderate endpoint
+
+Used when the `TOOL_LLM_SHIELD_URL` path contains `/OpenTOP/V1/Lumen/Moderate`. Requests are sent directly to the configured full address, authenticating with the AppID as the endpoint identifier and the API key as the endpoint secret.
+
+<Warning>
+You must configure `TOOL_LLM_SHIELD_API_KEY` before using the Lumen Moderate endpoint; otherwise the request fails because no valid key is present.
+</Warning>
+
+Compared with the default endpoint, the Lumen Moderate endpoint attaches the current session identifier and invocation identifier during tool-call reviews, so that multiple reviews within the same session can be correlated on the audit side. Model-input review, model-output review, tool-argument review, and tool-return review each issue a request at the corresponding callback point, with blocking behavior matching the default endpoint.
 
 ## Usage
 
@@ -71,4 +108,12 @@ print(response)
 # Your request has been blocked due to: Model Misuse. Please modify your input and try again.
 ```
 
-## Notes
+To switch to the Lumen Moderate endpoint, specify the corresponding access address and API key in environment variables or `config.yaml`; the calling code stays the same:
+
+```yaml title="config.yaml"
+tool:
+  llm_shield:
+    app_id: <your_app_id>
+    url: https://<your-lumen-host>/OpenTOP/V1/Lumen/Moderate
+    api_key: <your_api_key>
+```
