@@ -31,6 +31,7 @@ stm = ShortTermMemory(backend="sqlite", local_database_path="./stm.db")
 | `db_kwargs` | `dict` | `{}` | Additional database connection or connection-pool settings. |
 | `local_database_path` | `str` | `/tmp/veadk_local_database.db` | Local DB file path, used only by `sqlite`. |
 | `after_load_memory_callback` | `Callable \| None` | `None` | Callback invoked after a session is loaded; receives the loaded `Session`. |
+| `after_create_session_callback` | `Callable \| None` | `None` | Synchronous or asynchronous callback invoked after a new session is created; receives the new `Session` and is not invoked when an existing session is reused. |
 
 <Warning>
 If a username or password in the connection string contains special characters such as `@` or `:`, URL-encode it with `urllib.parse.quote_plus` first (e.g. `p@ssword` → `p%40ssword`), otherwise parsing fails.
@@ -89,6 +90,33 @@ You rarely create or manage a `Session` directly; instead you use `session_servi
 - List sessions `list_sessions()`: query active sessions for a user and app.
 - Clean up `delete_session()`: delete a `Session` and its associated data.
 
+
+
+A session-creation callback lets you provision resources, record an audit event,
+or synchronize an external system after a session is first created. Register
+`after_create_session_callback`:
+
+```python
+import asyncio
+
+async def after_create_session(session):
+    await provision_external_resources(session.id)
+
+stm = ShortTermMemory(
+    after_create_session_callback=after_create_session,
+)
+```
+
+The callback runs only when a new session is actually created; it is not
+invoked when an existing session is reused. The callback may be a synchronous
+function or an asynchronous function (`async def`). If it raises an exception,
+the exception is propagated to the caller and agent execution does not continue.
+
+<Note>
+  Under a database backend, `ShortTermMemory.create_session()` first checks for
+  and reuses an existing session with the same `session_id` to avoid duplicates.
+  The callback only runs on first creation.
+</Note>
 
 ## Context compaction
 
