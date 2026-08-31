@@ -242,6 +242,78 @@ agent = Agent(
 )
 ```
 
+## 按工具选择执行位置
+
+运行时决定的是智能体整体的内层循环，而 `RuntimeProvider` 在更细的粒度上决定每一次工具调用在哪里执行，模型推理循环本身不变。它作为 ADK 插件工作：通过拦截 `before_tool_callback`，在 Google ADK 实际调用工具实现之前接管该调用，因此本地实现不会被重复执行。
+
+VeADK 提供以下公开类：
+
+| 类 | 说明 |
+| :--- | :--- |
+| `RuntimeProvider` | 抽象基类，继承自 ADK `BasePlugin`。子类实现 `execute` 方法以决定每次工具调用的执行位置。 |
+| `DispatchRuntimeProvider` | 把指定的非 MCP 工具派发到远端，其余工具回退到本地执行。 |
+| `LocalRuntimeProvider` | 通过工具原本的 ADK 实现执行，是 `DispatchRuntimeProvider` 的默认本地回退。 |
+| `ToolCall` | 传递给 `execute` 的工具调用描述对象，包含工具名、参数、上下文等信息。 |
+
+### 使用示例
+
+以下示例把所有非 MCP 工具的执行派发到远端 Runtime，MCP 工具保留原本的 ADK 实现：
+
+```python title="agent.py"
+from veadk import Agent, Runner
+from veadk.runtime import DispatchRuntimeProvider, ToolCall
+
+async def dispatch_task(tool_call: ToolCall):
+    return await remote_client.dispatch(
+        tool_call.name,
+        tool_call.arguments,
+        dispatch_id=tool_call.id,
+    )
+
+agent = Agent(name="assistant", tools=[bash, read_file])
+runtime_provider = DispatchRuntimeProvider(
+    dispatch_task,
+    dispatchable_tools=None,  # 派发所有非 MCP 工具
+)
+runner = Runner(agent=agent, plugins=[runtime_provider])
+```
+
+上例中所有非 MCP 工具只会经过 `dispatch_task`，不会再次执行本地函数。传入具体工具名集合时，只派发集合中的非 MCP 工具。派发函数可以是同步或异步函数。
+
+如果直接在 `Agent` 上注册而非通过 `Runner` 的 `plugins`，可以将 `DispatchRuntimeProvider` 的 `before_tool_callback` 传入 `Agent` 的 `before_tool_callback` 参数：
+
+```python title="agent.py"
+agent = Agent(
+    name="assistant",
+    tools=[bash, read_file],
+    before_tool_callback=runtime_provider.before_tool_callback,
+)
+```
+
+### DispatchRuntimeProvider 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `dispatch_task` | `Callable[[ToolCall], Any]` | — | 必填。每次派发工具调用时执行的函数，接收 `ToolCall`，返回工具执行结果。可以是同步或异步函数。 |
+| `dispatchable_tools` | `Collection[str] \| None` | `("bash",)` | 需要派发到远端的非 MCP 工具名称集合。设为 `None` 时派发所有非 MCP 工具。 |
+| `local_runtime` | `RuntimeProvider \| None` | `None` | 用于执行未派发工具的本地 Provider。未设置时使用 `LocalRuntimeProvider`。 |
+| `name` | `str` | `"veadk_dispatch_runtime_provider"` | 插件名称。 |
+
+### ToolCall 字段
+
+| 字段/属性 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `name` | `str` | 工具名称。 |
+| `arguments` | `dict[str, Any]` | 传递给工具的参数。 |
+| `tool` | `BaseTool` | ADK 工具对象，可用于在本地执行该工具。 |
+| `context` | `ToolContext` | ADK 工具上下文。 |
+| `id` | `str` | 属性。ADK 函数调用标识，不可用时为空字符串。 |
+| `session_id` | `str` | 属性。当前 VeADK 会话标识，不可用时为空字符串。 |
+
+<Note>
+  MCP 工具始终保留其原本的 ADK 实现，不受 `dispatchable_tools` 配置影响。这是因为 MCP 工具的调用需要通过其自身的 MCP 会话管理器进行。
+</Note>
+
 ## 请求处理
 
 在不侵入业务逻辑的前提下，可为每次执行插入统一的横切处理。将处理器传入 `run_processor` 即可，例如接入身份认证做登录态校验：

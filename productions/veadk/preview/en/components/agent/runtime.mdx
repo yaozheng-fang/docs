@@ -279,6 +279,91 @@ agent = Agent(
 )
 ```
 
+## Choose where each tool runs
+
+Whereas a runtime replaces an agent's entire inner loop, a `RuntimeProvider`
+operates at a narrower layer: it decides where each individual tool call
+executes while the model reasoning loop remains unchanged. It works as an ADK
+plugin — by intercepting `before_tool_callback`, it takes over the call before
+Google ADK invokes the tool implementation, so the local implementation is not
+executed a second time.
+
+VeADK exposes the following public classes:
+
+| Class | Description |
+| :--- | :--- |
+| `RuntimeProvider` | Abstract base class, inheriting from ADK `BasePlugin`. Subclasses implement the `execute` method to decide where each tool call runs. |
+| `DispatchRuntimeProvider` | Dispatches selected non-MCP tools to a remote runtime; all other tools fall back to local execution. |
+| `LocalRuntimeProvider` | Executes tools through their original ADK implementation; used as the default local fallback for `DispatchRuntimeProvider`. |
+| `ToolCall` | The tool-call descriptor passed to `execute`, containing the tool name, arguments, context, and more. |
+
+### Usage example
+
+The following example dispatches every non-MCP tool to a remote runtime; MCP
+tools retain their original ADK implementation:
+
+```python title="agent.py"
+from veadk import Agent, Runner
+from veadk.runtime import DispatchRuntimeProvider, ToolCall
+
+async def dispatch_task(tool_call: ToolCall):
+    return await remote_client.dispatch(
+        tool_call.name,
+        tool_call.arguments,
+        dispatch_id=tool_call.id,
+    )
+
+agent = Agent(name="assistant", tools=[bash, read_file])
+runtime_provider = DispatchRuntimeProvider(
+    dispatch_task,
+    dispatchable_tools=None,  # dispatch every non-MCP tool
+)
+runner = Runner(agent=agent, plugins=[runtime_provider])
+```
+
+In the example above, every non-MCP tool only goes through `dispatch_task` and
+its local function is not invoked a second time. Pass a set of tool names to
+dispatch only those non-MCP tools. The dispatch function may be synchronous or
+asynchronous.
+
+To register directly on an `Agent` instead of through the `Runner` `plugins`
+parameter, pass the `DispatchRuntimeProvider`'s `before_tool_callback` to the
+`Agent`'s `before_tool_callback` parameter:
+
+```python title="agent.py"
+agent = Agent(
+    name="assistant",
+    tools=[bash, read_file],
+    before_tool_callback=runtime_provider.before_tool_callback,
+)
+```
+
+### DispatchRuntimeProvider parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `dispatch_task` | `Callable[[ToolCall], Any]` | — | Required. The function called for each dispatched tool call; receives a `ToolCall` and returns the tool result. May be synchronous or asynchronous. |
+| `dispatchable_tools` | `Collection[str] \| None` | `("bash",)` | Names of non-MCP tools to dispatch. Set to `None` to dispatch every non-MCP tool. |
+| `local_runtime` | `RuntimeProvider \| None` | `None` | Local provider for non-dispatched tools. Defaults to `LocalRuntimeProvider`. |
+| `name` | `str` | `"veadk_dispatch_runtime_provider"` | Plugin name. |
+
+### ToolCall fields
+
+| Field / Property | Type | Description |
+| :--- | :--- | :--- |
+| `name` | `str` | Tool name. |
+| `arguments` | `dict[str, Any]` | Arguments passed to the tool. |
+| `tool` | `BaseTool` | The ADK tool object, usable for local execution. |
+| `context` | `ToolContext` | The ADK tool context. |
+| `id` | `str` | Property. ADK function-call identifier; empty string when unavailable. |
+| `session_id` | `str` | Property. Current VeADK session identifier; empty string when unavailable. |
+
+<Note>
+  MCP tools always retain their original ADK implementation and are not affected
+  by the `dispatchable_tools` configuration, because MCP tool invocation must go
+  through its own MCP session manager.
+</Note>
+
 ## Request processing
 
 Without touching business logic, you can inject shared cross-cutting processing

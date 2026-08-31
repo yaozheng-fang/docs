@@ -8,6 +8,9 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 运行时 | 新增 `RuntimeProvider`、`DispatchRuntimeProvider`、`LocalRuntimeProvider` 与 `ToolCall`：作为 ADK 插件在工具调用执行前拦截，决定每次工具调用在哪里执行，模型推理循环不变。`DispatchRuntimeProvider` 可将指定的非 MCP 工具派发到远端，其余工具回退到本地实现；MCP 工具始终保留原实现。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
+| 短期记忆 | `ShortTermMemory` 新增 `after_create_session_callback` 参数：新会话创建成功后触发的同步或异步回调，入参为新建的 `Session`；复用已有会话时不触发。 | [概览](/productions/veadk/preview/zh/components/session) |
+| 依赖 | 新增 `sandbox` 可选依赖组，包含 Anthropic SDK、python-dotenv 和 httpx[socks]，用于自建沙箱示例。 | [安装](/productions/veadk/preview/zh/get-started/installation) |
 | 内容安全 | `content_safety` 新增 Lumen Moderate 端点支持：将 `TOOL_LLM_SHIELD_URL` 配置为路径包含 `/OpenTOP/V1/Lumen/Moderate` 的地址时，内容审查请求改发至该端点，并以 AppID 作为端点标识、API Key 作为端点密钥进行鉴权；工具调用审查会附带当前会话标识与调用标识。默认防火墙端点的行为不变。 | [内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety) |
 | Studio 对话 | 云端模式下连接 Runtime 并发送消息后，对话输入框下方新增「查看日志」入口，打开「实例日志」面板实时查看当前对话请求所在 VeFaaS 实例的运行日志：展示连接状态、实例 ID、控制台链接与请求 ID，自动刷新并保留最近 1000 行，按日志级别着色，支持自动跟随与错误重试；日志在服务端完成凭据脱敏与篇幅截断。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 创建 | 自定义创建新增「快速创建」模式：启用后生成的智能体项目内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下 `requirements.txt` 固定使用 `veadk-python` 1.1.7 并附带兼容模块。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) · [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
