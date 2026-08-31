@@ -519,7 +519,7 @@ The following frameworks are supported:
 
 <Steps>
   <Step title="Upload the project archive">
-    On the Add Agent menu, choose “Migrate an existing project” and upload a `.zip` archive of up to 50 MB.
+    On the Add Agent menu, choose “Migrate an existing project” and upload a `.zip` archive of up to 20 MiB (20 MiB maximum after extraction).
   </Step>
   <Step title="Automatic analysis">
     Studio creates a user-owned Dev Sandbox Session (1-hour TTL) and invokes the preinstalled Codex to perform read-only analysis of the uploaded project, identifying the framework, entry file, and migration boundary. The analysis includes confidence scores with evidence (file paths and line numbers) for each framework, a recommended framework and entry, open questions for the user, and the migration boundary (included and excluded files).
@@ -536,7 +536,7 @@ The following frameworks are supported:
 </Steps>
 
 <Warning>
-  Migration runs in a Dev Sandbox Session with a 1-hour TTL. Once the Session expires, preview, download, and deployment are no longer available; you must re-upload and re-migrate. The `app.py` in the migrated artifact runs inside the deployed AgentKit Runtime — deploy only trusted projects.
+  Migration runs in a Dev Sandbox Session with a 1-hour TTL. Once the Session expires, preview, download, and deployment from the temporary migration environment are no longer available; saved source versions in persistent storage are unaffected and remain accessible from the "Migrated projects" page for viewing, downloading, deploying, or restoring. When persistent storage is not configured, migration artifacts are only available within the Session TTL. The `app.py` in the migrated artifact runs inside the deployed AgentKit Runtime — deploy only trusted projects.
 </Warning>
 
 <Note>
@@ -549,10 +549,15 @@ The following frameworks are supported:
   The migration composer includes a model selector next to the archive upload button, used to specify the model the Dev Sandbox Codex uses for migration analysis and conversion. The model list is fetched by the Studio server from Ark models activated under the current account, showing only available or retiring models with their display name, ID, vendor, and lifecycle status; models incompatible with project migration are excluded, and the list supports search filtering. The default model comes from the migration capabilities; when none is configured, the first available model is selected. The list can be reloaded on load failure. Once a task is created, the model cannot be changed. The selected model's name, provider, and API base URL are injected into the migration session environment by the Studio server without sending model credentials to the browser.
 </Note>
 
+<Note>
+  After a successful migration, the source is automatically saved as an immutable project version in the private Studio TOS bucket, sharing the same persistent storage as intelligent-development project versions. Saved versions do not depend on the temporary migration environment — even after the Dev Sandbox Session expires, the standalone "Migrated projects" page lets you view, download, deploy, delete, or compare versions, and restore any version into a new intelligent-development session for another intent-driven iteration. Saving source versions requires the administrator to configure Studio persistent storage (`VEADK_STUDIO_TOS_BUCKET` and `VEADK_STUDIO_TOS_REGION`); when not configured, migration artifacts are only available within the Session TTL. See [Studio persistent storage](#studio-persistent-storage) for configuration.
+</Note>
+
 | Check | Limit | Description |
 | :--- | :--- | :--- |
-| Archive size | 50 MB | Maximum size of a single uploaded archive. |
-| Session TTL | 1 hour | Lifetime of the Dev Sandbox Session; artifacts become unavailable after expiry. |
+| Archive size | 20 MiB | Maximum size of a single uploaded archive. |
+| Uncompressed size | 20 MiB | Maximum total size after extraction. |
+| Session TTL | 1 hour | Lifetime of the Dev Sandbox Session; artifacts in the temporary migration environment become unavailable after expiry. |
 | Framework selection | — | Structured frameworks (LangChain, LangGraph, Google ADK, Strands, AgentCore) require an entry file; Dify and Any do not accept a Structured entry. |
 | Application name | 63 characters | Lowercase letters, digits, and hyphens only; must start and end with a letter or digit. |
 | Artifact safety | — | Each file in the migration ZIP is verified against the manifest by size and SHA256; path traversal, symlinks, and files that modify Agent runtime methods are rejected. |
