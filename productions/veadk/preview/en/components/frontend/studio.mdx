@@ -1361,6 +1361,33 @@ Follow-up messages in an ordinary conversation continue to use the existing mess
   In cloud mode, Studio does not auto-select the first available agent. Before starting a new conversation, connect a Runtime from the agent selector at the top of the chat page. Starting a new chat without a selected agent prompts you to choose one first and opens the agent management page.
 </Note>
 
+### View Runtime instance logs
+
+In cloud mode, after you connect a Runtime and send a message, the hint bar below the composer shows a "View logs" entry. Clicking it opens the "Instance logs" panel, which streams the live logs of the VeFaaS instance handling the current conversation request, so you can locate runtime errors and unexpected output during a conversation. The entry appears only when a cloud Runtime is connected; it is not shown in local mode or for built-in agent sessions.
+
+The panel header shows the following information:
+
+| Area | Description |
+| :--- | :--- |
+| Connection status | Indicates the current log stream state: idle, connecting, live, or retrying. The stream reconnects automatically when interrupted. |
+| Instance ID | The name of the VeFaaS instance handling the current conversation request. Before an instance is captured it shows "waiting for instance"; after you send a message it shows the actual instance. |
+| Console link | Clicking the instance ID opens the cloud console Runtime instance page in a new tab (Volcengine at `console.volcengine.com`, BytePlus at `console.byteplus.com`), filtered to the current instance. |
+| Request ID | When the runtime returns a request identifier, the panel shows it so you can correlate a single request in the cloud console. |
+
+The log area renders log lines, auto-refreshes, and keeps only the most recent 1,000 lines. When new logs arrive, the panel auto-scrolls to the bottom to follow the latest output; manual upward scrolling pauses following, and returning to the bottom resumes it. Log lines are colored by level: lines containing `ERROR`/`FATAL`/`CRITICAL`, `WARNING`, `INFO`, or `DEBUG` keywords are marked with the corresponding color so you can distinguish them at a glance.
+
+<Note>
+  Studio reads instance logs through a server-side proxy and verifies the logged-in identity's access to the Runtime before reading. Logs are credential-redacted and length-truncated on the server before being sent to the browser, and runtime credentials are never exposed to the browser. Reading instance logs uses the Volcengine or BytePlus credentials configured for Studio.
+</Note>
+
+<Note>
+  Before you send a message, or before an instance has been captured from the runtime response, the panel shows "instance not yet captured" and suggests sending a message first. Studio locates the instance from the identifier returned in the runtime response; when no direct instance identifier is available, it matches the instance that contains the session among the current Runtime's instances using the session identifier.
+</Note>
+
+<Warning>
+  Instance logs may contain application output printed by the runtime. Make sure Studio is only exposed to authorized users, and avoid printing sensitive information to logs.
+</Warning>
+
 ### Local configuration
 
 Before using built-in agents locally, prepare one AgentKit CodeEnv Tool in the `Ready` state and configure its ID:
