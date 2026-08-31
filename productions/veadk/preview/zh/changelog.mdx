@@ -6,7 +6,15 @@ title: "更新日志"
 
 ## 未发布
 
-暂无未发布的 Preview 变更。
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Studio 创建 | 自定义创建新增「快速创建」模式：启用后生成的智能体项目内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下 `requirements.txt` 固定使用 `veadk-python` 1.1.7 并附带兼容模块。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) · [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
+| Studio 部署 | 快速创建模式部署到 AgentKit 时，若 Runtime 使用 Studio 自动生成的默认运行角色，Studio 自动为该角色附加 `AgentKitFullAccess` 策略，使子智能体具备 AgentKit 资源访问权限；自定义运行角色不自动修改。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| 动态智能体委派 | `CreateAgentToolset` 新增离线模式：当用户明确禁止联网、知识库和外部资源访问时，可跳过 `collect_resources`，直接传入空字符串作为 `collection_id`，子智能体仅使用自身模型能力完成任务。 | [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
+| 动态智能体委派 | `create_agents` 改为幂等调用：同一请求指纹的调用结果会被缓存，每次 `collect_resources` 结果只需调用一次 `create_agents` 并包含全部所需子智能体。资源快照改为有界缓存（最多 128 份），读取后不再失效。 | [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
+| 动态智能体委派 | 蓝图字段新增可复用身份与任务分离指引：`name`、`id`、`description` 和 `instruction` 应描述可跨请求复用的稳定能力域，`task` 是当前一次性任务具体信息的唯一载体。运行时自动将任务上下文附加到 LLM 节点指令。 | [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
+| Studio 部署 | `veadk studio deploy` 按应用名称幂等处理 VeFaaS 部署：使用相同 `--vefaas-app-name` 再次部署时更新已有应用的函数代码包而非创建重复函数。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.6` 更新为 `1.1.7`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 
 ## 1.1.7
 

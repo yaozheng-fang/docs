@@ -6,7 +6,15 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 
 ## Unreleased
 
-No unreleased Preview changes.
+| Module | Change details | Link |
+| --- | --- | --- |
+| Studio creation | Custom creation now supports a "quick create" mode: when enabled, the generated agent project includes the `CreateAgentToolset` dynamic agent delegation toolset, allowing the main agent to collect resources, create sub-agents, and delegate execution at runtime. In quick mode `requirements.txt` pins `veadk-python` 1.1.7 and includes a compatibility module. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) · [Dynamic agent delegation](/productions/veadk/preview/en/components/tools/dynamic-agent) |
+| Studio deployment | When deploying a quick-create agent to AgentKit, if the Runtime uses a Studio-generated default service role, Studio automatically attaches the `AgentKitFullAccess` policy to that role so sub-agents can access AgentKit resources; custom service roles are not modified. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Dynamic agent delegation | `CreateAgentToolset` adds an offline mode: when the user explicitly prohibits network, knowledge-base, or external-resource access, the main agent can skip `collect_resources` and pass an empty string as `collection_id`, with sub-agents relying solely on their own model capabilities. | [Dynamic agent delegation](/productions/veadk/preview/en/components/tools/dynamic-agent) |
+| Dynamic agent delegation | `create_agents` is now idempotent: results for the same request fingerprint are cached, and each `collect_resources` result requires only one `create_agents` call that includes all required sub-agents. Resource snapshots use a bounded cache (up to 128) and are not invalidated after being read. | [Dynamic agent delegation](/productions/veadk/preview/en/components/tools/dynamic-agent) |
+| Dynamic agent delegation | Blueprint fields now include reusable identity and task separation guidance: `name`, `id`, `description`, and `instruction` should describe a stable, reusable capability domain, while `task` is the sole carrier of the current one-off objective. Task context is automatically appended to LLM node instructions at runtime. | [Dynamic agent delegation](/productions/veadk/preview/en/components/tools/dynamic-agent) |
+| Studio deployment | `veadk studio deploy` treats VeFaaS deployments as idempotent by application name: deploying again with the same `--vefaas-app-name` updates the existing application's function code bundle instead of creating a duplicate function. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Studio project generation | The default `veadk-python` version in generated project `requirements.txt` is updated from `1.1.6` to `1.1.7`. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio) |
 
 ## 1.1.7
 

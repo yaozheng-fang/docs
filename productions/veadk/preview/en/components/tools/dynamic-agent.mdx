@@ -13,7 +13,7 @@ The toolset exposes two tools:
 | Tool | Purpose |
 | :--- | :--- |
 | `collect_resources` | Collects skills, knowledge bases, and VeADK built-in tools available to the current account, and searches the public Skill Hub using task keywords provided by the main agent. Returns a resource catalog and a `collection_id`. |
-| `create_agents` | Creates sub-agents from the `collection_id` returned by `collect_resources` and blueprints designed by the main agent, registers them as sub-agents of the current agent, and transfers control to the agent named by `handoff_to`. |
+| `create_agents` | Creates sub-agents from the `collection_id` returned by `collect_resources` and blueprints designed by the main agent, registers them as sub-agents of the current agent, and transfers control to the agent named by `handoff_to`. Call `create_agents` exactly once for each `collect_resources` result and include every required sub-agent in a single call; after it completes or sets `handoff_to`, do not call it again. |
 
 <Note>
 Resources returned by `collect_resources` are candidates only and are not mounted automatically. The main agent must explicitly include each resource ref it wants to use in the `resources` list of every LLM node; when relevant skills are present in the catalog, at least one must be bound.
@@ -81,8 +81,10 @@ For greetings, introductions, or capability questions, answer directly without c
 For tasks that require retrieval, specialized skills, knowledge bases, tool calls, or authoring Python tools:
 1. First call collect_resources, deriving 2 to 5 short Skill Hub search keywords from the user's task and passing them via skill_hub_keywords.
 2. Design the minimum number of sub-agents from the returned resource catalog. Explicitly include each skill, knowledge base, and built-in tool ref you need in the resources list of the corresponding LLM node.
-3. Call create_agents, specifying in handoff_to the agent that should actually complete the user's task.
+3. Call create_agents in a single call including every required sub-agent, specifying in handoff_to the agent that should actually complete the user's task.
 4. create_agents transfers the task directly to that agent; do not repeat the answer yourself.
+
+If the user explicitly prohibits network, knowledge-base, or external-resource access, skip collect_resources and call create_agents directly with an empty string as collection_id, leaving every LLM node's resources as an empty list.
 """,
     tools=[create_agent],
 )
@@ -112,14 +114,18 @@ By default `collect_resources` gathers resources from the following sources and 
 
 The `collection_id` returned after collection must be passed unchanged to the subsequent `create_agents` call to associate the resource snapshot.
 
+### Offline mode
+
+When the user explicitly prohibits network, knowledge-base, or external-resource access, the main agent can skip `collect_resources` and call `create_agents` directly with an empty string as `collection_id`. Every LLM node's `resources` must then be an empty list, and sub-agents rely solely on their own model capabilities. No Skill Hub keyword search or resource-source calls are made in offline mode.
+
 ### Agent blueprints
 
 The `agents` argument of `create_agents` is a list of blueprints, each describing one independently constructed root agent:
 
 | Field | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `name` | `str` | Yes | Agent name, matching `[A-Za-z_][A-Za-z0-9_]*`, unique within the batch. |
-| `task` | `str` | Yes | Description of the task the agent must complete. |
+| `name` | `str` | Yes | Agent name, matching `[A-Za-z_][A-Za-z0-9_]*`, unique within the batch. Should be a reusable capability identifier without request-specific entities, brands, platforms, industries, languages, or topics. |
+| `task` | `str` | Yes | Complete one-off user objective, including its specific subjects, inputs, constraints, and deliverable. |
 | `root_node` | `str` | Yes | The node id used as the entry point. |
 | `nodes` | `list[node]` | Yes | Node list, at least one; node ids are unique within a blueprint. |
 
@@ -137,16 +143,28 @@ Nodes inside a blueprint support the following types, with availability dependin
 The `workflow` node is available only on Google ADK 2.0.0 and above. On lower versions, the capability catalog returned by `collect_resources` indicates the supported node types, and `create_agents` omits `workflow` nodes.
 </Note>
 
+### Reusable identity and task separation
+
+The `name`, node `id`, `description`, and `instruction` fields in a blueprint should describe a stable, reusable capability domain, while the `task` field is the sole carrier of the current one-off objective. Specifically:
+
+- `name` and `id` use concise snake_case capability names such as `video_creation_agent`, `document_translation_agent`, or `investment_analysis_agent`, not names derived from the current deliverable or research subject.
+- `description` and `instruction` describe generic operations, such as "research the user-specified subject" or "compare the user-specified candidates," without hard-coding brands, platforms, industries, languages, or topics from the current request.
+- `task` preserves the complete current objective, including specific research subjects, industry information, source or target languages, and other request-specific details.
+
+<Note>
+At runtime, the task context from `task` is automatically appended to the instruction of each LLM node, so sub-agents can complete the one-off objective without repeating request-specific entities in `instruction`.
+</Note>
+
 ### LLM node
 
 The LLM node is the most common leaf node. Its fields are:
 
 | Field | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `str` | — | Node id, matching `[A-Za-z_][A-Za-z0-9_]*`, unique within the blueprint. |
+| `id` | `str` | — | Node id, matching `[A-Za-z_][A-Za-z0-9_]*`, unique within the blueprint. Should be a reusable operation identifier. |
 | `type` | `"llm"` | — | Fixed to `llm`. |
-| `description` | `str` | `""` | Node description. |
-| `instruction` | `str` | — | System instruction for the node; should include a clear goal, output format, and completion criteria. |
+| `description` | `str` | `""` | Node description, describing a reusable capability without request-specific entities. |
+| `instruction` | `str` | — | System instruction for the node; should include a clear goal, output format, and completion criteria, using parameterized expressions (e.g., "the user-specified subject") rather than hard-coding request-specific entities. |
 | `model_name` | `str \| list[str] \| None` | `None` | Model used by the node; inherits the main agent's model when empty. |
 | `model_provider` | `str \| None` | `None` | Model provider. |
 | `model_api_base` | `str \| None` | `None` | Model API base URL. |
@@ -161,12 +179,12 @@ The main agent can provide complete Python source in the `python_tools` of an LL
 | :--- | :--- | :--- | :--- |
 | `name` | `str` | — | Tool name, matching `[A-Za-z_][A-Za-z0-9_]*`. |
 | `description` | `str` | — | Tool description, used by the model to decide when to call it. |
-| `code` | `str` | — | Complete Python source defining the callable. |
+| `code` | `str` | — | Complete Python source defining the callable. Parameters, return values, and all data crossing the tool boundary must survive a standard JSON round trip: object keys must be strings, tuple or object dictionary keys are forbidden, and composite keys must be represented as lists of records. |
 | `entrypoint` | `str \| None` | `None` | Callable to expose; defaults to `name` when omitted. |
 | `dependencies` | `list[str]` | `[]` | Python requirements to verify, e.g. `pandas>=2`; missing packages are reported and never installed. |
 
 <Warning>
-Code in `python_tools` runs as the main agent in the current process without sandboxing. Only accept code from trusted sources, and avoid letting untrusted input become executable source directly.
+Code in `python_tools` runs as the main agent in the current process without sandboxing. Only accept code from trusted sources, and avoid letting untrusted input become executable source directly. For small, directly enumerable or mentally verifiable problems, prefer direct reasoning by the sub-agent over creating an ad-hoc Python tool.
 </Warning>
 
 ## Parameters
@@ -178,7 +196,7 @@ Constructor parameters of `CreateAgentToolset`:
 | `skill_source_ids` | `str \| Sequence[str] \| None` | `None` | Narrows skill search to the specified Spaces. ids starting with `sp-` are treated as Skill Hub Spaces and the rest as AgentKit Skill Spaces; when empty, `SKILL_HUB_SPACE_ID` and `SKILL_SPACE_ID` are read. |
 | `resource_sources` | `Sequence[ResourceSource] \| None` | Default sources | Custom resource source list; when omitted, the four default sources for skills, knowledge bases, and built-in tools are used. |
 | `capabilities` | `AgentCapabilities \| None` | Auto-detected | Specifies runtime capabilities; when omitted, supported node types are detected from the installed Google ADK version. |
-| `resource_store` | `ResourceStore \| None` | New instance | Custom resource snapshot store; when omitted, an in-process store keeps only the latest snapshot per session. |
+| `resource_store` | `ResourceStore \| None` | New instance | Custom resource snapshot store; when omitted, an in-process bounded store retains up to 128 snapshots, with each `collect_resources` call overwriting the previous snapshot for the same session. |
 | `skill_cache_dir` | `Path \| None` | `None` | Skill materialization cache directory. |
 | `leaf_factory` | `Callable \| None` | Default factory | Custom LLM-node builder to replace the default leaf-agent creation logic. |
 | `knowledge_factory` | `Callable \| None` | Default factory | Custom knowledge-base mounter to replace the default VikingDB knowledge-base construction logic. |
@@ -186,6 +204,7 @@ Constructor parameters of `CreateAgentToolset`:
 ## Limitations
 
 - `create_agents` must run within an active agent invocation driven by a `Runner`, otherwise it cannot register sub-agents and complete the handoff.
-- Within a session, each `collect_resources` call overwrites the previous resource snapshot, and `create_agents` consumes the matching snapshot, after which it is no longer valid.
+- Each `collect_resources` result requires exactly one `create_agents` call that includes every required sub-agent; after it completes or sets `handoff_to`, it should not be called again.
+- Multiple `collect_resources` calls within the same session overwrite the previous resource snapshot for that session; snapshots are held in an in-process bounded cache (up to 128), and `create_agents` reads a snapshot without invalidating it, so the same snapshot can be reused by subsequent calls with the same request fingerprint.
 - Dynamically created sub-agents are registered in the agent tree of the current session and are not retained after the session ends.
 - `python_tools` run in the current process without sandbox isolation.
