@@ -1,0 +1,222 @@
+---
+title: "Harness"
+---
+
+Harness 是 VeADK 的执行增强扩展，提供两种互斥的接入模式：进程内插件模式和受管 Sidecar 模式。进程内模式在应用进程中加载 Harness 插件，为每轮调用准备上下文、压缩工具结果并校验回答；受管 Sidecar 模式在独立的受控运行时中执行全部增强行为，应用进程不加载相关插件。
+
+<Warning>
+  两种模式不得混用。受管 Sidecar 模式启用时，`HarnessExtension.plugins()` 始终返回空列表，应用进程不会加载 `veadk.extensions.harness.plugins` 的实现。
+</Warning>
+
+## 何时使用
+
+| 模式 | 适用场景 |
+| --- | --- |
+| 进程内插件 | 本地开发、测试，或不需要独立运行时服务的轻量部署 |
+| 受管 Sidecar | 生产部署中由 AgentKit 管理的云端运行时，将增强行为隔离到独立运行时执行 |
+
+## 安装
+
+基础 Harness 扩展已随 VeADK 内置，无需额外安装。需要 Headroom 压缩实现时安装 `harness` 依赖组：
+
+```bash
+pip install "veadk-python[harness]"
+```
+
+## 进程内插件模式
+
+进程内模式通过 `build_harness_plugins()` 构建插件列表，挂载到 `Runner`：
+
+```python
+from veadk.extensions.harness.plugins import build_harness_plugins
+from veadk import Agent, Runner
+
+agent = Agent(name="research_agent")
+runner = Runner(
+    agent=agent,
+    app_name="research",
+    plugins=build_harness_plugins(
+        components=["invocation_context", "compactor", "response_verification"],
+        profile="research",
+    ),
+)
+```
+
+### 插件能力
+
+| 插件 | 主要 Hook | 作用 |
+| :--- | :--- | :--- |
+| `HarnessInvocationContextPlugin` | `on_user_message_callback`、`before_model_callback` | 准备任务锚点、近期上下文和工具使用约束 |
+| `HarnessCompressPlugin` | `before_model_callback`、`after_tool_callback` | 压缩过大的工具输出，保留关键事实 |
+| `HarnessResponseVerificationPlugin` | `after_tool_callback`、`after_model_callback`、`on_event_callback` | 记录工具执行结果，标记缺少证据的最终回答 |
+
+### 通过环境变量配置
+
+使用 `build_harness_plugins_from_env()` 从环境变量构建插件：
+
+```python
+from veadk.extensions.harness.env import build_harness_plugins_from_env
+
+plugins = build_harness_plugins_from_env()
+```
+
+相关环境变量：
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `HARNESS_ENHANCE_ENABLED` | `false` | 是否启用进程内 Harness 插件 |
+| `HARNESS_ENHANCE_COMPONENTS` | `invocation_context,compactor,response_verification` | 启用的插件组件，逗号分隔 |
+| `HARNESS_ENHANCE_PROFILE` | `default` | 插件配置场景 |
+| `HARNESS_COMPRESSION_PROVIDER` | `builtin` | 压缩提供方，可选 `builtin` 或 `headroom` |
+| `HARNESS_MAX_CONTEXT_CHARS` | `24000` | 上下文最大字符数 |
+| `HARNESS_MAX_TOOL_RESULT_CHARS` | `4000` | 工具结果压缩阈值字符数 |
+| `HARNESS_STORE_PATH` | — | Harness 存储路径，未设置时使用内存存储 |
+| `HARNESS_VERIFIER_MODE` | `observe` | 回答校验模式，可选 `observe` 或 `block` |
+
+`HARNESS_ENHANCE_*` 与 `HARNESS_*` 前缀的环境变量均被读取；带 `ENHANCE` 前缀的优先。
+
+## 受管 Sidecar 模式
+
+受管 Sidecar 模式通过 `HarnessExtension` 启动受控运行时，由运行时负责执行全部 Harness 增强行为。`HarnessExtension` 仅负责启动运行时、应用模型与 MCP 绑定并管理生命周期。
+
+### 通过环境变量启用
+
+设置 `HARNESS_SIDECAR_ENABLED=true` 后，`HarnessExtension.from_env()` 会读取相关环境变量并启动 Sidecar：
+
+```python
+from veadk.extensions.harness import HarnessExtension
+
+extension = HarnessExtension.from_env()
+plugins = extension.plugins()  # 受管 Sidecar 模式下返回空列表
+```
+
+<Note>
+  `HarnessExtension` 支持上下文管理器协议，退出时自动关闭 Sidecar：
+  ```python
+  with HarnessExtension.from_env() as extension:
+      ...
+  ```
+</Note>
+
+### 通过构造参数启用
+
+也可以通过 `sidecar` 参数直接启用：
+
+```python
+from veadk.extensions.harness import HarnessExtension
+
+extension = HarnessExtension(
+    sidecar=True,
+    profile="default",
+)
+```
+
+`sidecar` 接受布尔值或配置字典。传入配置字典时，其中的字段会用于解析 Sidecar 计划；传入 `True` 时使用默认配置。
+
+<Warning>
+  Sidecar 模式启用时不能同时传入 `components` 参数；组件选择通过 Sidecar 配置中的 `component_overrides` 控制。
+</Warning>
+
+### 通过配置对象启用
+
+使用 `HarnessSidecarConfig` 构建完整配置，再传给 `HarnessExtension`：
+
+```python
+from veadk.extensions.harness import HarnessExtension
+from veadk.extensions.harness.sidecar_runtime import HarnessSidecarConfig
+
+config = HarnessSidecarConfig(
+    enabled=True,
+    profile="default",
+)
+extension = HarnessExtension(sidecar=config)
+```
+
+`HarnessSidecarConfig.from_env()` 也可以从环境变量构建配置对象。
+
+### Sidecar 状态
+
+| 属性 / 方法 | 返回值 | 说明 |
+| :--- | :--- | :--- |
+| `sidecar_status` | `str` | Sidecar 状态：`ok`、`degraded`、`disabled` 或 `not_started` |
+| `sidecar_env` | `dict[str, str]` | Sidecar 注入到应用进程的环境变量绑定 |
+| `sidecar_status_payload()` | `dict` | 适合路由返回的状态快照，包含 `enabled`、`status`、`planHash` 和 `effectiveComponents` |
+| `close()` | `None` | 关闭 Sidecar，释放运行时资源 |
+
+### Sidecar 环境变量
+
+受管 Sidecar 模式通过以下环境变量配置。未显式设置时使用默认值。
+
+#### 通用配置
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `HARNESS_SIDECAR_ENABLED` | `false` | 是否启用受管 Sidecar |
+| `HARNESS_SIDECAR_FAIL_OPEN` | `true` | Sidecar 启动失败时是否继续以降级模式运行；设为 `false` 时启动失败会抛出异常 |
+| `HARNESS_SIDECAR_TRANSPORT` | `local` | 传输方式，可选 `local` 或 `apig_runtime_port` |
+| `HARNESS_PROFILE` | `default` | 优化场景，可选 `default` 或 `ops` |
+| `HARNESS_SIDECAR_CATALOG_VERSION` | `2026.07.1` | 组件目录版本 |
+| `HARNESS_SIDECAR_RUNTIME_VERSION` | — | 运行时版本 |
+| `HARNESS_SIDECAR_COMPONENT_OVERRIDES` | — | 组件覆盖，JSON 对象，键为组件 ID，值为布尔值 |
+| `HARNESS_RUNTIME_COMPONENTS` | — | 运行时组件，逗号分隔 |
+| `AGENTKIT_HARNESS_RUNTIME_COMMAND` | — | 运行时启动命令 |
+
+#### 模型代理配置
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `HARNESS_MODEL_PROXY_ENABLED` | `true` | 是否启用模型代理 |
+| `HARNESS_MODEL_PROXY_HOST` | `127.0.0.1` | 模型代理监听地址 |
+| `HARNESS_MODEL_PROXY_PORT` | `0` | 模型代理监听端口，`0` 表示自动分配 |
+| `HARNESS_MODEL_UPSTREAM_BASE_URL_ENV` | `MODEL_AGENT_API_BASE` | 上游模型 API 地址的环境变量名 |
+| `HARNESS_MODEL_UPSTREAM_API_KEY_ENV` | `MODEL_AGENT_API_KEY` | 上游模型 API Key 的环境变量名 |
+| `HARNESS_MODEL_PREFER_CONFIGURED_UPSTREAM_API_KEY` | `false` | 是否优先使用已配置的上游 API Key |
+| `HARNESS_MODEL_COMPRESSION_PROVIDER` | `noop` | 压缩提供方，可选 `noop` 或 `headroom` |
+
+#### MCP 网关配置
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `HARNESS_MCP_GATEWAY_ENABLED` | 依场景而定 | 是否启用 MCP 网关；`ops` 场景默认启用 |
+| `HARNESS_MCP_GATEWAY_HOST` | `127.0.0.1` | MCP 网关监听地址 |
+| `HARNESS_MCP_GATEWAY_PORT` | `0` | MCP 网关监听端口，`0` 表示自动分配 |
+| `HARNESS_MCP_UPSTREAMS_ENV` | `MCP_URLS` | 上游 MCP 地址列表的环境变量名 |
+| `HARNESS_MCP_UPSTREAM_API_KEY_ENV` | `MCP_API_KEY` | 上游 MCP API Key 的环境变量名 |
+| `HARNESS_MCP_PREFER_CONFIGURED_UPSTREAM_API_KEY` | `false` | 是否优先使用已配置的上游 API Key |
+| `HARNESS_MCP_FAIL_OPEN` | `true` | MCP 网关故障时是否继续运行 |
+| `HARNESS_MCP_READONLY_SEGMENTS` | — | 只读保护路径，逗号分隔 |
+| `HARNESS_MCP_PRESETS` | — | MCP 预设，逗号分隔 |
+
+## HarnessExtension 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `enabled` | `bool \| None` | `None` | 是否启用进程内插件；Sidecar 模式下忽略 |
+| `components` | `Iterable[str] \| str \| None` | `None` | 进程内插件组件列表；Sidecar 模式下不能传入 |
+| `profile` | `str` | `default` | 优化场景 |
+| `store` | `HarnessStoreProtocol \| None` | `None` | Harness 存储 |
+| `context_config` | `HarnessInvocationContextConfig \| None` | `None` | 上下文配置 |
+| `compaction_config` | `ToolResultCompactorConfig \| None` | `None` | 压缩配置 |
+| `verifier_config` | `FinalResponseVerifierConfig \| None` | `None` | 回答校验配置 |
+| `sidecar` | `bool \| Mapping[str, Any] \| Any \| None` | `None` | Sidecar 配置，传入 `True` 或配置对象时启用受管 Sidecar 模式 |
+| `env` | `Mapping[str, str] \| None` | `None` | 环境变量映射 |
+
+<Note>
+  `profile` 为 `ops` 时，进程内模式的默认组件会增加 `long_run_control`。
+</Note>
+
+<Warning>
+  受管 Sidecar 模式需要 AgentKit 管理的云端运行时环境。在不含 Sidecar Runtime 的环境中启用时，启动会报错或以降级模式运行（取决于 `HARNESS_SIDECAR_FAIL_OPEN` 的值）。
+</Warning>
+
+## 直接使用模块
+
+进程内模式的各个模块也可以直接使用：
+
+```python
+from veadk.extensions.harness import HarnessInvocationContextBuilder, HarnessInvocationRef
+
+context = HarnessInvocationRef(session_id="session-1", invocation_id="run-1")
+builder = HarnessInvocationContextBuilder()
+bundle = builder.prepare_context(context, user_input="Summarize these tool results.")
+```
