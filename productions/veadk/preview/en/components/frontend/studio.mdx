@@ -1682,6 +1682,8 @@ Installation is atomic: Studio stages the Skill files in a temporary directory, 
 
 When role-based access control is enabled, configuring Coding Agents requires the `developer` or `admin` role.
 
+The GitHub automations (template project import, AgentKit Runtime continuous delivery, and PR automated review) adapt their region options, default region, default model API URL, and required GitHub Secret names to Studio's current cloud provider. In Volcengine mode the region options are `cn-beijing` and `cn-shanghai` (default `cn-beijing`) and the Secrets are `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and the optional `VOLCENGINE_SESSION_TOKEN`; in BytePlus mode the region is `ap-southeast-1` and the Secrets are `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN`. The cloud provider is determined by `--provider` or the `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` environment variables, falling back to Volcengine when unset.
+
 ### Template project import
 
 Creates a minimal VeADK agent project with a full Studio App Server in the target repository, along with a continuous delivery workflow. After submission, Studio creates a release branch in the target repository and opens a PR containing the template files and a GitHub Actions workflow.
@@ -1695,7 +1697,7 @@ The template project includes an `app.py` service entry point, an agent with an 
 | Agent project directory | Yes | `agentkit-basic-agent` | The directory where template files are created. |
 | Runtime name | Yes | — | The Runtime name used in the release configuration; must start with a letter and contain only letters, digits, underscores, and hyphens. |
 | Runtime ID | Yes | — | The target AgentKit Runtime ID to continuously update. |
-| Region | Yes | `cn-beijing` | Must match the region of the target Runtime. |
+| Region | Yes | `cn-beijing` (Volcengine) / `ap-southeast-1` (BytePlus) | Must match the region of the target Runtime; the available options follow the current cloud provider. |
 | GitHub Token | Yes | — | Requires write access to the target repository; used only for the current request and never persisted. |
 
 ### AgentKit Runtime continuous delivery
@@ -1709,11 +1711,11 @@ Adds a GitHub Actions workflow to an existing repository for continuous publishi
 | Agent project directory | No | `.` | The project directory containing `app.py`; uses the repository root when left blank. |
 | Runtime name | Yes | — | The Runtime name used in the release configuration. |
 | Runtime ID | Yes | — | The target AgentKit Runtime ID to continuously update. |
-| Region | Yes | `cn-beijing` | Must match the region of the target Runtime. |
+| Region | Yes | `cn-beijing` (Volcengine) / `ap-southeast-1` (BytePlus) | Must match the region of the target Runtime; the available options follow the current cloud provider. |
 | GitHub Token | Yes | — | Requires write access to the target repository; used only for the current request and never persisted. |
 
 <Note>
-  The continuous delivery and template import workflows require `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` GitHub Secrets to be configured in the repository. When using temporary credentials, `VOLCENGINE_SESSION_TOKEN` is also required. These Secrets are managed in GitHub and do not pass through Studio.
+  The continuous delivery and template import workflows require the GitHub Secrets that match the current cloud provider to be configured in the repository: `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and the optional `VOLCENGINE_SESSION_TOKEN` in Volcengine mode; `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN` in BytePlus mode. These Secrets are managed in GitHub and do not pass through Studio.
 </Note>
 
 ### Pull Request automated review
@@ -1730,18 +1732,21 @@ Adds a GitHub Actions workflow to the target repository that reviews non-draft P
 | Target branch | No | `main` | The base branch for the PR. |
 | Sandbox Tool ID | Yes | — | The AgentKit CodeEnv Tool ID used to run each review. |
 | Review model | Yes | — | The code review model name injected into the Sandbox. |
-| Model API URL | Yes | `https://ark.cn-beijing.volces.com/api/coding/v3` | Must be an OpenAI-compatible HTTPS URL without credentials, query parameters, or fragments. |
-| Region | Yes | `cn-beijing` | Must match the region of the Sandbox Tool. |
+| Model API URL | Yes | `https://ark.cn-beijing.volces.com/api/coding/v3` (Volcengine) / `https://ark.ap-southeast.bytepluses.com/api/v3` (BytePlus) | Must be an OpenAI-compatible HTTPS URL without credentials, query parameters, or fragments. |
+| Region | Yes | `cn-beijing` (Volcengine) / `ap-southeast-1` (BytePlus) | Must match the region of the Sandbox Tool; the available options follow the current cloud provider. |
 | GitHub Token | Yes | — | Requires write access to the target repository; used only for the current request and never persisted. |
 
 The PR review workflow requires the following GitHub Secrets to be configured in the repository:
 
 | Secret | Description |
 | :--- | :--- |
-| `VOLCENGINE_ACCESS_KEY` | Volcengine Access Key (required). |
-| `VOLCENGINE_SECRET_KEY` | Volcengine Secret Key (required). |
+| `VOLCENGINE_ACCESS_KEY` | Volcengine Access Key (required in Volcengine mode). |
+| `VOLCENGINE_SECRET_KEY` | Volcengine Secret Key (required in Volcengine mode). |
+| `BYTEPLUS_ACCESS_KEY` | BytePlus Access Key (required in BytePlus mode). |
+| `BYTEPLUS_SECRET_KEY` | BytePlus Secret Key (required in BytePlus mode). |
 | `CODEX_MODEL_API_KEY` | API Key for the review model (required). |
-| `VOLCENGINE_SESSION_TOKEN` | Required when using temporary credentials. |
+| `VOLCENGINE_SESSION_TOKEN` | Required when using Volcengine temporary credentials. |
+| `BYTEPLUS_SESSION_TOKEN` | Required when using BytePlus temporary credentials. |
 
 ### Feishu bot
 

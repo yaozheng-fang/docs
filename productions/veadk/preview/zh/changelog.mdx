@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 自动化 | GitHub 自动化（模板项目导入、AgentKit Runtime 持续交付、PR 自动评审）支持 BytePlus 云服务商：地域选项、默认地域、模型 API 地址默认值和所需 GitHub Secrets 随当前云服务商变化；火山引擎模式为 `cn-beijing` 与 `VOLCENGINE_*` Secrets，BytePlus 模式为 `ap-southeast-1` 与 `BYTEPLUS_*` Secrets。生成的工作流同时写入 `CLOUD_PROVIDER` 与 `AGENTKIT_CLOUD_PROVIDER` 环境变量；BytePlus 模式下持续交付工作流额外注入 BytePlus 凭据映射与记忆地域环境变量。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 运行时 | 新增 `RuntimeProvider`、`DispatchRuntimeProvider`、`LocalRuntimeProvider` 与 `ToolCall`：作为 ADK 插件在工具调用执行前拦截，决定每次工具调用在哪里执行，模型推理循环不变。`DispatchRuntimeProvider` 可将指定的非 MCP 工具派发到远端，其余工具回退到本地实现；MCP 工具始终保留原实现。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
 | 短期记忆 | `ShortTermMemory` 新增 `after_create_session_callback` 参数：新会话创建成功后触发的同步或异步回调，入参为新建的 `Session`；复用已有会话时不触发。 | [概览](/productions/veadk/preview/zh/components/session) |
 | 依赖 | 新增 `sandbox` 可选依赖组，包含 Anthropic SDK、python-dotenv 和 httpx[socks]，用于自建沙箱示例。 | [安装](/productions/veadk/preview/zh/get-started/installation) |
