@@ -299,8 +299,9 @@ After selecting "Custom configuration", fill in the following settings:
 | :--- | :--- | :--- |
 | Environment name | Free text, up to 128 characters | A unique name for the environment. |
 | Description | Free text, up to 2000 characters | A description of the environment's purpose. |
-| Operating system | Ubuntu 22.04, Ubuntu 24.04 | The base image operating system. |
-| Python version | Python 3.10, Python 3.12 | The Python version in the image. |
+| Base environment | AIO Sandbox, Ubuntu | The base image type, determining whether the image includes the Sandbox Shell capability. See [Base environment types](#base-environment-types). |
+| Operating system | Ubuntu 22.04, Ubuntu 24.04 | The base image operating system. Fixed to Ubuntu 22.04 when AIO Sandbox is selected. |
+| Python version | Python 3.10, Python 3.12 | The Python version in the image. Fixed to Python 3.12 when AIO Sandbox is selected. |
 | Command-line tools | See the table below | Official tools to pre-install in the image. |
 | Skills | Skill Hub, local upload, AgentKit SkillSpace | Skills to pre-install in the image, up to 20. |
 | Dockerfile | Auto-generated or custom | The Dockerfile content used to build the image. |
@@ -333,6 +334,23 @@ When creating or saving an environment, Studio auto-generates a Dockerfile based
   Never write access keys, tokens, or other credentials into the Dockerfile. The Dockerfile is submitted to the cloud build service together with the project and may be readable by anyone with access to the build artifacts.
 </Warning>
 
+#### Base environment types
+
+When creating an environment, you can choose from the following base environments:
+
+| Base environment | Description |
+| :--- | :--- |
+| AIO Sandbox | Built on the AIO Sandbox image, preserving the built-in `/opt/gem/run.sh` startup chain and port 8080 to provide the Sandbox Shell API. When selected, the operating system is fixed to Ubuntu 22.04 and Python is fixed to 3.12, with Studio dependencies isolated in a separate virtual environment. After the image build completes, Studio automatically creates an associated AgentKit Sandbox Tool so the environment can be mounted to conversations for shell command execution. New environments default to this type. |
+| Ubuntu | Built on the official Ubuntu image, installing the runtime based on the selected operating system and Python version. Does not support being mounted to conversations for shell command execution. Environment records created before the base-environment field was introduced are treated as this type. |
+
+<Note>
+  When an uploaded Dockerfile contains `aio.sandbox`, Studio automatically detects it as an AIO Sandbox base environment.
+</Note>
+
+When the AIO Sandbox base environment is selected, Studio automatically creates an associated AgentKit Sandbox Tool (a private tool with the `/opt/gem/run.sh` entrypoint on port 8080) after the image build and injects model-related environment variables. Tool creation runs asynchronously; the environment version only becomes fully available after the Tool is ready. While the Tool is not ready, the environment version cannot be mounted to a conversation for command execution.
+
+Each environment version exposes a read-only Manifest, accessible via the `GET /web/environments/{environmentId}/builds/{versionId}/manifest` endpoint. The Manifest includes the image reference, base environment, operating system, Python version, pre-installed packages, capabilities, and the associated Sandbox Tool status. The environment card can open the same version-bound Manifest as YAML for inspection and copying.
+
 #### Upload Dockerfile
 
 After selecting "Upload Dockerfile", drag a file onto the upload area or click it to choose a local Dockerfile file. After uploading, you can continue editing the content in the preview area.
@@ -354,6 +372,8 @@ The uploaded Dockerfile must satisfy the following requirements:
 After creating or saving an environment, click "Build" to start an asynchronous image build. Studio uploads the build context to the TOS bucket, runs the build pipeline through CodePipeline, and pushes the resulting image to Container Registry. The build proceeds through preparing, queued, building, and scanning phases, with a final status of "available" or "failed."
 
 After the build completes, the environment list shows the latest version's build status and image reference. You can view build steps, progress, and logs on the environment detail page. Logs are syntax-highlighted and auto-scroll to the bottom by default — scrolling up pauses auto-follow, and scrolling back to the bottom resumes it. When the build fails, the end of the log shows the error message to help locate the failure cause.
+
+When the AIO Sandbox base environment is selected, an additional "Create AgentKit Sandbox Tool" build step runs after the image build completes. This step asynchronously creates the associated private Sandbox Tool and injects model-related environment variables; the environment version only becomes fully available after the Tool is ready. While the Tool is being created, the environment status shows "building"; it changes to "available" once the Tool is ready, or "failed" if Tool creation fails. The environment version cannot be mounted to a conversation for command execution until the Tool is ready.
 
 <Note>
   On the first environment image build, Studio automatically creates or reuses managed CodePipeline Workspace, Pipeline, and Container Registry resources. When using the account-level default TOS bucket, Container Registry reuses the account's `agentkit-cli-<account-id>` instance and creates the `runtime-environments/base-images` repository inside it.
@@ -1349,6 +1369,8 @@ The Agent workspace supports two modes:
 
 Follow-up messages in an ordinary conversation continue to use the existing message history for that session; only a new session starts with empty context. When a Runtime cannot be connected, Studio distinguishes insufficient permission, an unreachable Agent Server, a private unreachable Runtime, and authentication failure, and displays the corresponding troubleshooting direction.
 
+In an agent chat, you can mount built AIO Sandbox runtime environments to the current session via the environment picker at the top of the session. Once mounted, the agent gains the ability to execute shell commands in the environments. See [Session sandbox environments](#session-sandbox-environments).
+
 <Note>
   When an error occurs during a conversation with the built-in Codex agent — whether the Codex app-server returns an error or the connection is interrupted — Studio displays the complete error detail in the conversation, including the JSON-RPC error code, message, and data, as well as the underlying cause. All error information is credential-redacted before display.
 </Note>
@@ -2275,6 +2297,22 @@ When the connected AgentKit Runtime has enabled the Studio BFF dynamic tools hos
 <Note>
 This feature requires the Runtime to explicitly enable the `enable_studio_tools` parameter. See [Deploy to AgentKit](/productions/veadk/preview/en/deploy/agentkit).
 </Note>
+
+### Session sandbox environments
+
+On the conversation page, you can mount built AIO Sandbox runtime environments to the current session. Once mounted, the agent gains the following tools for executing shell commands inside the mounted environments:
+
+| Tool | Description |
+| :--- | :--- |
+| `list_envs` | Lists the environments mounted to the current session and their capabilities. The agent should call this tool first for every substantive task, semantically matching the task against each environment's name, description, and capabilities to select the most appropriate environment. |
+| `get_env_manifest` | Returns the read-only Manifest for a specified mounted environment, including the image, base environment, operating system, Python version, pre-installed packages, capabilities, and Sandbox Tool status. |
+| `execute_in_sandbox` | Executes a non-interactive shell command inside a mounted environment, including installed CLI tools. Supports setting the working directory, timeout, and waiting for a still-running command to return its result. |
+
+When mounting environments, you can select environments individually or by workspace in the session's environment picker; the selection persists within the current browser session. On each run, Studio injects the mounted environment information into the conversation context and appends routing instructions to the current message, so the agent prioritizes using mounted environments to complete tasks. When the user does not explicitly request creating or delegating to a new agent, mounted environments take priority over dynamic sub-agent creation, knowledge bases, and Skill workflows.
+
+<Warning>
+  `execute_in_sandbox` can execute arbitrary shell commands in the remote environment, install dependencies, read and write files, and access services reachable from the environment network. Confirm that command sources are trusted before running, and restrict the data, network, and permissions the environment can access. Do not write long-term credentials in commands; use the credential management supported by the environment when credentials are needed.
+</Warning>
 
 ## Frontend usage telemetry
 

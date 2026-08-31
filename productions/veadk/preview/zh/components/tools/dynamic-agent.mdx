@@ -29,6 +29,10 @@ title: "动态智能体委派"
 
 不适合需要严格可控、固定编排拓扑的场景——这类场景应直接在开发期声明静态子智能体树。
 
+<Note>
+  在 Studio 对话中，如果当前会话已挂载 AIO Sandbox 执行环境，挂载环境的优先级高于动态子智能体创建。智能体应优先使用挂载环境（通过 `list_envs`、`execute_in_sandbox` 等工具）完成任务，除非用户明确要求创建或委派新智能体。详见[会话沙箱环境](/productions/veadk/preview/zh/components/frontend/studio#会话沙箱环境)。
+</Note>
+
 ## 依赖与前提
 
 <Warning>
