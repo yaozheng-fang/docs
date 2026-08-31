@@ -118,6 +118,11 @@ Logo 最大 5 MB，支持 PNG、JPEG、GIF、WebP、AVIF 和 ICO。也可以通�
   系统提示词编辑器提供所见即所得的 Markdown 编辑能力。当内容包含编辑器无法解析的 Markdown 语法时，编辑器自动切换为纯文本模式，仍可正常编辑与保存。
 </Note>
 
+
+<Note>
+  自定义创建支持「快速创建」模式：启用后，生成的智能体项目自动内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下生成的 `requirements.txt` 固定使用 `veadk-python` 1.1.7 版本，并附带兼容模块以确保动态委派能力在当前部署版本中可用。部署到 AgentKit 时，若 Runtime 使用 Studio 自动生成的默认运行角色，Studio 会自动为该角色附加 `AgentKitFullAccess` 策略，使子智能体具备访问 AgentKit 资源的权限；使用自定义运行角色时不自动修改，需自行确保角色已具备所需权限。
+</Note>
+
 ### 模型选择
 
 配置 LLM 智能体时，可在模型选择器中浏览当前账号在火山方舟已开通的模型，并选择目标模型。模型列表由 Studio 服务端从火山方舟获取，仅展示支持智能体调用的 LLM 和 VLM 模型，包含模型名称、展示名称、厂商和开通状态；已停用的模型不会出现在列表中。模型列表有缓存，需要获取最新状态时使用刷新按钮。
@@ -2113,6 +2118,11 @@ veadk studio deploy \
 省略 `--user-pool-id` 与 `--allowed-client-id` 时，部署命令会在 `--region` 指定的地域自动创建或复用名为 `veadk-studio-{vefaas-app-name}` 的用户池和名为 `veadk-studio-{vefaas-app-name}-web` 的 Web 客户端，并在部署完成后回显它们的 ID。也可以同时传入这两个参数以使用已有的用户池和客户端；仅传入 `--user-pool-id` 时，命令会在该用户池中创建或复用 Web 客户端。单独传入 `--allowed-client-id` 而不指定 `--user-pool-id` 时会报错。
 
 Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，并使用 `--from-source` 将当前源码构建进 VeFaaS。省略该参数时，部署使用最新 PyPI 发布版本，不包含尚未发布的能力。
+
+<Note>
+  `veadk studio deploy` 按应用名称幂等处理 VeFaaS 部署：使用相同 `--vefaas-app-name` 再次部署时，会更新已有应用的函数代码包而非创建重复函数，保留原有 URL、IAM、网关和 Identity 配置。适用于升级 Studio 版本或重新部署相同应用名称的场景。
+</Note>
+
 
 部署凭据按以下顺序解析：优先使用 `--volcengine-access-key` / `--volcengine-secret-key` 显式传入；未提供时读取当前进程的 `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` 环境变量；两者均缺失时，读取 `~/.volc/credentials` 中的 `[default]` 配置。任一来源解析到完整的 Access Key 与 Secret Key 即可继续部署。STS 临时凭证的 Session Token 通过 `--volcengine-session-token` 显式传入，或依次读取 `VOLCENGINE_SESSION_TOKEN`、`VOLC_SESSIONTOKEN` 环境变量和 `~/.volc/credentials` 中 `[default]` 配置的 `session_token` 字段；未提供时留空，仅使用长期 AK/SK。
 

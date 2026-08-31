@@ -13,7 +13,7 @@ title: "动态智能体委派"
 | 工具 | 作用 |
 | :--- | :--- |
 | `collect_resources` | 收集当前账号可用的技能、知识库和 VeADK 内置工具，并按主智能体提供的任务关键词检索公共 Skill Hub，返回一份资源清单和 `collection_id`。 |
-| `create_agents` | 根据 `collect_resources` 返回的 `collection_id` 与主智能体设计的智能体蓝图创建子智能体，将其注册为当前智能体的子智能体，然后把控制权移交给 `handoff_to` 指定的智能体。 |
+| `create_agents` | 根据 `collect_resources` 返回的 `collection_id` 与主智能体设计的智能体蓝图创建子智能体，将其注册为当前智能体的子智能体，然后把控制权移交给 `handoff_to` 指定的智能体。每次 `collect_resources` 的结果只需调用一次 `create_agents`，并在同一次调用中包含全部所需子智能体；调用完成或设置 `handoff_to` 后不再重复调用。 |
 
 <Note>
 `collect_resources` 返回的资源是候选清单，不会自动挂载到子智能体。主智能体必须在每个 LLM 节点的 `resources` 中显式写入需要使用的每个资源 ref；当清单中存在与任务相关的技能时，至少绑定一个技能。
@@ -81,8 +81,10 @@ agent = Agent(
 对于需要检索、专业技能、知识库、工具调用或编写 Python 工具才能完成的任务：
 1. 先调用 collect_resources，根据用户任务提炼 2 到 5 个简短的 Skill Hub 检索关键词传入 skill_hub_keywords。
 2. 根据返回的资源清单设计最少数量的子智能体。把需要使用的每个技能、知识库和内置工具的完整 ref 显式写入对应 LLM 节点的 resources。
-3. 调用 create_agents，在 handoff_to 中指定真正负责完成用户任务的智能体。
+3. 调用 create_agents，在同一次调用中包含全部所需子智能体，在 handoff_to 中指定真正负责完成用户任务的智能体。
 4. create_agents 会把任务直接移交给该智能体，调用后不要自行重复作答。
+
+如果用户明确禁止联网、知识库或任何外部资源访问，跳过 collect_resources，直接调用 create_agents 并传入空字符串作为 collection_id，同时确保每个 LLM 节点的 resources 为空列表。
 """,
     tools=[create_agent],
 )
@@ -112,14 +114,18 @@ if __name__ == "__main__":
 
 收集完成后返回的 `collection_id` 需要在随后调用 `create_agents` 时原样传入，用于关联本次收集的资源快照。
 
+### 离线模式
+
+当用户明确禁止联网、知识库和任何外部资源访问时，主智能体可以跳过 `collect_resources`，直接调用 `create_agents` 并传入空字符串作为 `collection_id`。此时每个 LLM 节点的 `resources` 必须为空列表，子智能体仅使用自身模型能力完成当前任务。离线模式下不会发起 Skill Hub 关键词检索或其他资源源调用。
+
 ### 智能体蓝图
 
 `create_agents` 的 `agents` 参数是一个蓝图列表，每个蓝图描述一个独立构建的根智能体：
 
 | 字段 | 类型 | 必填 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `name` | `str` | 是 | 智能体名称，需匹配 `[A-Za-z_][A-Za-z0-9_]*`，同一批次内唯一。 |
-| `task` | `str` | 是 | 该智能体要完成的任务描述。 |
+| `name` | `str` | 是 | 智能体名称，需匹配 `[A-Za-z_][A-Za-z0-9_]*`，同一批次内唯一。应使用可复用的能力标识，不含请求特定的实体、品牌、平台、行业、语言或题材。 |
+| `task` | `str` | 是 | 该智能体要完成的当前一次性任务描述，包含具体的目标、对象、输入和交付要求。 |
 | `root_node` | `str` | 是 | 蓝图节点中作为入口的节点 id。 |
 | `nodes` | `list[节点]` | 是 | 节点列表，至少一个；节点 id 在同一蓝图内唯一。 |
 
@@ -137,16 +143,28 @@ if __name__ == "__main__":
 `workflow` 节点仅在 Google ADK 2.0.0 及以上版本可用；低版本下 `collect_resources` 返回的能力清单会标明当前支持的节点类型，`create_agents` 也会忽略 `workflow` 节点。
 </Note>
 
+### 可复用身份与任务分离
+
+蓝图中的 `name`、节点 `id`、`description` 和 `instruction` 字段应描述可跨请求复用的稳定能力域，而 `task` 字段是当前一次性任务具体信息的唯一载体。具体而言：
+
+- `name` 和 `id` 使用简洁的 snake_case 能力名，例如 `video_creation_agent`、`document_translation_agent`、`investment_analysis_agent`，不要按本次交付物或研究对象命名。
+- `description` 和 `instruction` 描述通用操作，如「调研用户指定的主题」「比较用户指定的候选项」，不硬编码本次任务中的品牌、平台、行业、语言或题材。
+- `task` 完整保留当前用户的具体目标、对象、输入和交付要求，包括具体的研究对象、行业信息、源语言或目标语言等请求特有内容。
+
+<Note>
+运行时，`task` 中的任务上下文会自动附加到每个 LLM 节点的指令末尾，子智能体可据此完成当前一次性任务，而无需在 `instruction` 中重复请求特定的实体。
+</Note>
+
 ### LLM 节点
 
 LLM 节点是最常用的叶节点，其字段如下：
 
 | 字段 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `id` | `str` | — | 节点 id，需匹配 `[A-Za-z_][A-Za-z0-9_]*`，蓝图内唯一。 |
+| `id` | `str` | — | 节点 id，需匹配 `[A-Za-z_][A-Za-z0-9_]*`，蓝图内唯一。应使用可复用的操作标识。 |
 | `type` | `"llm"` | — | 固定为 `llm`。 |
-| `description` | `str` | `""` | 节点描述。 |
-| `instruction` | `str` | — | 节点系统指令，应包含明确目标、输出格式和完成标准。 |
+| `description` | `str` | `""` | 节点描述，应描述可复用的能力，不含请求特定实体。 |
+| `instruction` | `str` | — | 节点系统指令，应包含明确目标、输出格式和完成标准，使用参数化表达（如「用户指定的主题」）而非硬编码请求特定实体。 |
 | `model_name` | `str \| list[str] \| None` | `None` | 节点使用的模型；为空时继承主智能体模型。 |
 | `model_provider` | `str \| None` | `None` | 模型提供方。 |
 | `model_api_base` | `str \| None` | `None` | 模型 API 地址。 |
@@ -161,12 +179,12 @@ LLM 节点是最常用的叶节点，其字段如下：
 | :--- | :--- | :--- | :--- |
 | `name` | `str` | — | 工具名称，需匹配 `[A-Za-z_][A-Za-z0-9_]*`。 |
 | `description` | `str` | — | 工具描述，供模型决定是否调用。 |
-| `code` | `str` | — | 定义可调用对象的完整 Python 源码。 |
+| `code` | `str` | — | 定义可调用对象的完整 Python 源码。参数、返回值及跨工具边界传递的全部数据必须可由标准 JSON 无损表达：对象键只能是字符串，不得使用 tuple、对象或其他非字符串字典键；组合键等复合结构应改为记录列表。 |
 | `entrypoint` | `str \| None` | `None` | 暴露的可调用对象名，省略时与 `name` 一致。 |
 | `dependencies` | `list[str]` | `[]` | 需校验的 Python 依赖，如 `pandas>=2`；缺失的包会被报错，不会自动安装。 |
 
 <Warning>
-`python_tools` 中的代码以主智能体身份在当前进程内执行，不经过沙箱隔离。仅应接受受信任源提供的代码，并避免让不可信的输入直接成为可执行源码。
+`python_tools` 中的代码以主智能体身份在当前进程内执行，不经过沙箱隔离。仅应接受受信任源提供的代码，并避免让不可信的输入直接成为可执行源码。小规模、可直接枚举或心算验证的问题优先由子智能体直接推理，不需要创建临时 Python 工具。
 </Warning>
 
 ## 参数
@@ -178,7 +196,7 @@ LLM 节点是最常用的叶节点，其字段如下：
 | `skill_source_ids` | `str \| Sequence[str] \| None` | `None` | 将技能检索范围限制到指定 Space。以 `sp-` 开头的 id 视为 Skill Hub Space，其余视为 AgentKit Skill Space；为空时读取 `SKILL_HUB_SPACE_ID` 与 `SKILL_SPACE_ID`。 |
 | `resource_sources` | `Sequence[ResourceSource] \| None` | 默认来源 | 自定义资源来源列表；省略时使用技能、知识库与内置工具四个默认来源。 |
 | `capabilities` | `AgentCapabilities \| None` | 自动检测 | 指定运行时能力；省略时根据已安装的 Google ADK 版本自动检测支持的节点类型。 |
-| `resource_store` | `ResourceStore \| None` | 新建实例 | 自定义资源快照存储；省略时使用进程内存储，每个会话仅保留最新一份快照。 |
+| `resource_store` | `ResourceStore \| None` | 新建实例 | 自定义资源快照存储；省略时使用进程内有界存储，最多保留 128 份快照，每次 `collect_resources` 覆盖同一会话的上一份。 |
 | `skill_cache_dir` | `Path \| None` | `None` | 技能物化缓存目录。 |
 | `leaf_factory` | `Callable \| None` | 默认工厂 | 自定义 LLM 节点构建器，用于替换默认的叶智能体创建逻辑。 |
 | `knowledge_factory` | `Callable \| None` | 默认工厂 | 自定义知识库挂载器，用于替换默认的 VikingDB 知识库构建逻辑。 |
@@ -186,6 +204,7 @@ LLM 节点是最常用的叶节点，其字段如下：
 ## 限制
 
 - `create_agents` 必须在由 `Runner` 驱动的活跃智能体调用中执行，否则无法注册子智能体并完成移交。
-- 同一会话内每次调用 `collect_resources` 会覆盖上一次的资源快照；调用 `create_agents` 会消费对应快照，消费后失效。
+- 每次 `collect_resources` 的结果只需调用一次 `create_agents`，并在同一次调用中包含全部所需子智能体；调用完成或设置 `handoff_to` 后不应再次调用。
+- 同一会话内多次调用 `collect_resources` 会覆盖同一会话的资源快照；资源快照存储在进程内有界缓存中（最多 128 份），`create_agents` 读取快照后不会使其失效，同一快照可被具有相同请求指纹的后续调用复用。
 - 动态创建的子智能体注册在当前会话的智能体树中，会话结束后不再保留。
 - `python_tools` 在当前进程内执行，不做沙箱隔离。

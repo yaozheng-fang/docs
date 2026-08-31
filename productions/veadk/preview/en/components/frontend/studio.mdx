@@ -118,6 +118,11 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
   The instruction editor provides a WYSIWYG Markdown editing experience. When the content contains Markdown syntax the editor cannot parse, it automatically switches to a plain-text mode so you can still edit and save the instruction.
 </Note>
 
+
+<Note>
+  Custom creation supports a "quick create" mode: when enabled, the generated agent project includes the `CreateAgentToolset` dynamic agent delegation toolset, allowing the main agent to collect resources, create sub-agents, and delegate execution at runtime. In quick mode the generated `requirements.txt` pins `veadk-python` 1.1.7 and includes a compatibility module to ensure dynamic delegation works on the current deployed version. When deploying to AgentKit, if the Runtime uses a Studio-generated default service role, Studio automatically attaches the `AgentKitFullAccess` policy to that role so sub-agents can access AgentKit resources; custom service roles are not modified and must be configured with the required permissions manually.
+</Note>
+
 ### Model selection
 
 When configuring an LLM agent, you can browse the Ark models activated under the current account in the model selector and choose a target model. The model list is fetched by the Studio server from Ark and includes only LLM and VLM models that support agent calls, showing the model name, display name, vendor, and activation status. Deactivated models are excluded. The list is cached server-side; use the refresh button to retrieve the latest status.
@@ -2113,6 +2118,11 @@ veadk studio deploy \
 When `--user-pool-id` and `--allowed-client-id` are omitted, the deploy command creates or reuses a user pool named `veadk-studio-{vefaas-app-name}` and a web client named `veadk-studio-{vefaas-app-name}-web` in the region selected by `--region`, and prints their IDs on completion. You can also pass both options to use existing resources; passing only `--user-pool-id` creates or reuses a web client within that pool. Passing `--allowed-client-id` without `--user-pool-id` raises an error.
 
 To deploy the unreleased Studio capabilities documented in Preview, run this command from the VeADK source directory and use `--from-source` so the current source is built into VeFaaS. Without this option, deployment uses the latest PyPI release, which does not contain unreleased capabilities.
+
+<Note>
+  `veadk studio deploy` treats VeFaaS deployments as idempotent by application name: deploying again with the same `--vefaas-app-name` updates the existing application's function code bundle instead of creating a duplicate function, preserving the original URL, IAM, gateway, and Identity configuration. This is suitable for upgrading Studio or redeploying under the same application name.
+</Note>
+
 
 Deployment credentials are resolved in the following order: explicit `--volcengine-access-key` / `--volcengine-secret-key` options take precedence; otherwise the `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` environment variables of the current process are read; when neither is present, the `[default]` profile in `~/.volc/credentials` is used. Any source that yields a complete access key and secret key is sufficient to proceed. For STS temporary credentials, the session token is supplied via `--volcengine-session-token`, or resolved from the `VOLCENGINE_SESSION_TOKEN` / `VOLC_SESSIONTOKEN` environment variables and the `session_token` field of the `[default]` profile in `~/.volc/credentials`; when not provided it is left empty and only long-lived AK/SK are used.
 
