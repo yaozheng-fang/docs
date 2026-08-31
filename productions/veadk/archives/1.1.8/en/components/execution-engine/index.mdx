@@ -1,0 +1,126 @@
+---
+title: "Execution engine"
+---
+
+`Runner` is the core of the execution engine: it coordinates the agent, tools,
+and callbacks to respond to user input, while managing the flow of information,
+state changes, and interactions with the model, tools, and storage. VeADK's
+execution engine is fully compatible with Google ADK's `Runner`; see the
+[Google ADK runtime docs](https://google.github.io/adk-docs/runtime/) for its
+full mechanics.
+
+## Multi-tenant isolation
+
+For enterprise multi-tenant scenarios, `Runner` isolates data along three
+dimensions — `app_name`, `user_id`, and `session_id`:
+
+| Data | Isolation dimensions |
+| --- | --- |
+| Short-term session | `app_name`, `user_id`, `session_id` |
+| Long-term memory | `app_name`, `user_id` |
+| Knowledge base | `app_name` |
+
+## Minimal run
+
+`Runner.run()` runs an agent directly, handling input and returning the final
+text response — convenient for local testing:
+
+```python
+import asyncio
+from veadk import Agent, Runner
+
+agent = Agent()
+runner = Runner(agent=agent)
+
+response = asyncio.run(runner.run("What's the weather in Beijing?"))
+print(response)
+```
+
+<Note>
+  `run()` is high-level. When the `Runner` has a short-term session configured, it
+  creates the session on demand. For finer-grained control over execution, use
+  `run_async()`.
+</Note>
+
+## Streaming events
+
+`Runner.run_async()` returns an async generator that yields the events produced
+during the agent's run. Unlike `run()`, which only returns the final text,
+iterating over events gives you the reasoning, tool calls and results, and
+streaming increments — useful for building your own logic on top.
+
+```python
+import asyncio
+from google.genai.types import Content, Part
+from veadk import Agent, Runner
+
+APP_NAME, USER_ID, SESSION_ID = "app", "user", "session"
+
+agent = Agent()
+runner = Runner(agent=agent, app_name=APP_NAME, user_id=USER_ID)
+
+message = Content(role="user", parts=[Part(text="What's the weather in Beijing?")])
+
+async def main():
+    async for event in runner.run_async(
+        user_id=USER_ID,
+        session_id=SESSION_ID,
+        new_message=message,
+    ):
+        ...  # see "Parsing events" below
+
+asyncio.run(main())
+```
+
+<Note>
+  `run_async()` requires the session to exist beforehand. If you call it directly,
+  make sure the session for `session_id` has been created.
+</Note>
+
+## Parsing events
+
+Each event describes one step of the run. Its common fields:
+
+| Field | Description |
+| --- | --- |
+| `author` | Name of the agent or tool that produced the event |
+| `content` | Event content, with a `role` and a `parts` list |
+| `partial` | Whether this is a streaming increment |
+| `usage_metadata` | Token usage for this step |
+| `invocation_id` | Identifier of this invocation |
+
+Each `part` in `content.parts` may be a different type; branch on it:
+
+| part field | Meaning |
+| --- | --- |
+| `text` | Text output by the model |
+| `thought` | Marks the part as the model's reasoning |
+| `function_call` | A tool call from the model, with `name` and `args` |
+| `function_response` | A tool result, with `name` and `response` |
+
+The event also offers helpers: `is_final_response()` tells whether it is the
+final reply, and `get_function_calls()` / `get_function_responses()` extract the
+tool calls and results from the event.
+
+```python
+async for event in runner.run_async(
+    user_id=USER_ID, session_id=SESSION_ID, new_message=message,
+):
+    # Tool calls and results
+    for call in event.get_function_calls():
+        print("tool call:", call.name, call.args)
+    for resp in event.get_function_responses():
+        print("tool result:", resp.name, resp.response)
+
+    # Distinguish reasoning from text
+    if event.content:
+        for part in event.content.parts:
+            if part.thought:
+                continue  # the model's reasoning; display if desired
+            if part.text:
+                print(part.text)
+
+    # Final reply
+    if event.is_final_response() and event.content:
+        final_text = "".join(p.text for p in event.content.parts if p.text)
+```

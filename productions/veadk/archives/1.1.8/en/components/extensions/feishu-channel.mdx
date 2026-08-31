@@ -1,0 +1,222 @@
+---
+title: "Feishu"
+---
+
+## Overview
+
+`FeishuChannelExtension` bridges inbound messages from a Feishu (Lark) bot into the VeADK `Runner`.
+
+<Note>
+This page treats Feishu as an **inbound message channel**: messages from Feishu users trigger the agent. To let the agent call Feishu capabilities, see [Feishu tools](/productions/veadk/preview/en/components/tools/lark).
+</Note>
+
+It listens for the bot's message events and maps Feishu's session identity onto VeADK: the message sender becomes the `Runner`'s user identity, and the thread the message belongs to becomes the session identity; when there is no thread, it falls back to the current group or direct chat as the session. In 1.0.5 it extracts text from plain messages, interactive cards, and merged-forward messages and supports the synchronous Channel SDK lifecycle.
+
+<Warning>
+Thread history and quoted-message retrieval are enabled by default. The extension reads related Feishu messages and sends their content to the model. If the application uses sessions, long-term memory, or logging, the content may also be retained under those policies. Before enabling the bot, confirm that message scopes, model processing, and retention meet your requirements. Disable `include_thread_history` and `include_parent_message` when this context is not required.
+</Warning>
+
+When an incoming message belongs to a Feishu thread or is a reply, the extension automatically fetches the thread history or the quoted parent message and prepends that context to the user message before forwarding it to the agent. See [Thread history and quoted messages](#thread-history-and-quoted-messages).
+
+## Environment & prerequisites
+
+Installation:
+
+```bash
+pip install veadk-python[extensions]
+```
+
+If you only want this capability, install it on its own:
+
+```bash
+pip install lark-oapi
+```
+
+Environment variables:
+
+- `TOOL_FEISHU_CHANNEL_APP_ID`
+- `TOOL_FEISHU_CHANNEL_APP_SECRET`
+- `TOOL_FEISHU_CHANNEL_TRANSPORT`: defaults to `ws`
+- `TOOL_FEISHU_CHANNEL_STREAMING`: whether to enable streaming output, defaults to `false`
+- `TOOL_FEISHU_CHANNEL_REACTIONS`: whether to reply with a "received" reaction on incoming messages, defaults to `false`
+- `TOOL_FEISHU_CHANNEL_RECONNECT_INTERVAL`: seconds to wait before reconnecting after the WebSocket disconnects, defaults to `3`
+- `TOOL_FEISHU_CHANNEL_DRAIN_TIMEOUT`: maximum seconds to wait for already-received messages to finish during a graceful shutdown, defaults to `300`
+
+Or configure in `config.yaml`:
+
+```yaml title="config.yaml"
+tool:
+  feishu_channel:
+    app_id: cli_xxx
+    app_secret: xxx
+    transport: ws
+    streaming: true
+    reactions: true
+```
+
+## Usage
+
+```python title="examples/channel/feishu_bot.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.extensions import FeishuChannelExtension
+from veadk.memory.short_term_memory import ShortTermMemory
+
+agent = Agent(
+    name="feishu_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    instruction="You are an assistant that talks to users through a Feishu bot.",
+)
+
+runner = Runner(
+    agent=agent,
+    app_name="veadk_feishu_demo",
+    user_id="veadk_feishu_default_user",
+    short_term_memory=ShortTermMemory(),
+)
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    channel_kwargs={"transport": "ws"},
+)
+
+
+async def main():
+    await channel.connect()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Graceful shutdown
+
+`FeishuChannelExtension` exposes dedicated lifecycle methods to manage the WebSocket connection from ASGI application (FastAPI, Starlette) startup and shutdown hooks, so that rolling updates or process exits do not drop in-flight Feishu messages.
+
+Shutdown runs in two steps: first the WebSocket is closed so no new messages are accepted (Feishu re-routes new events to another instance that still holds a connection), then already-received messages are allowed to finish replying. Replies are sent over the Feishu OpenAPI HTTP client, which does not depend on the WebSocket, so messages received before shutdown still reply normally.
+
+<Note>
+Long-connection scripts that only call `connect()` directly do not need `start()` / `shutdown()`; this is fine for simple scripts where draining messages on exit is unnecessary. Use `start()` and `shutdown()` only when hosting the channel inside an ASGI service that needs graceful shutdown.
+</Note>
+
+### Usage example
+
+Call `start()` and `shutdown()` from the ASGI app's startup and shutdown hooks:
+
+```python title="examples/channel/feishu_asgi.py"
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from veadk.extensions import FeishuChannelExtension
+from feishu_bot import runner  # reuse the runner defined above
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    channel_kwargs={"transport": "ws"},
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    channel.start()  # call inside the running event loop
+    try:
+        yield
+    finally:
+        await channel.shutdown()  # close the connection and drain in-flight messages
+
+
+app = FastAPI(lifespan=lifespan)
+```
+
+### Methods
+
+| Method | Type | Description |
+| :--- | :--- | :--- |
+| `start(loop)` | sync | Call from within the running app event loop. Captures that loop and starts a background reconnect loop. Idempotent: calling again while already running does not start a second loop. When `loop` is omitted, the currently running loop is used. |
+| `await shutdown(*, drain_timeout)` | async | Closes the WebSocket and waits for already-received messages to finish. Intended as an ASGI shutdown hook. Safe to call multiple times; only the first call performs the teardown. When `drain_timeout` is omitted, `TOOL_FEISHU_CHANNEL_DRAIN_TIMEOUT` is used. |
+| `await drain(timeout)` | async | Waits for all in-flight message tasks to finish; cancels unfinished tasks after `timeout` seconds. Defaults to `300.0`. |
+| `is_draining` | property | Boolean indicating whether a graceful shutdown has begun. The reconnect loop checks it and stops reconnecting. |
+
+<Warning>
+`shutdown()` waits for in-flight messages to finish. If message processing takes longer than `drain_timeout`, unfinished tasks are cancelled. In production, tune `TOOL_FEISHU_CHANNEL_DRAIN_TIMEOUT` to your agent's average response time so that normal replies are not interrupted.
+</Warning>
+
+### Environment variables
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `TOOL_FEISHU_CHANNEL_RECONNECT_INTERVAL` | `3` | Seconds to wait before reconnecting after the WebSocket disconnects. |
+| `TOOL_FEISHU_CHANNEL_DRAIN_TIMEOUT` | `300` | Maximum seconds to wait for already-received messages to finish during a graceful shutdown. |
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `runner` | `Runner` | None | Required. VeADK runner that handles inbound Feishu messages. |
+| `app_id` | `str \| None` | `TOOL_FEISHU_CHANNEL_APP_ID` | Feishu application ID, with `TOOL_LARK_ENDPOINT` as a compatibility fallback. |
+| `app_secret` | `str \| None` | `TOOL_FEISHU_CHANNEL_APP_SECRET` | Feishu application secret, with `TOOL_LARK_API_KEY` as a compatibility fallback. Supply it through an environment variable or secret manager. |
+| `channel` | `Any \| None` | `None` | Existing Feishu Channel client. When supplied, the extension does not create a client. |
+| `session_id_factory` | `Callable[[Any], str] \| None` | Thread, reply, chat, or message identifier | Custom mapping from a Feishu message to the VeADK `session_id`. |
+| `user_id_factory` | `Callable[[Any], str] \| None` | Sender `union_id`, `open_id`, or `user_id` | Custom mapping from a Feishu sender to the VeADK `user_id`. |
+| `message_handler` | `Callable \| None` | `None` | Custom message handler. When unset, the extension calls `runner`. It may return a string, an awaitable string, or `None`. |
+| `response_formatter` | `Callable[[str], dict[str, str]] \| None` | `{"text": text}` | Converts agent text into the Feishu send payload. |
+| `reply_in_thread` | `bool` | `True` | Whether to reply to the original message so output remains in its thread. |
+| `ignore_empty_messages` | `bool` | `True` | Whether to ignore messages from which no text can be extracted. |
+| `channel_kwargs` | `dict[str, Any] \| None` | `None` | Options passed when creating the Channel client. `transport` reads `TOOL_FEISHU_CHANNEL_TRANSPORT` and otherwise defaults to `ws`. |
+| `streaming` | `bool` | `False` | Whether to stream replies. `TOOL_FEISHU_CHANNEL_STREAMING=true` also enables it. |
+| `reactions` | `bool` | `False` | Whether to add a received reaction. `TOOL_FEISHU_CHANNEL_REACTIONS=true` also enables it. |
+| `include_parent_message` | `bool` | `True` | Whether to fetch and attach the quoted parent message for replies. |
+| `include_thread_history` | `bool` | `True` | Whether to fetch and attach thread history for thread messages. |
+| `thread_history_limit` | `int` | `20` | Maximum thread-history messages to fetch. Values below `1` are treated as `1`. |
+
+## Thread history and quoted messages
+
+When an incoming message comes from a Feishu thread or is a reply, the extension fetches the relevant context and prepends it to the user message before forwarding it to the agent:
+
+- **Thread history**: when the message belongs to a thread, the extension fetches the thread's history ordered oldest-first (up to `thread_history_limit` messages, excluding the current message) and prepends it as thread context.
+- **Quoted message**: when the message is a reply but does not belong to a thread, the extension fetches the quoted parent message; if the parent cannot be fetched, it falls back to the root message of the reply chain and prepends it as quoted context.
+
+Thread history takes precedence over quoted messages: when a thread identifier is present, only the thread history is attached and the parent message is not fetched separately. Fetched message content is rendered back to readable text, covering text, rich-text (post), interactive card, and merged-forward messages.
+
+<Note>
+Fetching thread history and quoted messages requires calling Feishu OpenAPI message endpoints, so `app_id` and `app_secret` must be configured (constructor parameters, or the `TOOL_FEISHU_CHANNEL_APP_ID` / `TOOL_FEISHU_CHANNEL_APP_SECRET` environment variables, falling back to `TOOL_LARK_ENDPOINT` / `TOOL_LARK_API_KEY`). When credentials are not configured the capability is skipped silently without raising an error.
+</Note>
+
+### Usage example
+
+Save and configure the `feishu_bot.py` example above, then create the following file in the same directory:
+
+```python title="examples/channel/feishu_bot_thread.py"
+from veadk.extensions import FeishuChannelExtension
+from feishu_bot import runner
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    include_thread_history=True,
+    thread_history_limit=30,
+    include_parent_message=True,
+)
+```
+
+Disable the capability so the extension forwards only the current message text:
+
+```python title="examples/channel/feishu_bot_plain.py"
+from veadk.extensions import FeishuChannelExtension
+from feishu_bot import runner
+
+channel = FeishuChannelExtension(
+    runner=runner,
+    include_parent_message=False,
+    include_thread_history=False,
+)
+```
+
+## Notes
+
+- The Feishu WebSocket long-connection mode is used by default, so as long as the bot has subscribed to message events, you can start the connection directly.
+- Replies are sent as replies to the original message by default, keeping VeADK output attached to the current Feishu message thread.
+- Override the default identity mapping via `session_id_factory` and `user_id_factory`.
+- `connect()` and `disconnect()` support both async clients and synchronous Channel SDK clients exposing `start()` / `stop()`.
+- When streaming output is enabled, reply content is concatenated directly from delta chunks and is no longer corrupted or truncated by the dedup heuristic.

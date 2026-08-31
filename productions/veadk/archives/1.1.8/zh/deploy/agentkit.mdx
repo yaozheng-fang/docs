@@ -1,0 +1,178 @@
+---
+title: "部署到 AgentKit"
+---
+
+VeADK 可以把本地智能体部署为 AgentKit Runtime，并通过统一的 AgentKit 应用组件提供对话接口、健康检查、智能体拓扑、内置 Web UI、短期会话默认配置和可选的飞书生命周期。
+
+## 前置条件
+
+- 已安装 `veadk-python==1.0.8`；
+- 已登录或配置火山引擎访问凭据；
+- 项目包含可导入的 `root_agent`；
+- 不要把 `.env`、API Key 或访问凭据提交到代码仓库。
+
+## 创建应用
+
+Studio 生成的项目会调用 `create_agentkit_app`。手动创建项目时也可以使用相同入口：
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "客户支持"},
+)
+```
+
+应用会提供 AgentKit 对话接口以及以下公共端点：
+
+| 端点 | 作用 |
+| --- | --- |
+| `/ping` | 健康检查。 |
+| `/web/agent-info/{app_name}` | 查询智能体的名称、描述、模型、系统提示词、子智能体、工具、技能与已挂载组件。 |
+| `/web/agent-graph` | 查询智能体拓扑；每个节点包含技能、组件、路径与是否可在对话中选择。 |
+| `/` | 访问内置 Web UI。 |
+
+## Runtime 身份绑定
+
+`create_agentkit_app` 接受可选的 `identity` 参数，用于将 AgentKit Runtime 身份边界传递给应用。传入后，AgentKit 会在 VeADK 智能体或工具代码执行前，验证并绑定入站用户身份。不传入 `identity` 时，应用行为与此前一致。
+
+<Warning>
+  使用 `identity` 参数需要 `agentkit-sdk-python>=0.8.2`。安装版本较低时，传入 `identity` 会报错，请先升级 AgentKit SDK。
+</Warning>
+
+VeADK 将 `/ping` 健康检查端点排除在身份绑定之外，该端点始终返回 `{"status": "ok"}`；其余业务和内省端点均纳入身份验证范围。
+
+```python title="app.py"
+from agentkit.identity import RuntimeIdentity
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "客户支持"},
+    identity=RuntimeIdentity(),
+)
+```
+
+## 动态 A2A 运行接口
+
+`create_agentkit_app` 构建的应用覆盖标准 AgentKit 运行接口（`/run`、`/run_sse`、`/invoke`），使其支持动态 A2A 智能体发现。当智能体通过 `REGISTRY_SPACE_ID` 等环境变量配置了 AgentKit 智能体中心后，运行接口会根据用户输入从中心动态发现匹配的远程智能体，并在当前轮次中将其作为可调用工具使用。未配置智能体中心时，运行接口行为与标准 AgentKit 运行接口一致。
+
+<Note>
+  运行接口在指定会话不存在时会自动创建会话，不再返回 404。
+</Note>
+
+## Studio BFF 动态工具
+
+Studio 可以将本地或内网工具通过反向通道暴露给兼容的 AgentKit Runtime，而无需将 BFF 的公网地址暴露给 Runtime。工具目录与执行器始终保留在 Studio BFF 侧，Runtime 不接触执行器实现或凭证。
+
+在 Runtime 侧通过 `create_agentkit_app(..., enable_studio_tools=True)` 挂载一个通用的 `StudioExternalToolset`。该 Toolset 不包含任何具体执行器，且对智能体内省不可见。在 Studio-channel 运行期间，一次异步局部的不可变快照仅提供该次运行选中的工具；普通 `/run_sse` 请求看到空快照。未启用该选项（默认）时，Runtime 对外声明 `enabled=false`，不挂载 Toolset 或工具通道执行端点。
+
+<Warning>
+此前版本的会话级能力叠加接口（`/harness/capabilities/tools`、`/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities` 和 `/harness/run_sse`）已移除，由 Studio BFF 动态工具机制替代。
+</Warning>
+
+### 何时使用
+
+- 需要在不重新部署 Runtime 的前提下，为单个 Studio 会话临时启用额外工具。
+- 需要将工具代码和凭证保留在 Studio BFF 侧，不暴露给 Runtime。
+
+### 工作机制
+
+Studio BFF 为每次远程 `run_sse` 请求首先尝试通过出站 WSS 连接到 `/harness/studio-channel/v1`。如果公共网关不支持 WebSocket Upgrade，则自动回退到 HTTP/SSE 下行流加上 HTTP 工具结果回传。BFF 发布当前工具目录，在本地执行 `tool.call` 消息，并返回 `tool.result`，不暴露 BFF 端点。Runtime 看到的是普通工具，但既不接收执行器实现，也不接收其凭证。
+
+在 Studio 界面中，兼容的远程 Runtime 的智能体信息栏会在智能体静态工具下方显示「在此对话中添加 Studio 工具」。新会话默认禁用所有 Studio 工具；浏览器在每次 Runtime 运行时发送显式的 `platform_tools` 列表，空列表或省略时使用普通 `/run_sse` 路径。BFF 验证提交的工具 ID，并为该次运行冻结一个不可变的目录与执行器快照，因此同时使用的不同用户和会话无法互相添加工具。
+
+Studio 始终将 `veadk/tools/builtin_tools` 中的规范函数注册到其 BFF 目录中。BFF 提供 ADK `ToolContext`，按 Runtime、应用、用户和会话隔离状态，并通过 Studio 媒体存储发布生成的 ADK 工件，使执行移出 Runtime 后下载仍然可用。不在 VeADK 内置目录中的 Studio 专属工具放在 Studio 的 `studio_tools/extensions` 目录中，Studio 在启动时自动发现该目录中的每个公开 Python 模块并调用其 `register_tools(registry)` 函数。添加此类工具无需环境变量或 Runtime 变更，修改模块后重启 Studio 即可生效。
+
+### 使用示例
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "客户支持"},
+    enable_studio_tools=True,
+)
+```
+
+### 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `enable_studio_tools` | `bool` | `False` | 是否在 Runtime 侧挂载 Studio BFF 动态工具的通用宿主。启用后挂载 `StudioExternalToolset`，在 Studio-channel 运行期间通过反向通道接收工具目录并执行工具调用。 |
+
+### 限制
+
+- HTTP/SSE 回退模式目前要求 Runtime 仅有一个实例，使下行流和结果回传到达同一进程。
+- 工具执行器和凭证始终保留在 Studio BFF 侧，不会下发到 Runtime 或浏览器。
+
+## Studio BFF 动态路由
+
+兼容的 Runtime 还可以在不加载 Python 处理器的情况下暴露 Studio 专属的 HTTP 路由。在 Runtime 侧通过 `create_agentkit_app(..., enable_studio_routes=True)` 启用，并在 Studio 侧设置环境变量 `VEADK_STUDIO_ROUTE_CHANNEL=skill-catalog`（`demo` 仍作为兼容别名）。
+
+启用后，Studio BFF 维护一条独立的持久反向路由通道，并发布以下 Studio 专属只读路由：
+
+| 端点 | 方法 | 作用 |
+| --- | --- | --- |
+| `/harness/skills/findskill` | `GET` | 搜索公域 Skill Hub 中的技能。 |
+| `/harness/skills/spaces` | `GET` | 列出当前账号可见的 AgentKit Skill 中心。 |
+| `/harness/skills/spaces/{space_id}/skills` | `GET` | 列出指定 Skill 中心内的技能。 |
+
+未启用动态路由的 Runtime 保留其原生技能目录处理器。启用的 Runtime 将这三个只读查询处理器交给 Studio BFF 通过反向通道执行：请求仍经由 Runtime URL 进入，其动态分发器发出 `route.call`，本地 BFF 执行处理器后返回 `route.result` 作为 Runtime HTTP 响应。
+
+### 使用示例
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "客户支持"},
+    enable_studio_routes=True,
+)
+```
+
+### 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `enable_studio_routes` | `bool` | `False` | 是否在 Runtime 侧挂载 Studio BFF 动态 HTTP 路由的通用宿主。启用后，三个只读技能目录路由由 Studio BFF 通过反向通道处理。 |
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `VEADK_STUDIO_ROUTE_CHANNEL` | — | Studio 反向路由通道模式。设为 `skill-catalog` 或 `demo` 启用技能目录路由。未设置时 Studio 不建立反向路由通道。 |
+
+### 限制
+
+- WSS 连接优先；不支持的网关自动使用长连接 HTTP/SSE 下行流加 HTTP 结果回传。
+- 当前实现为单实例：持久流和任意路由请求必须到达同一 Runtime 进程。
+- BFF 断开连接时，已知的 Studio 专属路由返回 HTTP 503；智能体运行不受影响。
+
+## 初始化与部署
+
+在项目目录中运行：
+
+```bash
+veadk agentkit init
+veadk agentkit config
+veadk agentkit launch
+```
+
+部署完成后检查状态并调用 Runtime：
+
+```bash
+veadk agentkit status
+veadk agentkit invoke -m "介绍你的能力"
+```
+
+`veadk agentkit` 与 AgentKit CLI 使用相同的项目配置和工作流。完整命令、参数与破坏性操作说明见 [AgentKit CLI 文档](/productions/agentkit-cli/preview/zh)。
+
+<Warning>
+  销毁 Runtime 会删除云端运行资源。执行 `veadk agentkit destroy` 前，应确认项目、地域与 Runtime 标识无误，并保留需要的日志和数据。
+</Warning>

@@ -1,0 +1,178 @@
+---
+title: "Deploy to AgentKit"
+---
+
+VeADK can deploy a local agent as an AgentKit Runtime. Shared AgentKit application infrastructure provides conversation endpoints, health checks, agent topology, the built-in Web UI, short-term session defaults, and an optional Feishu lifecycle.
+
+## Prerequisites
+
+- Install `veadk-python==1.0.8`.
+- Sign in or configure Volcengine access credentials.
+- Export an importable `root_agent` from the project.
+- Do not commit `.env`, API keys, or access credentials to source control.
+
+## Create the application
+
+Studio-generated projects call `create_agentkit_app`. Manually created projects can use the same entry point:
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "Customer support"},
+)
+```
+
+The application exposes AgentKit conversation APIs and these public endpoints:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `/ping` | Health check. |
+| `/web/agent-info/{app_name}` | Agent name, description, model, instruction, sub-agents, tools, skills, and mounted components. |
+| `/web/agent-graph` | Agent topology; each node includes skills, components, path, and whether it can be selected in a conversation. |
+| `/` | Built-in Web UI. |
+
+## Runtime identity binding
+
+`create_agentkit_app` accepts an optional `identity` parameter that passes an AgentKit Runtime identity boundary to the application. When supplied, AgentKit verifies and binds the inbound user identity before VeADK Agent or Tool code runs. Omitting `identity` preserves the previous behavior.
+
+<Warning>
+  Using the `identity` parameter requires `agentkit-sdk-python>=0.8.2`. On older versions, passing `identity` raises an error; upgrade the AgentKit SDK first.
+</Warning>
+
+VeADK excludes the `/ping` health-check endpoint from identity binding; that endpoint always returns `{"status": "ok"}`. All other business and introspection endpoints are identity-bound.
+
+```python title="app.py"
+from agentkit.identity import RuntimeIdentity
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "Customer support"},
+    identity=RuntimeIdentity(),
+)
+```
+
+## Dynamic A2A run endpoints
+
+Applications built with `create_agentkit_app` override the standard AgentKit run endpoints (`/run`, `/run_sse`, `/invoke`) to support dynamic A2A agent discovery. When the agent is configured with an AgentKit agent center via environment variables such as `REGISTRY_SPACE_ID`, the run endpoints dynamically discover matching remote agents from the center and attach them as callable tools for the current turn. Without an agent center configured, the run endpoints behave identically to the standard AgentKit run endpoints.
+
+<Note>
+  The run endpoints create a session automatically when the specified session does not exist, instead of returning 404.
+</Note>
+
+## Studio BFF dynamic tools
+
+Studio can expose local or intranet-only tools to a compatible AgentKit Runtime through a reverse channel, without giving the Studio BFF a public address. Tool manifests and executors remain in the Studio BFF; the Runtime never receives the executor implementation or its credentials.
+
+Build the Runtime app with `create_agentkit_app(..., enable_studio_tools=True)` to mount one generic `StudioExternalToolset`. It contains no concrete executor and is hidden from Agent introspection. During a Studio-channel run, an async-local immutable snapshot supplies only the tools selected for that run; ordinary `/run_sse` requests see an empty snapshot. With the option disabled (the default), the Runtime advertises `enabled=false` and does not mount the Toolset or tool-channel execution endpoints.
+
+<Warning>
+The previous session-scoped capability overlay endpoints (`/harness/capabilities/tools`, `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities`, and `/harness/run_sse`) have been removed and replaced by the Studio BFF dynamic tools mechanism.
+</Warning>
+
+### When to use
+
+- When you need to enable additional tools for a single Studio session without redeploying the Runtime.
+- When tool code and credentials must stay in the Studio BFF and not be exposed to the Runtime.
+
+### How it works
+
+For each remote `run_sse` request, the BFF first tries an outbound WSS connection to `/harness/studio-channel/v1`. If the public gateway does not support WebSocket Upgrade, it automatically falls back to a streaming HTTP/SSE downlink plus HTTP tool-result posts. The BFF publishes the current tool catalog, executes `tool.call` messages locally, and returns `tool.result` without exposing a BFF endpoint. The Runtime sees ordinary tools but receives neither the executor implementation nor its credentials.
+
+In the Studio UI, a compatible remote Runtime's agent information rail exposes **Add Studio tools to this conversation** below the agent's static tools. New chats start with every Studio tool disabled; the browser sends an explicit `platform_tools` list on each Runtime run, and an empty or omitted list uses the ordinary `/run_sse` path. The BFF validates the submitted tool IDs and freezes an immutable catalog-and-executor snapshot for that run, so simultaneous users and sessions cannot add tools to one another.
+
+Studio always registers the canonical functions from `veadk/tools/builtin_tools` in its BFF catalog. The BFF supplies the ADK `ToolContext`, keeps state isolated by Runtime, app, user, and session, and publishes generated ADK artifacts through Studio media storage so downloads remain available after execution moves out of Runtime. Studio-owned tools that do not belong in VeADK's built-in catalog live in the Studio `studio_tools/extensions` directory. Studio discovers every public Python module in that directory at startup and calls its `register_tools(registry)` function. Adding one of these tools requires no environment variable or Runtime change; restart Studio after changing the module.
+
+### Example
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "Customer support"},
+    enable_studio_tools=True,
+)
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enable_studio_tools` | `bool` | `False` | Whether to mount the generic Runtime host for Studio BFF-owned dynamic tools. When enabled, mounts `StudioExternalToolset` to receive the tool catalog and execute tool calls through the reverse channel during Studio-channel runs. |
+
+### Limitations
+
+- The HTTP/SSE fallback currently requires exactly one Runtime instance so its stream and result posts reach the same process.
+- Tool executors and credentials always stay in the Studio BFF; they are never sent to the Runtime or browser.
+
+## Studio BFF dynamic routes
+
+A compatible Runtime can also expose Studio-owned HTTP routes without loading their Python handlers. Build the Runtime app with `create_agentkit_app(..., enable_studio_routes=True)` and start Studio with `VEADK_STUDIO_ROUTE_CHANNEL=skill-catalog` (`demo` remains a compatibility alias).
+
+After Studio connects the Runtime, the BFF keeps a separate persistent reverse-route channel and publishes these Studio-owned, read-only routes:
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/harness/skills/findskill` | `GET` | Search the public Skill Hub for skills. |
+| `/harness/skills/spaces` | `GET` | List AgentKit Skill Spaces visible to the current account. |
+| `/harness/skills/spaces/{space_id}/skills` | `GET` | List skills in the specified Skill Space. |
+
+Runtimes without the dynamic-route opt-in keep their native Skill catalog handlers. Opted-in Runtimes leave those three read-only query handlers to Studio: requests still enter through the Runtime URL, its dynamic dispatcher emits `route.call`, the local BFF executes the handler, and `route.result` becomes the Runtime HTTP response.
+
+### Example
+
+```python title="app.py"
+from agents.customer_support.agent import root_agent
+from veadk.integrations.agentkit import create_agentkit_app
+
+app = create_agentkit_app(
+    root_agent,
+    {root_agent.name: "Customer support"},
+    enable_studio_routes=True,
+)
+```
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enable_studio_routes` | `bool` | `False` | Whether to mount the generic Runtime host for Studio BFF-owned dynamic HTTP routes. When enabled, the three read-only Skill catalog routes are served by the Studio BFF through the reverse channel. |
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `VEADK_STUDIO_ROUTE_CHANNEL` | — | Studio reverse route channel mode. Set to `skill-catalog` or `demo` to enable Skill catalog routes. When unset, Studio does not establish a reverse route channel. |
+
+### Limitations
+
+- WSS is preferred; unsupported gateways automatically use a long-lived HTTP/SSE downlink plus HTTP result posts.
+- The current implementation is single-instance: both the persistent stream and arbitrary route requests must reach the same Runtime process.
+- A disconnected BFF leaves known Studio-owned routes unavailable with HTTP 503; agent runs remain available.
+
+## Initialize and deploy
+
+Run these commands in the project directory:
+
+```bash
+veadk agentkit init
+veadk agentkit config
+veadk agentkit launch
+```
+
+After deployment, inspect the Runtime and invoke it:
+
+```bash
+veadk agentkit status
+veadk agentkit invoke -m "Describe your capabilities"
+```
+
+`veadk agentkit` uses the same project configuration and workflows as AgentKit CLI. See the [AgentKit CLI documentation](/productions/agentkit-cli/preview/en) for complete commands, flags, and destructive-operation guidance.
+
+<Warning>
+  Destroying a Runtime removes its cloud execution resources. Before running `veadk agentkit destroy`, verify the project, region, and Runtime identifier and retain any logs or data you need.
+</Warning>
