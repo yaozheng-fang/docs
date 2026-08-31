@@ -1682,6 +1682,8 @@ Studio 侧边栏的「自动化」页面提供研发工具和消息渠道的自�
 
 启用角色权限控制时，配置 Coding Agents 需要 `developer` 或 `admin` 角色。
 
+GitHub 自动化（模板项目导入、AgentKit Runtime 持续交付、PR 自动评审）的地域选项、默认地域、模型 API 地址默认值和所需 GitHub Secrets 名称均随 Studio 当前云服务商变化。火山引擎模式下地域可选 `cn-beijing`、`cn-shanghai`（默认 `cn-beijing`），Secrets 为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 与可选的 `VOLCENGINE_SESSION_TOKEN`；BytePlus 模式下地域为 `ap-southeast-1`，Secrets 为 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 与可选的 `BYTEPLUS_SESSION_TOKEN`。云服务商由 `--provider` 或 `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` 环境变量确定，未设置时为火山引擎。
+
 ### 模板项目导入
 
 在目标仓库中创建一个包含完整 Studio App Server 的最简 VeADK 智能体项目，并附带持续交付工作流。提交后 Studio 在目标仓库创建发布分支，发起包含模板文件和 GitHub Actions 工作流的 PR。
@@ -1695,7 +1697,7 @@ Studio 侧边栏的「自动化」页面提供研发工具和消息渠道的自�
 | Agent 项目目录 | 是 | `agentkit-basic-agent` | 模板文件创建的目录。 |
 | Runtime 名称 | 是 | — | 用于发布配置的 Runtime 名称，以字母开头，仅含字母、数字、下划线和连字符。 |
 | Runtime ID | 是 | — | 持续更新的目标 AgentKit Runtime ID。 |
-| 地域 | 是 | `cn-beijing` | 必须与目标 Runtime 所在地域一致。 |
+| 地域 | 是 | `cn-beijing`（火山引擎）/ `ap-southeast-1`（BytePlus） | 必须与目标 Runtime 所在地域一致；可选项随当前云服务商变化。 |
 | GitHub Token | 是 | — | 需要对目标仓库的写入权限；仅用于当前请求，不持久化。 |
 
 ### AgentKit Runtime 持续交付
@@ -1709,11 +1711,11 @@ Studio 侧边栏的「自动化」页面提供研发工具和消息渠道的自�
 | Agent 项目目录 | 否 | `.` | 包含 `app.py` 的项目目录；留空时使用仓库根目录。 |
 | Runtime 名称 | 是 | — | 用于发布配置的 Runtime 名称。 |
 | Runtime ID | 是 | — | 持续更新的目标 AgentKit Runtime ID。 |
-| 地域 | 是 | `cn-beijing` | 必须与目标 Runtime 所在地域一致。 |
+| 地域 | 是 | `cn-beijing`（火山引擎）/ `ap-southeast-1`（BytePlus） | 必须与目标 Runtime 所在地域一致；可选项随当前云服务商变化。 |
 | GitHub Token | 是 | — | 需要对目标仓库的写入权限；仅用于当前请求，不持久化。 |
 
 <Note>
-  持续交付和模板导入工作流均需要在仓库中配置 `VOLCENGINE_ACCESS_KEY` 和 `VOLCENGINE_SECRET_KEY` GitHub Secrets；使用临时凭据时还需配置 `VOLCENGINE_SESSION_TOKEN`。这些 Secrets 在 GitHub 中管理，不经过 Studio。
+  持续交付和模板导入工作流均需要在仓库中配置与当前云服务商对应的 GitHub Secrets：火山引擎模式为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 与可选的 `VOLCENGINE_SESSION_TOKEN`；BytePlus 模式为 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 与可选的 `BYTEPLUS_SESSION_TOKEN`。这些 Secrets 在 GitHub 中管理，不经过 Studio。
 </Note>
 
 ### PR 自动评审
@@ -1730,18 +1732,21 @@ Studio 侧边栏的「自动化」页面提供研发工具和消息渠道的自�
 | 目标分支 | 否 | `main` | PR 的 base 分支。 |
 | Sandbox Tool ID | 是 | — | 用于运行每次评审的 AgentKit CodeEnv Tool ID。 |
 | 评审模型 | 是 | — | 注入 Sandbox 的代码评审模型名称。 |
-| 模型 API 地址 | 是 | `https://ark.cn-beijing.volces.com/api/coding/v3` | 必须使用 OpenAI 兼容的 HTTPS 地址，不能包含凭据、查询参数或锚点。 |
-| 地域 | 是 | `cn-beijing` | 必须与 Sandbox Tool 所在地域一致。 |
+| 模型 API 地址 | 是 | `https://ark.cn-beijing.volces.com/api/coding/v3`（火山引擎）/ `https://ark.ap-southeast.bytepluses.com/api/v3`（BytePlus） | 必须使用 OpenAI 兼容的 HTTPS 地址，不能包含凭据、查询参数或锚点。 |
+| 地域 | 是 | `cn-beijing`（火山引擎）/ `ap-southeast-1`（BytePlus） | 必须与 Sandbox Tool 所在地域一致；可选项随当前云服务商变化。 |
 | GitHub Token | 是 | — | 需要对目标仓库的写入权限；仅用于当前请求，不持久化。 |
 
 PR 评审工作流需要在仓库中配置以下 GitHub Secrets：
 
 | Secret | 说明 |
 | :--- | :--- |
-| `VOLCENGINE_ACCESS_KEY` | 火山引擎 Access Key（必填）。 |
-| `VOLCENGINE_SECRET_KEY` | 火山引擎 Secret Key（必填）。 |
+| `VOLCENGINE_ACCESS_KEY` | 火山引擎 Access Key（火山引擎模式必填）。 |
+| `VOLCENGINE_SECRET_KEY` | 火山引擎 Secret Key（火山引擎模式必填）。 |
+| `BYTEPLUS_ACCESS_KEY` | BytePlus Access Key（BytePlus 模式必填）。 |
+| `BYTEPLUS_SECRET_KEY` | BytePlus Secret Key（BytePlus 模式必填）。 |
 | `CODEX_MODEL_API_KEY` | 评审模型的 API Key（必填）。 |
-| `VOLCENGINE_SESSION_TOKEN` | 使用临时凭据时必填。 |
+| `VOLCENGINE_SESSION_TOKEN` | 使用火山引擎临时凭据时必填。 |
+| `BYTEPLUS_SESSION_TOKEN` | 使用 BytePlus 临时凭据时必填。 |
 
 ### 飞书机器人
 
