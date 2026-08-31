@@ -29,6 +29,10 @@ Use this toolset when:
 
 It is not suitable when you require a strict, fixed orchestration topology — in that case declare a static sub-agent tree at development time.
 
+<Note>
+  In a Studio conversation, if the current session has AIO Sandbox execution environments mounted, the mounted environments take priority over dynamic sub-agent creation. The agent should first use the mounted environments (via `list_envs`, `execute_in_sandbox`, and related tools) to complete tasks, unless the user explicitly requests creating or delegating to a new agent. See [Session sandbox environments](/productions/veadk/preview/en/components/frontend/studio#session-sandbox-environments).
+</Note>
+
 ## Prerequisites
 
 <Warning>

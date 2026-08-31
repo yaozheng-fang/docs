@@ -4,6 +4,15 @@ title: "更新日志"
 
 本更新日志累计记录 VeADK 1.0.0 至当前版本的全部公开用户能力变化，已发布版本按从新到旧排列。
 
+## 未发布
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Studio 运行环境 | 运行环境新增 AIO Sandbox 基础环境类型：基于 AIO Sandbox 镜像构建，保留内置的 Sandbox Shell API（`/opt/gem/run.sh` 入口、8080 端口），操作系统固定为 Ubuntu 22.04、Python 固定为 3.12。选择此类型时，镜像构建完成后自动创建关联的 AgentKit Sandbox Tool（私有工具），Tool 就绪后环境版本才完全可用。新环境默认选择此类型；基础环境字段引入前创建的环境记录按 Ubuntu 类型处理。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 运行环境 | 每个环境版本新增只读 Manifest 端点（`GET /web/environments/{environmentId}/builds/{versionId}/manifest`），包含镜像地址、基础环境、操作系统、Python 版本、预装包、能力和 Sandbox Tool 状态，可在环境卡片中以 YAML 格式查看和复制。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 对话 | 支持将已构建完成的 AIO Sandbox 运行环境挂载到会话：挂载后智能体获得 `list_envs`（列出已挂载环境及能力）、`get_env_manifest`（查看环境 Manifest）和 `execute_in_sandbox`（在环境中执行 Shell 命令）三个工具。可在会话顶部的环境选择器中逐个选择环境或按工作区批量选择。挂载环境的优先级高于动态子智能体创建、知识库和 Skill 流程。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话沙箱环境) |
+| 动态智能体委派 | `create_agents` 工具描述与委派规则更新：挂载的执行环境优先于子智能体创建；仅在用户明确要求创建、组建或委派新智能体时才进入动态子智能体流程，任务复杂度本身不构成创建子智能体的理由。 | [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
+
 ## 1.1.8
 
 VeADK 1.1.8 发布于 2026 年 8 月 31 日。下表列出该版本的公开用户能力变化；完整提交记录见 [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.1.8)。

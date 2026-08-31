@@ -4,6 +4,15 @@ title: "Changelog"
 
 This changelog cumulatively lists all public user-facing changes from VeADK 1.0.0 through the current version. Released versions are ordered newest first.
 
+## Unreleased
+
+| Module | Change details | Link |
+| --- | --- | --- |
+| Studio runtime environments | Runtime environments now support the AIO Sandbox base environment type: built on the AIO Sandbox image, preserving the built-in Sandbox Shell API (`/opt/gem/run.sh` entrypoint, port 8080), with the operating system fixed to Ubuntu 22.04 and Python fixed to 3.12. When this type is selected, Studio automatically creates an associated AgentKit Sandbox Tool (a private tool) after the image build; the environment version only becomes fully available after the Tool is ready. New environments default to this type; environment records created before the base-environment field was introduced are treated as the Ubuntu type. | [Studio workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Studio runtime environments | Each environment version now exposes a read-only Manifest endpoint (`GET /web/environments/{environmentId}/builds/{versionId}/manifest`), including the image reference, base environment, operating system, Python version, pre-installed packages, capabilities, and Sandbox Tool status. The Manifest can be viewed and copied as YAML from the environment card. | [Studio workbench](/productions/veadk/preview/en/components/frontend/studio) |
+| Studio conversations | You can now mount built AIO Sandbox runtime environments to a conversation: once mounted, the agent gains three tools — `list_envs` (list mounted environments and their capabilities), `get_env_manifest` (view an environment's Manifest), and `execute_in_sandbox` (execute shell commands in an environment). You can select environments individually or by workspace in the session's environment picker. Mounted environments take priority over dynamic sub-agent creation, knowledge bases, and Skill workflows. | [Studio workbench](/productions/veadk/preview/en/components/frontend/studio#session-sandbox-environments) |
+| Dynamic agent delegation | The `create_agents` tool description and delegation rules have been updated: mounted execution environments take priority over sub-agent creation; the dynamic sub-agent workflow is only triggered when the user explicitly requests creating, assembling, or delegating to a new agent. Task complexity alone does not justify creating sub-agents. | [Dynamic agent delegation](/productions/veadk/preview/en/components/tools/dynamic-agent) |
+
 ## 1.1.8
 
 VeADK 1.1.8 was released on August 31, 2026. The following table lists its public user-facing changes. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.1.8) for the complete commit history.
