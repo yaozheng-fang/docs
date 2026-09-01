@@ -2403,6 +2403,22 @@ veadk studio deploy \
   `execute_in_sandbox` 可在远端环境中执行任意 Shell 命令、安装依赖、读写文件，并访问环境网络可达的服务。运行前应确认命令来源可信，并限制环境可访问的数据、网络和权限。不要在命令中写入长期凭证；需要凭证时使用环境支持的凭据托管方式。
 </Warning>
 
+## AgentKit CLI 终端
+
+Studio 侧边栏底部提供「AgentKit CLI」入口，点击后在当前页面上方打开一个终端对话框。该终端在 AgentKit Dev Sandbox 中运行，启动时自动执行 `agentkit --help` 与 `agentkit --version`，方便快速查看 AgentKit CLI 的可用命令与当前版本。
+
+终端基于 AgentKit Dev Sandbox（`SANDBOX_DEV`）创建非持久化会话。打开终端时，Studio 按以下顺序工作：查找当前用户已有的可用会话，若不存在则创建新的非持久化会话，等待会话就绪后打开终端。创建过程中的状态以加载动画和文字提示（正在查找已有环境、环境初始化中、正在连接已有环境）呈现。终端就绪后，工具栏显示当前环境的剩余回收时间。
+
+<Note>
+  AgentKit CLI 终端使用与智能开发、技能生成相同的 Dev Sandbox Tool。本地启动时通过 `SANDBOX_DEV` 环境变量指定 Tool ID，部署到 VeFaaS 时通过 `--sandbox-dev-tool-id` 自动创建或复用。未配置时，终端显示「管理员未配置 AgentKit Dev Sandbox，请配置后再使用」。配置方式见[沙箱信息](#沙箱信息)。
+</Note>
+
+<Warning>
+  AgentKit CLI 终端的会话按用户隔离，管理员无法访问其他用户的终端会话，这一限制独立于 Studio 的角色权限。会话为非持久化，过期后环境中的文件和进程不可恢复。
+</Warning>
+
+终端请求失败时，对话框显示错误详情并提供重试按钮。终端支持剪贴板读写、文件下载和弹窗等浏览器交互能力。
+
 ## 前端使用数据采集
 
 Studio 前端的产品行为数据通过 TEA 上报，用于统计 Studio 实例访问量、登录使用情况，以及智能体部署、沙箱创建、智能体连接、对话发送、调试测试和源码下载的结果。运行 `veadk studio`（包括本地启动和 `veadk studio deploy` 部署的实例）时自动启用，无需任何配置；`veadk frontend` 不启用。上报失败时不影响 Studio 正常使用。页面加载后，Studio 会在用户登录前记录一次匿名的页面访问；用户身份确认后再关联用户信息，用于区分匿名访问与登录访问。
