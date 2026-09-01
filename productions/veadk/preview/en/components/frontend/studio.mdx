@@ -967,16 +967,20 @@ The “Issue feedback” entry in the sidebar footer (labeled Beta) reports gene
   Issue feedback is sent to the AgentKit team to improve the product; a confirmation appears after a successful submission. Avoid entering keys, tokens, or other sensitive information in the description. Feedback may fail when the current session is unavailable; close and retry in that case.
 </Note>
 
-## Share a conversation as an image
+## Export a conversation
 
-The “Share as image” button next to an assistant reply exports all inputs and outputs up to that turn as a single PNG image. The image is generated locally in the browser without any network request. The export includes every user message and assistant reply from the start of the session through the current turn, and appends a note reading “上述会话由 AgentKit Studio 导出，仅供参考” at the bottom.
+The "Export conversation" button next to an assistant reply exports all inputs and outputs up to that turn as a PNG image or PDF file. The export is generated locally in the browser without any network request. It includes every user message and assistant reply from the start of the session through the current turn, and appends a note reading “上述会话由 AgentKit Studio 导出，仅供参考” at the bottom.
 
-Once generation finishes, the image can be previewed in the dialog. The following actions are available:
+Once generation finishes, the export can be previewed in the dialog, and you can choose an export format:
 
-| Action | Description |
+| Format | Description |
 | :--- | :--- |
-| Download PNG | Saves the image locally; the file name includes an export timestamp. |
-| Copy image | Copies the image to the system clipboard for pasting into other applications. This relies on the browser's clipboard write capability; when unsupported, the dialog prompts you to use Download instead. |
+| PNG | Exports all inputs and outputs as a single PNG image. Supports downloading or copying to the system clipboard. |
+| PDF | Exports all inputs and outputs as a paginated PDF file. Generation automatically breaks pages at blank areas to avoid truncating content; the PDF is generated on demand in the browser, starting only when this format is selected and download is clicked. |
+
+<Note>
+  Copy to clipboard is available only for PNG format and relies on the browser's clipboard write capability; when unsupported, the dialog prompts you to use Download instead.
+</Note>
 
 <Note>
   The button is available in both normal agent conversations and built-in Codex agent conversations, and appears only after a reply is complete (not while streaming or awaiting OAuth authorization). When the conversation is too long and the resulting image would exceed the browser's canvas limit, generation fails with a message indicating the conversation is too long; you can retry after shortening the conversation.
