@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 运行时 | `codex` 和 `piagent` 运行时支持智能体转移：当智能体存在可移交目标（子智能体、父智能体或同级智能体）时，运行时自动注册 `transfer_to_agent` 工具并在系统指令中追加可用目标列表。模型调用该工具后，目标智能体在当前调用上下文中执行并直接输出结果。`mode` 为 `single_turn` 或 `task` 的智能体不参与转移；可通过 `disallow_transfer_to_parent` 和 `disallow_transfer_to_peers` 限制转移方向。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#智能体转移) |
 | Studio 运行环境 | 运行环境新增 AIO Sandbox 基础环境类型：基于 AIO Sandbox 镜像构建，保留内置的 Sandbox Shell API（`/opt/gem/run.sh` 入口、8080 端口），操作系统固定为 Ubuntu 22.04、Python 固定为 3.12。选择此类型时，镜像构建完成后自动创建关联的 AgentKit Sandbox Tool（私有工具），Tool 就绪后环境版本才完全可用。新环境默认选择此类型；基础环境字段引入前创建的环境记录按 Ubuntu 类型处理。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 运行环境 | 每个环境版本新增只读 Manifest 端点（`GET /web/environments/{environmentId}/builds/{versionId}/manifest`），包含镜像地址、基础环境、操作系统、Python 版本、预装包、能力和 Sandbox Tool 状态，可在环境卡片中以 YAML 格式查看和复制。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 对话 | 支持将已构建完成的 AIO Sandbox 运行环境挂载到会话：挂载后智能体获得 `list_envs`（列出已挂载环境及能力）、`get_env_manifest`（查看环境 Manifest）和 `execute_in_sandbox`（在环境中执行 Shell 命令）三个工具。可在会话顶部的环境选择器中逐个选择环境或按工作区批量选择。挂载环境的优先级高于动态子智能体创建、知识库和 Skill 流程。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话沙箱环境) |

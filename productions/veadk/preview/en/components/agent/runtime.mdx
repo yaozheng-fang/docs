@@ -166,6 +166,70 @@ the following locations in order:
   Automatic installation requires access to the PiAgent release host. In offline or restricted networks, install the binary in advance and set `PIAGENT_BINARY`.
 </Note>
 
+## Agent transfer
+
+Google ADK's `transfer_to_agent` tool lets an LLM agent hand off control at
+runtime to another agent in the agent tree; the target agent then runs in the
+same invocation context and produces its events directly. The default ADK
+runtime has always supported this through ADK's execution flow; the `codex`
+and `piagent` runtimes now support it as well.
+
+When an agent using the `codex` or `piagent` runtime has transferable target
+agents, the runtime automatically registers the `transfer_to_agent` tool and
+appends the names and descriptions of the available targets to the system
+instruction. The model decides whether to call the tool to transfer; once it
+does, the target agent executes in the current invocation context and its
+events are emitted to the session and trace as normal.
+
+The set of transferable targets is determined by the agent tree:
+
+| Relationship | Condition |
+| :--- | :--- |
+| Sub-agents | Agents in the agent's `sub_agents` that are not in `single_turn` or `task` mode. |
+| Parent agent | When the agent has a `parent_agent` and `disallow_transfer_to_parent` is not set. |
+| Sibling agents | When the agent has a `parent_agent` and `disallow_transfer_to_peers` is not set; the transferable sub-agents of the parent other than the agent itself. |
+
+Agents whose `mode` is `single_turn` or `task` are neither offered as transfer
+targets nor given transfer instructions.
+
+The following example uses a multi-agent tree with the `codex` runtime, where
+the root agent can transfer to its sub-agents:
+
+```python title="agent.py"
+from veadk import Agent
+
+researcher = Agent(
+    name="researcher",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="A research agent responsible for retrieving and organizing information.",
+    instruction="Retrieve information for the user's question and organize it into structured findings.",
+)
+
+writer = Agent(
+    name="writer",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="A writing agent responsible for producing the final answer.",
+    instruction="Write the final answer for the user based on the research findings.",
+)
+
+coordinator = Agent(
+    name="coordinator",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="An agent that coordinates research and writing based on the user's question.",
+    instruction="You are the coordinator. Based on the user's question, decide whether to answer directly or transfer to the researcher or writer.",
+    sub_agents=[researcher, writer],
+)
+```
+
+<Note>
+  Agent transfer depends on a `Runner`-driven invocation chain. The target
+  agent runs in the same invocation context; its `output_key` and other
+  configuration take effect as usual.
+</Note>
+
 ## Output persistence
 
 `Agent` inherits from Google ADK's `LlmAgent` and supports persisting the
@@ -185,8 +249,6 @@ that state in the same session:
 
 ```python title="pipeline.py"
 from veadk import Agent
-from veadk.agents.sequential_agent import SequentialAgent
-
 planner = Agent(
     name="planner",
     runtime="codex",
