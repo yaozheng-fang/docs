@@ -288,8 +288,10 @@ After clicking "Create environment" in the Environments tab, choose a creation m
 | :--- | :--- |
 | Custom configuration | Select the operating system, Python version, command-line tools, and skills; Studio auto-generates the Dockerfile. You can review and edit the generated content on the "Dockerfile" tab. |
 | Upload Dockerfile | Upload an existing Dockerfile file directly, skipping tool and skill selection. You can continue editing the file content after upload. |
+| Build from Git repository | Provide a public HTTPS Git repository URL; Studio inspects the repository for Dockerfiles and builds the image via CodePipeline. |
+| Bind existing CR image | Select an existing image already pushed to Container Registry and bind it directly, with no build required. |
 
-Both methods require an environment name and description.
+All four methods require an environment name and description. "Custom configuration" and "Upload Dockerfile" build images from Studio-managed Dockerfiles; "Build from Git repository" fetches a Dockerfile from an external repository and builds it; "Bind existing CR image" uses an existing image directly without triggering a build.
 
 #### Custom configuration
 
@@ -367,9 +369,62 @@ The uploaded Dockerfile must satisfy the following requirements:
   When uploading a Dockerfile, operating system, Python version, command-line tools, and skills are not selected; those are determined by the uploaded file content. The environment name and description are still required.
 </Note>
 
+#### Build from Git repository
+
+After selecting "Build from Git repository", provide a public HTTPS Git repository URL and an optional branch, tag, or commit. Studio inspects the repository and automatically discovers files matching `Dockerfile`, `Dockerfile.*`, and `*.Dockerfile` naming patterns. After candidates are found, select one as the build entry; if no matching files exist, the environment cannot be created.
+
+Studio saves the following information for the build:
+
+| Setting | Description |
+| :--- | :--- |
+| Git repository URL | A public HTTPS Git repository URL. Must not contain a username, password, or token. |
+| Ref | Optional branch, tag, or commit SHA. When left blank, the repository's default branch is used. |
+| Dockerfile path | The relative path of the selected Dockerfile within the repository. |
+
+During the build, CodePipeline uses the repository root as the build context and builds the image with the selected Dockerfile. The build version records the checked-out commit SHA for traceability. You can optionally specify a target Container Registry repository for the build result, including the following fields:
+
+| Setting | Description |
+| :--- | :--- |
+| Region | The region of the CR resource; may differ from the Studio deployment region. |
+| Registry instance | The CR instance name. |
+| Namespace | The CR namespace. |
+| Repository | The CR repository name. |
+
+When no target CR repository is specified, Studio uses managed CR resources. The version tag for each build is recorded by Studio in the build result. Switching region clears the selected Registry, Namespace, and Repository to prevent invalid cross-region combinations. The server validates CR resources in the selected region and pushes the Git build result to the target Repository in that region.
+
+<Warning>
+  Only public HTTPS Git repository URLs are supported; the URL must not point to a private network, localhost, or include a username, password, or token. The repository must not contain Git submodules or symbolic links. The file count must not exceed 20,000 and the size must not exceed 200 MiB. Private repositories, SSH URLs, and Git credentials are not supported.
+</Warning>
+
+#### Bind existing CR image
+
+Select "Bind existing CR image" when the image has already been built by your own pipeline and pushed to Container Registry. Select the region, Registry instance, Namespace, and Repository in turn, then enter the Tag or Digest. Studio uses the image directly without starting a CodePipeline build.
+
+Studio saves the following information:
+
+| Setting | Description |
+| :--- | :--- |
+| Region | The region of the CR resource where the image resides. |
+| Registry instance | The CR instance name. |
+| Namespace | The CR namespace. |
+| Repository | The CR repository name. |
+| Tag or Digest | The image version identifier. Supports a Tag (e.g. `1.0.0`) or a full Digest starting with `sha256:`. |
+
+After selecting a region, Studio loads the Registry instances, Namespaces, and Repositories in that region through the server-side resource API in a cascading picker. Switching region clears the selected Registry, Namespace, and Repository. When the environment is created, Studio validates that the selected CR resources exist and resolves the image reference; once validation passes, an available version is created directly.
+
+<Note>
+  When binding an existing image, skills cannot be selected at the same time. Any skills needed in the image must be pre-installed in the image pipeline.
+</Note>
+
+<Note>
+  Git repository build and existing image binding cannot be configured at the same time. Git builds generate an image via CodePipeline and push it to the target CR repository; existing image binding uses the current image directly without triggering a build.
+</Note>
+
 ### Build environment images
 
 After creating or saving an environment, click "Build" to start an asynchronous image build. Studio uploads the build context to the TOS bucket, runs the build pipeline through CodePipeline, and pushes the resulting image to Container Registry. The build proceeds through preparing, queued, building, and scanning phases, with a final status of "available" or "failed."
+
+Environments built from a Git repository also build images via CodePipeline and push the result; the build version records the checked-out commit SHA. Environments that bind an existing CR image do not require a build — an available version is created at creation time.
 
 After the build completes, the environment list shows the latest version's build status and image reference. You can view build steps, progress, and logs on the environment detail page. Logs are syntax-highlighted and auto-scroll to the bottom by default — scrolling up pauses auto-follow, and scrolling back to the bottom resumes it. When the build fails, the end of the log shows the error message to help locate the failure cause.
 
@@ -395,6 +450,35 @@ Both flags can be used independently. `--environment-cr-repository` must use the
 <Note>
   Environment build resources are managed independently from agent deployment build resources. Environment image builds use the CodePipeline and Container Registry described above; agent deployments use the resources managed in "Configure build resources." When an agent selects a pre-built environment, deployment builds the agent image into the Container Registry namespace of the environment's base image, ensuring the build credential can both pull the base image and push the agent image.
 </Note>
+
+### Environment share codes
+
+Environment configurations can be exported as share codes and imported into another Studio user's environment list, enabling cross-instance sharing of environment configurations. Share codes are prefixed with `akenv://v1/` and are self-contained, versioned data with no server-side sharing records.
+
+#### Exporting share codes
+
+In the environment list, each environment card provides an entry to export a share code. The exported share code contains the environment name, description, system, language, components, Dockerfile, Git/CR source, and portable skill configuration. Local skill files are written directly into the share code. If the source environment has an available version, the share code also carries its image, Sandbox Tool, and version-level skill snapshot, so that importing into a Studio on the same cloud provider makes it available for mounting directly.
+
+<Warning>
+  Share codes may contain Dockerfile and local skill source code; only send them to trusted recipients. Environment IDs, owners, creation/update timestamps, build logs, run records, and cloud credentials are not included in share codes. Importing across Volcengine and BytePlus does not mark an image version as available.
+</Warning>
+
+When the browser blocks automatic copying, the share dialog retains the full share code for manual copying. The environment list detects when the clipboard starts with `akenv://` and prompts to import.
+
+#### Importing share codes
+
+Click "Import environment" in the environment list and paste one or more share codes. Share codes can be separated by English commas, Chinese commas, or newlines, with a maximum of 20 per batch. Studio first inspects and lists the validity of each share code, then imports them one by one. Duplicate share codes are automatically ignored. A failure on one entry does not roll back environments that were already added successfully.
+
+The import behavior varies depending on the share code content:
+
+| Share code content | Import behavior |
+| :--- | :--- |
+| Contains an available version and the cloud provider matches | Creates the environment and binds the image version; can be mounted directly. |
+| Contains an available version but the cloud provider differs | Creates the environment configuration without reusing the image or Sandbox Tool. |
+| Custom configuration, Dockerfile, or Git source | Creates the environment configuration without starting a CodePipeline build. |
+| Existing image binding | Re-validates and binds the specified CR image. |
+
+After import, the results show each share code's status (created, duplicate, or failed), the environment name, and the failure reason.
 
 ### Intelligent development
 

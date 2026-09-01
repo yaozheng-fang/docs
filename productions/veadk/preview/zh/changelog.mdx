@@ -14,6 +14,9 @@ title: "更新日志"
 | 动态智能体委派 | `create_agents` 工具描述与委派规则更新：挂载的执行环境优先于子智能体创建；仅在用户明确要求创建、组建或委派新智能体时才进入动态子智能体流程，任务复杂度本身不构成创建子智能体的理由。 | [动态智能体委派](/productions/veadk/preview/zh/components/tools/dynamic-agent) |
 | Studio 迁移 | 迁移成功后，源码自动保存为不可变的项目版本，存入 Studio 私有 TOS 存储桶，与智能开发项目版本共用同一持久化存储。已保存的版本不依赖临时迁移环境，Dev Sandbox Session 过期后仍可在独立的「已迁移项目」页面查看、下载、部署、删除或比较版本，也可以将任一版本恢复到新的智能开发会话中进行下一轮意图驱动的迭代。保存源码版本需要管理员配置 Studio 持久化存储。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
 | Studio 迁移 | 存量项目迁移的上传压缩包大小上限从 50 MiB 调整为 20 MiB，解压后总大小上限同步调整为 20 MiB。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
+| Studio 运行环境 | 运行环境新增「从 Git 仓库构建」创建方式：提供公开 HTTPS Git 仓库地址和可选的分支、Tag 或 Commit，Studio 探查仓库中的 Dockerfile 并通过 CodePipeline 构建镜像，构建版本中记录检出的 Commit SHA。仅支持公开 HTTPS 仓库，不支持私有仓库、SSH 地址或 Git 凭据；仓库不能包含 Git submodule 或符号链接，文件数上限 20,000，大小上限 200 MiB。可选择指定目标 Container Registry 仓库作为构建结果推送位置，通过地域级联选择器选择 CR 资源。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从-git-仓库构建) |
+| Studio 运行环境 | 运行环境新增「绑定已有 CR 镜像」创建方式：适用于镜像已由用户自己的流水线构建并推送到 Container Registry 的场景，依次选择地域、Registry 实例、Namespace、Repository 和 Tag 或 Digest，Studio 直接绑定该镜像，不启动 CodePipeline 构建。创建时即产生可用版本。绑定已有镜像时不能同时选择技能。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#绑定已有-cr-镜像) |
+| Studio 运行环境 | 运行环境新增分享码导入导出：可将环境配置导出为 `akenv://v1/` 分享码并在另一位 Studio 用户的环境列表中导入。分享码是自包含的版本化数据，包含环境名称、描述、系统、语言、组件、Dockerfile、Git/CR 来源和可移植技能配置；含可用版本时同时携带镜像、Sandbox Tool 和版本级技能快照。支持英文逗号、中文逗号或换行分隔多个分享码，单次最多 20 个。跨火山引擎与 BytePlus 导入时不复用镜像版本。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#环境分享码) |
 
 ## 1.1.8
 
