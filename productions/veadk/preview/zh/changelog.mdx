@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 侧边栏 | 侧边栏底部新增「AgentKit CLI」入口，点击后打开一个在 Dev Sandbox 中运行的终端，启动时自动执行 `agentkit --help` 与 `agentkit --version`。终端创建非持久化会话，按用户隔离（管理员无法访问其他用户的终端会话），未配置 Dev Sandbox 时显示配置提示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#agentkit-cli-终端) |
 | 运行时 | `codex` 和 `piagent` 运行时支持智能体转移：当智能体存在可移交目标（子智能体、父智能体或同级智能体）时，运行时自动注册 `transfer_to_agent` 工具并在系统指令中追加可用目标列表。模型调用该工具后，目标智能体在当前调用上下文中执行并直接输出结果。`mode` 为 `single_turn` 或 `task` 的智能体不参与转移；可通过 `disallow_transfer_to_parent` 和 `disallow_transfer_to_peers` 限制转移方向。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#智能体转移) |
 | Studio 运行环境 | 运行环境新增 AIO Sandbox 基础环境类型：基于 AIO Sandbox 镜像构建，保留内置的 Sandbox Shell API（`/opt/gem/run.sh` 入口、8080 端口），操作系统固定为 Ubuntu 22.04、Python 固定为 3.12。选择此类型时，镜像构建完成后自动创建关联的 AgentKit Sandbox Tool（私有工具），Tool 就绪后环境版本才完全可用。新环境默认选择此类型；基础环境字段引入前创建的环境记录按 Ubuntu 类型处理。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 运行环境 | 每个环境版本新增只读 Manifest 端点（`GET /web/environments/{environmentId}/builds/{versionId}/manifest`），包含镜像地址、基础环境、操作系统、Python 版本、预装包、能力和 Sandbox Tool 状态，可在环境卡片中以 YAML 格式查看和复制。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |

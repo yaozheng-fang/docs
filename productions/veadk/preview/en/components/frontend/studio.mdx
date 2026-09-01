@@ -2407,6 +2407,22 @@ When mounting environments, you can select environments individually or by works
   `execute_in_sandbox` can execute arbitrary shell commands in the remote environment, install dependencies, read and write files, and access services reachable from the environment network. Confirm that command sources are trusted before running, and restrict the data, network, and permissions the environment can access. Do not write long-term credentials in commands; use the credential management supported by the environment when credentials are needed.
 </Warning>
 
+## AgentKit CLI terminal
+
+The Studio sidebar footer provides an "AgentKit CLI" entry. Clicking it opens a terminal dialog over the current page. The terminal runs inside an AgentKit Dev Sandbox and automatically executes `agentkit --help` and `agentkit --version` on startup, providing a quick way to inspect the available AgentKit CLI commands and the installed version.
+
+The terminal creates a non-persistent session backed by the AgentKit Dev Sandbox (`SANDBOX_DEV`). When opening the terminal, Studio follows this sequence: search for an existing ready session for the current user, create a new non-persistent session if none exists, wait for the session to become ready, and then launch the terminal. During creation, the dialog shows a loading animation with status labels (searching for an existing environment, initializing environment, connecting to an existing environment). Once the terminal is ready, the toolbar displays the remaining time before the environment is recycled.
+
+<Note>
+  The AgentKit CLI terminal uses the same Dev Sandbox Tool as intelligent development and skill generation. For local startup, specify the Tool ID via the `SANDBOX_DEV` environment variable; for VeFaaS deployments, it is auto-created or reused via `--sandbox-dev-tool-id`. When not configured, the terminal shows "管理员未配置 AgentKit Dev Sandbox，请配置后再使用". See [Sandbox information](#sandbox-information) for configuration details.
+</Note>
+
+<Warning>
+  AgentKit CLI terminal sessions are isolated per user — administrators cannot access other users' terminal sessions. This restriction is independent of Studio role permissions. Sessions are non-persistent; files and processes in the environment are not recoverable after expiry.
+</Warning>
+
+When a terminal request fails, the dialog displays the error details and provides a retry button. The terminal supports browser interactions such as clipboard read/write, file downloads, and pop-ups.
+
 ## Frontend usage telemetry
 
 Studio frontend product-behavior data is reported through TEA to track instance visits, sign-in usage, and the outcomes of agent deployment, sandbox creation, agent connection, message sending, debug test runs, and source code downloads. Telemetry is automatically enabled when running `veadk studio` (both local startup and `veadk studio deploy` instances) and requires no configuration; `veadk frontend` does not enable it. Reporting failures do not affect normal Studio usage. After the page loads, Studio records a single anonymous page entry before the user signs in; user identity is associated only after sign-in, distinguishing anonymous visits from authenticated visits.
