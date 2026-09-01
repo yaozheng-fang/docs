@@ -17,6 +17,7 @@ title: "更新日志"
 | Studio 运行环境 | 运行环境新增「从 Git 仓库构建」创建方式：提供公开 HTTPS Git 仓库地址和可选的分支、Tag 或 Commit，Studio 探查仓库中的 Dockerfile 并通过 CodePipeline 构建镜像，构建版本中记录检出的 Commit SHA。仅支持公开 HTTPS 仓库，不支持私有仓库、SSH 地址或 Git 凭据；仓库不能包含 Git submodule 或符号链接，文件数上限 20,000，大小上限 200 MiB。可选择指定目标 Container Registry 仓库作为构建结果推送位置，通过地域级联选择器选择 CR 资源。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从-git-仓库构建) |
 | Studio 运行环境 | 运行环境新增「绑定已有 CR 镜像」创建方式：适用于镜像已由用户自己的流水线构建并推送到 Container Registry 的场景，依次选择地域、Registry 实例、Namespace、Repository 和 Tag 或 Digest，Studio 直接绑定该镜像，不启动 CodePipeline 构建。创建时即产生可用版本。绑定已有镜像时不能同时选择技能。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#绑定已有-cr-镜像) |
 | Studio 运行环境 | 运行环境新增分享码导入导出：可将环境配置导出为 `akenv://v1/` 分享码并在另一位 Studio 用户的环境列表中导入。分享码是自包含的版本化数据，包含环境名称、描述、系统、语言、组件、Dockerfile、Git/CR 来源和可移植技能配置；含可用版本时同时携带镜像、Sandbox Tool 和版本级技能快照。支持英文逗号、中文逗号或换行分隔多个分享码，单次最多 20 个。跨火山引擎与 BytePlus 导入时不复用镜像版本。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#环境分享码) |
+| Studio 对话 | 「分享为图片」功能更名为「导出会话」，并新增 PDF 导出格式：选择 PDF 后可将截至当前回复的全部输入与输出分页导出为 PDF 文件，生成时自动在空白区域分页避免内容截断；PDF 在浏览器端按需生成。原有 PNG 格式保持不变，复制到剪贴板仅在 PNG 格式下可用。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#导出会话) · [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
 
 ## 1.1.8
 
