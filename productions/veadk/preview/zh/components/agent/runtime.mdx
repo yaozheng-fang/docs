@@ -151,6 +151,57 @@ VeADK 不在 Python 安装包中内置 PiAgent 二进制文件。运行时按以
   自动安装需要运行环境能够访问 PiAgent Release。离线或受限网络环境应预先安装二进制文件，并通过 `PIAGENT_BINARY` 指定路径。
 </Note>
 
+## 智能体转移
+
+Google ADK 的 `transfer_to_agent` 工具允许一个 LLM 智能体在运行时将控制权移交给智能体树中的另一个智能体，由目标智能体在同一个调用上下文中继续执行并直接输出结果。在默认的 ADK 运行时中，该能力由 ADK 的执行流程内置支持；`codex` 和 `piagent` 运行时现在同样支持该能力。
+
+当使用 `codex` 或 `piagent` 运行时的智能体存在可移交的目标智能体时，运行时会自动注册 `transfer_to_agent` 工具，并在系统指令中追加可用目标智能体的名称与描述。模型根据任务需要决定是否调用该工具进行移交；调用后，目标智能体在当前调用上下文中执行，其产生的事件正常输出到会话与链路中。
+
+可移交的目标由智能体树结构决定：
+
+| 关系 | 条件 |
+| :--- | :--- |
+| 子智能体 | 智能体的 `sub_agents` 中非 `single_turn` 和非 `task` 模式的智能体。 |
+| 父智能体 | 当智能体存在 `parent_agent` 且未设置 `disallow_transfer_to_parent` 时。 |
+| 同级智能体 | 当智能体存在 `parent_agent` 且未设置 `disallow_transfer_to_peers` 时，父智能体下除自身以外的可移交子智能体。 |
+
+`mode` 为 `single_turn` 或 `task` 的智能体不会作为移交目标，也不会接收移交指令。
+
+以下示例在 `codex` 运行时中使用多智能体树，根智能体可将任务移交给子智能体：
+
+```python title="agent.py"
+from veadk import Agent
+
+researcher = Agent(
+    name="researcher",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="负责检索和整理资料的研究智能体。",
+    instruction="根据用户问题检索资料并整理为结构化的调研结果。",
+)
+
+writer = Agent(
+    name="writer",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="负责撰写最终回答的写作智能体。",
+    instruction="根据调研结果撰写面向用户的最终回答。",
+)
+
+coordinator = Agent(
+    name="coordinator",
+    runtime="codex",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="根据用户问题协调研究和写作的智能体。",
+    instruction="你是协调智能体。根据用户问题的性质，决定自行回答、移交给 researcher 或 writer。",
+    sub_agents=[researcher, writer],
+)
+```
+
+<Note>
+  智能体转移依赖 `Runner` 驱动的调用链。目标智能体在同一个调用上下文中执行，其 `output_key` 等配置照常生效。
+</Note>
+
 ## 输出持久化
 
 `Agent` 继承自 Google ADK 的 `LlmAgent`，支持通过 `output_key` 参数将智能体的最终文本回复写入会话状态（session state）。同一会话中后续执行的其他智能体可以读取该状态，从而在多智能体工作流中传递结果。
@@ -163,7 +214,7 @@ VeADK 不在 Python 安装包中内置 PiAgent 二进制文件。运行时按以
 
 ```python title="pipeline.py"
 from veadk import Agent
-from veadk.agents.sequential_agent import SequentialAgent
+
 
 planner = Agent(
     name="planner",
