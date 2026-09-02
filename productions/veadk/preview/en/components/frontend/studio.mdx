@@ -123,6 +123,10 @@ The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equ
   Custom creation supports a "quick create" mode: when enabled, the generated agent project includes the `CreateAgentToolset` dynamic agent delegation toolset, allowing the main agent to collect resources, create sub-agents, and delegate execution at runtime. In quick mode the generated `requirements.txt` pins `veadk-python` 1.1.7 and includes a compatibility module to ensure dynamic delegation works on the current deployed version. When deploying to AgentKit, if the Runtime uses a Studio-generated default service role, Studio automatically attaches the `AgentKitFullAccess` policy to that role so sub-agents can access AgentKit resources; custom service roles are not modified and must be configured with the required permissions manually.
 </Note>
 
+<Note>
+  When editing an agent name in custom creation or the quick-create wizard, Studio validates and shows name errors immediately on input or blur (such as naming-rule violations or non-unique names within the structure), without waiting for submission.
+</Note>
+
 ### Model selection
 
 When configuring an LLM agent, you can browse the Ark models activated under the current account in the model selector and choose a target model. The model list is fetched by the Studio server from Ark and includes only LLM and VLM models that support agent calls, showing the model name, display name, vendor, and activation status. Deactivated models are excluded. The list is cached server-side; use the refresh button to retrieve the latest status.
