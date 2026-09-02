@@ -246,7 +246,7 @@ Selecting the Operations scenario automatically loads SQL read-only protection. 
 After enabling optimization items, the Publish step requires the runtime settings they depend on:
 
 - When Context governance, Context and result compression, Answer verification and repair, or Goal-task control is selected and a Volcengine Ark model is used, model-gateway settings are required. Studio fills in the model provider, model API base, and model name automatically; the Ark API Key is injected from the selected API Key and does not need to be entered manually.
-- When MCP-resilience governance is selected, Studio injects `MCP_URLS` and `MCP_API_KEY` automatically from the HTTP MCP tools configured earlier in the Add MCP Tool step—no manual entry is needed. At least one MCP tool using HTTP transport must be configured with a valid service URL and Bearer Token; multiple HTTP MCP tools must share the same credential. If these conditions are not met, the Publish step directs you back to the Add MCP Tool step to complete the configuration before republishing. MCP tools using stdio transport are not supported for MCP-resilience governance.
+- When MCP-resilience governance is selected, Studio injects MCP configuration automatically from the HTTP MCP tools configured earlier in the Add MCP Tool step—no manual entry is needed. At least one MCP tool using HTTP transport must be configured with a valid service URL; a Bearer Token is only required when the service requires authentication, and each HTTP MCP tool may use its own credential. If these conditions are not met, the Publish step directs you back to the Add MCP Tool step to complete the configuration before republishing. MCP tools using stdio transport are not supported for MCP-resilience governance.
 
 <Warning>
   After enabling Harness Sidecar optimizations, the related enhancement behavior runs in a managed runtime and accesses the model and MCP gateway. Confirm that the configured model credentials, MCP gateway address, and access scope meet your data-handling and security requirements.
@@ -1056,7 +1056,7 @@ During custom creation, Studio saves unpublished agent drafts in the current bro
 </Warning>
 
 <Note>
-  MCP tool auth tokens are converted to environment-variable references: generated source retains only the `${ENV_NAME}` reference, with the token value written to deployment environment variables; YAML exports and browser drafts preserve the corresponding environment value. Updating a deployed Runtime reloads existing environment values, and entering a replacement Token overrides the previous value.
+  MCP tool auth tokens are converted to environment-variable references: generated source retains only the `${ENV_NAME}` reference, with the token value written to deployment environment variables; YAML exports and browser drafts preserve the corresponding environment value. Updating a deployed Runtime reloads existing environment values, and entering a replacement Token overrides the previous value. When an MCP tool’s service URL is changed, Studio prompts you to choose whether to reuse the original credential, enter a new Token, or mark the new URL as requiring no authentication, preventing a stored credential from being silently replayed after the address changes.
 </Note>
 
 Drafts use the browser's local storage. When storage is full or writes are rejected, Studio shows the corresponding reason; remove unneeded drafts or clear site storage and retry.
@@ -1161,7 +1161,7 @@ Source-preserving updates do not rebuild the image, making publication faster, a
 </Note>
 
 <Note>
-  In source-preserving mode, MCP credential updates rely on authentication references in the published draft. If MCP configuration has changed since publication, Studio prompts you to reopen the agent detail and confirm the latest configuration before updating.
+  In source-preserving mode, MCP credential updates rely on authentication references in the published draft. If MCP configuration has changed since publication, Studio prompts you to reopen the agent detail and confirm the latest configuration before updating. When an MCP tool’s service URL is changed, you must confirm whether to reuse the original credential, enter a new Token, or mark the new URL as requiring no authentication before proceeding with the update.
 </Note>
 
 ### Legacy Runtime recovery

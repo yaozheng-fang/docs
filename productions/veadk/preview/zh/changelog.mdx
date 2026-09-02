@@ -8,6 +8,9 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 创建 | 勾选「MCP 稳定性治理」时，Bearer Token 改为仅在该 MCP 服务需要认证时填写，不再要求所有 HTTP MCP 工具使用同一共享凭证；每个 HTTP MCP 工具可以使用各自的认证凭证。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 更新 | 更新已部署的智能体时，若更改了 MCP 工具的服务地址，Studio 会提示选择沿用原凭证、重新填写 Token 或标记新地址无需认证，防止地址变化后凭证被静默复用。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 | 受管 Sidecar 运行时基础镜像与 AgentKit CLI 改为自动解析并固定版本，不再需要手动配置 Sidecar 基础镜像或地域环境变量；地域限制同步取消。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 运行时 | `Agent` 新增 `tool_thread_pool_config` 参数（类型 `ToolThreadPoolConfig`，默认 `None`）：配置后，默认 ADK 运行时中同一轮的多个同步工具调用（如 `run_code`）在线程池中并行执行，不再串行阻塞事件循环。也可通过 `RunConfig.tool_thread_pool_config` 设置，优先级高于 `Agent` 上的配置。`ToolThreadPoolConfig` 包含 `max_workers` 参数（类型 `int`，默认 `4`，最小值 `1`）。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#同步工具并行执行) |
 | 代码沙箱 | `run_code` 新增 `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` 环境变量（默认 `true`）：当配置了同步工具线程池且同一轮中存在多个 `run_code` 调用时，默认为每个调用分配独立的沙箱会话标识以确保隔离执行；设为 `false` 时所有并行调用共享同一会话标识。 | [代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox#并行调用隔离) |
 | Studio 智能体工作台 | 加载智能体信息或 Runtime 详情时，若当前 Runtime 暂不支持 Studio 详情接口，详情面板显示「部分信息暂不可用」提示并建议升级 Runtime；加载失败时显示「详情加载失败」提示并提供「重试」按钮。此前两种情况均显示相同的错误信息。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
