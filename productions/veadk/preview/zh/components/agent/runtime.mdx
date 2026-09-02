@@ -14,6 +14,36 @@ from veadk import Agent
 agent = Agent(name="assistant")  # 默认使用 ADK 运行时
 ```
 
+## 同步工具并行执行
+
+在默认的 ADK 运行时中，当模型在同一轮中发起多个同步工具调用时，这些调用默认串行执行，会阻塞事件循环。通过 `Agent` 的 `tool_thread_pool_config` 参数配置线程池后，同步工具（如 `run_code`）可在独立线程中并行执行，不再阻塞事件循环。
+
+```python title="agent.py"
+from veadk import Agent
+from google.adk.agents.run_config import ToolThreadPoolConfig
+
+agent = Agent(
+    name="assistant",
+    model_name="doubao-seed-2-1-pro-260628",
+    tools=[run_code],
+    tool_thread_pool_config=ToolThreadPoolConfig(max_workers=4),
+)
+```
+
+也可以在 `RunConfig` 中设置 `tool_thread_pool_config`，优先级高于 `Agent` 上的配置。
+
+`ToolThreadPoolConfig` 参数：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `max_workers` | `int` | `4` | 线程池中的最大工作线程数，取值范围为不小于 1 的正整数。 |
+
+<Note>
+  该配置仅影响默认 ADK 运行时中的同步工具执行；`codex` 和 `piagent` 等外部运行时具有各自的工具执行机制，不受此配置影响。
+</Note>
+
+当配置了线程池且同一轮中存在多个 `run_code` 调用时，每个调用的沙箱会话标识会附加各自的函数调用标识，确保各调用在相互隔离的沙箱中执行。可通过环境变量 `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` 控制此行为，详见[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox#并行调用隔离)。
+
 ## 切换执行后端
 
 通过 `runtime` 选择内层循环的执行后端：
