@@ -8,6 +8,9 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 工具 | Studio BFF 动态工具新增 `branch_compare` 分支对比工具：当用户要求对比两种风格、两套方案或两个创意方向时，智能体并行生成两个可直接比较的方向，以选项卡卡片在对话中展示，支持流式进度和「继续这个方向」按钮。使用模型默认为 `doubao-seed-2-0-lite-260428`，可通过 `VEADK_STUDIO_BRANCH_MODEL` 环境变量覆盖；工具超时 120 秒。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#分支对比) |
+| Studio 侧边栏 | 侧边栏底部新增「开发者资源」入口，打开后展示 VeADK 文档、AgentKit CLI 文档、AgentKit 平台文档与控制台的快捷链接，以及最佳实践文章和 VeADK 应用案例。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#开发者资源) |
+| Studio 侧边栏 | 侧边栏底部「AgentKit CLI」入口更名为「体验 AgentKit CLI」。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#agentkit-cli-终端) |
 | Studio 侧边栏 | 侧边栏底部新增「AgentKit CLI」入口，点击后打开一个在 Dev Sandbox 中运行的终端，启动时自动执行 `agentkit --help` 与 `agentkit --version`。终端创建非持久化会话，按用户隔离（管理员无法访问其他用户的终端会话），未配置 Dev Sandbox 时显示配置提示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#agentkit-cli-终端) |
 | 运行时 | `codex` 和 `piagent` 运行时支持智能体转移：当智能体存在可移交目标（子智能体、父智能体或同级智能体）时，运行时自动注册 `transfer_to_agent` 工具并在系统指令中追加可用目标列表。模型调用该工具后，目标智能体在当前调用上下文中执行并直接输出结果。`mode` 为 `single_turn` 或 `task` 的智能体不参与转移；可通过 `disallow_transfer_to_parent` 和 `disallow_transfer_to_peers` 限制转移方向。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#智能体转移) |
 | Studio 运行环境 | 运行环境新增 AIO Sandbox 基础环境类型：基于 AIO Sandbox 镜像构建，保留内置的 Sandbox Shell API（`/opt/gem/run.sh` 入口、8080 端口），操作系统固定为 Ubuntu 22.04、Python 固定为 3.12。选择此类型时，镜像构建完成后自动创建关联的 AgentKit Sandbox Tool（私有工具），Tool 就绪后环境版本才完全可用。新环境默认选择此类型；基础环境字段引入前创建的环境记录按 Ubuntu 类型处理。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |

@@ -2407,9 +2407,26 @@ When mounting environments, you can select environments individually or by works
   `execute_in_sandbox` can execute arbitrary shell commands in the remote environment, install dependencies, read and write files, and access services reachable from the environment network. Confirm that command sources are trusted before running, and restrict the data, network, and permissions the environment can access. Do not write long-term credentials in commands; use the credential management supported by the environment when credentials are needed.
 </Warning>
 
+### Branch comparison
+
+The Studio BFF dynamic tools include a `branch_compare` tool. When the user asks to compare two styles, two approaches, or two creative directions, the agent can call this tool to generate two directly comparable branches in parallel and present the results as an inline card in the conversation.
+
+The tool accepts the following input parameters:
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `prompt` | `string` | The shared question or task both branches answer, 1–12,000 characters. |
+| `branches` | `array` | Exactly two branch objects. |
+| `branches[].label` | `string` | Branch name, 1–10 characters. |
+| `branches[].instruction` | `string` | Branch-specific generation requirements, 1–4,000 characters. |
+
+The two branches are generated independently and in parallel. Each branch uses a dedicated agent in a dedicated session to produce Markdown text. Progress is streamed back incrementally during generation, and the final text is returned upon completion. The card displays both branches as tabs; users can switch between them and use the **Continue this direction** button to fill the selected branch into the input box for further conversation. If one branch fails, its error is shown without affecting the other branch.
+
+The model used for branch comparison defaults to `doubao-seed-2-0-lite-260428` and can be overridden with the `VEADK_STUDIO_BRANCH_MODEL` environment variable. The tool timeout is 120 seconds.
+
 ## AgentKit CLI terminal
 
-The Studio sidebar footer provides an "AgentKit CLI" entry. Clicking it opens a terminal dialog over the current page. The terminal runs inside an AgentKit Dev Sandbox and automatically executes `agentkit --help` and `agentkit --version` on startup, providing a quick way to inspect the available AgentKit CLI commands and the installed version.
+The Studio sidebar footer provides a "Try AgentKit CLI" entry. Clicking it opens a terminal dialog over the current page. The terminal runs inside an AgentKit Dev Sandbox and automatically executes `agentkit --help` and `agentkit --version` on startup, providing a quick way to inspect the available AgentKit CLI commands and the installed version.
 
 The terminal creates a non-persistent session backed by the AgentKit Dev Sandbox (`SANDBOX_DEV`). When opening the terminal, Studio follows this sequence: search for an existing ready session for the current user, create a new non-persistent session if none exists, wait for the session to become ready, and then launch the terminal. During creation, the dialog shows a loading animation with status labels (searching for an existing environment, initializing environment, connecting to an existing environment). Once the terminal is ready, the toolbar displays the remaining time before the environment is recycled.
 
@@ -2422,6 +2439,16 @@ The terminal creates a non-persistent session backed by the AgentKit Dev Sandbox
 </Warning>
 
 When a terminal request fails, the dialog displays the error details and provides a retry button. The terminal supports browser interactions such as clipboard read/write, file downloads, and pop-ups.
+
+## Developer resources
+
+The Studio sidebar footer provides a "Developer resources" entry. Clicking it opens a developer resources page over the current page, displaying the following content:
+
+- **Related links**: Quick links to the VeADK documentation, AgentKit CLI documentation, AgentKit platform documentation, and AgentKit console.
+- **Best practices**: Reference articles on developing and deploying agents with VeADK and AgentKit CLI.
+- **Showcases**: Application examples built with VeADK, covering a multi-agent research assistant, multimodal content analysis, a customer service workbench, a web search agent, and an A2UI interactive application.
+
+Click the back button in the top-left corner to return to the page you were on before opening developer resources.
 
 ## Frontend usage telemetry
 
