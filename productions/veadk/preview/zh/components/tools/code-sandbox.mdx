@@ -45,6 +45,7 @@ VeADK 提供一组在 [AgentKit 沙箱](https://console.volcengine.com/agentkit)
 - `AGENTKIT_TOOL_HOST`：调用 AgentKit Tools 的 Endpoint
 - `AGENTKIT_TOOL_SERVICE_CODE`：调用 AgentKit Tools 的 ServiceCode
 - `AGENTKIT_TOOL_REGION`：调用 AgentKit Tools 的地域。未设置时，火山引擎模式回退到 `REGION` 环境变量，仍为空时默认 `cn-beijing`；`byteplus` 模式不读取 `REGION`，使用 BytePlus 默认地域
+- `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS`：当同一轮中存在多个 `run_code` 并行调用时，是否为每个调用分配独立的沙箱会话标识。默认为 `true`（开启）；设为 `false` 时所有并行调用共享同一会话标识
 
 `config.yaml` 配置项：
 
@@ -329,3 +330,17 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 并行调用隔离
+
+当配置了[同步工具线程池](/productions/veadk/preview/zh/components/agent/runtime#同步工具并行执行)且模型在同一轮中发起多个 `run_code` 调用时，VeADK 默认为每个调用分配独立的沙箱会话标识：在基础会话标识后附加该调用的函数调用标识，使各 `run_code` 调用在相互隔离的沙箱中并行执行，互不影响彼此的文件系统和运行环境。
+
+<Note>
+  未配置线程池时，同一轮中的多个 `run_code` 调用串行执行，均使用相同的基础会话标识，不触发隔离逻辑。
+</Note>
+
+通过环境变量 `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` 可控制此行为：
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` | `true` | 是否在并行调用时为每个 `run_code` 分配独立的沙箱会话标识。设为 `false` 时所有并行调用共享同一会话标识。接受 `1`、`true`、`yes`、`on`（不区分大小写）为开启，`0`、`false`、`no`、`off` 为关闭。 |

@@ -18,6 +18,36 @@ from veadk import Agent
 agent = Agent(name="assistant")  # uses the ADK runtime by default
 ```
 
+## Parallel synchronous tool execution
+
+In the default ADK runtime, when the model issues multiple synchronous tool calls within the same turn, they execute serially and block the event loop. By configuring a thread pool through the `Agent` `tool_thread_pool_config` parameter, synchronous tools (such as `run_code`) can run in separate threads in parallel without blocking the event loop.
+
+```python title="agent.py"
+from veadk import Agent
+from google.adk.agents.run_config import ToolThreadPoolConfig
+
+agent = Agent(
+    name="assistant",
+    model_name="doubao-seed-2-1-pro-260628",
+    tools=[run_code],
+    tool_thread_pool_config=ToolThreadPoolConfig(max_workers=4),
+)
+```
+
+`tool_thread_pool_config` can also be set on `RunConfig`, which takes precedence over the `Agent`-level configuration.
+
+`ToolThreadPoolConfig` parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `max_workers` | `int` | `4` | Maximum number of worker threads in the pool; must be a positive integer greater than or equal to 1. |
+
+<Note>
+  This configuration only affects synchronous tool execution in the default ADK runtime; external runtimes such as `codex` and `piagent` have their own tool execution mechanisms and are not affected.
+</Note>
+
+When a thread pool is configured and multiple `run_code` calls occur in the same turn, each call's sandbox session ID is appended with its own function-call identifier, ensuring that each call runs in an isolated sandbox. This behavior can be controlled with the `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` environment variable; see [Code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox#parallel-call-isolation).
+
 ## Switch the execution backend
 
 Use `runtime` to select the inner-loop execution backend:
