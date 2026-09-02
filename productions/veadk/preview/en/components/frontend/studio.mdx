@@ -1442,7 +1442,7 @@ When connecting to a Runtime, Studio first probes read-only endpoints (agent lis
 This lets you decide whether to refresh, sign in again, inspect the Runtime's readiness, or adjust the network deployment mode without reading logs.
 
 <Note>
-  When loading agent info or Runtime details fails, the detail panel shows the error message and provides a **Retry** button to reload the corresponding content.
+  When loading agent info or Runtime details, if the current Runtime does not support the Studio detail interface, the detail panel shows a "Partially unavailable" notice and advises upgrading the Runtime to view the full information. If an error occurs during loading, the detail panel shows a "Detail loading failed" notice with a **Retry** button to reload the corresponding content.
 </Note>
 
 ## New-conversation workspace
