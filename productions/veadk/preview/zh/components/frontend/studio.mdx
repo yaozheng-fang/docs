@@ -631,6 +631,9 @@ veadk studio deploy \
   从迁移产物部署到 AgentKit 时，Studio 会根据当前云服务商自动适配模型环境变量（`MODEL_AGENT_API_BASE`、`MODEL_AGENT_NAME` 和 `MODEL_NAME`），确保迁移产物在目标云环境下使用正确的模型端点和模型名称。
 </Note>
 <Note>
+  部署迁移产物到 AgentKit 前，迁移工具需确认产物可部署到 Runtime。若迁移工具尚未确认可部署状态，部署会被拒绝并提示尚未确认迁移产物可部署到 Runtime，请在迁移完成后再试。
+</Note>
+<Note>
   分析与迁移过程中，Studio 在「Codex 执行动态」面板中以结构化形式展示 Codex 的执行进展：分析计划与迁移计划按条目显示完成状态与进度，首个未完成的计划步骤自动标记为进行中；命令执行、文件更新、外部工具调用、网络搜索和子任务协作分别显示输入、输出与退出码或错误信息，执行异常的活动条目自动展开以展示错误详情。所有动态内容在发送到浏览器前均经过服务端脱敏，密钥、令牌等敏感字段会被移除。
 </Note>
 <Note>
@@ -649,6 +652,7 @@ veadk studio deploy \
 | 框架选择 | — | Structured 框架（LangChain、LangGraph、Google ADK、Strands、AgentCore）必填入口文件；Dify 和 Any 不接受 Structured 入口。 |
 | 应用名称 | 63 个字符 | 只能包含小写字母、数字和连字符，以字母或数字开头和结尾。 |
 | 产物安全校验 | — | 迁移产物 ZIP 按文件清单逐条校验大小和 SHA256，拒绝路径越界、符号链接和修改 Agent 运行方法的文件。 |
+| 交付内容 | — | 下载 ZIP 或部署迁移产物时，交付物包含项目的 `.agentkit/` 目录中的配置文件（如 `agentkit.yaml`、`Dockerfile`），但排除该目录下的构建产物与迁移会话状态。 |
 
 ### 添加技能
 
