@@ -1146,6 +1146,10 @@ Studio 不会在浏览器中保存 Runtime API Key，因此管理页只显示 Ru
 </Note>
 
 <Note>
+  更新已部署的智能体时，如果 Runtime 中已配置飞书，Studio 会从 Runtime 环境变量中恢复飞书 App ID 和 App Secret 到更新表单。已配置的环境变量输入框显示「已配置，留空沿用」，留空时保留原值。更新中关闭飞书渠道会移除 Runtime 中的 `FEISHU_APP_ID` 和 `FEISHU_APP_SECRET`；保持开启时保留或替换为提交的值。在部署页打开或关闭飞书渠道时，Studio 会重新生成项目，确保 `app.py`、依赖和运行时环境变量保持一致。
+</Note>
+
+<Note>
   更新已部署的智能体时，Studio 以该 Runtime 当前部署的配置为唯一来源重建可编辑草稿，不混入本地保存的旧草稿内容。若因网络或服务端错误无法读取该 Runtime 的 Agent 配置，更新入口会显示提示并暂时禁用更新，请稍后重试。
 </Note>
 

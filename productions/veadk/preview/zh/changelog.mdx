@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 更新 | 更新已部署的智能体时，如果 Runtime 中已配置飞书，Studio 现从 Runtime 环境变量中恢复飞书 App ID 和 App Secret 到更新表单。已配置的变量输入框显示「已配置，留空沿用」，留空时保留原值。更新中关闭飞书渠道会移除 `FEISHU_APP_ID` 和 `FEISHU_APP_SECRET`；保持开启时保留或替换为提交的值。在部署页切换飞书渠道时重新生成项目。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的智能体) |
 | Studio 迁移 | 从迁移产物部署到 AgentKit 时，部署前需迁移工具确认产物可部署到 Runtime；若迁移工具尚未确认可部署状态，部署会被拒绝。此前 Studio 会在迁移成功后自动将产物标记为可部署。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
 | Studio 迁移 | 下载 ZIP 或部署迁移产物时，交付物现包含 `.agentkit/` 目录中的项目配置文件（如 `agentkit.yaml`、`Dockerfile`），同时排除该目录下的构建产物与迁移会话状态。此前整个 `.agentkit/` 目录被排除在交付物之外。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
 | 运行时 | 修复在 Google ADK 2.0 和 2.1 上，当 LLM 智能体的同级智能体中包含工作流智能体（`ParallelAgent`、`SequentialAgent`、`LoopAgent`）或自定义智能体时，收集智能体转移目标失败的问题。VeADK 自动应用兼容性处理，使混合 LLM 与工作流智能体树在 ADK 2.0 和 2.1 上正常工作，与 ADK 2.2 及以上版本行为一致。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#智能体转移) |
