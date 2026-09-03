@@ -631,6 +631,9 @@ The following frameworks are supported:
   When deploying a migration artifact to AgentKit, Studio automatically adapts model environment variables (`MODEL_AGENT_API_BASE`, `MODEL_AGENT_NAME`, and `MODEL_NAME`) to the current cloud provider, ensuring the migrated project uses the correct model endpoint and model name in the target cloud environment.
 </Note>
 <Note>
+  Before deploying a migration artifact to AgentKit, the migration tool must confirm the artifact is deploy-ready to Runtime. If deploy readiness has not been confirmed, deployment is rejected with a message that the migration artifact has not been confirmed as deploy-ready to Runtime; retry after the migration completes.
+</Note>
+<Note>
   During analysis and migration, the "Codex activity" panel renders Codex's progress in a structured form: analysis and migration plans show per-item completion status and progress, with the first incomplete plan step automatically marked as in progress; command execution, file updates, external tool calls, web searches, and sub-task coordination each display their input, output, and exit code or error details, and activity items that fail are automatically expanded to show error details. All activity content is redacted server-side before reaching the browser; keys, tokens, and other sensitive fields are removed.
 </Note>
 <Note>
@@ -649,6 +652,7 @@ The following frameworks are supported:
 | Framework selection | — | Structured frameworks (LangChain, LangGraph, Google ADK, Strands, AgentCore) require an entry file; Dify and Any do not accept a Structured entry. |
 | Application name | 63 characters | Lowercase letters, digits, and hyphens only; must start and end with a letter or digit. |
 | Artifact safety | — | Each file in the migration ZIP is verified against the manifest by size and SHA256; path traversal, symlinks, and files that modify Agent runtime methods are rejected. |
+| Delivery content | — | When downloading a ZIP or deploying a migration artifact, the delivery includes configuration files from the project's `.agentkit/` directory (such as `agentkit.yaml` and `Dockerfile`) but excludes build artifacts and migration session state within that directory. |
 
 ### Add skills
 
