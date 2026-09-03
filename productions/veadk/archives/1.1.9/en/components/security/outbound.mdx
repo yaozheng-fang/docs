@@ -1,0 +1,122 @@
+---
+title: "Outbound authentication"
+---
+
+Outbound authentication solves credentials when the agent calls third-party services. Agent Identity encrypts and stores API keys and OAuth tokens, keeps them out of your code, and caches, refreshes, and rotates them automatically. Choose a method by scenario:
+
+| Method | Provider type | When to use |
+| --- | --- | --- |
+| API key | API Key | Simple, fixed-credential service-to-service calls |
+| OAuth2 M2M | OAuth Client | Service-to-service auth with token expiry and refresh |
+| OAuth2 user federation | OAuth Client | The app acts on a user's behalf and needs their consent |
+
+## Create an outbound credential
+
+<Steps>
+  <Step title="Activate Agent Identity">
+    Open the [Agent Identity](https://console.volcengine.com/identity) activation page, accept the terms, and activate and authorize.
+  </Step>
+  <Step title="Create the credential">
+    In the console, go to **Authentication › Outbound Credentials**, create an API Key or OAuth Client for your method, and fill in the credentials (API key, Client ID, Client Secret, callback URL, and so on).
+  </Step>
+</Steps>
+
+## Use it in an agent
+
+Once the credential exists, two wrappers inject it into the agent: `VeIdentityFunctionTool` for plain function tools and `VeIdentityMcpToolset` for MCP toolsets. Both take an `auth_config` — produced by the methods below — and Agent Identity injects the credential at runtime.
+
+```python
+from veadk.integrations.ve_identity import VeIdentityFunctionTool, VeIdentityMcpToolset
+from google.adk.agents.mcp import StdioServerParameters
+
+# Function tool: auth_config sets the credential source; `into` names the injected parameter
+tool = VeIdentityFunctionTool(func=call_api, auth_config=auth_config, into="api_key")
+
+# MCP toolset: pass the same auth_config
+toolset = VeIdentityMcpToolset(
+    auth_config=auth_config,
+    connection_params=StdioServerParameters(command="python", args=["-m", "my_mcp_server"]),
+)
+```
+
+## API key
+
+The simplest method, for service-to-service calls with fixed credentials. In the console, **New › New API Key**, fill in a name, the third-party API key, and how it's passed (Header or Query). Build the `auth_config` with `api_key_auth`:
+
+```python
+from veadk.integrations.ve_identity import api_key_auth
+
+auth_config = api_key_auth(provider_name="my-api-provider")
+```
+
+## OAuth2 M2M
+
+For service-to-service calls — more secure than an API key and supports token refresh. In the console, **New › New OAuth Client**, choose the **Machine to Machine (M2M)** flow; credentials can use a built-in provider (Lark, Coze, Google, GitHub), an OIDC issuer URL, or fully custom endpoints. Build the `auth_config` with `oauth2_auth` and `auth_flow="M2M"`:
+
+```python
+from veadk.integrations.ve_identity import oauth2_auth
+
+auth_config = oauth2_auth(
+    provider_name="my-oauth2-m2m-provider",
+    scopes=["api://your-service/.default"],
+    auth_flow="M2M",
+)
+```
+
+## OAuth2 user federation
+
+For cases where the app accesses a third-party service on a user's behalf. In the console, **New › New OAuth Client**, choose the **User Federation (USER_FEDERATION)** flow and set the callback URL. Build the `auth_config` with `oauth2_auth` and `auth_flow="USER_FEDERATION"`:
+
+```python
+from veadk.integrations.ve_identity import oauth2_auth
+
+auth_config = oauth2_auth(
+    provider_name="github-oauth2-provider",
+    scopes=["repo", "user"],
+    auth_flow="USER_FEDERATION",
+    callback_url="https://your-app.com/oauth/callback",
+)
+```
+
+On first use, the user authorizes the app in the third-party service; Agent Identity runs the authorization flow and handles later token exchange and refresh. If the user revokes access, calls error out and you should prompt them to re-authorize.
+
+### Callback address
+
+When configuring the callback in the third-party OAuth2 provider, use the Agent Identity address for your region:
+
+- **Beijing**: `https://auth.id.cn-beijing.volces.com/api/v1/oauth2callback`
+- **Shanghai**: `https://auth.id.cn-shanghai.volces.com/api/v1/oauth2callback`
+- **Guangzhou**: `https://auth.id.cn-guangzhou.volces.com/api/v1/oauth2callback`
+
+After the user authorizes, the provider redirects the code and state to this address, and Agent Identity handles the token exchange.
+
+## Example
+
+The agent below connects to Volcengine ECS's MCP service through user-federation auth, querying instances and running commands on the user's behalf:
+
+```python
+import asyncio
+from veadk import Agent
+from veadk.integrations.ve_identity import VeIdentityMcpToolset, oauth2_auth
+from veadk.integrations.ve_identity.auth_processor import AuthRequestProcessor
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+
+ecs_tools = VeIdentityMcpToolset(
+    auth_config=oauth2_auth(
+        provider_name="volc-ecs-oauth2-provider",
+        scopes=["read"],
+        auth_flow="USER_FEDERATION",
+    ),
+    connection_params=StreamableHTTPConnectionParams(url="https://ecs.mcp.volcbiz.com/ecs/mcp"),
+)
+
+agent = Agent(
+    tools=[ecs_tools],
+    system_prompt="You are a Volcengine ECS assistant that can query ECS instances and run server commands.",
+    run_processor=AuthRequestProcessor(),
+)
+
+asyncio.run(agent.run("List my ECS instances and run `uname -a` on a running one"))
+```
+
+For more detail, see the [Agent Identity documentation](https://www.volcengine.com/docs/86848/2080920?lang=zh).
