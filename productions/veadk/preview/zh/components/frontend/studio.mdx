@@ -120,7 +120,7 @@ Logo 最大 5 MB，支持 PNG、JPEG、GIF、WebP、AVIF 和 ICO。也可以通�
 
 
 <Note>
-  自定义创建支持「快速创建」模式：启用后，生成的智能体项目自动内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下生成的 `requirements.txt` 固定使用 `veadk-python` 1.1.7 版本，并附带兼容模块以确保动态委派能力在当前部署版本中可用。部署到 AgentKit 时，若 Runtime 使用 Studio 自动生成的默认运行角色，Studio 会自动为该角色附加 `AgentKitFullAccess` 策略，使子智能体具备访问 AgentKit 资源的权限；使用自定义运行角色时不自动修改，需自行确保角色已具备所需权限。
+  自定义创建支持「快速创建」模式：启用后，生成的智能体项目自动内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下生成的 `requirements.txt` 固定使用 `veadk-python` 1.1.9 版本，并附带兼容模块以确保动态委派能力在当前部署版本中可用。部署到 AgentKit 时，若 Runtime 使用 Studio 自动生成的默认运行角色，Studio 会自动为该角色附加 `AgentKitFullAccess` 策略，使子智能体具备访问 AgentKit 资源的权限；使用自定义运行角色时不自动修改，需自行确保角色已具备所需权限。
 </Note>
 
 <Note>
