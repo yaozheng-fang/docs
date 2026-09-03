@@ -1146,6 +1146,10 @@ Updates are still governed by Studio role permissions: `admin` can update all St
 </Note>
 
 <Note>
+  When updating a deployed agent that has Feishu configured, Studio restores the Feishu App ID and App Secret from the Runtime's environment variables into the update form. Input fields for already-configured variables show "Configured, leave blank to reuse"; leaving them blank preserves the existing values. Disabling the Feishu channel during an update removes both `FEISHU_APP_ID` and `FEISHU_APP_SECRET` from the Runtime; keeping it enabled preserves or replaces them with the submitted values. Toggling the Feishu channel on or off on the deploy page regenerates the project to keep `app.py`, dependencies, and runtime environment variables consistent.
+</Note>
+
+<Note>
   When updating a deployed agent, Studio rebuilds the editable draft exclusively from the Runtime's currently deployed configuration and does not merge in locally saved drafts. If the Runtime's agent configuration cannot be read due to a network or server error, the update entry shows a notice and disables the update temporarily; retry after a moment.
 </Note>
 
