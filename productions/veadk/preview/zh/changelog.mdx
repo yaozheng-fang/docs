@@ -32,6 +32,8 @@ title: "更新日志"
 | Studio 智能模式 | 智能开发改为单轮次直接处理请求：Codex 在同一轮次内判断是否需要改动交付物，对于提问、澄清或说明等不涉及代码改动的请求直接给出自然回答，不修改项目代码，也不输出结构化交付说明；只有改动交付物的请求才采用「已完成」「验证」「遗留问题」分节的结构化交付说明。会话状态新增「忙」标记，任务运行期间反映当前轮次正在进行。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能模式) |
 | Studio 对话 | 「分享为图片」功能更名为「导出会话」，并新增 PDF 导出格式：选择 PDF 后可将截至当前回复的全部输入与输出分页导出为 PDF 文件，生成时自动在空白区域分页避免内容截断；PDF 在浏览器端按需生成。原有 PNG 格式保持不变，复制到剪贴板仅在 PNG 格式下可用。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#导出会话) · [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
 | Studio 智能体工作台 | 编辑智能体名称时，Studio 在输入或失焦时即时显示名称校验错误（如不符合命名规则或名称在结构中不唯一），无需等待提交。此前仅在提交时才显示名称校验错误。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.7` 更新为 `1.1.9`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 | 火山引擎模式下，生成的 Dockerfile 安装 Python 依赖时依次尝试华为云镜像源、阿里云镜像源和 PyPI 官方源，提高内部镜像不可用时依赖安装的成功率；BytePlus 模式仅使用默认源。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
 
 ## 1.1.8
 
