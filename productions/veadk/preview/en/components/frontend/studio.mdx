@@ -2341,6 +2341,10 @@ During the update, Studio checks the current VeFaaS Function for missing cloud r
 
 The in-app update also creates or updates the scheduled-task scheduler functions and minute timers; the update progress panel shows a corresponding stage.
 
+<Note>
+  If the scheduled-task scheduler update fails, Studio records a warning and continues updating the main function without aborting the entire update. The scheduler can be repaired later by running the update again.
+</Note>
+
 The VeFaaS Function console link in the update status is provider-specific: Volcengine deployments point to `console.volcengine.com`, and BytePlus deployments point to `console.byteplus.com`.
 
 <Note>
@@ -2650,6 +2654,10 @@ veadk studio update --vefaas-app-name "veadk-studio"
 When `--region` and `--project` are omitted, the command searches Beijing, Shanghai, and all visible projects. If multiple Applications have the same name, add a region or project to narrow the scope. The update preserves the Application and Function IDs, public URL, SSO, IAM, gateway, and existing environment variables. Branding and the CodeEnv and DevEnv Tool IDs change only when their options are explicitly supplied. When the function uses the default Studio IAM role, the update also refreshes the role's managed policies to the latest version; custom roles are not modified. The update also registers the `/oauth2/callback` callback of the current Studio public URL on the bound VeIdentity user-pool client and enables skip-consent, so SSO login remains usable after the update; if registration fails, the terminal prints a warning and instructs you to add the URL to the client's allowed callback URLs manually. When querying existing deployments and submitting the code-bundle update, the command automatically retries transient server errors such as rate limiting and network jitter; if it still fails after retrying, the terminal notes that the cloud release may still be in progress and you can rerun the same update command shortly after.
 
 The update also creates or updates the scheduled-task scheduler functions and corresponding minute timers.
+
+<Note>
+  If the scheduled-task scheduler update fails, the command records a warning and continues updating the main function without aborting the entire update. The scheduler can be repaired later by running the update again.
+</Note>
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
