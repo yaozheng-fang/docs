@@ -349,7 +349,6 @@ Studio 侧边栏提供「工作区」入口，用于将可复用的运行环境�
 | AIO Sandbox | 基于 AIO Sandbox 镜像构建，保留内置的 `/opt/gem/run.sh` 启动链和 8080 端口，提供 Sandbox Shell API。选择后操作系统固定为 Ubuntu 22.04、Python 版本固定为 3.12，Studio 依赖隔离到独立虚拟环境中。构建完成后自动创建关联的 AgentKit Sandbox Tool，使该环境可挂载到对话中执行 Shell 命令。新环境默认选择此类型。 |
 | Codex Sandbox | 基于 Codex Sandbox 镜像构建，通过内置的 Codex App Server 暴露任务委派能力，而非通用 Sandbox Shell 工具。选择后操作系统固定为 Ubuntu 22.04、Python 版本固定为 3.12。构建完成后自动创建关联的 AgentKit Sandbox Tool，使该环境可挂载到对话中委派完整任务给 Codex 执行。 |
 | Ubuntu | 基于官方 Ubuntu 镜像构建，按所选操作系统和 Python 版本安装运行时。不支持挂载到对话中执行 Shell 命令。在基础环境字段引入之前创建的环境记录按此类型处理。 |
-| Ubuntu | 基于官方 Ubuntu 镜像构建，按所选操作系统和 Python 版本安装运行时。不支持挂载到对话中执行 Shell 命令。在基础环境字段引入之前创建的环境记录按此类型处理。 |
 
 <Note>
   上传的 Dockerfile 中包含 `aio.sandbox` 时，Studio 自动识别为 AIO Sandbox 基础环境；包含 `/codexenv:` 时，自动识别为 Codex Sandbox 基础环境。
