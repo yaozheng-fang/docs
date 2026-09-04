@@ -140,11 +140,17 @@ Key `OAuth2Config` parameters:
 
 | Parameter | Default | Description |
 | --- | --- | --- |
+| `userinfo_url` | `None` | User info endpoint URL; when configured, the middleware fetches user info from this endpoint and stores it in the session |
+| `user_id_field` | `"sub"` | Field name used to extract the user identifier from the user info response |
 | `session_timeout_seconds` | `3600` | Session timeout (seconds) |
 | `cookie_secure` | `True` | Enable secure cookies |
 | `auto_refresh_token` | `True` | Refresh tokens automatically |
 | `token_refresh_threshold_seconds` | `300` | Token refresh threshold (seconds) |
 | `api_path_prefixes` | `["/api/"]` | API path prefixes |
+
+<Note>
+  When fetching user info from the userinfo endpoint, only fields safe to store in a browser session cookie are retained: `sub`, `email`, `email_verified`, `name`, `given_name`, `family_name`, `preferred_username`, `picture`, `locale`, `updated_at`, plus the field configured via `user_id_field`. Only values of type string, integer, float, or boolean are kept, to prevent the session cookie from exceeding browser size limits. The `/oauth2/userinfo` endpoint returns these filtered fields.
+</Note>
 
 <Note>
   The default `InMemoryStateStore` fits single-process deployments only. For distributed setups, implement a state store backed by Redis or similar and pass it via `setup_oauth2(app, config, state_store=...)`.
