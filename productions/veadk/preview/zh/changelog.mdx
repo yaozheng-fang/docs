@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 更新 | 应用内更新和 `veadk studio update` 优先下载精简发布包：该包不内置运行时依赖，而是在部署时从当前云服务商的公共制品源拉取已校验的 Python wheel 和 AgentKit CLI；若精简包或公共制品不可用，自动回退到包含全部依赖的完整发布包。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#应用内更新) · [更新已部署的 Studio](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) |
 | Studio 更新 | 更新已部署的智能体时，如果 Runtime 中已配置飞书，Studio 现从 Runtime 环境变量中恢复飞书 App ID 和 App Secret 到更新表单。已配置的变量输入框显示「已配置，留空沿用」，留空时保留原值。更新中关闭飞书渠道会移除 `FEISHU_APP_ID` 和 `FEISHU_APP_SECRET`；保持开启时保留或替换为提交的值。在部署页切换飞书渠道时重新生成项目。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的智能体) |
 | Studio 迁移 | 从迁移产物部署到 AgentKit 时，部署前需迁移工具确认产物可部署到 Runtime；若迁移工具尚未确认可部署状态，部署会被拒绝。此前 Studio 会在迁移成功后自动将产物标记为可部署。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
 | Studio 迁移 | 下载 ZIP 或部署迁移产物时，交付物现包含 `.agentkit/` 目录中的项目配置文件（如 `agentkit.yaml`、`Dockerfile`），同时排除该目录下的构建产物与迁移会话状态。此前整个 `.agentkit/` 目录被排除在交付物之外。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |

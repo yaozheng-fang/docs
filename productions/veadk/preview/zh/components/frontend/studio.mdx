@@ -2330,7 +2330,7 @@ veadk studio deploy \
 
 Studio 从维护在北京地域的 TOS 发布源读取新版本，客户部署地域无需额外配置；部署完成后管理员可在导航栏中把前端与 Python 后端一起升级。默认发布源存储桶因云服务商而异：火山引擎部署使用 `veadk-studio`，BytePlus 部署使用 `veadk-studio-byteplus`。使用 `--studio-update-bucket` 与 `--studio-update-prefix`（或对应的 `VEADK_STUDIO_UPDATE_BUCKET`、`VEADK_STUDIO_UPDATE_PREFIX` 环境变量）可覆盖默认发布源，发布源地域始终为 `cn-beijing`。更新时根据部署环境中的 `CLOUD_PROVIDER`（或 `AGENTKIT_CLOUD_PROVIDER`）自动选择对应的云服务商入口，BytePlus 部署在更新过程中同步写入 `BYTEPLUS_REGION`。
 
-Studio 每三分钟检查一次更新，列出可用版本及其变更说明。管理员确认升级后，Studio 会校验完整发布包，同时替换 Python 后端与前端资源并重新发布原 Application；Application 与 Function ID、访问 URL、SSO 客户端和服务端 Secret 保持不变。
+Studio 每三分钟检查一次更新，列出可用版本及其变更说明。管理员确认升级后，Studio 优先下载精简发布包——该包不内置运行时依赖，而是在部署时从当前云服务商的公共制品源拉取已校验的 Python wheel 和 AgentKit CLI；若精简发布包或公共制品不可用，Studio 自动回退到包含全部依赖的完整发布包。无论采用哪种包，Studio 都会校验完整性，然后同时替换 Python 后端与前端资源并重新发布原 Application；Application 与 Function ID、访问 URL、SSO 客户端和服务端 Secret 保持不变。
 
 在开始更新前，Studio 会先预检当前 VeFaaS Function 角色是否具备完成 OTA 更新所需的全部 IAM 权限（包括读取发布包、创建和更新调度函数、发布应用与函数、安装依赖及管理定时任务触发器等权限）。预检以只读方式查询已绑定的 IAM 策略，不修改任何资源。若存在缺失权限，更新在开始任何变更前即被中断，更新对话框列出缺失的权限项并提供对应云服务商的 IAM 控制台链接，管理员完成授权后可重新发起更新。更新进度面板会显示「预检 Studio 更新权限」阶段。
 
