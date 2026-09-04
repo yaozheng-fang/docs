@@ -2395,6 +2395,152 @@ veadk studio deploy \
 | `--studio-update-bucket` | `str \| None` | `veadk-studio`（火山引擎）/ `veadk-studio-byteplus`（BytePlus） | 存放 Studio 不可变发布包的 TOS Bucket；部署时写入函数环境变量 `VEADK_STUDIO_UPDATE_BUCKET`。也可通过 `VEADK_STUDIO_UPDATE_BUCKET` 设置。 |
 | `--studio-update-prefix` | `str` | `veadk/studio/main` | Studio 主发布渠道的 TOS 对象前缀。也可通过 `VEADK_STUDIO_UPDATE_PREFIX` 设置。 |
 
+
+## 部署到 VeStack
+
+在火山引擎 VeStack（混合云）环境中，公有云 VeFaaS Application 接口不可用。`veadk studio deploy` 通过 `--deploy-target vestack` 将 Studio 部署为 VeFaaS 镜像函数，并通过共享 APIG Gateway 暴露独立域名。部署前需要在本地或 CI 构建 `linux/amd64` Studio 镜像并推送到 VeStack 镜像仓库。
+
+### 何时使用
+
+- 部署环境为 VeStack 或私有云，不支持公有云 VeFaaS Application 接口。
+- 需要 Studio 使用 IAM Role 绑定的临时凭证（STS）访问混合云 AgentKit OpenAPI，而不在镜像或函数环境中保存长期 AK/SK。
+- 需要为每个沙箱会话创建独立的 AgentKit Tool，以实现磁盘持久化和会话隔离。
+
+### 构建镜像
+
+使用 VeADK 源码目录中的 Dockerfile 构建 `linux/amd64` 镜像：
+
+```bash title="bash"
+docker build --platform linux/amd64 \
+  -f docker/Dockerfile.vestack \
+  --build-arg PYTHON_IMAGE=<reachable-python-3.12-image> \
+  -t <vestack-registry>/<namespace>/veadk-studio:<tag> .
+```
+
+如果选用的 VeStack 基础镜像已包含 VeADK 运行时依赖，可以传入 `--build-arg VEADK_INSTALL_DEPENDENCIES=0` 跳过完整依赖解析，仅安装当前仓库和 `docker/vendor/` 中暂存的 wheel。使用该模式前，先暂存 VeStack 私有镜像源中缺失的 wheel：
+
+```bash title="bash"
+python -m pip download --no-deps \
+  'openviking-sdk>=0.1.3' 'fastmcp==3.4.7' 'fastmcp-slim==3.4.7' \
+  -d docker/vendor
+```
+
+### 部署命令
+
+<Warning>
+  此操作会创建或修改 VeFaaS 函数、APIG Gateway、IAM Role 和 VeIdentity 资源，可能产生费用并影响线上访问。部署前确认凭证具备所需权限，并确认目标 VeStack 环境的网络可达性。
+</Warning>
+
+准备符合权限要求的火山引擎凭证，然后执行：
+
+```bash title="bash"
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+
+veadk studio deploy \
+  --deploy-target vestack \
+  --provider volcengine \
+  --vefaas-app-name "veadk-studio" \
+  --region "cn-beijing" \
+  --project "default" \
+  --image "<vestack-registry>/<namespace>/veadk-studio:<tag>" \
+  --public-domain "studio.example.com" \
+  --vestack-openapi-url "https://openapi.example.com" \
+  --vestack-agentkit-region "e70" \
+  --vestack-apig-cluster-id "<cluster-id>" \
+  --admin "admin@example.com" \
+  --developer "dev@example.com"
+```
+
+部署流程执行以下操作：
+
+1. 验证 `--deploy-target` 为 `vestack` 时 `--provider` 必须为 `volcengine`。
+2. 解析 `--vestack-openapi-url` 并设置 VeFaaS、APIG、IAM 和 Identity 的 OpenAPI Host 与 Scheme 环境变量，使 SDK 请求指向 VeStack 控制面。
+3. 创建或复用 VeIdentity 用户池与 Web 客户端（除非通过 `--user-pool-id` 与 `--allowed-client-id` 指定已有资源）。
+4. 创建或复用 Studio 专用 IAM Role 和自定义 Policy；未指定 `--iam-role` 时自动创建。VeStack 环境中部分公有云系统 Policy 可能不可用，此时跳过缺失的系统 Policy 并继续使用已校验的自定义 Policy。
+5. 创建或更新 VeFaaS 镜像函数，设置镜像地址、启动命令、端口和 Role，并传入非敏感环境变量。
+6. 发布函数并等待发布完成。
+7. 创建或复用 APIG Gateway、Service、Upstream 和 Host Route，将独立域名转发到函数。
+8. 向 VeIdentity 用户池客户端注册回调地址。
+9. 输出访问端点、函数 ID、网关 ID、服务 ID、上游 ID、路由 ID 和 IAM Role。
+
+部署成功后，终端输出类似以下信息：
+
+```text
+✅ VeStack Studio Function deployed: http://studio.example.com:<port>
+   function id: <function-id>
+   gateway id: <gateway-id>
+   service id: <service-id>
+   upstream id: <upstream-id>
+   route id: <route-id>
+   IAM role: <role-trn>
+```
+
+<Note>
+  部署者的长期 AK/SK 仅用于控制面调用签名，不会写入函数环境变量。VeFaaS 在 Pod 内自动挂载 IAM Role 的临时 STS 凭证并定时刷新，Studio 使用该临时凭证访问 VeStack AgentKit OpenAPI。
+</Note>
+
+<Warning>
+  POC 环境可能使用 HTTP 端点；生产环境应使用可信 HTTPS 证书。可通过 `--vestack-insecure-skip-tls-verify` 跳过私有证书验证，但仅适用于受控环境。
+</Warning>
+
+### 每会话独立 Tool
+
+VeStack 部署模式下，Studio 为每个沙箱会话创建独立的 AgentKit Tool，而非共享同一 Tool。独立 Tool 支持磁盘持久化，会话删除时自动清理对应的 Tool。
+
+创建会话时可指定磁盘大小（`diskGb` 参数），取值范围为 5–100 GiB，默认值由部署配置决定。
+
+| 沙箱类型 | 独立 Tool 类型 | 说明 |
+| :--- | :--- | :--- |
+| Codex（内置智能体） | `CodeEnv` | 每个会话创建独立的 CodeEnv Tool，绑定 IAM Role，使用磁盘持久化。 |
+| Hermes | `Station-Hermes` | 部署时配置了 Hermes 模型参数时启用；每个会话创建独立的 Hermes Tool，并自动启动 Hermes Dashboard。 |
+
+Hermes 独立 Tool 需要在部署时配置模型参数（`--vestack-hermes-model-agent-name`、`--vestack-hermes-model-api-base`、`--vestack-hermes-model-api-key`、`--vestack-hermes-model-id` 和 `--vestack-hermes-model-agent-name`）。未配置时，Hermes 智能体显示「管理员未配置 Hermes 模型或 IAM Role」。
+
+<Note>
+  Codex 独立 Tool 默认启用（`VEADK_STUDIO_CODEX_TOOL_PER_AGENT=true`）。Hermes 独立 Tool 仅在提供了完整的 Hermes 模型参数时启用。
+</Note>
+
+### OpenAPI 端点覆盖
+
+VeStack 环境中，各云服务的 OpenAPI 端点通常指向内部地址。部署时通过 `--vestack-openapi-url` 统一设置 VeFaaS、APIG、IAM 和 Identity 的 OpenAPI Host 与 Scheme。部署后，Studio 运行时通过以下环境变量覆盖各服务的 OpenAPI 端点：
+
+| 环境变量 | 说明 |
+| :--- | :--- |
+| `VEFAAS_OPENAPI_HOST` | VeFaaS OpenAPI Host，覆盖默认公有云地址。 |
+| `VEFAAS_OPENAPI_SCHEME` | VeFaaS OpenAPI Scheme（`http` 或 `https`）。 |
+| `APIG_OPENAPI_HOST` | APIG OpenAPI Host。 |
+| `APIG_OPENAPI_SCHEME` | APIG OpenAPI Scheme。 |
+| `IAM_OPENAPI_HOST` | IAM OpenAPI Host。 |
+| `IAM_OPENAPI_SCHEME` | IAM OpenAPI Scheme。 |
+| `IDENTITY_OPENAPI_HOST` | Identity OpenAPI Host。 |
+| `IDENTITY_OPENAPI_SCHEME` | Identity OpenAPI Scheme。 |
+| `VOLCENGINE_OPENAPI_CA_BUNDLE` | 自定义 CA 证书路径，用于私有证书环境。设置后启用 TLS 验证。 |
+| `VOLCENGINE_OPENAPI_VERIFY_SSL` | 设为 `false` 时跳过 TLS 证书验证。仅在受控环境中使用，优先使用 `VOLCENGINE_OPENAPI_CA_BUNDLE`。 |
+
+### VeStack 部署参数
+
+以下选项仅在 `--deploy-target vestack` 时生效，是对[部署参数](#部署参数)的补充。
+
+| 选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--deploy-target` | `application` \| `vestack` | `application` | 部署目标。`application` 使用公有云 VeFaaS Application；`vestack` 使用 VeFaaS 镜像函数 + APIG。也可通过 `VEADK_STUDIO_DEPLOY_TARGET` 设置。 |
+| `--image` | `str` | — | VeStack 部署所需的预构建 `linux/amd64` Studio 镜像地址。也可通过 `VEADK_STUDIO_IMAGE` 设置。 |
+| `--public-domain` | `str` | — | VeStack Studio 部署的专用 APIG 域名。也可通过 `VEADK_STUDIO_PUBLIC_DOMAIN` 设置。 |
+| `--vestack-openapi-url` | `str` | — | VeStack 控制面地址，需包含 Scheme 和 Host，例如 `https://openapi.example.com`。也可通过 `VESTACK_OPENAPI_URL` 设置。 |
+| `--vestack-agentkit-host` | `str` | `ops-top.ops-top.svc:8000` | VeFaaS 数据面可达的 AgentKit TOP 主机地址。也可通过 `VESTACK_AGENTKIT_HOST` 设置。 |
+| `--vestack-agentkit-region` | `str` | — | 交付环境的地域 ID，例如 `e70`。也可通过 `VESTACK_AGENTKIT_REGION` 设置。 |
+| `--vestack-codex-port` | `int`（1–65535） | `8642` | 独立 Codex Tool 的服务端口。也可通过 `VEADK_STUDIO_CODEX_PORT` 设置。 |
+| `--vestack-hermes-port` | `int`（1–65535） | `4500` | 独立 Hermes Tool 的 Dashboard 端口。也可通过 `VEADK_STUDIO_HERMES_PORT` 设置。 |
+| `--vestack-hermes-model-agent-name` | `str` | — | 独立 Hermes Tool 使用的 AgentKit 模型端点名称。也可通过 `VEADK_STUDIO_HERMES_MODEL_AGENT_NAME` 设置。 |
+| `--vestack-hermes-model-api-base` | `str` | — | 注入到独立 Hermes Tool 的模型 API 地址。也可通过 `VEADK_STUDIO_HERMES_MODEL_API_BASE` 设置。 |
+| `--vestack-hermes-model-api-key` | `str` | — | 注入到独立 Hermes Tool 的模型 API Key；建议使用环境变量提供。也可通过 `VEADK_STUDIO_HERMES_MODEL_API_KEY` 设置。 |
+| `--vestack-hermes-model-id` | `str` | — | 注入到独立 Hermes Tool 的模型端点 ID。也可通过 `VEADK_STUDIO_HERMES_MODEL_ID` 设置。 |
+| `--vestack-apig-cluster-id` | `str` | — | APIG ClusterSpec 使用的 VeStack 集群 ID。也可通过 `VESTACK_APIG_CLUSTER_ID` 设置。 |
+| `--vestack-apig-namespace` | `str` | `veadk-studio-apig` | APIG 安装网关的已有 Kubernetes 命名空间。也可通过 `VESTACK_APIG_NAMESPACE` 设置。 |
+| `--vestack-apig-cluster-name` | `str` | `aio` | VeStack APIG 集群显示名称。也可通过 `VESTACK_APIG_CLUSTER_NAME` 设置。 |
+| `--vestack-insecure-skip-tls-verify` | `bool` 标志 | `false` | 允许私有或自签名 OpenAPI 证书。也可通过 `VESTACK_INSECURE_SKIP_TLS_VERIFY` 设置。 |
+
 ## Studio BFF 动态工具
 
 当连接的 AgentKit Runtime 通过 `enable_studio_tools=True` 启用了 Studio BFF 动态工具宿主时，Studio 智能体信息栏会在智能体静态工具下方显示「在此对话中添加 Studio 工具」。新会话默认禁用所有 Studio 工具，用户可按需勾选；选择状态在当前浏览器进程中跨轮次保留。浏览器在每次 Runtime 运行时发送选中的工具 ID 列表，空列表或省略时使用普通运行路径。工具代码和凭证保留在 Studio BFF 侧，不会下发到 Runtime 或浏览器。
