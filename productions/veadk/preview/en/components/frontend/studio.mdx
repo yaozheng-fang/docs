@@ -2395,6 +2395,152 @@ veadk studio deploy \
 | `--studio-update-bucket` | `str \| None` | `veadk-studio` (Volcengine) / `veadk-studio-byteplus` (BytePlus) | TOS bucket holding immutable Studio release bundles; written to the function env as `VEADK_STUDIO_UPDATE_BUCKET`. Also read from `VEADK_STUDIO_UPDATE_BUCKET`. |
 | `--studio-update-prefix` | `str` | `veadk/studio/main` | TOS object prefix for the Studio main release channel. Also read from `VEADK_STUDIO_UPDATE_PREFIX`. |
 
+
+## Deploy to VeStack
+
+In Volcengine VeStack (hybrid-cloud) environments, the public-cloud VeFaaS Application API is unavailable. `veadk studio deploy` with `--deploy-target vestack` deploys Studio as a VeFaaS image function exposed through a shared APIG Gateway with a dedicated domain. Before deploying, build a `linux/amd64` Studio image locally or in CI and push it to a VeStack image registry.
+
+### When to use
+
+- The deployment target is VeStack or a private cloud that does not support the public-cloud VeFaaS Application API.
+- Studio needs to use IAM-role-bound temporary credentials (STS) to access hybrid-cloud AgentKit OpenAPI, without storing long-lived AK/SK in the image or function environment.
+- Each sandbox session requires a dedicated AgentKit Tool for disk persistence and session isolation.
+
+### Build the image
+
+Build a `linux/amd64` image using the Dockerfile in the VeADK source directory:
+
+```bash title="bash"
+docker build --platform linux/amd64 \
+  -f docker/Dockerfile.vestack \
+  --build-arg PYTHON_IMAGE=<reachable-python-3.12-image> \
+  -t <vestack-registry>/<namespace>/veadk-studio:<tag> .
+```
+
+If the selected VeStack base image already contains VeADK runtime dependencies, pass `--build-arg VEADK_INSTALL_DEPENDENCIES=0` to skip full dependency resolution and install only the current repository and wheels staged under `docker/vendor/`. Before using this mode, stage wheels that are absent from the VeStack mirror:
+
+```bash title="bash"
+python -m pip download --no-deps \
+  'openviking-sdk>=0.1.3' 'fastmcp==3.4.7' 'fastmcp-slim==3.4.7' \
+  -d docker/vendor
+```
+
+### Deploy command
+
+<Warning>
+  This operation creates or changes VeFaaS functions, APIG Gateway, IAM Role, and VeIdentity resources. It can incur charges and affect production access. Verify that credentials have the required permissions and that the target VeStack environment is network-accessible before deploying.
+</Warning>
+
+Prepare suitable Volcengine credentials, then run:
+
+```bash title="bash"
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+
+veadk studio deploy \
+  --deploy-target vestack \
+  --provider volcengine \
+  --vefaas-app-name "veadk-studio" \
+  --region "cn-beijing" \
+  --project "default" \
+  --image "<vestack-registry>/<namespace>/veadk-studio:<tag>" \
+  --public-domain "studio.example.com" \
+  --vestack-openapi-url "https://openapi.example.com" \
+  --vestack-agentkit-region "e70" \
+  --vestack-apig-cluster-id "<cluster-id>" \
+  --admin "admin@example.com" \
+  --developer "dev@example.com"
+```
+
+The deployment performs the following steps:
+
+1. Validates that `--provider` is `volcengine` when `--deploy-target` is `vestack`.
+2. Parses `--vestack-openapi-url` and sets the OpenAPI Host and Scheme environment variables for VeFaaS, APIG, IAM, and Identity so SDK requests target the VeStack control plane.
+3. Creates or reuses a VeIdentity user pool and web client (unless existing resources are specified via `--user-pool-id` and `--allowed-client-id`).
+4. Creates or reuses a Studio-specific IAM Role and custom policy; when `--iam-role` is not provided, a role is created automatically. Some public-cloud system policies may be unavailable in VeStack; in that case, missing system policies are skipped and the validated custom policy is used.
+5. Creates or updates a VeFaaS image function with the image, startup command, port, and role, passing only non-sensitive environment variables.
+6. Releases the function and waits for the release to complete.
+7. Creates or reuses an APIG Gateway, Service, Upstream, and Host Route to forward the dedicated domain to the function.
+8. Registers the callback URL with the VeIdentity user-pool client.
+9. Outputs the access endpoint, function ID, gateway ID, service ID, upstream ID, route ID, and IAM Role.
+
+On success, the terminal prints output similar to:
+
+```text
+✅ VeStack Studio Function deployed: http://studio.example.com:<port>
+   function id: <function-id>
+   gateway id: <gateway-id>
+   service id: <service-id>
+   upstream id: <upstream-id>
+   route id: <route-id>
+   IAM role: <role-trn>
+```
+
+<Note>
+  The deployer's long-lived AK/SK are used only to sign control-plane calls and are never written to the function environment. VeFaaS automatically mounts the IAM Role's temporary STS credentials in the pod and refreshes them periodically; Studio uses these temporary credentials to access the VeStack AgentKit OpenAPI.
+</Note>
+
+<Warning>
+  POC environments may use HTTP endpoints. Production environments should use trusted HTTPS certificates. Use `--vestack-insecure-skip-tls-verify` to bypass private certificate verification, but only in controlled environments.
+</Warning>
+
+### Per-session independent Tools
+
+In VeStack deployment mode, Studio creates a dedicated AgentKit Tool for each sandbox session instead of sharing a single Tool. Independent Tools support disk persistence and are automatically cleaned up when the session is deleted.
+
+When creating a session, you can specify the disk size (`diskGb` parameter), with a valid range of 5–100 GiB. The default value is determined by the deployment configuration.
+
+| Sandbox type | Independent Tool type | Description |
+| :--- | :--- | :--- |
+| Codex (built-in agents) | `CodeEnv` | Creates an independent CodeEnv Tool per session, bound to an IAM Role, with disk persistence. |
+| Hermes | `Station-Hermes` | Enabled when Hermes model parameters are configured at deploy time; creates an independent Hermes Tool per session and automatically starts the Hermes Dashboard. |
+
+The Hermes independent Tool requires model parameters to be configured at deploy time (`--vestack-hermes-model-agent-name`, `--vestack-hermes-model-api-base`, `--vestack-hermes-model-api-key`, `--vestack-hermes-model-id`, and `--vestack-hermes-model-agent-name`). When not configured, the Hermes agent displays "Administrator has not configured the Hermes model or IAM Role."
+
+<Note>
+  The Codex independent Tool is enabled by default (`VEADK_STUDIO_CODEX_TOOL_PER_AGENT=true`). The Hermes independent Tool is enabled only when complete Hermes model parameters are provided.
+</Note>
+
+### OpenAPI endpoint overrides
+
+In VeStack environments, the OpenAPI endpoints for each cloud service typically point to internal addresses. At deploy time, `--vestack-openapi-url` uniformly sets the OpenAPI Host and Scheme for VeFaaS, APIG, IAM, and Identity. After deployment, Studio overrides each service's OpenAPI endpoint through the following environment variables:
+
+| Environment variable | Description |
+| :--- | :--- |
+| `VEFAAS_OPENAPI_HOST` | VeFaaS OpenAPI host, overriding the default public-cloud address. |
+| `VEFAAS_OPENAPI_SCHEME` | VeFaaS OpenAPI scheme (`http` or `https`). |
+| `APIG_OPENAPI_HOST` | APIG OpenAPI host. |
+| `APIG_OPENAPI_SCHEME` | APIG OpenAPI scheme. |
+| `IAM_OPENAPI_HOST` | IAM OpenAPI host. |
+| `IAM_OPENAPI_SCHEME` | IAM OpenAPI scheme. |
+| `IDENTITY_OPENAPI_HOST` | Identity OpenAPI host. |
+| `IDENTITY_OPENAPI_SCHEME` | Identity OpenAPI scheme. |
+| `VOLCENGINE_OPENAPI_CA_BUNDLE` | Custom CA certificate path for private-certificate environments. When set, TLS verification is enabled. |
+| `VOLCENGINE_OPENAPI_VERIFY_SSL` | Set to `false` to skip TLS certificate verification. Use only in controlled environments; prefer `VOLCENGINE_OPENAPI_CA_BUNDLE`. |
+
+### VeStack deployment options
+
+The following options take effect only when `--deploy-target vestack` is used; they supplement the [deployment options](#deployment-options).
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--deploy-target` | `application` \| `vestack` | `application` | Deployment target. `application` uses the public-cloud VeFaaS Application; `vestack` uses a VeFaaS image function + APIG. Also read from `VEADK_STUDIO_DEPLOY_TARGET`. |
+| `--image` | `str` | — | Prebuilt `linux/amd64` Studio image required for VeStack deployment. Also read from `VEADK_STUDIO_IMAGE`. |
+| `--public-domain` | `str` | — | Dedicated APIG host for the VeStack Studio deployment. Also read from `VEADK_STUDIO_PUBLIC_DOMAIN`. |
+| `--vestack-openapi-url` | `str` | — | VeStack control-plane URL; must include scheme and host, e.g. `https://openapi.example.com`. Also read from `VESTACK_OPENAPI_URL`. |
+| `--vestack-agentkit-host` | `str` | `ops-top.ops-top.svc:8000` | AgentKit TOP host reachable from the VeFaaS data plane. Also read from `VESTACK_AGENTKIT_HOST`. |
+| `--vestack-agentkit-region` | `str` | — | Delivered environment region ID, e.g. `e70`. Also read from `VESTACK_AGENTKIT_REGION`. |
+| `--vestack-codex-port` | `int` (1–65535) | `8642` | Service port used by independent VeStack Codex Tools. Also read from `VEADK_STUDIO_CODEX_PORT`. |
+| `--vestack-hermes-port` | `int` (1–65535) | `4500` | Dashboard port used by independent VeStack Hermes Tools. Also read from `VEADK_STUDIO_HERMES_PORT`. |
+| `--vestack-hermes-model-agent-name` | `str` | — | AgentKit model endpoint name for independent VeStack Hermes Tools. Also read from `VEADK_STUDIO_HERMES_MODEL_AGENT_NAME`. |
+| `--vestack-hermes-model-api-base` | `str` | — | Model API base injected into independent VeStack Hermes Tools. Also read from `VEADK_STUDIO_HERMES_MODEL_API_BASE`. |
+| `--vestack-hermes-model-api-key` | `str` | — | Model API key injected into independent VeStack Hermes Tools; prefer using environment variables. Also read from `VEADK_STUDIO_HERMES_MODEL_API_KEY`. |
+| `--vestack-hermes-model-id` | `str` | — | Model endpoint ID injected into independent VeStack Hermes Tools. Also read from `VEADK_STUDIO_HERMES_MODEL_ID`. |
+| `--vestack-apig-cluster-id` | `str` | — | VeStack cluster ID used by the APIG ClusterSpec. Also read from `VESTACK_APIG_CLUSTER_ID`. |
+| `--vestack-apig-namespace` | `str` | `veadk-studio-apig` | Existing Kubernetes namespace where APIG installs the gateway. Also read from `VESTACK_APIG_NAMESPACE`. |
+| `--vestack-apig-cluster-name` | `str` | `aio` | VeStack APIG cluster display name. Also read from `VESTACK_APIG_CLUSTER_NAME`. |
+| `--vestack-insecure-skip-tls-verify` | Boolean flag | `false` | Allow a private or self-signed OpenAPI certificate. Also read from `VESTACK_INSECURE_SKIP_TLS_VERIFY`. |
+
 ## Studio BFF dynamic tools
 
 When the connected AgentKit Runtime has enabled the Studio BFF dynamic tools host via `enable_studio_tools=True`, the Studio agent information rail shows **Add Studio tools to this conversation** below the agent's static tools. New chats start with every Studio tool disabled; users can toggle individual tools, and the selection persists across turns within the current browser process. The browser sends the selected tool ID list on each Runtime run; an empty or omitted list uses the ordinary run path. Tool code and credentials remain in the Studio BFF and are never sent to the Runtime or browser.
