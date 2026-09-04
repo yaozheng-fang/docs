@@ -160,12 +160,12 @@ In the deployment configuration area, select the region and network mode, and op
 | :--- | :--- | :--- |
 | Region | `cn-beijing` | Runtime deployment region. |
 | Network mode | Public | Choose public, VPC, or public + VPC; VPC mode requires a VPC ID. |
-| Min instances | `1` | Minimum number of Runtime instances. |
+| Min instances | `1` | Minimum number of Runtime instances; can be set to `0` to scale to zero. |
 | Max instances | `5` | Maximum number of Runtime instances; defaults to `1` when using in-memory short-term memory. |
 | Access authentication | API Key | Access authentication for a new Runtime. Choose API Key or a VeIdentity user pool; updating an existing Runtime keeps its current authentication. |
 | Auto-create evaluation sets | Enabled | Automatically creates Good Case and Bad Case evaluation sets for the agent after deployment succeeds. Disabling skips this step. If creation fails, a warning is shown in the deployment result without affecting the deployed Runtime. |
 
-Instance counts must be positive integers, and the minimum cannot exceed the maximum. When the agent's short-term memory backend is `local` (in-memory) or unconfigured, Studio defaults the maximum instance count to 1 and warns that multiple instances, process restarts, or rolling updates can cause session loss; a database-backed short-term memory store is recommended. The deployment progress shows a corresponding stage: when the instance range differs from the default 1–5, an "Update instance configuration" stage is added after Runtime creation.
+The minimum instance count must be a non-negative integer and the maximum a positive integer; the minimum cannot exceed the maximum. When the agent's short-term memory backend is `local` (in-memory) or unconfigured, Studio defaults the maximum instance count to 1 and warns that multiple instances, process restarts, or rolling updates can cause session loss; a database-backed short-term memory store is recommended. The deployment progress shows a corresponding stage: when the instance range differs from the default 1–5, an "Update instance configuration" stage is added after Runtime creation.
 
 When creating a new Runtime, Studio auto-generates a Runtime name from the root agent name (composed of letters, digits, underscores, and hyphens, 4–64 characters), keeping agent and Runtime naming consistent and predictable. The Runtime name can be edited manually; Studio validates the name format and checks for conflicts with existing Runtimes in the selected region before deployment. If the name is already in use, deployment fails with a prompt to choose a different name. The deployment result returns both the agent name and the Runtime name.
 
