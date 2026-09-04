@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 入站认证 | OAuth2 中间件获取用户信息时，仅保留适合存入浏览器会话 Cookie 的标准字段（`sub`、`email`、`email_verified`、`name`、`given_name`、`family_name`、`preferred_username`、`picture`、`locale`、`updated_at` 以及通过 `user_id_field` 配置的字段），不再将用户信息端点的完整响应写入会话 Cookie；仅保留字符串、整数、浮点数或布尔类型的值，避免 Cookie 超出浏览器大小限制。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound) |
 | Harness 服务部署 | 新增 `veadk harness` 命令行文档：覆盖 `create`、`add`、`deploy`、`invoke`、`show` 子命令，`harness.yaml` 配置结构（含 `harness:` 包装分节和结构化资源字段），以及 Harness 服务的 HTTP API。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness) |
 | Harness 服务 | Harness 服务支持请求级运行时配置覆盖：可通过 `/harness/invoke` 和 `/run_sse` 请求体中的 `harness` 字段覆盖模型、工具、技能、系统提示词、采样参数、知识库、长期记忆、注册表和 `max_llm_calls`；新增 `harness_merge` 字段控制请求配置与默认配置的合并或替换行为。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness#运行时配置覆盖) |
 | Harness 服务 | Harness 服务新增会话创建端点（`POST /apps/{app_name}/users/{user_id}/sessions`，支持初始状态和事件）和默认配置查询端点（`GET`/`POST /get_agent_config`）。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness#会话与配置接口) |
