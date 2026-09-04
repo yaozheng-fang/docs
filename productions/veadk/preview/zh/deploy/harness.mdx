@@ -1,0 +1,387 @@
+---
+title: "Harness 服务部署"
+---
+
+Harness 服务是一个独立的 VeADK 智能体运行时，通过 `veadk harness` 命令行进行创建、配置和部署。部署后，Harness 服务以 AgentKit Runtime 的形式运行，提供对话接口、会话管理和运行时配置覆盖能力，适合需要独立托管智能体并通过 HTTP API 调用的场景。
+
+## 何时使用
+
+| 场景 | 适用情况 |
+| --- | --- |
+| 独立部署 | 将 VeADK 智能体部署为独立的 AgentKit Runtime，不依赖 Studio 生成的项目 |
+| HTTP API 调用 | 通过 HTTP 接口调用智能体，支持请求级配置覆盖 |
+| 配置文件管理 | 使用 `harness.yaml` 管理智能体配置，通过命令行写入和查看 |
+
+## 前置条件
+
+- 已安装 `veadk-python[harness]`；
+- 已配置火山引擎访问凭据（`VOLCENGINE_ACCESS_KEY` 和 `VOLCENGINE_SECRET_KEY`）；
+- 不要把 `.env`、API Key 或访问凭据提交到代码仓库。
+
+## 命令总览
+
+`veadk harness` 提供以下子命令：
+
+| 命令 | 作用 |
+| --- | --- |
+| `create` | 在指定目录中生成可部署的 Harness 项目骨架，包含 `harness.yaml`、`.env.example`、`Dockerfile` 等文件 |
+| `add` | 将智能体参数写入 `harness.yaml` |
+| `show` | 查看 `harness.yaml` 中已配置的参数和可覆盖的调用级参数 |
+| `deploy` | 将 `harness.yaml` 转换为运行时环境变量并执行 AgentKit 云端构建与 Runtime 创建 |
+| `invoke` | 调用已部署的 Harness 服务并输出结果 |
+
+## 创建项目
+
+```bash
+veadk harness create my-harness
+```
+
+该命令在 `my-harness` 目录中生成以下文件：
+
+| 文件 | 作用 |
+| --- | --- |
+| `harness.yaml` | 智能体配置文件，部署时转换为运行时环境变量 |
+| `.env.example` | 火山引擎部署凭据模板，复制为 `.env` 后填写 |
+| `.gitignore` | 忽略本地凭据和生成的部署元数据 |
+| `Dockerfile` | 构建 Harness 服务镜像 |
+| `README.md` | 项目说明 |
+
+## 配置智能体
+
+使用 `veadk harness add` 将参数写入 `harness.yaml`：
+
+```bash
+cd my-harness
+veadk harness add \
+  --harness-name my-harness \
+  --model-name doubao-seed-1-6-250615 \
+  --tools web_search,web_fetch \
+  --system-prompt "你是一个有帮助的助手。" \
+  --knowledgebase-type viking \
+  --knowledgebase-project my-project \
+  --knowledgebase-region cn-beijing
+```
+
+### 配置参数
+
+`veadk harness add` 支持以下参数（未设置的字段保持原值）：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--harness-name` | `str` | `default` | Harness 与 Runtime 名称，同时作为知识库和长期记忆的索引名 |
+| `--model-name` | `str` | VeADK 默认模型 | 推理模型名称 |
+| `--tools` | `str` | — | 内置工具名称，逗号分隔 |
+| `--skills` | `str` | — | Skill Hub 技能名称或技能空间引用，逗号分隔 |
+| `--system-prompt` | `str` | VeADK 默认指令 | 智能体系统提示词 |
+| `--runtime` | `adk` \| `codex` | `adk` | 运行时后端 |
+| `--max-llm-calls` | `int` | `10` | 单次运行的最大 LLM 调用次数 |
+| `--structured-tool-calls` | `bool` | `false` | 是否使用 Ark Responses API 进行结构化工具调用 |
+| `--include-tools-every-turn` | `bool` | `true` | 是否在每轮模型调用中包含工具定义 |
+| `--knowledgebase-type` | `str` | — | 知识库后端类型 |
+| `--long-term-memory-type` | `str` | — | 长期记忆后端类型 |
+| `--short-term-memory-type` | `str` | `local` | 短期会话存储后端类型 |
+| `--discovery-url` | `str` | — | OIDC 发现地址，启用 OAuth2/JWT 认证 |
+| `--allowed-id` | `str` | — | OAuth2/JWT 允许的客户端 ID，逗号分隔 |
+
+每个后端的连接参数也有独立的标志，例如 `--knowledgebase-project`、`--knowledgebase-region`、`--long-term-memory-host`、`--short-term-memory-host` 等，写入对应组件分节。
+
+### harness.yaml 配置结构
+
+`harness.yaml` 使用分节结构组织配置。部署时，顶层字段和 `model` 分节被展平为运行时环境变量（如 `model.name` 映射到 `MODEL_AGENT_NAME`），每个组件的 `type` 选择后端，其余参数映射到对应后端读取的环境变量。
+
+```yaml title="harness.yaml"
+harness_name: my-harness
+
+model:
+  name: doubao-seed-1-6-250615
+
+tools:
+  - web_search
+  - web_fetch
+
+skills:
+  - data-visualization-cloud
+
+system_prompt: "你是一个有帮助的助手。"
+runtime: adk
+
+structured_tool_calls: false
+include_tools_every_turn: true
+
+max_llm_calls: 10
+
+knowledgebase:
+  type: viking
+  project: my-project
+  region: cn-beijing
+
+long_term_memory:
+  type: ""
+
+short_term_memory:
+  type: local
+```
+
+<Note>
+  也可以在 `harness.yaml` 中使用 `harness:` 包装分节，将所有 Harness 参数放在一个嵌套对象中。`harness:` 分节内的字段会被提取并与顶层字段合并。
+</Note>
+
+#### 结构化资源配置
+
+除 `veadk harness add` 写入的基础字段外，`harness.yaml` 还支持以下结构化字段，用于配置 AgentKit 控制面下发的资源。这些字段在部署时转换为对应的 JSON 环境变量：
+
+| 字段 | 环境变量 | 说明 |
+| :--- | :--- | :--- |
+| `builtin_tools` | `TOOLS` + 工具级环境变量 | 结构化内置工具列表，每个条目包含 `id` 和可选 `config` |
+| `selected_skills` | `SELECTED_SKILLS_JSON` | 结构化技能列表，每个条目包含 `source`、`slug` 或 `skill_space_id` |
+| `mcp` | `MCP_SERVERS_JSON` | 可流式传输的 HTTP MCP 服务器列表，每个条目包含 `name`、`server_url` 和可选 `bear_token` |
+| `mcp_router_id` | `MCP_ROUTER_ID` | AgentKit MCP 工具集 ID |
+| `temperature` | `MODEL_AGENT_TEMPERATURE` | 模型温度 |
+| `top_p` | `MODEL_AGENT_TOP_P` | 模型 top_p |
+| `max_llm_calls` | `MAX_LLM_CALLS` | 单次运行最大 LLM 调用次数 |
+
+结构化资源配置示例：
+
+```yaml title="harness.yaml"
+harness:
+  model:
+    name: doubao-seed-1-6-250615
+  temperature: 0.3
+  top_p: 0.9
+  max_llm_calls: 8
+  builtin_tools:
+    - id: run_code
+      config:
+        tool_id: t-script-1
+        region: cn-beijing
+    - id: mcp_router
+      config:
+        url: http://router.example.com/mcp
+        api_key: your-api-key
+  selected_skills:
+    - source: skillhub
+      slug: team/reporting
+  mcp:
+    - name: db
+      server_url: http://db.example.com/mcp
+  knowledgebase:
+    type: viking
+    config:
+      index: kb-index
+      app_name: kb-index
+      project: default
+      region: cn-beijing
+```
+
+## 查看配置
+
+```bash
+veadk harness show
+```
+
+该命令输出 `harness.yaml` 中已配置的参数，以及可通过 `veadk harness invoke` 在调用时覆盖的参数列表。
+
+<Note>
+  知识库、长期记忆、采样参数（temperature、top_p 等）和注册表（registry）等字段仅通过 HTTP API 覆盖，不作为 CLI 标志暴露。
+</Note>
+
+## 部署
+
+```bash
+veadk harness deploy
+```
+
+该命令读取 `harness.yaml`，将其转换为运行时环境变量，执行 AgentKit 云端构建和 Runtime 创建。部署完成后，Runtime 端点、Runtime ID 和 API Key 会记录到 `harness.json` 中。
+
+<Warning>
+  部署会创建云端运行资源。执行前应确认项目、地域与 Runtime 名称无误。销毁 Runtime 时执行 `veadk agentkit destroy` 会删除云端运行资源，操作前应保留需要的日志和数据。
+</Warning>
+
+### 认证方式
+
+默认使用 API Key 认证（`key_auth`）。在 `harness.yaml` 中添加 `auth` 分节或通过 `--discovery-url` 和 `--allowed-id` 启用 OAuth2/JWT 认证（`custom_jwt`）：
+
+```yaml title="harness.yaml"
+auth:
+  discovery_url: "https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com/.well-known/openid-configuration"
+  allowed_ids: ["<client-id>"]
+```
+
+使用 OAuth2/JWT 认证时，调用需在请求头中携带 `Authorization: Bearer <用户池 JWT>`，CLI 不会生成该令牌。
+
+## 调用 Harness 服务
+
+```bash
+veadk harness invoke --name my-harness --message "介绍你的能力"
+```
+
+`--name` 指定 Harness 名称，其 URL 和 API Key 从 `harness.json` 中读取。也可以通过 `--url` 和 `--key` 直接指定。
+
+### 调用参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--name` | `str` | — | Harness 名称，从 `harness.json` 读取 URL 和 API Key |
+| `--message` / `-m` | `str` | — | 发送的消息 |
+| `--user-id` | `str` | `cli-user` | 会话用户 ID |
+| `--session-id` | `str` | `cli-session` | 会话 ID |
+| `--max-llm-calls` | `int` | — | 覆盖本次调用的最大 LLM 调用次数 |
+| `--url` | `str` | `HARNESS_URL` | Harness URL |
+| `--key` | `str` | `HARNESS_KEY` | API Key |
+| `--path` | `str` | `.` | `harness.json` 所在目录 |
+
+调用时可以使用覆盖标志在本次调用中覆盖已部署智能体的配置，例如 `--tools`、`--skills`、`--system-prompt`、`--model-name` 等。覆盖仅对本次调用生效，不修改 `harness.yaml`。
+
+## HTTP API
+
+部署后的 Harness 服务提供以下 HTTP 接口。
+
+### 对话接口
+
+| 端点 | 方法 | 作用 |
+| --- | --- | --- |
+| `/harness/invoke` | `POST` | 调用智能体并返回完整输出 |
+| `/run_sse` | `POST` | 以 SSE 流式方式调用智能体 |
+
+### 会话与配置接口
+
+| 端点 | 方法 | 作用 |
+| --- | --- | --- |
+| `/apps/{app_name}/users/{user_id}/sessions` | `POST` | 创建会话，可携带初始状态和事件 |
+| `/get_agent_config` | `GET` / `POST` | 查询当前 Harness 的默认配置 |
+
+### 运行时配置覆盖
+
+Harness 服务支持在每次请求中覆盖已部署智能体的配置。覆盖通过请求体中的 `harness` 字段传入，仅对本次调用生效。
+
+`/harness/invoke` 请求体结构：
+
+```json title="请求体"
+{
+  "prompt": "整理一份研究报告",
+  "harness_name": "my-harness",
+  "harness": {
+    "model_name": "doubao-seed-1-6-250615",
+    "system_prompt": "你是一个研究助手。",
+    "tools": "web_search,web_fetch",
+    "temperature": 0.3
+  },
+  "harness_merge": false,
+  "run_agent_request": {
+    "user_id": "user-1",
+    "session_id": "session-1"
+  }
+}
+```
+
+#### harness_merge 行为
+
+`harness_merge` 控制请求配置与默认配置的合并方式：
+
+| `harness_merge` | 行为 |
+| --- | --- |
+| `false`（默认） | 请求中的 `harness` 字段完全替换默认配置覆盖层，仅应用请求中显式设置的字段 |
+| `true` | 请求中的 `harness` 字段与默认配置合并后再应用，未在请求中设置的字段保留默认值 |
+
+#### 可覆盖字段
+
+以下字段可通过 `harness` 在请求级覆盖：
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `model_name` | `str` | 推理模型名称 |
+| `tools` | `str` | 内置工具名称，逗号分隔 |
+| `builtin_tools` | `list` | 结构化内置工具列表 |
+| `mcp_router_id` | `str` | AgentKit MCP 工具集 ID |
+| `skills` | `str` | 技能名称，逗号分隔 |
+| `selected_skills` | `list` | 结构化技能列表 |
+| `mcp` | `list` | MCP 服务器列表 |
+| `system_prompt` | `str` | 系统提示词 |
+| `runtime` | `adk` \| `codex` | 运行时后端 |
+| `knowledgebase` | `object` | 请求级知识库覆盖 |
+| `longterm_memory` | `object` | 请求级长期记忆覆盖 |
+| `temperature` | `float` | 模型温度 |
+| `top_p` | `float` | 模型 top_p |
+| `max_tokens` | `int` | 最大输出 token 数 |
+| `presence_penalty` | `float` | presence penalty |
+| `frequency_penalty` | `float` | frequency penalty |
+| `penalty` | `float` | 兼容性惩罚，在 presence/frequency penalty 未设置时应用 |
+| `max_llm_calls` | `int` | 单次运行最大 LLM 调用次数 |
+| `registry` | `object` | AgentKit A2A 注册表覆盖 |
+
+<Note>
+  知识库和长期记忆的请求级覆盖通过 AgentKit 控制面资源 ID 解析为运行时配置。传入 `id` 时，Harness 服务会从 AgentKit 控制面获取对应资源的连接信息。
+</Note>
+
+### 创建会话
+
+```bash
+curl -X POST "https://<harness-url>/apps/my-harness/users/user-1/sessions" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "session-1", "state": {"key": "value"}}'
+```
+
+请求体可包含以下字段：
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `id` | `str` | 会话 ID，省略时自动生成 |
+| `sessionId` | `str` | ADK 兼容的会话 ID 别名 |
+| `state` | `object` | 初始会话状态 |
+| `events` | `list` | 初始会话事件 |
+
+### 查询默认配置
+
+```bash
+curl "https://<harness-url>/get_agent_config?app_name=my-harness&user_id=user-1&session_id=session-1"
+```
+
+返回当前 Harness 的默认配置，包含模型名称、运行时后端、最大 LLM 调用次数等信息。支持 camelCase 查询参数（`appName`、`userId`、`sessionId`），也支持 `POST` 方式提交请求体。
+
+## 环境变量
+
+Harness 服务通过环境变量配置运行时行为。`harness.yaml` 在部署时自动转换为对应的环境变量，也可以直接在运行时环境中设置。
+
+### 模型与工具
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `MODEL_AGENT_NAME` | VeADK 默认模型 | 推理模型名称 |
+| `MODEL_AGENT_TEMPERATURE` | — | 模型温度 |
+| `MODEL_AGENT_TOP_P` | — | 模型 top_p |
+| `MAX_LLM_CALLS` | `10` | 单次运行最大 LLM 调用次数 |
+| `TOOLS` | — | 内置工具名称，逗号分隔 |
+| `SKILLS` | — | 技能名称，逗号分隔 |
+| `SYSTEM_PROMPT` | VeADK 默认指令 | 系统提示词 |
+| `RUNTIME` | `adk` | 运行时后端 |
+| `MCP_ROUTER_ID` | — | AgentKit MCP 工具集 ID |
+| `SELECTED_SKILLS_JSON` | — | 结构化技能列表，JSON 格式 |
+| `MCP_SERVERS_JSON` | — | MCP 服务器列表，JSON 格式 |
+| `TOOL_MCP_ROUTER_URL` | — | MCP Router 服务地址 |
+| `TOOL_MCP_ROUTER_API_KEY` | — | MCP Router 鉴权 API Key |
+| `AGENTKIT_TOOL_ID_SCRIPT` | — | `run_code` 工具的 AgentKit Tool ID |
+| `AGENTKIT_TOOL_REGION` | — | `run_code` 工具的地域 |
+| `AGENTKIT_TOOL_ID_OPENCODE` | — | `coding` 工具的 AgentKit Tool ID |
+| `AGENTKIT_TOOL_REGION` | — | `coding` 工具的地域 |
+
+### 资源配置
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `HARNESS_NAME` | `default` | Harness 与 Runtime 名称 |
+| `KNOWLEDGEBASE_ID` | — | 知识库资源 ID |
+| `KNOWLEDGEBASE_CONFIG_JSON` | — | 知识库后端配置，JSON 格式 |
+| `LONG_TERM_MEMORY_ID` | — | 长期记忆资源 ID |
+| `LONG_TERM_MEMORY_CONFIG_JSON` | — | 长期记忆后端配置，JSON 格式 |
+
+### 会话与记忆后端
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `KNOWLEDGEBASE_TYPE` | — | 知识库后端类型 |
+| `LONG_TERM_MEMORY_TYPE` | — | 长期记忆后端类型 |
+| `SHORT_TERM_MEMORY_TYPE` | `local` | 短期会话存储后端类型 |
+
+<Note>
+  `max_llm_calls` 的默认值为 `10`。未显式设置时，单次运行最多调用 LLM 10 次。可在 `harness.yaml` 中或通过请求级覆盖调整。
+</Note>

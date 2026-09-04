@@ -1,0 +1,387 @@
+---
+title: "Harness Server Deployment"
+---
+
+The Harness server is a standalone VeADK agent runtime that you create, configure, and deploy with the `veadk harness` command line. Once deployed, it runs as an AgentKit Runtime and provides conversation endpoints, session management, and runtime config override capabilities. It suits scenarios where you need to host an agent independently and call it through an HTTP API.
+
+## When to use
+
+| Scenario | Use case |
+| --- | --- |
+| Standalone deployment | Deploy a VeADK agent as an independent AgentKit Runtime without a Studio-generated project |
+| HTTP API access | Call the agent through HTTP endpoints with per-request config overrides |
+| Config file management | Manage agent configuration in `harness.yaml` and update it through CLI commands |
+
+## Prerequisites
+
+- `veadk-python[harness]` is installed;
+- Volcengine credentials are configured (`VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`);
+- Do not commit `.env`, API keys, or access credentials to the repository.
+
+## Command overview
+
+`veadk harness` provides the following subcommands:
+
+| Command | Purpose |
+| --- | --- |
+| `create` | Scaffold a deployable Harness project in the specified directory, including `harness.yaml`, `.env.example`, `Dockerfile`, and other files |
+| `add` | Write agent parameters into `harness.yaml` |
+| `show` | Display the configured parameters in `harness.yaml` and the per-invocation overridable parameters |
+| `deploy` | Convert `harness.yaml` into runtime environment variables and perform an AgentKit cloud build and Runtime creation |
+| `invoke` | Call a deployed Harness server and print the output |
+
+## Create a project
+
+```bash
+veadk harness create my-harness
+```
+
+This command generates the following files in the `my-harness` directory:
+
+| File | Purpose |
+| --- | --- |
+| `harness.yaml` | Agent configuration file, converted to runtime environment variables on deploy |
+| `.env.example` | Volcengine deploy credential template; copy to `.env` and fill in |
+| `.gitignore` | Ignores local credentials and generated deploy metadata |
+| `Dockerfile` | Builds the Harness server image |
+| `README.md` | Project readme |
+
+## Configure the agent
+
+Use `veadk harness add` to write parameters into `harness.yaml`:
+
+```bash
+cd my-harness
+veadk harness add \
+  --harness-name my-harness \
+  --model-name doubao-seed-1-6-250615 \
+  --tools web_search,web_fetch \
+  --system-prompt "You are a helpful assistant." \
+  --knowledgebase-type viking \
+  --knowledgebase-project my-project \
+  --knowledgebase-region cn-beijing
+```
+
+### Configuration parameters
+
+`veadk harness add` accepts the following parameters (unset fields keep their existing value):
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--harness-name` | `str` | `default` | Harness and Runtime name; also used as the knowledge base and long-term memory index name |
+| `--model-name` | `str` | VeADK default model | Reasoning model name |
+| `--tools` | `str` | — | Built-in tool names, comma-separated |
+| `--skills` | `str` | — | Skill Hub skill names or skill-space refs, comma-separated |
+| `--system-prompt` | `str` | VeADK default instruction | Agent system prompt |
+| `--runtime` | `adk` \| `codex` | `adk` | Runtime backend |
+| `--max-llm-calls` | `int` | `10` | Maximum LLM calls per run |
+| `--structured-tool-calls` | `bool` | `false` | Whether to use the Ark Responses API for structured tool calling |
+| `--include-tools-every-turn` | `bool` | `true` | Whether to include tool definitions on every model turn |
+| `--knowledgebase-type` | `str` | — | Knowledge base backend type |
+| `--long-term-memory-type` | `str` | — | Long-term memory backend type |
+| `--short-term-memory-type` | `str` | `local` | Short-term session store backend type |
+| `--discovery-url` | `str` | — | OIDC discovery URL; enables OAuth2/JWT auth |
+| `--allowed-id` | `str` | — | Allowed client IDs for OAuth2/JWT auth, comma-separated |
+
+Each backend's connection parameters also has its own flag, for example `--knowledgebase-project`, `--knowledgebase-region`, `--long-term-memory-host`, `--short-term-memory-host`, written under the matching component section.
+
+### harness.yaml configuration structure
+
+`harness.yaml` organizes configuration in sections. On deploy, top-level fields and the `model` section are flattened into runtime environment variables (e.g. `model.name` maps to `MODEL_AGENT_NAME`); each component's `type` selects a backend, and its other parameters map to the environment variables that backend reads.
+
+```yaml title="harness.yaml"
+harness_name: my-harness
+
+model:
+  name: doubao-seed-1-6-250615
+
+tools:
+  - web_search
+  - web_fetch
+
+skills:
+  - data-visualization-cloud
+
+system_prompt: "You are a helpful assistant."
+runtime: adk
+
+structured_tool_calls: false
+include_tools_every_turn: true
+
+max_llm_calls: 10
+
+knowledgebase:
+  type: viking
+  project: my-project
+  region: cn-beijing
+
+long_term_memory:
+  type: ""
+
+short_term_memory:
+  type: local
+```
+
+<Note>
+  You can also use a `harness:` wrapper section in `harness.yaml` to nest all Harness parameters in a single object. Fields inside the `harness:` section are extracted and merged with top-level fields.
+</Note>
+
+#### Structured resource configuration
+
+Beyond the basic fields written by `veadk harness add`, `harness.yaml` supports the following structured fields for configuring resources dispatched by the AgentKit control plane. These fields are converted to corresponding JSON environment variables on deploy:
+
+| Field | Environment variable | Description |
+| :--- | :--- | :--- |
+| `builtin_tools` | `TOOLS` + tool-level env vars | Structured built-in tool list; each entry has an `id` and optional `config` |
+| `selected_skills` | `SELECTED_SKILLS_JSON` | Structured skill list; each entry has a `source` and a `slug` or `skill_space_id` |
+| `mcp` | `MCP_SERVERS_JSON` | Streamable HTTP MCP server list; each entry has a `name`, `server_url`, and optional `bear_token` |
+| `mcp_router_id` | `MCP_ROUTER_ID` | AgentKit MCP toolset id |
+| `temperature` | `MODEL_AGENT_TEMPERATURE` | Model temperature |
+| `top_p` | `MODEL_AGENT_TOP_P` | Model top_p |
+| `max_llm_calls` | `MAX_LLM_CALLS` | Maximum LLM calls per run |
+
+Structured resource configuration example:
+
+```yaml title="harness.yaml"
+harness:
+  model:
+    name: doubao-seed-1-6-250615
+  temperature: 0.3
+  top_p: 0.9
+  max_llm_calls: 8
+  builtin_tools:
+    - id: run_code
+      config:
+        tool_id: t-script-1
+        region: cn-beijing
+    - id: mcp_router
+      config:
+        url: http://router.example.com/mcp
+        api_key: your-api-key
+  selected_skills:
+    - source: skillhub
+      slug: team/reporting
+  mcp:
+    - name: db
+      server_url: http://db.example.com/mcp
+  knowledgebase:
+    type: viking
+    config:
+      index: kb-index
+      app_name: kb-index
+      project: default
+      region: cn-beijing
+```
+
+## View configuration
+
+```bash
+veadk harness show
+```
+
+This command prints the parameters configured in `harness.yaml`, followed by the list of parameters that can be overridden per invocation through `veadk harness invoke`.
+
+<Note>
+  Knowledge base, long-term memory, sampling parameters (temperature, top_p, etc.), and registry fields are overridden only through the HTTP API and are not exposed as CLI flags.
+</Note>
+
+## Deploy
+
+```bash
+veadk harness deploy
+```
+
+This command reads `harness.yaml`, converts it into runtime environment variables, and performs an AgentKit cloud build and Runtime creation. After deployment, the Runtime endpoint, Runtime id, and API key are recorded in `harness.json`.
+
+<Warning>
+  Deployment creates cloud runtime resources. Confirm the project, region, and Runtime name before executing. Destroying a Runtime with `veadk agentkit destroy` deletes cloud runtime resources; preserve any needed logs and data beforehand.
+</Warning>
+
+### Authentication
+
+The default authentication is API key (`key_auth`). Add an `auth` section in `harness.yaml` or use `--discovery-url` and `--allowed-id` to enable OAuth2/JWT authentication (`custom_jwt`):
+
+```yaml title="harness.yaml"
+auth:
+  discovery_url: "https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com/.well-known/openid-configuration"
+  allowed_ids: ["<client-id>"]
+```
+
+With OAuth2/JWT authentication, calls must include an `Authorization: Bearer <user-pool JWT>` header. The CLI does not mint this token.
+
+## Invoke the Harness server
+
+```bash
+veadk harness invoke --name my-harness --message "Describe your capabilities"
+```
+
+`--name` specifies the Harness name; its URL and API key are read from `harness.json`. You can also pass `--url` and `--key` directly.
+
+### Invoke parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--name` | `str` | — | Harness name; reads URL and API key from `harness.json` |
+| `--message` / `-m` | `str` | — | Message to send |
+| `--user-id` | `str` | `cli-user` | Session user id |
+| `--session-id` | `str` | `cli-session` | Session id |
+| `--max-llm-calls` | `int` | — | Override max LLM calls for this call |
+| `--url` | `str` | `HARNESS_URL` | Harness URL |
+| `--key` | `str` | `HARNESS_KEY` | API key |
+| `--path` | `str` | `.` | Directory containing `harness.json` |
+
+At invoke time you can use override flags to override the deployed agent's configuration for this single call, such as `--tools`, `--skills`, `--system-prompt`, `--model-name`. The override applies only to this call and does not modify `harness.yaml`.
+
+## HTTP API
+
+The deployed Harness server exposes the following HTTP endpoints.
+
+### Conversation endpoints
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/harness/invoke` | `POST` | Invoke the agent and return the full output |
+| `/run_sse` | `POST` | Invoke the agent with SSE streaming |
+
+### Session and config endpoints
+
+| Endpoint | Method | Purpose |
+| --- | --- | --- |
+| `/apps/{app_name}/users/{user_id}/sessions` | `POST` | Create a session, optionally with initial state and events |
+| `/get_agent_config` | `GET` / `POST` | Query the current Harness default configuration |
+
+### Runtime config overrides
+
+The Harness server supports overriding the deployed agent's configuration on each request. Overrides are passed in the `harness` field of the request body and apply only to that call.
+
+`/harness/invoke` request body structure:
+
+```json title="Request body"
+{
+  "prompt": "Compile a research report",
+  "harness_name": "my-harness",
+  "harness": {
+    "model_name": "doubao-seed-1-6-250615",
+    "system_prompt": "You are a research assistant.",
+    "tools": "web_search,web_fetch",
+    "temperature": 0.3
+  },
+  "harness_merge": false,
+  "run_agent_request": {
+    "user_id": "user-1",
+    "session_id": "session-1"
+  }
+}
+```
+
+#### harness_merge behavior
+
+`harness_merge` controls how the request config is combined with the default config:
+
+| `harness_merge` | Behavior |
+| --- | --- |
+| `false` (default) | The `harness` field fully replaces the default config overlay; only fields explicitly set in the request are applied |
+| `true` | The `harness` field is merged with the default config before applying; fields not set in the request retain their default values |
+
+#### Overridable fields
+
+The following fields can be overridden per request through `harness`:
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `model_name` | `str` | Reasoning model name |
+| `tools` | `str` | Built-in tool names, comma-separated |
+| `builtin_tools` | `list` | Structured built-in tool list |
+| `mcp_router_id` | `str` | AgentKit MCP toolset id |
+| `skills` | `str` | Skill names, comma-separated |
+| `selected_skills` | `list` | Structured skill list |
+| `mcp` | `list` | MCP server list |
+| `system_prompt` | `str` | System prompt |
+| `runtime` | `adk` \| `codex` | Runtime backend |
+| `knowledgebase` | `object` | Request-level knowledge base override |
+| `longterm_memory` | `object` | Request-level long-term memory override |
+| `temperature` | `float` | Model temperature |
+| `top_p` | `float` | Model top_p |
+| `max_tokens` | `int` | Maximum output tokens |
+| `presence_penalty` | `float` | Presence penalty |
+| `frequency_penalty` | `float` | Frequency penalty |
+| `penalty` | `float` | Compatibility penalty applied when presence/frequency penalty are not set |
+| `max_llm_calls` | `int` | Maximum LLM calls per run |
+| `registry` | `object` | AgentKit A2A registry override |
+
+<Note>
+  Request-level knowledge base and long-term memory overrides are resolved from AgentKit control-plane resource ids into runtime configuration. When an `id` is provided, the Harness server fetches the corresponding resource's connection info from the AgentKit control plane.
+</Note>
+
+### Create a session
+
+```bash
+curl -X POST "https://<harness-url>/apps/my-harness/users/user-1/sessions" \
+  -H "Content-Type: application/json" \
+  -d '{"id": "session-1", "state": {"key": "value"}}'
+```
+
+The request body can include the following fields:
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `id` | `str` | Session id; auto-generated when omitted |
+| `sessionId` | `str` | ADK-compatible session id alias |
+| `state` | `object` | Initial session state |
+| `events` | `list` | Initial session events |
+
+### Query default configuration
+
+```bash
+curl "https://<harness-url>/get_agent_config?app_name=my-harness&user_id=user-1&session_id=session-1"
+```
+
+Returns the current Harness default configuration, including model name, runtime backend, and max LLM calls. Supports camelCase query parameters (`appName`, `userId`, `sessionId`) and also accepts a `POST` request body.
+
+## Environment variables
+
+The Harness server configures runtime behavior through environment variables. `harness.yaml` is automatically converted to the corresponding environment variables on deploy; you can also set them directly in the runtime environment.
+
+### Model and tools
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `MODEL_AGENT_NAME` | VeADK default model | Reasoning model name |
+| `MODEL_AGENT_TEMPERATURE` | — | Model temperature |
+| `MODEL_AGENT_TOP_P` | — | Model top_p |
+| `MAX_LLM_CALLS` | `10` | Maximum LLM calls per run |
+| `TOOLS` | — | Built-in tool names, comma-separated |
+| `SKILLS` | — | Skill names, comma-separated |
+| `SYSTEM_PROMPT` | VeADK default instruction | System prompt |
+| `RUNTIME` | `adk` | Runtime backend |
+| `MCP_ROUTER_ID` | — | AgentKit MCP toolset id |
+| `SELECTED_SKILLS_JSON` | — | Structured skill list, JSON format |
+| `MCP_SERVERS_JSON` | — | MCP server list, JSON format |
+| `TOOL_MCP_ROUTER_URL` | — | MCP Router service URL |
+| `TOOL_MCP_ROUTER_API_KEY` | — | MCP Router auth API key |
+| `AGENTKIT_TOOL_ID_SCRIPT` | — | AgentKit Tool id for `run_code` |
+| `AGENTKIT_TOOL_REGION` | — | Region for `run_code` |
+| `AGENTKIT_TOOL_ID_OPENCODE` | — | AgentKit Tool id for `coding` |
+| `AGENTKIT_TOOL_REGION` | — | Region for `coding` |
+
+### Resource configuration
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `HARNESS_NAME` | `default` | Harness and Runtime name |
+| `KNOWLEDGEBASE_ID` | — | Knowledge base resource id |
+| `KNOWLEDGEBASE_CONFIG_JSON` | — | Knowledge base backend config, JSON format |
+| `LONG_TERM_MEMORY_ID` | — | Long-term memory resource id |
+| `LONG_TERM_MEMORY_CONFIG_JSON` | — | Long-term memory backend config, JSON format |
+
+### Session and memory backends
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `KNOWLEDGEBASE_TYPE` | — | Knowledge base backend type |
+| `LONG_TERM_MEMORY_TYPE` | — | Long-term memory backend type |
+| `SHORT_TERM_MEMORY_TYPE` | `local` | Short-term session store backend type |
+
+<Note>
+  The default value of `max_llm_calls` is `10`. When not explicitly set, a single run makes at most 10 LLM calls. Adjust it in `harness.yaml` or through a request-level override.
+</Note>

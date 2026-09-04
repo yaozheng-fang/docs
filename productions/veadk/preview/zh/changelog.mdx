@@ -8,6 +8,11 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Harness 服务部署 | 新增 `veadk harness` 命令行文档：覆盖 `create`、`add`、`deploy`、`invoke`、`show` 子命令，`harness.yaml` 配置结构（含 `harness:` 包装分节和结构化资源字段），以及 Harness 服务的 HTTP API。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness) |
+| Harness 服务 | Harness 服务支持请求级运行时配置覆盖：可通过 `/harness/invoke` 和 `/run_sse` 请求体中的 `harness` 字段覆盖模型、工具、技能、系统提示词、采样参数、知识库、长期记忆、注册表和 `max_llm_calls`；新增 `harness_merge` 字段控制请求配置与默认配置的合并或替换行为。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness#运行时配置覆盖) |
+| Harness 服务 | Harness 服务新增会话创建端点（`POST /apps/{app_name}/users/{user_id}/sessions`，支持初始状态和事件）和默认配置查询端点（`GET`/`POST /get_agent_config`）。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness#会话与配置接口) |
+| Harness 服务 | `max_llm_calls` 默认值从「未设置时回退到 ADK 默认」改为 `10`。未显式配置时单次运行最多调用 LLM 10 次。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness#环境变量) |
+| Harness 服务 | `harness.yaml` 支持结构化资源配置字段（`builtin_tools`、`selected_skills`、`mcp`、`mcp_router_id`、`temperature`、`top_p`）和 `harness:` 包装分节，部署时自动转换为对应的 JSON 环境变量。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness#结构化资源配置) |
 | Studio 部署 | `veadk studio deploy` 新增 `--deploy-target vestack` 部署模式：在 VeStack 混合云环境中，将 Studio 部署为 VeFaaS 镜像函数并通过共享 APIG Gateway 暴露独立域名，使用 IAM Role 绑定的 STS 临时凭证访问 AgentKit OpenAPI，不在镜像或函数环境中保存长期 AK/SK。同时新增镜像构建、OpenAPI 端点覆盖、APIG 集群和 TLS 验证等相关选项。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#部署到-vestack) |
 | Studio 沙箱 | VeStack 部署模式下，Studio 为每个沙箱会话创建独立的 AgentKit Tool（Codex 为 `CodeEnv` 类型，Hermes 为 `Station-Hermes` 类型），支持磁盘持久化（5–100 GiB）和会话级隔离；会话删除时自动清理对应 Tool。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#每会话独立-tool) |
 | Studio 部署 | 新增 OpenAPI 端点覆盖环境变量（`VEFAAS_OPENAPI_HOST`、`APIG_OPENAPI_HOST`、`IAM_OPENAPI_HOST`、`IDENTITY_OPENAPI_HOST` 及对应 Scheme），支持 VeStack 环境中 SDK 请求指向内部 OpenAPI 地址；新增 `VOLCENGINE_OPENAPI_CA_BUNDLE` 和 `VOLCENGINE_OPENAPI_VERIFY_SSL` 控制私有证书环境下的 TLS 验证。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#openapi-端点覆盖) |

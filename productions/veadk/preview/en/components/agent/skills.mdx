@@ -56,6 +56,8 @@ demand; when the remote version changes, the new version is re-downloaded.
 
 Harness can load both Skill Hub skills and AgentKit skills-center spaces. A plain name or slug in `skills` identifies a Skill Hub skill; the `space:` prefix identifies a skills-center space ID.
 
+For creating, configuring, and deploying the Harness server, see [Harness server deployment](/productions/veadk/preview/en/deploy/harness).
+
 The skills center requires Volcengine credentials that can read the space and its object-storage content. For local runs, set `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`, plus `VOLCENGINE_SESSION_TOKEN` for temporary credentials. On VeFaaS, the bound IAM role can provide temporary credentials instead.
 
 ```bash
