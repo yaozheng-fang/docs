@@ -305,9 +305,9 @@ Studio 侧边栏提供「工作区」入口，用于将可复用的运行环境�
 | :--- | :--- | :--- |
 | 环境名称 | 自由文本，至多 128 个字符 | 环境的唯一标识名称。 |
 | 描述 | 自由文本，至多 2000 个字符 | 环境用途说明。 |
-| 基础环境 | AIO Sandbox、Ubuntu | 基础镜像类型，决定镜像是否内置 Sandbox Shell 能力。详见[基础环境类型](#基础环境类型)。 |
-| 操作系统 | Ubuntu 22.04、Ubuntu 24.04 | 基础镜像的操作系统版本。选择 AIO Sandbox 时固定为 Ubuntu 22.04。 |
-| Python 版本 | Python 3.10、Python 3.12 | 镜像中的 Python 版本。选择 AIO Sandbox 时固定为 Python 3.12。 |
+| 基础环境 | AIO Sandbox、Codex Sandbox、Ubuntu | 基础镜像类型，决定镜像是否内置 Sandbox Shell 或 Codex 任务委派能力。详见[基础环境类型](#基础环境类型)。 |
+| 操作系统 | Ubuntu 22.04、Ubuntu 24.04 | 基础镜像的操作系统版本。选择 AIO Sandbox 或 Codex Sandbox 时固定为 Ubuntu 22.04。 |
+| Python 版本 | Python 3.10、Python 3.12 | 镜像中的 Python 版本。选择 AIO Sandbox 或 Codex Sandbox 时固定为 Python 3.12。 |
 | 命令行工具 | 见下表 | 预装到镜像中的官方工具，按需勾选。 |
 | 技能 | Skill Hub、本地上传、AgentKit SkillSpace | 预装到镜像中的技能，至多 20 个。 |
 | Dockerfile | 自动生成或自定义 | 构建镜像使用的 Dockerfile 内容。 |
@@ -347,13 +347,17 @@ Studio 侧边栏提供「工作区」入口，用于将可复用的运行环境�
 | 基础环境 | 说明 |
 | :--- | :--- |
 | AIO Sandbox | 基于 AIO Sandbox 镜像构建，保留内置的 `/opt/gem/run.sh` 启动链和 8080 端口，提供 Sandbox Shell API。选择后操作系统固定为 Ubuntu 22.04、Python 版本固定为 3.12，Studio 依赖隔离到独立虚拟环境中。构建完成后自动创建关联的 AgentKit Sandbox Tool，使该环境可挂载到对话中执行 Shell 命令。新环境默认选择此类型。 |
+| Codex Sandbox | 基于 Codex Sandbox 镜像构建，通过内置的 Codex App Server 暴露任务委派能力，而非通用 Sandbox Shell 工具。选择后操作系统固定为 Ubuntu 22.04、Python 版本固定为 3.12。构建完成后自动创建关联的 AgentKit Sandbox Tool，使该环境可挂载到对话中委派完整任务给 Codex 执行。 |
+| Ubuntu | 基于官方 Ubuntu 镜像构建，按所选操作系统和 Python 版本安装运行时。不支持挂载到对话中执行 Shell 命令。在基础环境字段引入之前创建的环境记录按此类型处理。 |
 | Ubuntu | 基于官方 Ubuntu 镜像构建，按所选操作系统和 Python 版本安装运行时。不支持挂载到对话中执行 Shell 命令。在基础环境字段引入之前创建的环境记录按此类型处理。 |
 
 <Note>
-  上传的 Dockerfile 中包含 `aio.sandbox` 时，Studio 自动识别为 AIO Sandbox 基础环境。
+  上传的 Dockerfile 中包含 `aio.sandbox` 时，Studio 自动识别为 AIO Sandbox 基础环境；包含 `/codexenv:` 时，自动识别为 Codex Sandbox 基础环境。
 </Note>
 
 选择 AIO Sandbox 基础环境时，构建镜像后 Studio 会自动创建关联的 AgentKit Sandbox Tool（私有工具，入口为 `/opt/gem/run.sh`，端口 8080），并注入模型相关环境变量。Tool 创建过程异步执行，环境版本在 Tool 就绪后才会变为完全可用。Tool 未就绪时，该环境版本无法挂载到对话中执行命令。
+
+选择 Codex Sandbox 基础环境时，构建镜像后 Studio 同样会自动创建关联的 AgentKit Sandbox Tool 并注入模型相关环境变量。Tool 就绪后，该环境版本可挂载到对话中，智能体通过 `delegate_to_codex_sandbox` 工具将完整任务委派给 Codex App Server 执行，而非通过 Sandbox Shell 直接执行命令。
 
 每个环境版本提供只读 Manifest，可通过 `GET /web/environments/{environmentId}/builds/{versionId}/manifest` 接口查看。Manifest 包含镜像地址、基础环境、操作系统、Python 版本、预装包、能力和关联的 Sandbox Tool 状态。环境卡片中可打开同一版本绑定的 Manifest 以 YAML 格式查看和复制。
 
@@ -432,7 +436,7 @@ Studio 保存以下信息：
 
 构建完成后，环境列表中展示最新版本的构建状态和镜像地址。可在环境详情页查看构建步骤、进度和日志。日志支持语法高亮，并默认自动滚动到末尾，手动向上滚动后暂停跟随，回到底部时恢复跟随。构建失败时，日志末尾展示错误信息，便于定位失败原因。
 
-选择 AIO Sandbox 基础环境时，镜像构建完成后会追加一个「创建 AgentKit Sandbox Tool」构建步骤。该步骤异步创建关联的私有 Sandbox Tool 并注入模型相关环境变量，Tool 就绪后环境版本才完全可用。Tool 创建期间环境状态显示为「构建中」，Tool 就绪后变为「可用」；Tool 创建失败时环境状态变为「构建失败」。环境版本在 Tool 就绪前无法挂载到对话中执行命令。
+选择 AIO Sandbox 或 Codex Sandbox 基础环境时，镜像构建完成后会追加一个「创建 AgentKit Sandbox Tool」构建步骤。该步骤异步创建关联的私有 Sandbox Tool 并注入模型相关环境变量，Tool 就绪后环境版本才完全可用。Tool 创建期间环境状态显示为「构建中」，Tool 就绪后变为「可用」；Tool 创建失败时环境状态变为「构建失败」。环境版本在 Tool 就绪前无法挂载到对话中执行命令。
 
 <Note>
   首次构建环境镜像时，Studio 自动创建或复用托管的 CodePipeline Workspace、Pipeline 和 Container Registry 资源。使用账号级默认 TOS 存储桶时，Container Registry 复用账号的 `agentkit-cli-<账号 ID>` 实例，并在其中创建 `runtime-environments/base-images` 仓库。
@@ -1474,7 +1478,7 @@ print(response.json())
 
 普通对话在同一会话中发送后续消息时会继续使用已有消息历史；只有新建会话才会从空上下文开始。若 Runtime 无法连接，Studio 会区分权限不足、Agent Server 不可达、私网 Runtime 不可达和鉴权失败，并显示对应的排查方向。
 
-在智能体对话中，可通过会话顶部的环境选择器将已构建完成的 AIO Sandbox 运行环境挂载到当前会话。挂载后智能体获得在环境中执行 Shell 命令的能力，详见[会话沙箱环境](#会话沙箱环境)。
+在智能体对话中，可通过会话顶部的环境选择器将已构建完成的 AIO Sandbox 或 Codex Sandbox 运行环境挂载到当前会话。挂载后智能体获得在环境中执行 Shell 命令或委派任务的能力，详见[会话沙箱环境](#会话沙箱环境)。
 
 <Note>
   与内置 Codex 智能体对话时，若 Codex app-server 返回错误或连接中断，Studio 会在对话中展示完整的错误详情，包括 JSON-RPC 错误码、错误消息和附加数据，以及导致错误的底层原因。所有错误信息在展示前均做凭据脱敏处理。
@@ -2551,18 +2555,29 @@ VeStack 环境中，各云服务的 OpenAPI 端点通常指向内部地址。部
 
 ### 会话沙箱环境
 
-在对话页面中，可以将已构建完成的 AIO Sandbox 运行环境挂载到当前会话。挂载后，智能体在对话中获得以下工具，可在挂载的环境中执行 Shell 命令：
+在对话页面中，可以将已构建完成的 AIO Sandbox 或 Codex Sandbox 运行环境挂载到当前会话。挂载后，智能体在对话中获得以下工具，在挂载的环境中执行 Shell 命令或委派任务：
 
 | 工具 | 说明 |
 | :--- | :--- |
 | `list_envs` | 列出当前会话已挂载的环境及其能力。智能体在处理实质性任务时应首先调用此工具，根据环境名称、描述和能力与用户任务进行语义匹配，选择最合适的环境。 |
 | `get_env_manifest` | 返回指定挂载环境的只读 Manifest，包含镜像、基础环境、操作系统、Python 版本、预装包、能力和 Sandbox Tool 状态。 |
-| `execute_in_sandbox` | 在挂载的环境中执行非交互式 Shell 命令，包括已安装的命令行工具。支持设置工作目录、超时时间，以及等待仍在运行的命令返回结果。 |
+| `execute_in_sandbox` | 在挂载的非 Codex 环境中执行非交互式 Shell 命令，包括已安装的命令行工具。Codex Sandbox 环境不支持此工具，须改用 `delegate_to_codex_sandbox`。支持设置工作目录、超时时间，以及等待仍在运行的命令返回结果。 |
+| `delegate_to_codex_sandbox` | 将完整的编码、审查、设计或工程任务委派给挂载的 Codex Sandbox 环境中的 Codex 执行。适用于基础环境为 Codex Sandbox 的环境。传入自包含的任务描述（包含预期结果、约束、相关上下文和验证要求），Codex 会检查环境并端到端调用已安装的命令行工具完成任务。每次对话轮次至多调用一次；返回忙或超时状态时不应自动重试，应将状态告知用户。 |
 
 挂载环境时，可在会话的环境选择器中逐个选择环境或按工作区批量选择；选择状态在当前浏览器会话中保留。每次运行时，Studio 将已挂载环境的信息注入对话上下文，并在本轮消息中附加路由指引，使智能体优先使用挂载环境完成任务。当用户未明确要求创建或委派新智能体时，挂载环境的优先级高于动态子智能体创建、知识库和 Skill 流程。
 
+当挂载的环境基础环境为 Codex Sandbox 时，智能体应使用 `delegate_to_codex_sandbox` 委派完整任务，而非拆分为多次 `execute_in_sandbox` 调用。委派结果直接作为最终工具调用结果返回给用户，无需再通过 `execute_in_sandbox` 获取 Sandbox 内的文件。
+
+<Note>
+  将环境挂载到会话时，Studio 为每次挂载分配独立的挂载实例标识。Sandbox Tool Session 仅在智能体会话、挂载实例、环境版本、Tool ID、镜像、云服务商和地域均未变化时复用；卸载后重新挂载会创建新的挂载实例和新的 Sandbox Session。Codex Sandbox 的执行进度及对应的 Sandbox Session 和 Codex Thread 标识会以流式方式推送到工具调用卡片中，并保留在对话历史中。
+</Note>
+
 <Warning>
   `execute_in_sandbox` 可在远端环境中执行任意 Shell 命令、安装依赖、读写文件，并访问环境网络可达的服务。运行前应确认命令来源可信，并限制环境可访问的数据、网络和权限。不要在命令中写入长期凭证；需要凭证时使用环境支持的凭据托管方式。
+</Warning>
+
+<Warning>
+  `delegate_to_codex_sandbox` 将任务委派给 Codex 在远端环境中执行，Codex 可调用环境中的命令行工具、安装依赖、读写文件并访问网络。运行前应确认任务内容可信，并限制环境可访问的数据、网络和权限。Codex 任务最长执行时间为 30 分钟。
 </Warning>
 
 ### 分支对比

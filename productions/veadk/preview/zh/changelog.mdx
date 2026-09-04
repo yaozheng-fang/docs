@@ -8,6 +8,9 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 运行环境 | 运行环境新增 Codex Sandbox 基础环境类型：基于 Codex Sandbox 镜像构建，通过内置的 Codex App Server 暴露任务委派能力而非通用 Sandbox Shell 工具。选择后操作系统固定为 Ubuntu 22.04、Python 版本固定为 3.12，构建完成后自动创建关联的 AgentKit Sandbox Tool。上传的 Dockerfile 中包含 `/codexenv:` 时自动识别为此类型。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#基础环境类型) |
+| Studio 沙箱 | 会话沙箱环境新增 `delegate_to_codex_sandbox` 工具：当挂载的环境基础环境为 Codex Sandbox 时，智能体可将完整的编码、审查、设计或工程任务委派给 Codex 执行，而非拆分为多次 `execute_in_sandbox` 调用。Codex 在环境中端到端调用已安装的命令行工具完成任务，结果直接返回给用户。Codex 任务最长执行 30 分钟，每次对话轮次至多调用一次。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话沙箱环境) |
+| Studio 沙箱 | 会话沙箱环境的 Sandbox Tool Session 改为版本化复用：将环境挂载到会话时分配独立的挂载实例标识，Session 仅在智能体会话、挂载实例、环境版本、Tool ID、镜像、云服务商和地域均未变化时复用。卸载后重新挂载会创建新的挂载实例和新的 Sandbox Session。Codex Sandbox 的执行进度及对应的 Session 和 Codex Thread 标识以流式方式推送到工具调用卡片并保留在对话历史中。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话沙箱环境) |
 | 入站认证 | OAuth2 中间件获取用户信息时，仅保留适合存入浏览器会话 Cookie 的标准字段（`sub`、`email`、`email_verified`、`name`、`given_name`、`family_name`、`preferred_username`、`picture`、`locale`、`updated_at` 以及通过 `user_id_field` 配置的字段），不再将用户信息端点的完整响应写入会话 Cookie；仅保留字符串、整数、浮点数或布尔类型的值，避免 Cookie 超出浏览器大小限制。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound) |
 | Harness 服务部署 | 新增 `veadk harness` 命令行文档：覆盖 `create`、`add`、`deploy`、`invoke`、`show` 子命令，`harness.yaml` 配置结构（含 `harness:` 包装分节和结构化资源字段），以及 Harness 服务的 HTTP API。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness) |
 | Harness 服务 | Harness 服务支持请求级运行时配置覆盖：可通过 `/harness/invoke` 和 `/run_sse` 请求体中的 `harness` 字段覆盖模型、工具、技能、系统提示词、采样参数、知识库、长期记忆、注册表和 `max_llm_calls`；新增 `harness_merge` 字段控制请求配置与默认配置的合并或替换行为。 | [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness#运行时配置覆盖) |
