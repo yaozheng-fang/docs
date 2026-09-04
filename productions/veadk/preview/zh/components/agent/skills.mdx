@@ -42,6 +42,8 @@ agent = Agent(tools=[SkillToolset(registry=registry)])
 
 Harness 可以同时加载 Skill Hub 技能和 AgentKit 技能中心的技能空间。`skills` 中的普通名称或 slug 表示 Skill Hub 技能；`space:` 前缀表示技能中心的技能空间 ID。
 
+Harness 服务的创建、配置和部署见 [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness)。
+
 技能中心需要可读取该技能空间及其对象存储内容的火山引擎凭证。本地运行时设置 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`，使用临时凭证时同时设置 `VOLCENGINE_SESSION_TOKEN`；VeFaaS 中也可以使用绑定 IAM Role 的临时凭证。
 
 ```bash
