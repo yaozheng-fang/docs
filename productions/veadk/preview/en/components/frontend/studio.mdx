@@ -83,6 +83,12 @@ veadk studio \
 
 The logo can be up to 5 MB in PNG, JPEG, GIF, WebP, AVIF, or ICO format. The equivalent environment variables are `VEADK_SITE_TITLE` and `VEADK_SITE_LOGO`. The deployment command accepts the same options; remote images are downloaded and bundled so that the deployed site does not depend on the original URL.
 
+## Interface language
+
+Studio supports two interface languages: Simplified Chinese (`zh-CN`) and English (`en-US`). On first visit, Studio automatically detects and selects the interface language that matches your browser language settings; when no supported language matches, it defaults to English.
+
+Your language choice is persisted in browser local storage, so subsequent visits keep your last selected language. You can also switch the interface language at any time from the **Language** submenu in the sidebar account menu. The change takes effect immediately without reloading the page.
+
 ## Create an agent
 
 1. On the Agents page, click Create agent and choose Create from scratch to enter custom configuration, select "Intelligent development" to describe a goal and let Codex build it, choose “Add and deploy from a code package” to upload an existing project, or choose “Migrate an existing project” to migrate LangChain, Dify, or other framework projects to VeADK.
