@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 界面 | Studio 新增英文界面语言支持：首次访问时根据浏览器语言设置自动检测并选择简体中文或英文，未匹配到受支持语言时默认使用英文。语言选择保存在浏览器本地存储中，也可在侧边栏账号菜单中手动切换，切换即时生效。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#界面语言) |
 | Studio 更新 | 应用内更新和 `veadk studio update` 更新定时任务调度服务时，若调度服务部署失败，Studio 不再中断整个更新，而是记录警告并继续更新主函数。调度服务可稍后通过重新执行更新来修复。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#应用内更新) · [更新已部署的 Studio](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) |
 | Studio 运行环境 | 运行环境新增 Codex Sandbox 基础环境类型：基于 Codex Sandbox 镜像构建，通过内置的 Codex App Server 暴露任务委派能力而非通用 Sandbox Shell 工具。选择后操作系统固定为 Ubuntu 22.04、Python 版本固定为 3.12，构建完成后自动创建关联的 AgentKit Sandbox Tool。上传的 Dockerfile 中包含 `/codexenv:` 时自动识别为此类型。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#基础环境类型) |
 | Studio 沙箱 | 会话沙箱环境新增 `delegate_to_codex_sandbox` 工具：当挂载的环境基础环境为 Codex Sandbox 时，智能体可将完整的编码、审查、设计或工程任务委派给 Codex 执行，而非拆分为多次 `execute_in_sandbox` 调用。Codex 在环境中端到端调用已安装的命令行工具完成任务，结果直接返回给用户。Codex 任务最长执行 30 分钟，每次对话轮次至多调用一次。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话沙箱环境) |
