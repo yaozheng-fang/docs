@@ -2731,7 +2731,7 @@ Studio 根据登录账号限制 Runtime 的可见范围；没有创建者记录�
 
 ## 查看系统信息
 
-登录后，侧边栏底部的账号菜单提供「系统信息」入口，选择后在当前页面上方打开系统信息页面，展示 Studio 的版本、存储、沙箱信息和用户池。页面左上角的返回按钮可回到打开系统信息前所在的页面，当前页面保持不变。页面中的 TOS 存储桶、沙箱 Tool 和用户池均提供跳转到对应云服务商控制台的链接，点击后在新标签页打开。该页面仅对 `admin` 角色开放，所有资源标识均为只读；管理员可对需要修复的 Codex Sandbox Tool 执行模型环境变量回填（见[沙箱信息](#沙箱信息)）。
+登录后，侧边栏底部的账号菜单提供「系统信息」入口，选择后在当前页面上方打开系统信息页面，展示 Studio 的版本、存储、沙箱信息和用户池。页面左上角的返回按钮可回到打开系统信息前所在的页面，当前页面保持不变。页面中的 TOS 存储桶、沙箱 Tool 和用户池均提供跳转到对应云服务商控制台的链接，点击后在新标签页打开。该页面仅对 `admin` 角色开放，所有资源标识均为只读；管理员可对需要更新的沙箱 Tool 执行镜像更新（见[沙箱信息](#沙箱信息)）。
 
 ### 通用
 
@@ -2745,18 +2745,22 @@ Studio 根据登录账号限制 Runtime 的可见范围；没有创建者记录�
 
 列出 Studio 已配置的沙箱 Tool 及其 ID，包括 Codex Sandbox（`SANDBOX_CHAT_CODEX`）、DeepSeek Harness Sandbox（`SANDBOX_CHAT_CODEX`）、OpenClaw Sandbox（`SANDBOX_CHAT_OPENCLAW`）、Hermes Sandbox（`SANDBOX_CHAT_HERMES`）和 Dev Sandbox（`SANDBOX_DEV`），各项按固定顺序排列。其中 DeepSeek Harness Sandbox 与 Codex Sandbox 共用同一个 AgentKit CodeEnv Tool（`SANDBOX_CHAT_CODEX`），因此两者显示相同的 Tool ID。已配置的 Tool ID 提供跳转到云控制台对应 Tool 详情页的链接；未配置的 Tool 显示「未配置」。
 
-#### Codex Sandbox 模型环境变量修复
+#### 沙箱镜像更新
 
-对于 Codex Sandbox（`SANDBOX_CHAT_CODEX`）与 Codex Sandbox 快照版（`SANDBOX_CHAT_CODEX_SNAPSHOT`），系统信息页面还会检测其 Tool 环境变量中是否已配置 `MODEL_AGENT_API_KEY` 与 `MODEL_AGENT_BASE_URL`。当检测到缺失其中任一变量、且 Tool 中同时存在 `CODEX_API_KEY` 与 `CODEX_BASE_URL` 时，该 Tool 的 ID 旁会显示更新按钮。
+沙箱信息区域顶部提供「检查更新」按钮。点击后，Studio 服务端使用当前配置的火山引擎或 BytePlus 凭证，向当前云服务商和地域的 Tool 目录查询各预置沙箱 Tool 类型的最新发布镜像，并与各 Tool 当前使用的镜像进行比对。每个已配置的 Tool 旁会显示当前镜像和最新镜像的版本标签；当当前镜像与最新镜像不一致时，显示从当前版本到最新版本的更新提示。镜像目录在服务端缓存 60 秒，执行更新前会重新获取最新目录。
 
-管理员点击更新按钮后，Studio 服务端使用自身配置的火山引擎或 BytePlus 凭证从 Tool 当前环境变量中读取 `CODEX_API_KEY` 与 `CODEX_BASE_URL`，回填缺失的 `MODEL_AGENT_API_KEY` 与 `MODEL_AGENT_BASE_URL`，完成后在 Tool ID 旁显示更新结果。整个过程中密钥不会下发到浏览器。
+管理员可对状态为「Ready」且存在可用更新的预置沙箱 Tool 执行镜像更新。可用更新包括镜像版本不一致和 Codex 类型 Tool 需要补齐模型环境变量两种情况。点击 Tool 旁的更新按钮后，Studio 服务端向云服务商提交更新请求，将 Tool 的镜像更新为最新发布版本；对于 Codex 类型的 Tool，若 Tool 环境变量中缺少 `MODEL_AGENT_API_KEY` 或 `MODEL_AGENT_BASE_URL` 且同时存在 `CODEX_API_KEY` 与 `CODEX_BASE_URL`，更新时会从对应的 `CODEX_*` 变量补齐缺失的 `MODEL_AGENT_*` 变量，已有的值不被覆盖。更新提交后，Studio 轮询 Tool 状态，直到 Tool 恢复为「Ready」且镜像已更新为最新版本，然后在 Tool 旁显示更新结果。整个过程中密钥不会下发到浏览器。
 
 <Note>
-  若 Tool 缺少 `CODEX_API_KEY` 或 `CODEX_BASE_URL`，更新按钮不会出现，Tool ID 旁会显示缺少哪些变量的错误提示。此时需先在云控制台为该 Tool 补充对应的环境变量，再刷新系统信息页面重新检测。
+  Codex Sandbox 与 DeepSeek Harness Sandbox 共用同一个 AgentKit Tool 时，两者共享更新状态，更新操作只执行一次。快照版 Tool 与非快照版 Tool 独立检查和更新。Private 类型的 Tool 没有对应的预置发布镜像，无法通过此功能更新。
+</Note>
+
+<Note>
+  若 Tool 状态不为「Ready」（如正在创建或更新中），更新按钮不可用。当 Tool 缺少 `CODEX_API_KEY` 或 `CODEX_BASE_URL` 而无法补齐模型环境变量时，Tool 旁会显示相应的错误提示，需先在云控制台为该 Tool 补充对应的环境变量，再刷新系统信息页面重新检测。
 </Note>
 
 <Warning>
-  该操作仅回填缺失的 `MODEL_AGENT_API_KEY` 与 `MODEL_AGENT_BASE_URL`，不会覆盖已存在的值，也不会修改 Tool 的其他环境变量。执行前请确认 Tool 中的 `CODEX_API_KEY` 与 `CODEX_BASE_URL` 指向预期的模型凭证。
+  沙箱镜像更新仅修改 Tool 的镜像和环境变量，不会验证或重建已有会话的快照。执行前请确认更新不会影响正在运行的会话。BytePlus 模式下镜像更新功能已有自动化测试覆盖，但尚未在真实账号环境中验证。
 </Warning>
 
 ### 用户池
