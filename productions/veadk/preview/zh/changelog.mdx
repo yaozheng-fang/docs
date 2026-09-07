@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 部署 | `veadk studio deploy`、应用内更新和 `veadk studio update` 在部署或更新完成后将 VeFaaS 函数的最小实例数设置为 1，保留一个预热实例以避免首次访问冷启动；部署和 OTA 更新权限预检相应新增 `vefaas:UpdateFunctionResource` 权限要求。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#部署到-vefaas) · [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#应用内更新) · [更新已部署的 Studio](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) |
 | Studio 沙箱 | 系统信息页面的沙箱信息区域新增沙箱镜像更新功能：管理员可点击「检查更新」按钮，Studio 向当前云服务商和地域的 Tool 目录查询各预置沙箱 Tool 的最新发布镜像并与当前镜像比对；对状态为「Ready」且存在可用更新的 Tool，可执行镜像更新。Codex 类型 Tool 更新时同时从 `CODEX_API_KEY` 和 `CODEX_BASE_URL` 补齐缺失的 `MODEL_AGENT_API_KEY` 和 `MODEL_AGENT_BASE_URL`。镜像目录缓存 60 秒，更新前重新获取。共用同一 Tool 的 Codex 和 DeepSeek Harness 共享更新状态，快照版独立检查。该功能取代了此前仅针对 Codex Sandbox 的模型环境变量回填。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#沙箱镜像更新) |
 | Studio 界面 | Studio 新增英文界面语言支持：首次访问时根据浏览器语言设置自动检测并选择简体中文或英文，未匹配到受支持语言时默认使用英文。语言选择保存在浏览器本地存储中，也可在侧边栏账号菜单中手动切换，切换即时生效。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#界面语言) |
 | Studio 更新 | 应用内更新和 `veadk studio update` 更新定时任务调度服务时，若调度服务部署失败，Studio 不再中断整个更新，而是记录警告并继续更新主函数。调度服务可稍后通过重新执行更新来修复。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#应用内更新) · [更新已部署的 Studio](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) |
