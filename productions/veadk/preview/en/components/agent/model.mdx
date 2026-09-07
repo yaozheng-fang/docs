@@ -23,6 +23,13 @@ agent = Agent(
 When omitted, `model_provider`, `model_api_base`, and `model_api_key` fall back
 to the global configuration.
 
+When a non-native model interface is used (i.e. `model_provider` is set), VeADK
+automatically retries once on an HTTP 429 rate-limit error before the model has
+produced any output. The retry delay honours the response's `Retry-After` header,
+capped at 2 seconds, and defaults to 0.5 seconds when not provided. Once the
+model has started producing output, no retry is attempted, to avoid duplicate
+content.
+
 ### Resolve an API key by name
 
 In addition to setting `MODEL_AGENT_API_KEY` directly, set
