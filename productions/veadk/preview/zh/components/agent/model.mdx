@@ -19,6 +19,8 @@ agent = Agent(
 
 未显式传入时，`model_provider`、`model_api_base`、`model_api_key` 均沿用全局配置。
 
+使用非原生模型接口（即设置了 `model_provider`）时，VeADK 会在模型尚未输出任何内容的阶段自动对 HTTP 429 限流错误重试一次。重试延迟优先读取响应头中的 `Retry-After`，上限为 2 秒，未提供时使用 0.5 秒。一旦模型已经开始输出内容，不再进行重试，以避免重复输出。
+
 ### 按名称解析 API Key
 
 除直接设置 `MODEL_AGENT_API_KEY` 外，还可以设置 `MODEL_AGENT_API_KEY_NAME`，让 VeADK 按名称获取火山方舟 API Key。显式提供的 Key 始终优先：
