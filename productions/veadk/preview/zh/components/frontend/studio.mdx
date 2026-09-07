@@ -2291,6 +2291,10 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
   `veadk studio deploy` 按应用名称幂等处理 VeFaaS 部署：使用相同 `--vefaas-app-name` 再次部署时，会更新已有应用的函数代码包而非创建重复函数，保留原有 URL、IAM、网关和 Identity 配置。适用于升级 Studio 版本或重新部署相同应用名称的场景。
 </Note>
 
+<Note>
+  部署完成后，Studio 会将 VeFaaS 函数的最小实例数设置为 1，使部署后始终保留一个预热实例，避免首次访问冷启动。
+</Note>
+
 
 部署凭据按以下顺序解析：优先使用 `--volcengine-access-key` / `--volcengine-secret-key` 显式传入；未提供时读取当前进程的 `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` 环境变量；两者均缺失时，读取 `~/.volc/credentials` 中的 `[default]` 配置。任一来源解析到完整的 Access Key 与 Secret Key 即可继续部署。STS 临时凭证的 Session Token 通过 `--volcengine-session-token` 显式传入，或依次读取 `VOLCENGINE_SESSION_TOKEN`、`VOLC_SESSIONTOKEN` 环境变量和 `~/.volc/credentials` 中 `[default]` 配置的 `session_token` 字段；未提供时留空，仅使用长期 AK/SK。
 
@@ -2318,7 +2322,7 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
 
 ### IAM 权限预检
 
-`veadk studio deploy` 在创建任何云资源前，自动执行只读 IAM 权限预检。预检读取当前调用者已绑定的 IAM 策略，逐一评估部署所需 IAM Action 是否满足。所需权限范围取决于部署配置：当未通过 `--user-pool-id` 与 `--allowed-client-id` 指定已有身份资源时，需要创建用户池相关权限；未指定 `--iam-role` 时需要角色管理权限；未通过 `VEADK_STUDIO_TOS_BUCKET` 指定已有存储桶时需要存储桶创建权限；未指定沙箱 Tool ID 时需要 Tool 创建权限；未指定 `--gateway-name` 时需要网关管理权限（包括开放 Studio API 所需 HTTP 方法的 `apig:UpdateRoute` 权限）；部署还需要创建和更新定时任务调度函数与分钟触发器的 VeFaaS 权限（`vefaas:ListFunctions`、`vefaas:GetFunction`、`vefaas:ListTriggers`、`vefaas:CreateTimer`、`vefaas:UpdateTimer`）；未启用 `--keep-failed-deploy` 时还需要清理失败资源的删除权限。
+`veadk studio deploy` 在创建任何云资源前，自动执行只读 IAM 权限预检。预检读取当前调用者已绑定的 IAM 策略，逐一评估部署所需 IAM Action 是否满足。所需权限范围取决于部署配置：当未通过 `--user-pool-id` 与 `--allowed-client-id` 指定已有身份资源时，需要创建用户池相关权限；未指定 `--iam-role` 时需要角色管理权限；未通过 `VEADK_STUDIO_TOS_BUCKET` 指定已有存储桶时需要存储桶创建权限；未指定沙箱 Tool ID 时需要 Tool 创建权限；未指定 `--gateway-name` 时需要网关管理权限（包括开放 Studio API 所需 HTTP 方法的 `apig:UpdateRoute` 权限）；部署还需要创建和更新定时任务调度函数与分钟触发器的 VeFaaS 权限（`vefaas:ListFunctions`、`vefaas:GetFunction`、`vefaas:ListTriggers`、`vefaas:CreateTimer`、`vefaas:UpdateTimer`）；部署还会将 Studio 函数的最小实例数设置为 1 以保留一个预热实例，因此需要 `vefaas:UpdateFunctionResource` 权限；未启用 `--keep-failed-deploy` 时还需要清理失败资源的删除权限。
 
 预检完成后，终端输出一张权限表格，列出每项 IAM Action 的作用及是否满足。若存在缺失权限，终端同时输出对应云服务商的 IAM 配置入口链接，便于前往补充权限。火山引擎入口为 `https://console.volcengine.com/iam/policymanage`，BytePlus 入口为 `https://console.byteplus.com/iam/policymanage`。
 
@@ -2341,7 +2345,7 @@ Studio 从维护在北京地域的 TOS 发布源读取新版本，客户部署�
 
 Studio 每三分钟检查一次更新，列出可用版本及其变更说明。管理员确认升级后，Studio 优先下载精简发布包——该包不内置运行时依赖，而是在部署时从当前云服务商的公共制品源拉取已校验的 Python wheel 和 AgentKit CLI；若精简发布包或公共制品不可用，Studio 自动回退到包含全部依赖的完整发布包。无论采用哪种包，Studio 都会校验完整性，然后同时替换 Python 后端与前端资源并重新发布原 Application；Application 与 Function ID、访问 URL、SSO 客户端和服务端 Secret 保持不变。
 
-在开始更新前，Studio 会先预检当前 VeFaaS Function 角色是否具备完成 OTA 更新所需的全部 IAM 权限（包括读取发布包、创建和更新调度函数、发布应用与函数、安装依赖及管理定时任务触发器等权限）。预检以只读方式查询已绑定的 IAM 策略，不修改任何资源。若存在缺失权限，更新在开始任何变更前即被中断，更新对话框列出缺失的权限项并提供对应云服务商的 IAM 控制台链接，管理员完成授权后可重新发起更新。更新进度面板会显示「预检 Studio 更新权限」阶段。
+在开始更新前，Studio 会先预检当前 VeFaaS Function 角色是否具备完成 OTA 更新所需的全部 IAM 权限（包括读取发布包、创建和更新调度函数、发布应用与函数、安装依赖、管理定时任务触发器以及设置函数最小实例数等权限）。预检以只读方式查询已绑定的 IAM 策略，不修改任何资源。若存在缺失权限，更新在开始任何变更前即被中断，更新对话框列出缺失的权限项并提供对应云服务商的 IAM 控制台链接，管理员完成授权后可重新发起更新。更新进度面板会显示「预检 Studio 更新权限」阶段。
 
 更新过程中，Studio 会检查当前 VeFaaS Function 缺失的云资源并自动补齐：若未配置持久化存储（`VEADK_STUDIO_TOS_BUCKET` 与 `VEADK_STUDIO_TOS_REGION`），则按部署地域创建或复用 TOS 存储桶；若缺少沙箱快照 Tool（`SANDBOX_CHAT_CODEX_SNAPSHOT`、`SANDBOX_CHAT_OPENCLAW_SNAPSHOT`、`SANDBOX_CHAT_HERMES_SNAPSHOT`），则按当前云服务商自动创建。补齐的资源以环境变量形式写入 Function 配置，使旧版本 Studio 在升级后也能使用新增的持久化存储和沙箱能力。更新进度面板会显示「检查并补齐 Studio 云资源」阶段。
 
@@ -2355,6 +2359,10 @@ Studio 每三分钟检查一次更新，列出可用版本及其变更说明。�
 
 <Note>
   应用内更新不会修改 Function 的 IAM 角色策略。如需更新 IAM 权限，请使用 `veadk studio update` 命令。
+</Note>
+
+<Note>
+  更新完成后，Studio 会将 VeFaaS 函数的最小实例数设置为 1，使更新后始终保留一个预热实例，避免首次访问冷启动。
 </Note>
 
 更新过程中，部署进度面板实时展示 VeFaaS 部署日志。日志在服务端经过过滤，去除 curl 进度条、配置 JSON 导出、ANSI 转义序列和重复行，仅保留与部署相关的有效内容。当 Function 角色缺少 `vefaas:GetApplicationRevisionLog` 权限时，日志面板替换为权限提示，并显示对应云服务商的 IAM 控制台链接（火山引擎为 `console.volcengine.com/iam`，BytePlus 为 `console.byteplus.com/iam`），管理员可据此前往补充权限；更新不受影响，继续进行。更新完成后，Studio 会自动刷新页面以加载新版本；刷新前如有未关闭的更新对话框，也会在重新打开页面后自动恢复显示。
@@ -2663,6 +2671,10 @@ veadk studio update --vefaas-app-name "veadk-studio"
 
 <Note>
   如果定时任务调度服务的更新失败，命令会记录警告并继续更新主函数，不会中断整个更新流程。调度服务可稍后通过重新执行更新来修复。
+</Note>
+
+<Note>
+  更新完成后，命令会将 VeFaaS 函数的最小实例数设置为 1，保留一个预热实例以避免首次访问冷启动。
 </Note>
 
 | 选项 | 类型 | 默认值 | 说明 |
