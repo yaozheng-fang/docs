@@ -2731,7 +2731,7 @@ Identities listed in the `--admin` administrator list may access other users' lo
 
 ## View system information
 
-After signing in, the account menu at the bottom of the sidebar offers a "System info" entry. Selecting it opens the system information page over the current page, which displays the Studio version, storage, sandbox information, and user pools. The back button in the top-left corner of the page returns to the page you were on before opening System info; the previous page is preserved. The TOS bucket, sandbox Tools, and user pools each provide a link that opens the corresponding page in the cloud console in a new tab. This page is available only to the `admin` role, and all resource identifiers are read-only; administrators can backfill missing model environment variables on a Codex Sandbox Tool that needs repair (see [Sandbox information](#sandbox-information)).
+After signing in, the account menu at the bottom of the sidebar offers a "System info" entry. Selecting it opens the system information page over the current page, which displays the Studio version, storage, sandbox information, and user pools. The back button in the top-left corner of the page returns to the page you were on before opening System info; the previous page is preserved. The TOS bucket, sandbox Tools, and user pools each provide a link that opens the corresponding page in the cloud console in a new tab. This page is available only to the `admin` role, and all resource identifiers are read-only; administrators can update sandbox Tools that have available image updates (see [Sandbox information](#sandbox-information)).
 
 ### General
 
@@ -2745,18 +2745,22 @@ Displays the TOS address used by Studio persistent storage. When `VEADK_STUDIO_T
 
 Lists the sandbox Tools configured in Studio and their IDs, including Codex Sandbox (`SANDBOX_CHAT_CODEX`), DeepSeek Harness Sandbox (`SANDBOX_CHAT_CODEX`), OpenClaw Sandbox (`SANDBOX_CHAT_OPENCLAW`), Hermes Sandbox (`SANDBOX_CHAT_HERMES`), and Dev Sandbox (`SANDBOX_DEV`), shown in a fixed order. DeepSeek Harness Sandbox shares the same AgentKit CodeEnv Tool as Codex Sandbox (`SANDBOX_CHAT_CODEX`), so the two display the same Tool ID. Configured Tool IDs provide a link to the corresponding Tool detail page in the cloud console. Tools without a configured ID show "Not configured".
 
-#### Codex Sandbox model environment repair
+#### Sandbox image update
 
-For Codex Sandbox (`SANDBOX_CHAT_CODEX`) and Codex Sandbox snapshot (`SANDBOX_CHAT_CODEX_SNAPSHOT`), the System info page also checks whether the Tool's environment variables include `MODEL_AGENT_API_KEY` and `MODEL_AGENT_BASE_URL`. When either variable is missing and the Tool also has both `CODEX_API_KEY` and `CODEX_BASE_URL`, an update button appears next to the Tool ID.
+The sandbox information area includes a "Check for updates" button at the top. When clicked, the Studio server uses the configured Volcengine or BytePlus credentials to query the Tool catalog for the current cloud provider and region, retrieving the latest published images for each prebuilt sandbox Tool type and comparing them against the images currently in use by each Tool. Each configured Tool displays the version tags of its current image and the latest image; when the current image differs from the latest, an update indicator is shown. The image catalog is cached on the server for 60 seconds and refreshed before an update is applied.
 
-When an administrator clicks the update button, the Studio server uses its own Volcengine or BytePlus credentials to read `CODEX_API_KEY` and `CODEX_BASE_URL` from the Tool's current environment variables, backfills the missing `MODEL_AGENT_API_KEY` and `MODEL_AGENT_BASE_URL`, and shows the result next to the Tool ID. Keys are never sent to the browser at any point.
+Administrators can update prebuilt sandbox Tools whose status is "Ready" and that have an available update. An available update is either a mismatched image version or, for Codex-type Tools, a need to backfill model environment variables. Clicking the update button next to a Tool submits an update request to the cloud provider, setting the Tool's image to the latest published version. For Codex-type Tools, if the Tool's environment variables are missing `MODEL_AGENT_API_KEY` or `MODEL_AGENT_BASE_URL` while both `CODEX_API_KEY` and `CODEX_BASE_URL` are present, the missing `MODEL_AGENT_*` variables are backfilled from the corresponding `CODEX_*` variables during the update; existing values are not overwritten. After the update is submitted, Studio polls the Tool status until it returns to "Ready" with the updated image, then displays the result next to the Tool. Keys are never sent to the browser at any point.
 
 <Note>
-  If the Tool is missing `CODEX_API_KEY` or `CODEX_BASE_URL`, the update button does not appear and an error message next to the Tool ID indicates which variables are missing. Add the missing variables to the Tool in the cloud console first, then refresh the System info page to re-check.
+  When Codex Sandbox and DeepSeek Harness Sandbox share the same AgentKit Tool, they share update state and the update is applied only once. Snapshot and non-snapshot Tools are checked and updated independently. Private-type Tools do not have corresponding prebuilt published images and cannot be updated through this feature.
+</Note>
+
+<Note>
+  If a Tool's status is not "Ready" (for example, it is currently creating or updating), the update button is unavailable. When a Tool is missing `CODEX_API_KEY` or `CODEX_BASE_URL` and cannot have its model environment variables backfilled, an error message appears next to the Tool. Add the missing variables to the Tool in the cloud console first, then refresh the System info page to re-check.
 </Note>
 
 <Warning>
-  This action only backfills missing `MODEL_AGENT_API_KEY` and `MODEL_AGENT_BASE_URL`; it does not overwrite existing values or modify any other Tool environment variables. Before running it, confirm that the Tool's `CODEX_API_KEY` and `CODEX_BASE_URL` point to the intended model credentials.
+  Sandbox image update only modifies the Tool's image and environment variables; it does not verify or rebuild snapshots of existing sessions. Confirm before running that the update will not affect sessions in progress. The image update feature has automated test coverage under BytePlus, but has not been verified against a live BytePlus account.
 </Warning>
 
 ### User pools
