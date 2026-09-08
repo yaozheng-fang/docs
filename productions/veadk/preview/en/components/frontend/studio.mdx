@@ -1818,7 +1818,7 @@ Installation is atomic: Studio stages the Skill files in a temporary directory, 
 
 When role-based access control is enabled, configuring Coding Agents requires the `developer` or `admin` role.
 
-The GitHub automations (template project import, AgentKit Runtime continuous delivery, and PR automated review) adapt their region options, default region, default model API URL, and required GitHub Secret names to Studio's current cloud provider. In Volcengine mode the region options are `cn-beijing` and `cn-shanghai` (default `cn-beijing`) and the Secrets are `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and the optional `VOLCENGINE_SESSION_TOKEN`; in BytePlus mode the region is `ap-southeast-1` and the Secrets are `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN`. The cloud provider is determined by `--provider` or the `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` environment variables, falling back to Volcengine when unset.
+Template project import and AgentKit Runtime continuous delivery adapt their region options, default region, default model API URL, and required GitHub Secret names to Studio's current cloud provider. In Volcengine mode the region options are `cn-beijing` and `cn-shanghai` (default `cn-beijing`) and the Secrets are `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and the optional `VOLCENGINE_SESSION_TOKEN`; in BytePlus mode the region is `ap-southeast-1` and the Secrets are `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN`. The cloud provider is determined by `--provider` or the `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` environment variables, falling back to Volcengine when unset. PR automated review is triggered through a GitHub App and does not rely on GitHub Actions workflows or GitHub Secrets; see [Pull Request automated review](#pull-request-automated-review).
 
 ### Template project import
 
@@ -1856,33 +1856,48 @@ Adds a GitHub Actions workflow to an existing repository for continuous publishi
 
 ### Pull Request automated review
 
-Adds a GitHub Actions workflow to the target repository that reviews non-draft PRs from the same repository in an isolated AgentKit Sandbox and publishes the review results as a GitHub Review.
+Uses a GitHub App to automatically review pull requests in an isolated Sandbox and publishes the results as GitHub Reviews. After an administrator configures the GitHub App, users install the App to their repositories and enable review per repository in Studio. GitHub sends Pull Request webhooks to Studio, which creates Sandbox review tasks and publishes the results to the corresponding PR.
 
 <Warning>
-  The PR review workflow only reviews non-draft PRs from the same repository, not fork PRs, and does not read repository Secrets from fork PRs.
+  Automated PR review only reviews non-draft PRs from the same repository (`opened`, `synchronize`, `reopened`, `ready_for_review` events), not fork PRs.
 </Warning>
 
-| Parameter | Required | Default | Description |
-| :--- | :--- | :--- | :--- |
-| GitHub Repo | Yes | — | Supports `owner/repository` or a full GitHub URL. |
-| Target branch | No | `main` | The base branch for the PR. |
-| Sandbox Tool ID | Yes | — | The AgentKit CodeEnv Tool ID used to run each review. |
-| Review model | Yes | — | The code review model name injected into the Sandbox. |
-| Model API URL | Yes | `https://ark.cn-beijing.volces.com/api/coding/v3` (Volcengine) / `https://ark.ap-southeast.bytepluses.com/api/v3` (BytePlus) | Must be an OpenAI-compatible HTTPS URL without credentials, query parameters, or fragments. |
-| Region | Yes | `cn-beijing` (Volcengine) / `ap-southeast-1` (BytePlus) | Must match the region of the Sandbox Tool; the available options follow the current cloud provider. |
-| GitHub Token | Yes | — | Requires write access to the target repository; used only for the current request and never persisted. |
+#### Administrator configuration
 
-The PR review workflow requires the following GitHub Secrets to be configured in the repository:
+Create a GitHub App in GitHub and record the App ID, App slug, private key, and webhook secret. In the GitHub App settings, set the webhook URL to the Studio path `/web/github/app/webhook` (for example `https://<Studio address>/web/github/app/webhook`) and set the webhook secret to match the environment variable below. Then configure Studio with the following environment variables:
 
-| Secret | Description |
-| :--- | :--- |
-| `VOLCENGINE_ACCESS_KEY` | Volcengine Access Key (required in Volcengine mode). |
-| `VOLCENGINE_SECRET_KEY` | Volcengine Secret Key (required in Volcengine mode). |
-| `BYTEPLUS_ACCESS_KEY` | BytePlus Access Key (required in BytePlus mode). |
-| `BYTEPLUS_SECRET_KEY` | BytePlus Secret Key (required in BytePlus mode). |
-| `CODEX_MODEL_API_KEY` | API Key for the review model (required). |
-| `VOLCENGINE_SESSION_TOKEN` | Required when using Volcengine temporary credentials. |
-| `BYTEPLUS_SESSION_TOKEN` | Required when using BytePlus temporary credentials. |
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `VEADK_GITHUB_APP_ID` | — | The GitHub App ID. |
+| `VEADK_GITHUB_APP_SLUG` | — | The GitHub App slug, used to generate the install URL. |
+| `VEADK_GITHUB_APP_WEBHOOK_SECRET` | — | The GitHub App webhook secret; must match the value in the GitHub App settings. |
+| `VEADK_GITHUB_APP_PRIVATE_KEY` | — | The GitHub App private key content, with newlines represented as `\n`. |
+| `VEADK_GITHUB_APP_PRIVATE_KEY_B64` | — | Base64-encoded GitHub App private key. Mutually exclusive with `VEADK_GITHUB_APP_PRIVATE_KEY` and `VEADK_GITHUB_APP_PRIVATE_KEY_PATH`; Base64 encoding takes priority. |
+| `VEADK_GITHUB_APP_PRIVATE_KEY_PATH` | — | Path to the GitHub App private key file. Used when neither of the above is set. |
+| `VEADK_GITHUB_APP_REVIEW_OWNER_ID` | `github-app` | The owner identifier for review tasks. |
+| `VEADK_GITHUB_APP_REVIEW_CREATOR` | `GitHub App` | The display name for review tasks. |
+
+<Note>
+  For local startup, provide the above configuration through environment variables. When deploying to VeFaaS, `veadk studio deploy` and `veadk studio update` forward the GitHub App configuration environment variables to the function environment; the private key is preferentially passed as Base64-encoded data.
+</Note>
+
+Automated PR review requires Studio persistent storage to be configured (`VEADK_STUDIO_TOS_BUCKET` and `VEADK_STUDIO_TOS_REGION`) to persist per-repository review toggles and review records. Without persistent storage, users cannot enable review or view records in Studio.
+
+#### Usage flow
+
+1. After the administrator completes the configuration, the "Pull Request automated review" page displays an install link for the GitHub App.
+2. Click "Install GitHub App" to install the App to the target GitHub repositories. After installation, Studio automatically loads the list of installed repositories.
+3. Toggle review on for each repository that should receive automated reviews. Only repositories with review enabled will respond to GitHub webhooks.
+4. Subsequent non-draft PRs in the target repository automatically trigger Sandbox review tasks; review results are published as GitHub Reviews on the corresponding PR.
+5. You can also enter a PR URL from an enabled repository in the "Review now" section to manually start a review.
+
+<Note>
+  The repository list supports search by owner or repository name and paginated loading. Manual review requires the PR URL's repository to have the GitHub App installed and review enabled.
+</Note>
+
+#### Review records
+
+Studio records recent automatically triggered and manually started review tasks and displays them in the "Review records" section. Each record includes the PR link, status (started, completed, ignored, failed), trigger type (webhook or manual), event type, and time. Records with an in-progress review offer an "Open Session" button to jump to the corresponding Sandbox session.
 
 ### Feishu bot
 
