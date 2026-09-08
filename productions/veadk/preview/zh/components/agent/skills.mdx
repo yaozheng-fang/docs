@@ -38,6 +38,10 @@ agent = Agent(tools=[SkillToolset(registry=registry)])
 
 该方式不会在初始化时全量下载技能：`search_skills` 实时拉取远端技能列表，`get_skill` 在需要某个技能时按需下载并加载；远端版本变化后会按新版本重新下载。
 
+<Note>
+`VeSkillRegistry` 加载技能时容忍 `SKILL.md` frontmatter 中的非标准字段（社区扩展），如 `allowed-tools`、`triggers`、`requires` 等。这些字段不会导致加载失败，而是保留在技能 frontmatter 的 `metadata` 中。
+</Note>
+
 ## Harness 技能中心
 
 Harness 可以同时加载 Skill Hub 技能和 AgentKit 技能中心的技能空间。`skills` 中的普通名称或 slug 表示 Skill Hub 技能；`space:` 前缀表示技能中心的技能空间 ID。
