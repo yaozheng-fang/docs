@@ -2360,6 +2360,10 @@ Studio 从维护在北京地域的 TOS 发布源读取新版本，客户部署�
 
 Studio 每三分钟检查一次更新，列出可用版本及其变更说明。管理员确认升级后，Studio 优先下载精简发布包——该包不内置运行时依赖，而是在部署时从当前云服务商的公共制品源拉取已校验的 Python wheel 和 AgentKit CLI；若精简发布包或公共制品不可用，Studio 自动回退到包含全部依赖的完整发布包。无论采用哪种包，Studio 都会校验完整性，然后同时替换 Python 后端与前端资源并重新发布原 Application；Application 与 Function ID、访问 URL、SSO 客户端和服务端 Secret 保持不变。
 
+<Note>
+  精简发布包仅向火山引擎部署提供；BytePlus 部署始终使用包含全部依赖的完整发布包。
+</Note>
+
 在开始更新前，Studio 会先预检当前 VeFaaS Function 角色是否具备完成 OTA 更新所需的全部 IAM 权限（包括读取发布包、创建和更新调度函数、发布应用与函数、安装依赖、管理定时任务触发器以及设置函数最小实例数等权限）。预检以只读方式查询已绑定的 IAM 策略，不修改任何资源。若存在缺失权限，更新在开始任何变更前即被中断，更新对话框列出缺失的权限项并提供对应云服务商的 IAM 控制台链接，管理员完成授权后可重新发起更新。更新进度面板会显示「预检 Studio 更新权限」阶段。
 
 更新过程中，Studio 会检查当前 VeFaaS Function 缺失的云资源并自动补齐：若未配置持久化存储（`VEADK_STUDIO_TOS_BUCKET` 与 `VEADK_STUDIO_TOS_REGION`），则按部署地域创建或复用 TOS 存储桶；若缺少沙箱快照 Tool（`SANDBOX_CHAT_CODEX_SNAPSHOT`、`SANDBOX_CHAT_OPENCLAW_SNAPSHOT`、`SANDBOX_CHAT_HERMES_SNAPSHOT`），则按当前云服务商自动创建。补齐的资源以环境变量形式写入 Function 配置，使旧版本 Studio 在升级后也能使用新增的持久化存储和沙箱能力。更新进度面板会显示「检查并补齐 Studio 云资源」阶段。
@@ -2671,7 +2675,7 @@ Studio 前端的产品行为数据通过 TEA 上报，用于统计 Studio 实例
 
 ## 更新已部署的 Studio
 
-`veadk studio update` 从本地 VeADK 源码重新构建 Studio，更新已有 VeFaaS Function 的代码并重新发布原 Application。运行前安装 Node.js 与 npm，并在 VeADK 源码目录执行：
+`veadk studio update` 从本地 VeADK 源码重新构建 Studio，更新已有 VeFaaS Function 的代码并重新发布原 Application。构建的代码包不内置完整离线运行时和 AgentKit CLI，而是在部署时从当前云服务商的公共制品源拉取已校验的依赖，减小上传包体积。运行前安装 Node.js 与 npm，并在 VeADK 源码目录执行：
 
 ```bash
 export VOLCENGINE_ACCESS_KEY="your-access-key"
