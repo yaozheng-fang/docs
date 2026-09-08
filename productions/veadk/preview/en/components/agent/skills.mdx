@@ -52,6 +52,13 @@ This does not download every skill up front: `search_skills` fetches the remote
 skill list in real time, and `get_skill` downloads and loads a specific skill on
 demand; when the remote version changes, the new version is re-downloaded.
 
+<Note>
+When loading skills, `VeSkillRegistry` tolerates non-standard frontmatter fields
+(community extensions) in `SKILL.md`, such as `allowed-tools`, `triggers`, and
+`requires`. These fields do not cause loading failures; they are preserved in
+the skill frontmatter's `metadata`.
+</Note>
+
 ## Harness skills center
 
 Harness can load both Skill Hub skills and AgentKit skills-center spaces. A plain name or slug in `skills` identifies a Skill Hub skill; the `space:` prefix identifies a skills-center space ID.
