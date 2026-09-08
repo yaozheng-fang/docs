@@ -1818,7 +1818,7 @@ Studio 侧边栏的「自动化」页面提供研发工具和消息渠道的自�
 
 启用角色权限控制时，配置 Coding Agents 需要 `developer` 或 `admin` 角色。
 
-GitHub 自动化（模板项目导入、AgentKit Runtime 持续交付、PR 自动评审）的地域选项、默认地域、模型 API 地址默认值和所需 GitHub Secrets 名称均随 Studio 当前云服务商变化。火山引擎模式下地域可选 `cn-beijing`、`cn-shanghai`（默认 `cn-beijing`），Secrets 为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 与可选的 `VOLCENGINE_SESSION_TOKEN`；BytePlus 模式下地域为 `ap-southeast-1`，Secrets 为 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 与可选的 `BYTEPLUS_SESSION_TOKEN`。云服务商由 `--provider` 或 `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` 环境变量确定，未设置时为火山引擎。
+模板项目导入和 AgentKit Runtime 持续交付的地域选项、默认地域、模型 API 地址默认值和所需 GitHub Secrets 名称均随 Studio 当前云服务商变化。火山引擎模式下地域可选 `cn-beijing`、`cn-shanghai`（默认 `cn-beijing`），Secrets 为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 与可选的 `VOLCENGINE_SESSION_TOKEN`；BytePlus 模式下地域为 `ap-southeast-1`，Secrets 为 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 与可选的 `BYTEPLUS_SESSION_TOKEN`。云服务商由 `--provider` 或 `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` 环境变量确定，未设置时为火山引擎。PR 自动评审通过 GitHub App 触发，不依赖 GitHub Actions 工作流和 GitHub Secrets，其配置方式见[PR 自动评审](#pr-自动评审)。
 
 ### 模板项目导入
 
@@ -1856,33 +1856,48 @@ GitHub 自动化（模板项目导入、AgentKit Runtime 持续交付、PR 自�
 
 ### PR 自动评审
 
-在目标仓库中添加 GitHub Actions 工作流，在隔离的 AgentKit Sandbox 中评审同仓库的非草稿 PR，并将评审结果发布为 GitHub Review。
+通过 GitHub App 在隔离的 Sandbox 中自动评审 Pull Request，并将评审结果发布为 GitHub Review。管理员配置 GitHub App 后，用户将 App 安装到目标仓库并在 Studio 中为各仓库开启评审；GitHub 向 Studio 发送 Pull Request webhook，Studio 自动创建 Sandbox 评审任务并将结果发布到对应 PR。
 
 <Warning>
-  PR 评审工作流仅评审与目标仓库相同的非草稿 PR，不评审 fork 仓库的 PR，不会读取 fork PR 的仓库 Secrets。
+  PR 自动评审仅评审目标仓库的非草稿 PR（`opened`、`synchronize`、`reopened`、`ready_for_review` 事件），不评审 fork 仓库的 PR。
 </Warning>
 
-| 参数 | 必填 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| GitHub Repo | 是 | — | 支持 `owner/repository` 或完整 GitHub URL。 |
-| 目标分支 | 否 | `main` | PR 的 base 分支。 |
-| Sandbox Tool ID | 是 | — | 用于运行每次评审的 AgentKit CodeEnv Tool ID。 |
-| 评审模型 | 是 | — | 注入 Sandbox 的代码评审模型名称。 |
-| 模型 API 地址 | 是 | `https://ark.cn-beijing.volces.com/api/coding/v3`（火山引擎）/ `https://ark.ap-southeast.bytepluses.com/api/v3`（BytePlus） | 必须使用 OpenAI 兼容的 HTTPS 地址，不能包含凭据、查询参数或锚点。 |
-| 地域 | 是 | `cn-beijing`（火山引擎）/ `ap-southeast-1`（BytePlus） | 必须与 Sandbox Tool 所在地域一致；可选项随当前云服务商变化。 |
-| GitHub Token | 是 | — | 需要对目标仓库的写入权限；仅用于当前请求，不持久化。 |
+#### 管理员配置
 
-PR 评审工作流需要在仓库中配置以下 GitHub Secrets：
+在 GitHub 创建一个 GitHub App，记录 App ID、App Slug、私钥和 Webhook Secret。在 GitHub App 设置中将 Webhook URL 指向 Studio 的 `/web/github/app/webhook` 路径（例如 `https://<Studio 地址>/web/github/app/webhook`），并将 Webhook Secret 设置为与下方环境变量一致的值。然后通过以下环境变量配置 Studio：
 
-| Secret | 说明 |
-| :--- | :--- |
-| `VOLCENGINE_ACCESS_KEY` | 火山引擎 Access Key（火山引擎模式必填）。 |
-| `VOLCENGINE_SECRET_KEY` | 火山引擎 Secret Key（火山引擎模式必填）。 |
-| `BYTEPLUS_ACCESS_KEY` | BytePlus Access Key（BytePlus 模式必填）。 |
-| `BYTEPLUS_SECRET_KEY` | BytePlus Secret Key（BytePlus 模式必填）。 |
-| `CODEX_MODEL_API_KEY` | 评审模型的 API Key（必填）。 |
-| `VOLCENGINE_SESSION_TOKEN` | 使用火山引擎临时凭据时必填。 |
-| `BYTEPLUS_SESSION_TOKEN` | 使用 BytePlus 临时凭据时必填。 |
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `VEADK_GITHUB_APP_ID` | — | GitHub App ID。 |
+| `VEADK_GITHUB_APP_SLUG` | — | GitHub App 的 slug，用于生成安装链接。 |
+| `VEADK_GITHUB_APP_WEBHOOK_SECRET` | — | GitHub App Webhook Secret，需与 GitHub App 设置中的值一致。 |
+| `VEADK_GITHUB_APP_PRIVATE_KEY` | — | GitHub App 私钥内容，换行使用 `\n` 表示。 |
+| `VEADK_GITHUB_APP_PRIVATE_KEY_B64` | — | GitHub App 私钥的 Base64 编码。与 `VEADK_GITHUB_APP_PRIVATE_KEY` 和 `VEADK_GITHUB_APP_PRIVATE_KEY_PATH` 三选一；优先使用 Base64 编码。 |
+| `VEADK_GITHUB_APP_PRIVATE_KEY_PATH` | — | GitHub App 私钥文件路径。在前两者均未设置时使用。 |
+| `VEADK_GITHUB_APP_REVIEW_OWNER_ID` | `github-app` | 评审任务的创建者标识。 |
+| `VEADK_GITHUB_APP_REVIEW_CREATOR` | `GitHub App` | 评审任务的展示名称。 |
+
+<Note>
+  本地启动时通过环境变量提供上述配置。部署到 VeFaaS 时，`veadk studio deploy` 和 `veadk studio update` 会将 GitHub App 配置环境变量透传到函数环境；私钥优先以 Base64 编码形式传递。
+</Note>
+
+PR 自动评审需要 Studio 已配置持久化存储（`VEADK_STUDIO_TOS_BUCKET` 与 `VEADK_STUDIO_TOS_REGION`），用于保存各仓库的评审开关和评审记录。未配置持久化存储时，用户无法在 Studio 中开启评审或查看记录。
+
+#### 使用流程
+
+1. 管理员完成上述配置后，Studio 的「PR 自动评审」页面显示 GitHub App 的安装链接。
+2. 点击「安装 GitHub App」，将 App 安装到目标 GitHub 仓库。安装后 Studio 自动加载已安装的仓库列表。
+3. 在仓库列表中为需要自动评审的仓库开启评审开关。仅开启评审的仓库会响应 GitHub webhook 自动触发评审。
+4. 后续目标仓库中创建或更新的非草稿 PR 会自动触发 Sandbox 评审任务，评审完成后结果发布为对应 PR 的 GitHub Review。
+5. 也可以在「立刻评审」区域输入已启用仓库的 PR URL，手动发起一次评审。
+
+<Note>
+  仓库列表支持按 owner 或仓库名搜索，分页加载。手动评审要求输入的 PR URL 所属仓库已安装 GitHub App 且已开启评审。
+</Note>
+
+#### 评审记录
+
+Studio 记录最近自动触发和手动发起的评审任务，在「评审记录」区域展示。每条记录包含 PR 链接、状态（评审中、已完成、已忽略、失败）、触发方式（自动触发或手动发起）、触发事件类型和时间。评审中的记录可点击「打开 Session」跳转到对应的 Sandbox 会话。
 
 ### 飞书机器人
 
