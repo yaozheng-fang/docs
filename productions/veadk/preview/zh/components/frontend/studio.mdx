@@ -2537,6 +2537,10 @@ Hermes 独立 Tool 需要在部署时配置模型参数（`--vestack-hermes-mode
   Codex 独立 Tool 默认启用（`VEADK_STUDIO_CODEX_TOOL_PER_AGENT=true`）。Hermes 独立 Tool 仅在提供了完整的 Hermes 模型参数时启用。
 </Note>
 
+<Note>
+  Hermes Dashboard 的自动启动和代理仅在 VeStack 部署模式下生效。非 VeStack（公有云）部署模式下不会启动或代理 Hermes Dashboard。
+</Note>
+
 ### OpenAPI 端点覆盖
 
 VeStack 环境中，各云服务的 OpenAPI 端点通常指向内部地址。部署时通过 `--vestack-openapi-url` 统一设置 VeFaaS、APIG、IAM 和 Identity 的 OpenAPI Host 与 Scheme。部署后，Studio 运行时通过以下环境变量覆盖各服务的 OpenAPI 端点：

@@ -2537,6 +2537,10 @@ The Hermes independent Tool requires model parameters to be configured at deploy
   The Codex independent Tool is enabled by default (`VEADK_STUDIO_CODEX_TOOL_PER_AGENT=true`). The Hermes independent Tool is enabled only when complete Hermes model parameters are provided.
 </Note>
 
+<Note>
+  The Hermes Dashboard auto-start and proxy apply only in VeStack deployment mode. In non-VeStack (public cloud) deployments, the Hermes Dashboard is not started or proxied.
+</Note>
+
 ### OpenAPI endpoint overrides
 
 In VeStack environments, the OpenAPI endpoints for each cloud service typically point to internal addresses. At deploy time, `--vestack-openapi-url` uniformly sets the OpenAPI Host and Scheme for VeFaaS, APIG, IAM, and Identity. After deployment, Studio overrides each service's OpenAPI endpoint through the following environment variables:
