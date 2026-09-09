@@ -8,6 +8,9 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 调试 | 调试运行时 MCP 连接失败的错误提示改为按失败原因分类，包括认证被拒绝、地址未提供可用的 MCP 服务、服务限流、服务暂时不可用、连接成功但未发现可用工具、连接超时、网络连接失败或服务响应不符合 MCP 协议，取代此前统一的错误提示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 调试与部署 | MCP 凭证复用决定在调试测试和部署之间保持一致：调试时复用的 MCP 凭证会同步应用到部署运行时环境，且凭证复用不再要求启用 Harness Sidecar MCP 稳定性治理。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的智能体) |
+| Studio MCP | MCP 服务地址的路径校验提示调整：仅在地址为网关根路径（无业务路径）时提示确认是否为完整的服务地址，不再对不以 `/mcp` 结尾的地址统一提示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio BFF 动态工具 | `enable_studio_tools=True` 在根智能体为工作流智能体（`SequentialAgent`、`ParallelAgent`、`LoopAgent`）时自动关闭。工作流根智能体不执行工具调用，因此不再挂载 Studio BFF 动态工具宿主。Studio 代码生成也根据智能体类型自动设置该选项。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
 | Studio 调试 | 选择 Runtime 目标进行调试测试时，MCP 工具的鉴权凭证从已发布 Runtime 的环境变量中恢复并注入调试运行环境，用于 MCP 端点发现；编辑后的 MCP 服务地址与已发布配置不一致时不恢复凭证。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的智能体) |
 | Studio 部署 | 部署时「自动创建评测集」默认值从开启改为关闭；如需创建 Good Case 和 Bad Case 评测集，可在部署配置区手动开启。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#评测集创建) |
