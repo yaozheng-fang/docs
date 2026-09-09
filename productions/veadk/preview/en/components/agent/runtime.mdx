@@ -62,6 +62,12 @@ agent = Agent(name="assistant", runtime="codex")
 | `codex` | Runs the inner loop through the Codex SDK and bridges function tools, MCP tools, and skills. |
 | `piagent` | Runs the inner loop through PiAgent RPC and bridges function tools, MCP tools, and skills. Added in 1.0.5. |
 
+
+<Note>
+  The `codex` and `piagent` runtimes do not build a LiteLLM client, so the `model_fallbacks` parameter is ignored. Use the default ADK runtime if you need model fallbacks, or configure fallbacks on a custom model object passed via `model`. See [Model](/productions/veadk/preview/en/components/agent/model#configure-cross-provider-fallback-models).
+</Note>
+
+
 ### Use the Codex runtime
 
 The Codex runtime requires the optional `codex` dependency group, which is not
