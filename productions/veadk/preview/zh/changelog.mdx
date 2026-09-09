@@ -8,6 +8,8 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 调试 | 选择 Runtime 目标进行调试测试时，MCP 工具的鉴权凭证从已发布 Runtime 的环境变量中恢复并注入调试运行环境，用于 MCP 端点发现；编辑后的 MCP 服务地址与已发布配置不一致时不恢复凭证。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的智能体) |
+| Studio 部署 | 部署时「自动创建评测集」默认值从开启改为关闭；如需创建 Good Case 和 Bad Case 评测集，可在部署配置区手动开启。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#评测集创建) |
 | 模型 | `Agent` 新增 `model_fallbacks` 参数，支持配置跨提供商回退模型。新增 `ModelFallbackEndpoint` 类，可为每个回退端点单独指定提供商、API 地址、API Key 与额外配置；字符串条目按主模型提供商自动添加前缀。`model_fallbacks` 与 `model_name` 列表回退合并后传给 LiteLLM。使用 `enable_responses=True` 时仅支持字符串回退；`codex` 和 `piagent` 运行时不支持 `model_fallbacks`。 | [模型](/productions/veadk/preview/zh/components/agent/model#配置跨提供商回退模型) · [运行时](/productions/veadk/preview/zh/components/agent/runtime#切换执行后端) |
 | 技能 | `VeSkillRegistry` 加载云端技能时容忍 `SKILL.md` frontmatter 中的非标准字段（社区扩展），如 `allowed-tools`、`triggers`、`requires` 等；这些字段不再导致加载失败，而是保留在技能 frontmatter 的 `metadata` 中。 | [技能](/productions/veadk/preview/zh/components/agent/skills#云端技能空间) |
 | 技能 | `enable_dynamic_load_skills` 现可独立于 `skills` 使用：即使未配置初始技能列表，启用后仍会初始化技能工具集并注册每轮刷新回调。同时改进技能归档安装流程：下载暂存到临时目录，校验后原子替换并支持失败回滚，自动处理不同的归档布局，清理残留的旧版 ZIP 文件，本地技能符号链接在源目录变化时自动刷新。 | [技能](/productions/veadk/preview/zh/components/agent/skills#动态加载技能) |
