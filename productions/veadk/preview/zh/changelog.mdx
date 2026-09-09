@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 模型 | `Agent` 新增 `model_fallbacks` 参数，支持配置跨提供商回退模型。新增 `ModelFallbackEndpoint` 类，可为每个回退端点单独指定提供商、API 地址、API Key 与额外配置；字符串条目按主模型提供商自动添加前缀。`model_fallbacks` 与 `model_name` 列表回退合并后传给 LiteLLM。使用 `enable_responses=True` 时仅支持字符串回退；`codex` 和 `piagent` 运行时不支持 `model_fallbacks`。 | [模型](/productions/veadk/preview/zh/components/agent/model#配置跨提供商回退模型) · [运行时](/productions/veadk/preview/zh/components/agent/runtime#切换执行后端) |
 | 技能 | `VeSkillRegistry` 加载云端技能时容忍 `SKILL.md` frontmatter 中的非标准字段（社区扩展），如 `allowed-tools`、`triggers`、`requires` 等；这些字段不再导致加载失败，而是保留在技能 frontmatter 的 `metadata` 中。 | [技能](/productions/veadk/preview/zh/components/agent/skills#云端技能空间) |
 | Studio 沙箱 | 内置智能体的会话结束后，其最新保存记录改为以「已休眠」状态出现在智能体列表中，打开时按需显式唤醒，不再在打开列表时自动批量恢复。唤醒过程中显示等待提示并允许失败重试，同一服务实例内对同一智能体的唤醒请求串行处理并在重试时复用已有就绪会话。用户可查看、唤醒和删除自己的休眠记录，管理员可额外管理缺少归属信息的旧记录；同一 Tool 上其他智能体类型的记录会被过滤。删除休眠记录需确认且仅删除所选记录，恢复失败的记录仍可删除但无法打开。此前管理员打开列表会自动并发恢复（至多 3 个）可恢复快照。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#状态与历史) |
 | Studio 自动化 | PR 自动评审改为通过 GitHub App 触发：管理员配置 GitHub App 环境变量后，用户将 App 安装到目标仓库并在 Studio 中为各仓库开启评审；GitHub Pull Request webhook 自动触发 Sandbox 评审任务并将结果发布为 GitHub Review。取代了此前通过 GitHub Actions 工作流和 GitHub Token 创建评审配置的方式。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#pr-自动评审) |

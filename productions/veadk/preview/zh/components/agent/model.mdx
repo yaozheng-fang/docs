@@ -43,6 +43,90 @@ agent = Agent(
 
 回退模型同时适用于默认模型接口与 `enable_responses=True` 的 Responses API。
 
+## 配置跨提供商回退模型
+
+`model_name` 列表只能指定同一提供商下的回退模型。当回退模型使用不同的提供商、API 地址或 API Key 时，通过 `model_fallbacks` 参数指定。`model_fallbacks` 接受字符串或 `ModelFallbackEndpoint` 对象的列表，VeADK 会将其与 `model_name` 列表中的回退条目合并后一并传给 LiteLLM。
+
+字符串条目按主模型的 `model_provider` 自动添加提供商前缀，等价于在 `model_name` 列表中追加同提供商模型名称：
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    model_name="doubao-seed-2-1-pro-260628",
+    model_provider="ark",
+    model_fallbacks=["deepseek-r1-250528"],
+)
+```
+
+需要跨提供商回退时，使用 `ModelFallbackEndpoint` 为每个回退端点单独指定提供商、API 地址与凭证。`ModelFallbackEndpoint` 已从 `veadk` 顶层包导出：
+
+```python
+from veadk import Agent, ModelFallbackEndpoint
+
+agent = Agent(
+    model_name="doubao-seed-2-1-pro-260628",
+    model_provider="ark",
+    model_api_key="primary-key",
+    model_api_base="https://ark.example.com/api/v3",
+    model_fallbacks=[
+        ModelFallbackEndpoint(
+            model_provider="openai",
+            model_name="gpt-4o-mini",
+            model_api_base="https://api.openai.com/v1",
+            model_api_key_env="BACKUP_MODEL_API_KEY",
+        ),
+    ],
+)
+```
+
+也可以传入与 `ModelFallbackEndpoint` 字段匹配的字典。VeADK 同时接受完整字段名与 LiteLLM 风格的别名：
+
+```python
+agent = Agent(
+    model_name="doubao-seed-2-1-pro-260628",
+    model_provider="ark",
+    model_api_key="primary-key",
+    model_api_base="https://ark.example.com/api/v3",
+    model_fallbacks=[
+        {
+            "model": "openai/gpt-4o-mini",
+            "api_key": "openai-key",
+            "api_base": "https://api.openai.com/v1",
+        }
+    ],
+)
+```
+
+### `ModelFallbackEndpoint` 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `model_name` | `str` | — | 回退模型名称。不包含提供商前缀时，若未设置 `model_provider` 则使用主模型的 `model_provider`。 |
+| `model_provider` | `Optional[str]` | `None` | 回退模型的提供商。与主模型不同时视为跨提供商回退，需单独提供凭证与 API 地址。 |
+| `model_api_base` | `Optional[str]` | `None` | 回退模型的 API 地址。跨提供商回退时必须设置。 |
+| `model_api_key` | `Optional[str]` | `None` | 回退模型的 API Key，直接以值传入。 |
+| `model_api_key_env` | `Optional[str]` | `None` | 回退模型 API Key 的环境变量名称，VeADK 在运行时读取该环境变量的值。 |
+| `model_extra_config` | `dict` | `{}` | 传递给 LiteLLM 的额外配置。其中 `extra_headers` 和 `extra_body` 会与主模型的 `model_extra_config` 中对应字段深度合并，其余字段以回退端点的值为准。 |
+
+<Note>
+  `ModelFallbackEndpoint` 同时接受 LiteLLM 风格的别名：`model`、`provider`、`api_base`（或 `base_url`）、`api_key`、`api_key_env`、`extra_config`。
+</Note>
+
+<Warning>
+  使用 `enable_responses=True`（Responses API）时，`model_fallbacks` 仅支持字符串条目（同一提供商的模型名称）。传入 `ModelFallbackEndpoint` 或字典形式的端点会报错。
+</Warning>
+
+<Note>
+  在 `codex` 或 `piagent` 运行时中配置 `model_fallbacks` 时，回退链会被忽略，因为外部运行时不构建 LiteLLM 客户端。如需回退能力，请使用默认的 ADK 运行时。详见[运行时](/productions/veadk/preview/zh/components/agent/runtime#切换执行后端)。
+</Note>
+
+<Note>
+  当同时传入 `model`（自定义 LiteLLM 客户端）与 `model_fallbacks` 时，`model_fallbacks` 不会生效；请在自定义模型对象上配置回退。
+</Note>
+
+
+
 ## Responses API
 
 Responses API 是火山方舟推出的接口，原生支持高效的上下文管理，输入输出格式更简洁，并具备更强的工具调用与多模态能力。在 VeADK 中启用后，智能体的每一轮对话都会经由该接口，从而获得原生的上下文缓存与图片、视频、文档理解能力。

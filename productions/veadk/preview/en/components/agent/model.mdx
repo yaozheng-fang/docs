@@ -57,6 +57,90 @@ agent = Agent(
 Fallbacks apply to both the default model interface and the Responses API when
 `enable_responses=True`.
 
+## Configure cross-provider fallback models
+
+The `model_name` list only supports fallbacks within the same provider. When a fallback model uses a different provider, API base, or API key, use the `model_fallbacks` parameter. It accepts a list of strings or `ModelFallbackEndpoint` objects; VeADK merges them with any `model_name` list fallbacks and passes the combined chain to LiteLLM.
+
+String entries are automatically prefixed with the primary model's `model_provider`, equivalent to appending same-provider model names to the `model_name` list:
+
+```python
+from veadk import Agent
+
+agent = Agent(
+    model_name="doubao-seed-2-1-pro-260628",
+    model_provider="ark",
+    model_fallbacks=["deepseek-r1-250528"],
+)
+```
+
+For cross-provider fallbacks, use `ModelFallbackEndpoint` to specify a separate provider, API base, and credentials for each fallback endpoint. `ModelFallbackEndpoint` is exported from the top-level `veadk` package:
+
+```python
+from veadk import Agent, ModelFallbackEndpoint
+
+agent = Agent(
+    model_name="doubao-seed-2-1-pro-260628",
+    model_provider="ark",
+    model_api_key="primary-key",
+    model_api_base="https://ark.example.com/api/v3",
+    model_fallbacks=[
+        ModelFallbackEndpoint(
+            model_provider="openai",
+            model_name="gpt-4o-mini",
+            model_api_base="https://api.openai.com/v1",
+            model_api_key_env="BACKUP_MODEL_API_KEY",
+        ),
+    ],
+)
+```
+
+You can also pass dicts matching `ModelFallbackEndpoint` fields. VeADK accepts both full field names and LiteLLM-style aliases:
+
+```python
+agent = Agent(
+    model_name="doubao-seed-2-1-pro-260628",
+    model_provider="ark",
+    model_api_key="primary-key",
+    model_api_base="https://ark.example.com/api/v3",
+    model_fallbacks=[
+        {
+            "model": "openai/gpt-4o-mini",
+            "api_key": "openai-key",
+            "api_base": "https://api.openai.com/v1",
+        }
+    ],
+)
+```
+
+### `ModelFallbackEndpoint` parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `model_name` | `str` | — | Fallback model name. When it does not include a provider prefix and `model_provider` is not set, the primary model's `model_provider` is used. |
+| `model_provider` | `Optional[str]` | `None` | Fallback model provider. When it differs from the primary model, the fallback is treated as cross-provider and requires its own credentials and API base. |
+| `model_api_base` | `Optional[str]` | `None` | Fallback model API base URL. Required for cross-provider fallbacks. |
+| `model_api_key` | `Optional[str]` | `None` | Fallback model API key, passed as a literal value. |
+| `model_api_key_env` | `Optional[str]` | `None` | Name of the environment variable holding the fallback model API key; VeADK reads its value at runtime. |
+| `model_extra_config` | `dict` | `{}` | Extra configuration passed to LiteLLM. The `extra_headers` and `extra_body` fields are deep-merged with the corresponding fields in the primary model's `model_extra_config`; all other fields use the fallback endpoint's values. |
+
+<Note>
+  `ModelFallbackEndpoint` also accepts LiteLLM-style aliases: `model`, `provider`, `api_base` (or `base_url`), `api_key`, `api_key_env`, `extra_config`.
+</Note>
+
+<Warning>
+  When `enable_responses=True` (Responses API), `model_fallbacks` only supports string entries (same-provider model names). Passing `ModelFallbackEndpoint` or dict-form endpoints raises an error.
+</Warning>
+
+<Note>
+  When `model_fallbacks` is configured in the `codex` or `piagent` runtime, the fallback chain is ignored because external runtimes do not build a LiteLLM client. Use the default ADK runtime if you need fallbacks. See [Runtime](/productions/veadk/preview/en/components/agent/runtime#switch-execution-backend).
+</Note>
+
+<Note>
+  When both `model` (a custom LiteLLM client) and `model_fallbacks` are provided, `model_fallbacks` has no effect; configure fallbacks on the custom model object instead.
+</Note>
+
+
+
 ## Responses API
 
 The Responses API is a Volcengine Ark interface with native, efficient context

@@ -58,6 +58,12 @@ agent = Agent(name="assistant", runtime="codex")
 | `codex` | 使用 Codex SDK 执行内层循环，并桥接智能体的函数工具、MCP 工具与技能。 |
 | `piagent` | 通过 PiAgent RPC 执行内层循环，并桥接函数工具、MCP 工具与技能。1.0.5 新增。 |
 
+
+<Note>
+  `codex` 和 `piagent` 运行时不构建 LiteLLM 客户端，因此 `model_fallbacks` 参数会被忽略。如需模型回退能力，请使用默认的 ADK 运行时，或在 `model` 参数传入的自定义模型对象上配置回退。详见[模型](/productions/veadk/preview/zh/components/agent/model#配置跨提供商回退模型)。
+</Note>
+
+
 ### 使用 Codex 运行时
 
 Codex 运行时依赖可选依赖组 `codex`，该依赖不会随 VeADK 默认安装。使用前安装所需依赖：
