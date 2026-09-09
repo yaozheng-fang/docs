@@ -633,11 +633,14 @@ veadk studio deploy \
 </Steps>
 
 <Warning>
-  迁移在 Dev Sandbox Session 中执行，Session 有效期为 1 小时。Session 过期后，临时迁移环境中的预览、下载和部署不再可用；已保存到持久化存储的源码版本不受影响，可在「已迁移项目」页面继续查看、下载、部署或恢复。未配置持久化存储时，迁移产物仅在 Session 有效期内可用。迁移产物中的 `app.py` 会在部署后的 AgentKit Runtime 中执行，只部署可信来源的项目。
+  迁移在 Dev Sandbox Session 中执行，Session 有效期为 1 小时。Session 过期后，临时迁移环境中的预览、下载和部署不再可用；已保存到持久化存储的源码版本不受影响，可在「已迁移项目」页面继续查看、下载、部署或恢复。未配置持久化存储时，迁移产物仅在 Session 有效期内可用。迁移产物中的启动入口文件会在部署后的 AgentKit Runtime 中执行，只部署可信来源的项目。
 </Warning>
 
 <Note>
   从迁移产物部署到 AgentKit 时，Studio 会根据当前云服务商自动适配模型环境变量（`MODEL_AGENT_API_BASE`、`MODEL_AGENT_NAME` 和 `MODEL_NAME`），确保迁移产物在目标云环境下使用正确的模型端点和模型名称。
+</Note>
+<Note>
+  从迁移产物部署到 AgentKit 时，Studio 生成的默认 Dockerfile 的启动命令使用迁移产物 `agentkit.yaml` 中 `common.entry_point` 指定的入口文件。若未声明 `common.entry_point`，则回退到迁移工具返回的启动入口文件。从已保存的迁移版本部署时同样适用此规则。
 </Note>
 <Note>
   部署迁移产物到 AgentKit 前，迁移工具需确认产物可部署到 Runtime。若迁移工具尚未确认可部署状态，部署会被拒绝并提示尚未确认迁移产物可部署到 Runtime，请在迁移完成后再试。
