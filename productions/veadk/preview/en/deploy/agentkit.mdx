@@ -70,6 +70,10 @@ Studio can expose local or intranet-only tools to a compatible AgentKit Runtime 
 
 Build the Runtime app with `create_agentkit_app(..., enable_studio_tools=True)` to mount one generic `StudioExternalToolset`. It contains no concrete executor and is hidden from Agent introspection. During a Studio-channel run, an async-local immutable snapshot supplies only the tools selected for that run; ordinary `/run_sse` requests see an empty snapshot. With the option disabled (the default), the Runtime advertises `enabled=false` and does not mount the Toolset or tool-channel execution endpoints.
 
+<Note>
+When the root agent is a workflow agent (`SequentialAgent`, `ParallelAgent`, or `LoopAgent`), `enable_studio_tools=True` is automatically overridden and disabled. Workflow root agents do not perform tool calls, so the Studio BFF dynamic tools host is not needed.
+</Note>
+
 <Warning>
 The previous session-scoped capability overlay endpoints (`/harness/capabilities/tools`, `/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities`, and `/harness/run_sse`) have been removed and replaced by the Studio BFF dynamic tools mechanism.
 </Warning>
@@ -104,7 +108,7 @@ app = create_agentkit_app(
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `enable_studio_tools` | `bool` | `False` | Whether to mount the generic Runtime host for Studio BFF-owned dynamic tools. When enabled, mounts `StudioExternalToolset` to receive the tool catalog and execute tool calls through the reverse channel during Studio-channel runs. |
+| `enable_studio_tools` | `bool` | `False` | Whether to mount the generic Runtime host for Studio BFF-owned dynamic tools. When enabled, mounts `StudioExternalToolset` to receive the tool catalog and execute tool calls through the reverse channel during Studio-channel runs. Automatically disabled when the root agent is a workflow agent (`SequentialAgent`, `ParallelAgent`, `LoopAgent`); workflow root agents do not perform tool calls. |
 
 ### Limitations
 
