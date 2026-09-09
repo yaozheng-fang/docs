@@ -70,6 +70,10 @@ Studio 可以将本地或内网工具通过反向通道暴露给兼容的 AgentK
 
 在 Runtime 侧通过 `create_agentkit_app(..., enable_studio_tools=True)` 挂载一个通用的 `StudioExternalToolset`。该 Toolset 不包含任何具体执行器，且对智能体内省不可见。在 Studio-channel 运行期间，一次异步局部的不可变快照仅提供该次运行选中的工具；普通 `/run_sse` 请求看到空快照。未启用该选项（默认）时，Runtime 对外声明 `enabled=false`，不挂载 Toolset 或工具通道执行端点。
 
+<Note>
+当根智能体为工作流智能体（`SequentialAgent`、`ParallelAgent` 或 `LoopAgent`）时，即使传入 `enable_studio_tools=True`，该选项也会被自动关闭。工作流根智能体不执行工具调用，因此无需挂载 Studio BFF 动态工具宿主。
+</Note>
+
 <Warning>
 此前版本的会话级能力叠加接口（`/harness/capabilities/tools`、`/harness/apps/{app_name}/users/{user_id}/sessions/{session_id}/capabilities` 和 `/harness/run_sse`）已移除，由 Studio BFF 动态工具机制替代。
 </Warning>
@@ -104,7 +108,7 @@ app = create_agentkit_app(
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `enable_studio_tools` | `bool` | `False` | 是否在 Runtime 侧挂载 Studio BFF 动态工具的通用宿主。启用后挂载 `StudioExternalToolset`，在 Studio-channel 运行期间通过反向通道接收工具目录并执行工具调用。 |
+| `enable_studio_tools` | `bool` | `False` | 是否在 Runtime 侧挂载 Studio BFF 动态工具的通用宿主。启用后挂载 `StudioExternalToolset`，在 Studio-channel 运行期间通过反向通道接收工具目录并执行工具调用。根智能体为工作流智能体（`SequentialAgent`、`ParallelAgent`、`LoopAgent`）时自动关闭，工作流根智能体不执行工具调用。 |
 
 ### 限制
 
