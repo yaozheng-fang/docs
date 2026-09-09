@@ -142,3 +142,11 @@ agent = Agent(
     tools=[execute_skills],
 )
 ```
+
+### Dynamic skill loading
+
+When `enable_dynamic_load_skills=True` is set, the agent reloads skills from their configured sources (local directories or cloud skill spaces) before each turn. When new, modified, or deleted skills are detected, the skill list, instruction, and tools are updated automatically without restarting.
+
+<Note>
+`enable_dynamic_load_skills` can now be used independently of `skills`: even without an initial skill list, enabling it initializes the skills toolset and registers the refresh callback.
+</Note>

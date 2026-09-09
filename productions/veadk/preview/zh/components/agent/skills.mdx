@@ -121,3 +121,11 @@ agent = Agent(
     tools=[execute_skills],
 )
 ```
+
+### 动态加载技能
+
+设置 `enable_dynamic_load_skills=True` 后，智能体在每轮开始前重新从配置的技能来源（本地目录或云端技能空间）加载技能，检测新增、修改或删除的技能后自动更新技能列表、指令和工具集，无需重启。
+
+<Note>
+`enable_dynamic_load_skills` 可独立于 `skills` 使用：即使未配置初始技能列表，启用后仍会初始化技能工具集并注册刷新回调。
+</Note>
