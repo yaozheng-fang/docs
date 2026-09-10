@@ -2332,7 +2332,7 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
 
 未指定 `--sandbox-chat-codex-tool-id` 时，部署命令会在 `--region` 指定的地域创建内置智能体使用的 AgentKit CodeEnv Tool；同时还会额外创建一个 DevEnv Tool 用于开发沙箱。这些 Tool 创建的 Session 与 VeFaaS Function、API Gateway 保持同一地域。模型凭据只配置在各自 Tool 中，VeFaaS Function 只接收 Tool ID。若已有符合要求且地域一致的 Tool，可通过参数直接复用。
 
-部署还会自动创建或复用启用持久化快照的 Studio Sandbox Tool，用于[代码项目](#studio-sandbox-代码项目)。该 Tool 默认规格为 8 核 CPU、16 GB 内存，使用与部署地域对应的 `studio-sandbox` 镜像：
+部署还会与其他沙箱 Tool 并行创建启用持久化快照的 Studio Sandbox Tool，用于[代码项目](#studio-sandbox-代码项目)。创建时自动获取模型凭据，注入 `MODEL_AGENT_NAME`、`MODEL_AGENT_BASE_URL` 和 `MODEL_AGENT_API_KEY`。该 Tool 默认规格为 8 核 CPU、16 GB 内存，使用与部署地域对应的 `studio-sandbox` 镜像：
 
 | 云环境 | 地域 | 镜像 |
 | --- | --- | --- |
@@ -2340,7 +2340,7 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
 | 火山引擎 | cn-shanghai | `enterprise-cn-shanghai-cn-shanghai.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
 | BytePlus | ap-southeast-1 | `enterprise-public-ap-southeast-1.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
 
-可通过 `STUDIO_WORKSPACE_IMAGE` 环境变量指定区域可访问的其他镜像。启动命令使用镜像内的 `/opt/gem/run.sh`，不再注入编辑器补丁。火山引擎默认中文，BytePlus 默认英文，模型配置沿用相应云环境的 Studio 配置。部署后通过 `STUDIO_WORKSPACE_TOOL_ID` 环境变量绑定工作区，系统信息页面显示对应的 Tool ID。
+可通过 `STUDIO_WORKSPACE_IMAGE` 环境变量指定区域可访问的其他镜像。启动命令使用镜像内的 `/opt/gem/run.sh`，不再注入编辑器补丁。火山引擎默认中文，BytePlus 默认英文，模型配置沿用相应云环境的 Studio 配置。可通过 `--studio-sandbox-tool-id`（或环境变量 `STUDIO_WORKSPACE_TOOL_ID`）指定已配置好的持久化 Tool，此时直接复用，不重新创建或修改配置。部署后通过 `STUDIO_WORKSPACE_TOOL_ID` 环境变量绑定工作区，系统信息页面显示对应的 Tool ID。
 
 沙箱 Tool 使用的模型、接入地址和候选地域按云服务商区分：火山引擎使用 `doubao-seed-2-1-pro-260628` 模型与 `https://ark.cn-beijing.volces.com/api/v3`，候选地域为 `cn-beijing` 与 `cn-shanghai`；BytePlus 使用 `dola-seed-2-1-turbo-260628` 模型与 `https://ark.ap-southeast.bytepluses.com/api/v3`，候选地域为 `ap-southeast-1`。
 
@@ -2445,7 +2445,7 @@ veadk studio deploy \
 | `--precheck-only` | `bool` 标志 | `false` | 仅执行只读 IAM 权限预检，不创建任何云资源。 |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | 自动创建 | 内置智能体使用的 AgentKit CodeEnv Tool ID；也可通过 `SANDBOX_CHAT_CODEX` 设置。 |
 | `--sandbox-dev-tool-id` | `str \| None` | 自动创建 | 开发沙箱使用的 AgentKit DevEnv Tool ID；也可通过 `SANDBOX_DEV` 设置。 |
-| `STUDIO_WORKSPACE_TOOL_ID` | `str` | 自动创建 | Studio Sandbox 代码项目使用的 Private Tool ID。部署时自动创建或复用；更新时自动补齐。 |
+| `--studio-sandbox-tool-id` | `str \| None` | 自动创建 | Studio Sandbox 代码项目使用的 Private Tool ID；也可通过 `STUDIO_WORKSPACE_TOOL_ID` 设置。指定已配置好的持久化 Tool 时直接复用，不重新创建或修改配置。 |
 | `STUDIO_WORKSPACE_IMAGE` | `str` | 按地域选择 | 覆盖 Studio Sandbox 使用的镜像引用。需要在所选地域可访问。 |
 | `--studio-update-bucket` | `str \| None` | `veadk-studio`（火山引擎）/ `veadk-studio-byteplus`（BytePlus） | 存放 Studio 不可变发布包的 TOS Bucket；部署时写入函数环境变量 `VEADK_STUDIO_UPDATE_BUCKET`。也可通过 `VEADK_STUDIO_UPDATE_BUCKET` 设置。 |
 | `--studio-update-prefix` | `str` | `veadk/studio/main` | Studio 主发布渠道的 TOS 对象前缀。也可通过 `VEADK_STUDIO_UPDATE_PREFIX` 设置。 |
@@ -2737,7 +2737,7 @@ export VOLCENGINE_SECRET_KEY="your-secret-key"
 veadk studio update --vefaas-app-name "veadk-studio"
 ```
 
-省略 `--region` 和 `--project` 时，命令会在北京、上海及全部可见项目中查找同名 Application。若存在多个候选项，需要补充地域或项目缩小范围。更新保留 Application 与 Function ID、访问 URL、SSO、IAM、网关和已有环境变量；品牌和各 CodeEnv、DevEnv Tool ID 仅在显式传入相应参数时覆盖。更新时还会检查并补齐 Studio Sandbox Tool：若函数环境中缺少 `STUDIO_WORKSPACE_TOOL_ID`，更新会自动创建启用持久化快照的 Studio Sandbox Tool 并保存绑定；已有 Tool ID 时保留绑定。创建失败时更新报错，不忽略失败。从尚不支持代码项目的旧版本更新时，新版本首次启动会在后台补建并保存 Tool ID；补建期间代码项目暂不可用，失败会记录日志，可检查权限后重试更新。更新时自动检查并补齐 `VEADK_STUDIO_KNOWLEDGE_SIGNING_KEY` 环境变量：若缺失则根据当前环境生成，确保更新后知识库管理功能可用。若函数使用默认 Studio IAM Role，更新时会同步刷新该角色的托管策略至最新版本；使用自定义 Role 时不做修改。更新还会向已绑定的 VeIdentity 用户池客户端注册当前 Studio 公网地址的 `/oauth2/callback` 回调并启用免确认，确保更新后 SSO 登录回调可用；注册失败时终端会输出 warning，并提示在用户池客户端的允许回调地址中手动添加该地址。查询已有部署与提交代码包更新时，命令会对限流、网络抖动等服务端临时故障自动重试；重试后仍失败时终端会提示云端发布可能仍在进行，可稍后重新执行同一更新命令。
+省略 `--region` 和 `--project` 时，命令会在北京、上海及全部可见项目中查找同名 Application。若存在多个候选项，需要补充地域或项目缩小范围。更新保留 Application 与 Function ID、访问 URL、SSO、IAM、网关和已有环境变量；品牌和各 CodeEnv、DevEnv Tool ID 仅在显式传入相应参数时覆盖。更新时还会检查并补齐 Studio Sandbox Tool：若函数环境中缺少 `STUDIO_WORKSPACE_TOOL_ID`，更新会自动创建启用持久化快照的 Studio Sandbox Tool，配置模型凭据（`MODEL_AGENT_NAME`、`MODEL_AGENT_BASE_URL`、`MODEL_AGENT_API_KEY`）并保存绑定；已有 Tool ID 时保留绑定。创建失败时更新报错，不忽略失败。从尚不支持代码项目的旧版本更新时，新版本首次启动会在后台补建并保存 Tool ID；补建期间代码项目暂不可用，失败会记录日志，可检查权限后重试更新。更新时自动检查并补齐 `VEADK_STUDIO_KNOWLEDGE_SIGNING_KEY` 环境变量：若缺失则根据当前环境生成，确保更新后知识库管理功能可用。若函数使用默认 Studio IAM Role，更新时会同步刷新该角色的托管策略至最新版本；使用自定义 Role 时不做修改。更新还会向已绑定的 VeIdentity 用户池客户端注册当前 Studio 公网地址的 `/oauth2/callback` 回调并启用免确认，确保更新后 SSO 登录回调可用；注册失败时终端会输出 warning，并提示在用户池客户端的允许回调地址中手动添加该地址。查询已有部署与提交代码包更新时，命令会对限流、网络抖动等服务端临时故障自动重试；重试后仍失败时终端会提示云端发布可能仍在进行，可稍后重新执行同一更新命令。
 
 更新还会创建或更新定时任务调度函数与对应的分钟触发器。
 
