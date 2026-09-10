@@ -19,6 +19,8 @@ title: "更新日志"
 | Studio 调试 | 选择 Runtime 目标进行调试测试时，MCP 工具的鉴权凭证从已发布 Runtime 的环境变量中恢复并注入调试运行环境，用于 MCP 端点发现；编辑后的 MCP 服务地址与已发布配置不一致时不恢复凭证。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的智能体) |
 | Studio 部署 | 部署时「自动创建评测集」默认值从开启改为关闭；如需创建 Good Case 和 Bad Case 评测集，可在部署配置区手动开启。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#评测集创建) |
 | 模型 | `Agent` 新增 `model_fallbacks` 参数，支持配置跨提供商回退模型。新增 `ModelFallbackEndpoint` 类，可为每个回退端点单独指定提供商、API 地址、API Key 与额外配置；字符串条目按主模型提供商自动添加前缀。`model_fallbacks` 与 `model_name` 列表回退合并后传给 LiteLLM。使用 `enable_responses=True` 时仅支持字符串回退；`codex` 和 `piagent` 运行时不支持 `model_fallbacks`。 | [模型](/productions/veadk/preview/zh/components/agent/model#配置跨提供商回退模型) · [运行时](/productions/veadk/preview/zh/components/agent/runtime#切换执行后端) |
+| Studio 创建 | 自定义创建支持配置模型回退：可为每个 LLM 智能体添加有序的回退模型。同提供商回退仅指定模型名称，跨提供商回退可单独指定提供商、API 地址和 API Key。跨提供商回退的 API Key 通过环境变量传入，命名规则为 `FALLBACK_MODEL_<智能体名称>_<序号>_API_KEY`。生成的项目代码使用 `model_fallbacks` 参数与 `ModelFallbackEndpoint` 对象。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#模型回退配置) · [模型](/productions/veadk/preview/zh/components/agent/model#配置跨提供商回退模型) |
+| Studio 更新 | 保留源码更新模式不支持模型回退配置：如果智能体草稿中包含模型回退，更新会被拒绝并提示重新生成标准项目。如需使用模型回退，请使用重新生成模式并确保运行环境使用 veadk-python 1.1.10 或更高版本。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新模式) |
 | 技能 | `VeSkillRegistry` 加载云端技能时容忍 `SKILL.md` frontmatter 中的非标准字段（社区扩展），如 `allowed-tools`、`triggers`、`requires` 等；这些字段不再导致加载失败，而是保留在技能 frontmatter 的 `metadata` 中。 | [技能](/productions/veadk/preview/zh/components/agent/skills#云端技能空间) |
 | 技能 | `enable_dynamic_load_skills` 现可独立于 `skills` 使用：即使未配置初始技能列表，启用后仍会初始化技能工具集并注册每轮刷新回调。同时改进技能归档安装流程：下载暂存到临时目录，校验后原子替换并支持失败回滚，自动处理不同的归档布局，清理残留的旧版 ZIP 文件，本地技能符号链接在源目录变化时自动刷新。 | [技能](/productions/veadk/preview/zh/components/agent/skills#动态加载技能) |
 | Studio 沙箱 | 内置智能体的会话结束后，其最新保存记录改为以「已休眠」状态出现在智能体列表中，打开时按需显式唤醒，不再在打开列表时自动批量恢复。唤醒过程中显示等待提示并允许失败重试，同一服务实例内对同一智能体的唤醒请求串行处理并在重试时复用已有就绪会话。用户可查看、唤醒和删除自己的休眠记录，管理员可额外管理缺少归属信息的旧记录；同一 Tool 上其他智能体类型的记录会被过滤。删除休眠记录需确认且仅删除所选记录，恢复失败的记录仍可删除但无法打开。此前管理员打开列表会自动并发恢复（至多 3 个）可恢复快照。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#状态与历史) |
@@ -74,8 +76,8 @@ title: "更新日志"
 | Studio 智能模式 | 智能开发改为单轮次直接处理请求：Codex 在同一轮次内判断是否需要改动交付物，对于提问、澄清或说明等不涉及代码改动的请求直接给出自然回答，不修改项目代码，也不输出结构化交付说明；只有改动交付物的请求才采用「已完成」「验证」「遗留问题」分节的结构化交付说明。会话状态新增「忙」标记，任务运行期间反映当前轮次正在进行。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能模式) |
 | Studio 对话 | 「分享为图片」功能更名为「导出会话」，并新增 PDF 导出格式：选择 PDF 后可将截至当前回复的全部输入与输出分页导出为 PDF 文件，生成时自动在空白区域分页避免内容截断；PDF 在浏览器端按需生成。原有 PNG 格式保持不变，复制到剪贴板仅在 PNG 格式下可用。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#导出会话) · [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
 | Studio 智能体工作台 | 编辑智能体名称时，Studio 在输入或失焦时即时显示名称校验错误（如不符合命名规则或名称在结构中不唯一），无需等待提交。此前仅在提交时才显示名称校验错误。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
-| Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.7` 更新为 `1.1.9`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
-| Studio 部署 | 火山引擎模式下，生成的 Dockerfile 安装 Python 依赖时依次尝试华为云镜像源、阿里云镜像源和 PyPI 官方源，提高内部镜像不可用时依赖安装的成功率；BytePlus 模式仅使用默认源。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
+| Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.7` 更新为 `1.1.10`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| Studio 部署 | 火山引擎模式下，生成的 Dockerfile 安装 Python 依赖时依次尝试腾讯云镜像源、中科大镜像源和 PyPI 官方源，提高内部镜像不可用时依赖安装的成功率；BytePlus 模式仅使用默认源。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
 
 ## 1.1.8
 
