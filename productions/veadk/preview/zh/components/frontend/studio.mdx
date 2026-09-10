@@ -2332,6 +2332,16 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
 
 未指定 `--sandbox-chat-codex-tool-id` 时，部署命令会在 `--region` 指定的地域创建内置智能体使用的 AgentKit CodeEnv Tool；同时还会额外创建一个 DevEnv Tool 用于开发沙箱。这些 Tool 创建的 Session 与 VeFaaS Function、API Gateway 保持同一地域。模型凭据只配置在各自 Tool 中，VeFaaS Function 只接收 Tool ID。若已有符合要求且地域一致的 Tool，可通过参数直接复用。
 
+部署还会自动创建或复用启用持久化快照的 Studio Sandbox Tool，用于[代码项目](#studio-sandbox-代码项目)。该 Tool 默认规格为 8 核 CPU、16 GB 内存，使用与部署地域对应的 `studio-sandbox` 镜像：
+
+| 云环境 | 地域 | 镜像 |
+| --- | --- | --- |
+| 火山引擎 | cn-beijing | `enterprise-public-cn-beijing.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
+| 火山引擎 | cn-shanghai | `enterprise-cn-shanghai-cn-shanghai.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
+| BytePlus | ap-southeast-1 | `enterprise-public-ap-southeast-1.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
+
+可通过 `STUDIO_WORKSPACE_IMAGE` 环境变量指定区域可访问的其他镜像。启动命令使用镜像内的 `/opt/gem/run.sh`，不再注入编辑器补丁。火山引擎默认中文，BytePlus 默认英文，模型配置沿用相应云环境的 Studio 配置。部署后通过 `STUDIO_WORKSPACE_TOOL_ID` 环境变量绑定工作区，系统信息页面显示对应的 Tool ID。
+
 沙箱 Tool 使用的模型、接入地址和候选地域按云服务商区分：火山引擎使用 `doubao-seed-2-1-pro-260628` 模型与 `https://ark.cn-beijing.volces.com/api/v3`，候选地域为 `cn-beijing` 与 `cn-shanghai`；BytePlus 使用 `dola-seed-2-1-turbo-260628` 模型与 `https://ark.ap-southeast.bytepluses.com/api/v3`，候选地域为 `ap-southeast-1`。
 
 <Note>
@@ -2435,6 +2445,8 @@ veadk studio deploy \
 | `--precheck-only` | `bool` 标志 | `false` | 仅执行只读 IAM 权限预检，不创建任何云资源。 |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | 自动创建 | 内置智能体使用的 AgentKit CodeEnv Tool ID；也可通过 `SANDBOX_CHAT_CODEX` 设置。 |
 | `--sandbox-dev-tool-id` | `str \| None` | 自动创建 | 开发沙箱使用的 AgentKit DevEnv Tool ID；也可通过 `SANDBOX_DEV` 设置。 |
+| `STUDIO_WORKSPACE_TOOL_ID` | `str` | 自动创建 | Studio Sandbox 代码项目使用的 Private Tool ID。部署时自动创建或复用；更新时自动补齐。 |
+| `STUDIO_WORKSPACE_IMAGE` | `str` | 按地域选择 | 覆盖 Studio Sandbox 使用的镜像引用。需要在所选地域可访问。 |
 | `--studio-update-bucket` | `str \| None` | `veadk-studio`（火山引擎）/ `veadk-studio-byteplus`（BytePlus） | 存放 Studio 不可变发布包的 TOS Bucket；部署时写入函数环境变量 `VEADK_STUDIO_UPDATE_BUCKET`。也可通过 `VEADK_STUDIO_UPDATE_BUCKET` 设置。 |
 | `--studio-update-prefix` | `str` | `veadk/studio/main` | Studio 主发布渠道的 TOS 对象前缀。也可通过 `VEADK_STUDIO_UPDATE_PREFIX` 设置。 |
 
@@ -2652,6 +2664,44 @@ Studio 侧边栏底部提供「体验 AgentKit CLI」入口，点击后在当前
 
 终端请求失败时，对话框显示错误详情并提供重试按钮。终端支持剪贴板读写、文件下载和弹窗等浏览器交互能力。
 
+## Studio Sandbox 代码项目
+
+Studio 提供持久化云端代码项目功能。每位用户拥有一个持久的云端 Sandbox，项目以目录形式存放在 `/home/gem/Projects` 下。用户可以在工作区中创建、命名和重新打开项目，项目列表保存在 Sandbox 文件系统中，Studio 重启后仍然可用。
+
+### 创建与打开项目
+
+在工作区页面中选择「代码项目」或从工作区新建项目。创建项目时输入项目名称，Studio 在用户的持久 Sandbox 中创建对应目录，并初始化 Git 仓库、Python 虚拟环境和项目模板文件。创建新项目时复用用户已有的 Sandbox 会话，打开项目时切换 VS Code 的工作目录到对应项目路径。
+
+<Note>
+  项目名以英文字母开头，允许字母、数字、短横线和下划线，最多 64 个字符。Agent 的 Python 名称会把短横线转换为下划线。重名项目不会被覆盖，会提示从项目列表打开。
+</Note>
+
+<Note>
+  编辑器直接在 `/code-server/` 打开，签名路由参数保持私有且不缓存。返回管理页面时编辑器保持挂载状态，切换目录时直接打开所选项目。
+</Note>
+
+### 持久化与恢复
+
+Studio Sandbox Tool 启用持久化快照。每位用户的项目共用同一个持久 Sandbox 会话；打开项目时若剩余会话时间不足一小时，Studio 自动将会话续期至八小时，标题栏显示剩余倒计时。Studio 复用用户的稳定云端会话标识，休眠后自动恢复最近一次可用的快照，而非创建空替换会话。项目管理右侧支持全屏展开，内嵌浏览器使用当前页面的可用空间。
+
+### 开发环境
+
+Studio Sandbox 镜像基于 AgentKit Code Sandbox 构建，预装以下开发环境：
+
+- 独立的 VeADK Python 环境，包含 `veadk-python` 和 `agentkit` 命令
+- code-server（VS Code 浏览器版本）与 Jupyter
+- Python 语法高亮、BasedPyright 代码补全、Ruff 格式化
+- 每个项目自动创建 Bash 和 Codex 两个集成终端，工作目录为当前项目
+- Dark Modern 主题，代码和终端使用 Maple Mono 字体
+
+火山引擎默认中文界面，BytePlus 默认英文界面。模型配置沿用相应云环境的 Studio 配置，配置 `MODEL_AGENT_API_KEY`、`MODEL_AGENT_NAME` 和 `MODEL_AGENT_BASE_URL` 后，Codex 自动生成模型配置，无需交互登录。
+
+### 项目模板
+
+默认模板在创建项目时由 Studio 传入 Sandbox，包含 `main.py`、`README.md`、`AGENTS.md` 和 `.gitignore`。模板中的 `${project_name}` 和 `${agent_name}` 在创建时替换为项目名和合法 Python Agent 名。修改模板只需更新 Studio，不需要重建镜像，也不会覆盖已有项目。
+
+模板中的新依赖不会自动安装，运行环境依赖仍由镜像管理。
+
 ## 开发者资源
 
 Studio 侧边栏底部提供「开发者资源」入口，点击后在当前页面上方打开开发者资源页面，展示以下内容：
@@ -2687,7 +2737,7 @@ export VOLCENGINE_SECRET_KEY="your-secret-key"
 veadk studio update --vefaas-app-name "veadk-studio"
 ```
 
-省略 `--region` 和 `--project` 时，命令会在北京、上海及全部可见项目中查找同名 Application。若存在多个候选项，需要补充地域或项目缩小范围。更新保留 Application 与 Function ID、访问 URL、SSO、IAM、网关和已有环境变量；品牌和各 CodeEnv、DevEnv Tool ID 仅在显式传入相应参数时覆盖。更新时自动检查并补齐 `VEADK_STUDIO_KNOWLEDGE_SIGNING_KEY` 环境变量：若缺失则根据当前环境生成，确保更新后知识库管理功能可用。若函数使用默认 Studio IAM Role，更新时会同步刷新该角色的托管策略至最新版本；使用自定义 Role 时不做修改。更新还会向已绑定的 VeIdentity 用户池客户端注册当前 Studio 公网地址的 `/oauth2/callback` 回调并启用免确认，确保更新后 SSO 登录回调可用；注册失败时终端会输出 warning，并提示在用户池客户端的允许回调地址中手动添加该地址。查询已有部署与提交代码包更新时，命令会对限流、网络抖动等服务端临时故障自动重试；重试后仍失败时终端会提示云端发布可能仍在进行，可稍后重新执行同一更新命令。
+省略 `--region` 和 `--project` 时，命令会在北京、上海及全部可见项目中查找同名 Application。若存在多个候选项，需要补充地域或项目缩小范围。更新保留 Application 与 Function ID、访问 URL、SSO、IAM、网关和已有环境变量；品牌和各 CodeEnv、DevEnv Tool ID 仅在显式传入相应参数时覆盖。更新时还会检查并补齐 Studio Sandbox Tool：若函数环境中缺少 `STUDIO_WORKSPACE_TOOL_ID`，更新会自动创建启用持久化快照的 Studio Sandbox Tool 并保存绑定；已有 Tool ID 时保留绑定。创建失败时更新报错，不忽略失败。从尚不支持代码项目的旧版本更新时，新版本首次启动会在后台补建并保存 Tool ID；补建期间代码项目暂不可用，失败会记录日志，可检查权限后重试更新。更新时自动检查并补齐 `VEADK_STUDIO_KNOWLEDGE_SIGNING_KEY` 环境变量：若缺失则根据当前环境生成，确保更新后知识库管理功能可用。若函数使用默认 Studio IAM Role，更新时会同步刷新该角色的托管策略至最新版本；使用自定义 Role 时不做修改。更新还会向已绑定的 VeIdentity 用户池客户端注册当前 Studio 公网地址的 `/oauth2/callback` 回调并启用免确认，确保更新后 SSO 登录回调可用；注册失败时终端会输出 warning，并提示在用户池客户端的允许回调地址中手动添加该地址。查询已有部署与提交代码包更新时，命令会对限流、网络抖动等服务端临时故障自动重试；重试后仍失败时终端会提示云端发布可能仍在进行，可稍后重新执行同一更新命令。
 
 更新还会创建或更新定时任务调度函数与对应的分钟触发器。
 
@@ -2777,7 +2827,7 @@ Studio 根据登录账号限制 Runtime 的可见范围；没有创建者记录�
 
 ### 沙箱信息
 
-列出 Studio 已配置的沙箱 Tool 及其 ID，包括 Codex Sandbox（`SANDBOX_CHAT_CODEX`）、DeepSeek Harness Sandbox（`SANDBOX_CHAT_CODEX`）、OpenClaw Sandbox（`SANDBOX_CHAT_OPENCLAW`）、Hermes Sandbox（`SANDBOX_CHAT_HERMES`）和 Dev Sandbox（`SANDBOX_DEV`），各项按固定顺序排列。其中 DeepSeek Harness Sandbox 与 Codex Sandbox 共用同一个 AgentKit CodeEnv Tool（`SANDBOX_CHAT_CODEX`），因此两者显示相同的 Tool ID。已配置的 Tool ID 提供跳转到云控制台对应 Tool 详情页的链接；未配置的 Tool 显示「未配置」。
+列出 Studio 已配置的沙箱 Tool 及其 ID，包括 Codex Sandbox（`SANDBOX_CHAT_CODEX`）、DeepSeek Harness Sandbox（`SANDBOX_CHAT_CODEX`）、OpenClaw Sandbox（`SANDBOX_CHAT_OPENCLAW`）、Hermes Sandbox（`SANDBOX_CHAT_HERMES`）、Dev Sandbox（`SANDBOX_DEV`）和 Studio Sandbox（`STUDIO_WORKSPACE_TOOL_ID`），各项按固定顺序排列。Studio Sandbox 用于[代码项目](#studio-sandbox-代码项目)，是一个启用持久化快照的 Private 类型 Tool。其中 DeepSeek Harness Sandbox 与 Codex Sandbox 共用同一个 AgentKit CodeEnv Tool（`SANDBOX_CHAT_CODEX`），因此两者显示相同的 Tool ID。已配置的 Tool ID 提供跳转到云控制台对应 Tool 详情页的链接；未配置的 Tool 显示「未配置」。
 
 #### 沙箱镜像更新
 

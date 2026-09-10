@@ -2332,6 +2332,16 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 
 When `--sandbox-chat-codex-tool-id` is omitted, deployment creates the AgentKit CodeEnv Tool for built-in agents in the region selected by `--region`; the deploy command also creates an additional DevEnv Tool for the Dev Sandbox. Sessions created by these Tools use the same region as the VeFaaS Function and API Gateway. Model credentials are configured only on the respective Tools; the VeFaaS Function receives only the Tool IDs. You can pass existing Tool IDs when suitable Tools are already available in the same region.
 
+Deployment also automatically creates or reuses a snapshot-enabled Studio Sandbox Tool for [code projects](#studio-sandbox-code-projects). The Tool defaults to 8 CPU cores and 16 GB of memory, using the `studio-sandbox` image corresponding to the deployment region:
+
+| Cloud | Region | Image |
+| --- | --- | --- |
+| Volcengine | cn-beijing | `enterprise-public-cn-beijing.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
+| Volcengine | cn-shanghai | `enterprise-cn-shanghai-cn-shanghai.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
+| BytePlus | ap-southeast-1 | `enterprise-public-ap-southeast-1.cr.volces.com/vefaas-public/agentkit-sandbox:studio-sandbox-1.0.1` |
+
+You can override the image with the `STUDIO_WORKSPACE_IMAGE` environment variable to specify an image accessible in the selected region. The launch command uses the image's built-in `/opt/gem/run.sh` and no longer injects editor patches. Volcengine defaults to Chinese and BytePlus defaults to English; model configuration follows the Studio configuration for the respective cloud environment. After deployment, the workspace is bound via the `STUDIO_WORKSPACE_TOOL_ID` environment variable, and the System info page displays the corresponding Tool ID.
+
 The model, endpoint, and candidate regions for sandbox Tools differ by cloud provider: Volcengine uses the `doubao-seed-2-1-pro-260628` model with `https://ark.cn-beijing.volces.com/api/v3`, and candidate regions `cn-beijing` and `cn-shanghai`; BytePlus uses the `dola-seed-2-1-turbo-260628` model with `https://ark.ap-southeast.bytepluses.com/api/v3`, and candidate region `ap-southeast-1`.
 
 <Note>
@@ -2435,6 +2445,8 @@ veadk studio deploy \
 | `--precheck-only` | Boolean flag | `false` | Run the read-only IAM permission pre-check and exit without creating cloud resources. |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for built-in agents; also read from `SANDBOX_CHAT_CODEX`. |
 | `--sandbox-dev-tool-id` | `str \| None` | Auto-create | AgentKit DevEnv Tool ID for the Dev Sandbox; also read from `SANDBOX_DEV`. |
+| `STUDIO_WORKSPACE_TOOL_ID` | `str` | Auto-create | Private Tool ID for Studio Sandbox code projects. Automatically created or reused during deployment; auto-provisioned during updates. |
+| `STUDIO_WORKSPACE_IMAGE` | `str` | Region-dependent | Overrides the image reference used by the Studio Sandbox. Must be accessible in the selected region. |
 | `--studio-update-bucket` | `str \| None` | `veadk-studio` (Volcengine) / `veadk-studio-byteplus` (BytePlus) | TOS bucket holding immutable Studio release bundles; written to the function env as `VEADK_STUDIO_UPDATE_BUCKET`. Also read from `VEADK_STUDIO_UPDATE_BUCKET`. |
 | `--studio-update-prefix` | `str` | `veadk/studio/main` | TOS object prefix for the Studio main release channel. Also read from `VEADK_STUDIO_UPDATE_PREFIX`. |
 
@@ -2652,6 +2664,44 @@ The terminal creates a non-persistent session backed by the AgentKit Dev Sandbox
 
 When a terminal request fails, the dialog displays the error details and provides a retry button. The terminal supports browser interactions such as clipboard read/write, file downloads, and pop-ups.
 
+## Studio Sandbox code projects
+
+Studio provides persistent cloud code projects. Each user has one persistent cloud Sandbox, and projects are stored as directories under `/home/gem/Projects`. Users can create, name, and reopen projects from the workspace. The project list is stored on the Sandbox filesystem and survives Studio restarts.
+
+### Creating and opening projects
+
+From the workspace page, select "Code projects" or create a new project from the workspace. When creating a project, enter a project name and Studio creates the corresponding directory in the user's persistent Sandbox, initializing a Git repository, a Python virtual environment, and project template files. Creating a new project reuses the user's existing Sandbox session; opening a project switches the VS Code working directory to the corresponding project path.
+
+<Note>
+  Project names must start with a letter and may contain letters, digits, hyphens, and underscores, up to 64 characters. The agent's Python name converts hyphens to underscores. Existing project names are not overwritten; the UI prompts you to open them from the project list.
+</Note>
+
+<Note>
+  The editor opens directly at `/code-server/`; signed routing parameters remain private and are not cached. Returning to the management view keeps the editor mounted; switching directories opens the selected project directly.
+</Note>
+
+### Persistence and recovery
+
+The Studio Sandbox Tool has persistent snapshots enabled. All of a user's projects share the same persistent Sandbox session. When opening a project, if the remaining session time is less than one hour, Studio automatically extends the session to eight hours, and the title bar shows the remaining countdown. Studio reuses the user's stable cloud session identity and automatically restores the latest ready snapshot after hibernation, rather than creating an empty replacement session. The project management panel supports fullscreen expansion, and the embedded browser uses the available page space.
+
+### Development environment
+
+The Studio Sandbox image is built on the AgentKit Code Sandbox and includes the following development environment:
+
+- A dedicated VeADK Python environment, including `veadk-python` and the `agentkit` command
+- code-server (VS Code in the browser) and Jupyter
+- Python syntax highlighting, BasedPyright code completion, and Ruff formatting
+- Each project automatically creates Bash and Codex integrated terminals with the working directory set to the current project
+- Dark Modern theme, with Maple Mono font for code and terminals
+
+Volcengine defaults to Chinese and BytePlus defaults to English. Model configuration follows the Studio configuration for the respective cloud environment. After configuring `MODEL_AGENT_API_KEY`, `MODEL_AGENT_NAME`, and `MODEL_AGENT_BASE_URL`, Codex automatically generates the model configuration without requiring interactive login.
+
+### Project templates
+
+The default template is passed to the Sandbox by Studio when creating a project, including `main.py`, `README.md`, `AGENTS.md`, and `.gitignore`. The `${project_name}` and `${agent_name}` placeholders in the template are replaced with the project name and valid Python agent name at creation time. Modifying the template only requires updating Studio — no image rebuild is needed, and existing projects are not overwritten.
+
+New dependencies in templates are not automatically installed; runtime dependencies are still managed by the image.
+
 ## Developer resources
 
 The Studio sidebar footer provides a "Developer resources" entry. Clicking it opens a developer resources page over the current page, displaying the following content:
@@ -2687,7 +2737,7 @@ export VOLCENGINE_SECRET_KEY="your-secret-key"
 veadk studio update --vefaas-app-name "veadk-studio"
 ```
 
-When `--region` and `--project` are omitted, the command searches Beijing, Shanghai, and all visible projects. If multiple Applications have the same name, add a region or project to narrow the scope. The update preserves the Application and Function IDs, public URL, SSO, IAM, gateway, and existing environment variables. Branding and the CodeEnv and DevEnv Tool IDs change only when their options are explicitly supplied. When the function uses the default Studio IAM role, the update also refreshes the role's managed policies to the latest version; custom roles are not modified. The update also registers the `/oauth2/callback` callback of the current Studio public URL on the bound VeIdentity user-pool client and enables skip-consent, so SSO login remains usable after the update; if registration fails, the terminal prints a warning and instructs you to add the URL to the client's allowed callback URLs manually. When querying existing deployments and submitting the code-bundle update, the command automatically retries transient server errors such as rate limiting and network jitter; if it still fails after retrying, the terminal notes that the cloud release may still be in progress and you can rerun the same update command shortly after.
+When `--region` and `--project` are omitted, the command searches Beijing, Shanghai, and all visible projects. If multiple Applications have the same name, add a region or project to narrow the scope. The update preserves the Application and Function IDs, public URL, SSO, IAM, gateway, and existing environment variables. Branding and the CodeEnv and DevEnv Tool IDs change only when their options are explicitly supplied. The update also checks and provisions the Studio Sandbox Tool: if the function environment is missing `STUDIO_WORKSPACE_TOOL_ID`, the update automatically creates a snapshot-enabled Studio Sandbox Tool and saves the binding; when a Tool ID already exists, the binding is preserved. If creation fails, the update reports an error and does not ignore the failure. When updating from an older version that does not support code projects, the new version provisions and saves the Tool ID in the background on first launch; code projects are temporarily unavailable during provisioning, and failures are logged so you can check permissions and retry the update. When the function uses the default Studio IAM role, the update also refreshes the role's managed policies to the latest version; custom roles are not modified. The update also registers the `/oauth2/callback` callback of the current Studio public URL on the bound VeIdentity user-pool client and enables skip-consent, so SSO login remains usable after the update; if registration fails, the terminal prints a warning and instructs you to add the URL to the client's allowed callback URLs manually. When querying existing deployments and submitting the code-bundle update, the command automatically retries transient server errors such as rate limiting and network jitter; if it still fails after retrying, the terminal notes that the cloud release may still be in progress and you can rerun the same update command shortly after.
 
 The update also creates or updates the scheduled-task scheduler functions and corresponding minute timers.
 
@@ -2777,7 +2827,7 @@ Displays the TOS address used by Studio persistent storage. When `VEADK_STUDIO_T
 
 ### Sandbox information
 
-Lists the sandbox Tools configured in Studio and their IDs, including Codex Sandbox (`SANDBOX_CHAT_CODEX`), DeepSeek Harness Sandbox (`SANDBOX_CHAT_CODEX`), OpenClaw Sandbox (`SANDBOX_CHAT_OPENCLAW`), Hermes Sandbox (`SANDBOX_CHAT_HERMES`), and Dev Sandbox (`SANDBOX_DEV`), shown in a fixed order. DeepSeek Harness Sandbox shares the same AgentKit CodeEnv Tool as Codex Sandbox (`SANDBOX_CHAT_CODEX`), so the two display the same Tool ID. Configured Tool IDs provide a link to the corresponding Tool detail page in the cloud console. Tools without a configured ID show "Not configured".
+Lists the sandbox Tools configured in Studio and their IDs, including Codex Sandbox (`SANDBOX_CHAT_CODEX`), DeepSeek Harness Sandbox (`SANDBOX_CHAT_CODEX`), OpenClaw Sandbox (`SANDBOX_CHAT_OPENCLAW`), Hermes Sandbox (`SANDBOX_CHAT_HERMES`), Dev Sandbox (`SANDBOX_DEV`), and Studio Sandbox (`STUDIO_WORKSPACE_TOOL_ID`), shown in a fixed order. The Studio Sandbox is used for [code projects](#studio-sandbox-code-projects) and is a Private-type Tool with persistent snapshots enabled. DeepSeek Harness Sandbox shares the same AgentKit CodeEnv Tool as Codex Sandbox (`SANDBOX_CHAT_CODEX`), so the two display the same Tool ID. Configured Tool IDs provide a link to the corresponding Tool detail page in the cloud console. Tools without a configured ID show "Not configured".
 
 #### Sandbox image update
 
