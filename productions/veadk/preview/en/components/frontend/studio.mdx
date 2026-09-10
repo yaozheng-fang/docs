@@ -126,7 +126,7 @@ Your language choice is persisted in browser local storage, so subsequent visits
 
 
 <Note>
-  Custom creation supports a "quick create" mode: when enabled, the generated agent project includes the `CreateAgentToolset` dynamic agent delegation toolset, allowing the main agent to collect resources, create sub-agents, and delegate execution at runtime. In quick mode the generated `requirements.txt` pins `veadk-python` 1.1.9 and includes a compatibility module to ensure dynamic delegation works on the current deployed version. When deploying to AgentKit, if the Runtime uses a Studio-generated default service role, Studio automatically attaches the `AgentKitFullAccess` policy to that role so sub-agents can access AgentKit resources; custom service roles are not modified and must be configured with the required permissions manually.
+  Custom creation supports a "quick create" mode: when enabled, the generated agent project includes the `CreateAgentToolset` dynamic agent delegation toolset, allowing the main agent to collect resources, create sub-agents, and delegate execution at runtime. In quick mode the generated `requirements.txt` pins `veadk-python` 1.1.10 and includes a compatibility module to ensure dynamic delegation works on the current deployed version. When deploying to AgentKit, if the Runtime uses a Studio-generated default service role, Studio automatically attaches the `AgentKitFullAccess` policy to that role so sub-agents can access AgentKit resources; custom service roles are not modified and must be configured with the required permissions manually.
 </Note>
 
 <Note>
@@ -157,6 +157,24 @@ When using a custom model endpoint, the publish page displays a "Custom model cr
 | `CUSTOM_MODEL_<agent_name>_PROVIDER` | Model provider (e.g. `openai`); generated only when provided. |
 | `CUSTOM_MODEL_<agent_name>_API_BASE` | Model API base URL; generated only when provided. |
 | `CUSTOM_MODEL_<agent_name>_API_KEY` | Model API Key; required. |
+
+### Model fallback configuration
+
+When configuring an LLM agent, you can add ordered fallback models for each agent. When the primary model is unavailable, VeADK tries the fallback models in order. Fallback models fall into two categories:
+
+- **Same-provider fallbacks**: Specify only the model name; the fallback automatically reuses the primary model's provider, API base, and API key. The generated project code implements fallbacks through the `model_name` list.
+- **Cross-provider fallbacks**: Specify a separate model provider, API base, and API key for each fallback endpoint. The generated project code uses `ModelFallbackEndpoint` objects passed via the `model_fallbacks` parameter.
+
+<Note>
+  For the full parameter reference and usage restrictions for model fallbacks, see [Model](/productions/veadk/preview/en/components/agent/model#configure-cross-provider-fallback-models).
+</Note>
+
+API keys for cross-provider fallbacks are passed through environment variables and are not stored in plain text in the generated source or draft. Each fallback endpoint corresponds to an environment variable named `FALLBACK_MODEL_<agent_name>_<index>_API_KEY`, listed as a placeholder in `.env.example`:
+
+| Environment variable | Description |
+| :--- | :--- |
+| `FALLBACK_MODEL_<agent_name>_<index>_API_KEY` | API key for a cross-provider fallback model, numbered from 1 in fallback order. |
+
 
 ### Configure deployment settings
 
@@ -1175,6 +1193,10 @@ Studio supports two Runtime update modes, selected automatically based on the Ru
 | Source-preserving | Keeps the deployed source image unchanged and publishes only the edited configuration (agent draft, skills, and MCP credentials) as an overlay on top of the existing image. Used when the deployed image structure is intact and only configuration needs adjustment. |
 
 Source-preserving updates do not rebuild the image, making publication faster, and skill files already baked into the image remain unchanged. This mode only supports editing skills on the root agent; modifying skills in sub-agents is not supported.
+
+<Warning>
+  Source-preserving update mode does not support model fallback configuration. If the agent draft contains model fallbacks, the update is rejected with a prompt to regenerate the standard project. To use model fallbacks, switch to regenerate mode and ensure the runtime uses veadk-python 1.1.10 or later.
+</Warning>
 
 <Note>
   The update mode is determined automatically by Studio based on the Runtime's current image and configuration. If the deployed image structure does not support source-preserving updates, Studio falls back to regenerate mode.
