@@ -130,7 +130,7 @@ Your language choice is persisted in browser local storage, so subsequent visits
 
 
 <Note>
-  Custom creation supports a "quick create" mode: when enabled, the generated agent project includes the `CreateAgentToolset` dynamic agent delegation toolset, allowing the main agent to collect resources, create sub-agents, and delegate execution at runtime. In quick mode the generated `requirements.txt` pins `veadk-python` 1.1.10 and includes a compatibility module to ensure dynamic delegation works on the current deployed version. When deploying to AgentKit, if the Runtime uses a Studio-generated default service role, Studio automatically attaches the `AgentKitFullAccess` policy to that role so sub-agents can access AgentKit resources; custom service roles are not modified and must be configured with the required permissions manually.
+  Custom creation supports a "quick create" mode: when enabled, the generated agent project includes the `CreateAgentToolset` dynamic agent delegation toolset, allowing the main agent to collect resources, create sub-agents, and delegate execution at runtime. In quick mode the generated `requirements.txt` pins `veadk-python` 1.1.10 and includes a compatibility module to ensure dynamic delegation works on the current deployed version. Quick create mode no longer attaches the `AgentKitFullAccess` policy to the runtime role; if sub-agents need to access AgentKit resources, configure the runtime role with the required permissions manually. See [Configure deployment settings](#configure-deployment-settings) for runtime role reuse behavior when creating a new Runtime.
 </Note>
 
 <Note>
@@ -198,6 +198,11 @@ The minimum instance count must be a non-negative integer and the maximum a posi
 When creating a new Runtime, Studio auto-generates a Runtime name from the root agent name (composed of letters, digits, underscores, and hyphens, 4–64 characters), keeping agent and Runtime naming consistent and predictable. The Runtime name can be edited manually; Studio validates the name format and checks for conflicts with existing Runtimes in the selected region before deployment. If the name is already in use, deployment fails with a prompt to choose a different name. The deployment result returns both the agent name and the Runtime name.
 
 When creating a new Runtime, access authentication defaults to API Key. To use user identity verification instead, select a VeIdentity user pool in the deployment configuration area. The Studio server loads the user pools visible to the current account with its own Volcengine credentials, so the browser never receives them. The picker marks the user pool used for the current Studio login: selecting it lets Studio forward the validated login JWT to the Runtime, so callers do not need to obtain a token separately; selecting another user pool means callers must use a JWT issued by that pool to access the Runtime. The user-pool region is determined by the `VEIDENTITY_REGION` environment variable. In Volcengine mode, when `VEIDENTITY_REGION` is not set it falls back to the `REGION` environment variable and then the default `cn-beijing`; BytePlus mode is fixed to `ap-southeast-1`.
+
+
+<Note>
+  When creating a new Runtime without Harness Sidecar, Studio searches the current cloud account for the first IAM role with the `AgentKitDefaultRuntimeAccess` system policy attached and reuses it (paginating through all roles). If none is found, Studio creates a new role named `AgentKit_Runtime_Default_ServiceRole_<random characters>` with only that policy. Existing roles keep all their current permissions. Lookup errors stop the deployment instead of falling back to creating a new role. This applies to Volcengine and BytePlus; updating an existing Runtime or deploying with Sidecar preserves the existing role behavior.
+</Note>
 
 ### Configure build resources
 

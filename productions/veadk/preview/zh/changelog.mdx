@@ -80,6 +80,7 @@ title: "更新日志"
 | Studio 智能体工作台 | 编辑智能体名称时，Studio 在输入或失焦时即时显示名称校验错误（如不符合命名规则或名称在结构中不唯一），无需等待提交。此前仅在提交时才显示名称校验错误。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.7` 更新为 `1.1.10`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 部署 | 火山引擎模式下，生成的 Dockerfile 安装 Python 依赖时依次尝试腾讯云镜像源、中科大镜像源和 PyPI 官方源，提高内部镜像不可用时依赖安装的成功率；BytePlus 模式仅使用默认源。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
+| Studio 部署 | 创建新 Runtime 且未启用 Harness Sidecar 时，Studio 改为复用当前云账号中第一个已附加 `AgentKitDefaultRuntimeAccess` 系统策略的 IAM 角色（分页遍历全部角色）；未找到时创建名为 `AgentKit_Runtime_Default_ServiceRole_<随机字符>` 的新角色并仅附加该策略。快速创建不再额外附加 `AgentKitFullAccess` 策略。查找角色时发生错误会中止部署而非回退到创建新角色。更新已有 Runtime 和 Sidecar 部署保持各自的现有角色行为。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#配置部署参数) |
 
 ## 1.1.8
 

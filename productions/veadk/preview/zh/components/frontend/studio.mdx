@@ -130,7 +130,7 @@ Studio 支持简体中文（`zh-CN`）和英文（`en-US`）两种界面语言�
 
 
 <Note>
-  自定义创建支持「快速创建」模式：启用后，生成的智能体项目自动内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下生成的 `requirements.txt` 固定使用 `veadk-python` 1.1.10 版本，并附带兼容模块以确保动态委派能力在当前部署版本中可用。部署到 AgentKit 时，若 Runtime 使用 Studio 自动生成的默认运行角色，Studio 会自动为该角色附加 `AgentKitFullAccess` 策略，使子智能体具备访问 AgentKit 资源的权限；使用自定义运行角色时不自动修改，需自行确保角色已具备所需权限。
+  自定义创建支持「快速创建」模式：启用后，生成的智能体项目自动内置 `CreateAgentToolset` 动态智能体委派工具集，主智能体可在运行时根据用户任务收集资源、创建子智能体并移交执行。快速模式下生成的 `requirements.txt` 固定使用 `veadk-python` 1.1.10 版本，并附带兼容模块以确保动态委派能力在当前部署版本中可用。快速创建模式不再额外为运行角色附加 `AgentKitFullAccess` 策略；如需子智能体访问 AgentKit 资源，请为运行角色自行配置相应权限。创建新 Runtime 时的运行角色复用行为见[配置部署参数](#配置部署参数)。
 </Note>
 
 <Note>
@@ -198,6 +198,11 @@ Studio 支持简体中文（`zh-CN`）和英文（`en-US`）两种界面语言�
 创建新 Runtime 时，Studio 会根据根智能体名称自动生成 Runtime 名称（由英文字母、数字、下划线和连字符组成，长度 4–64 个字符），确保智能体与 Runtime 的命名一致且可预测。Runtime 名称可手动修改，Studio 会在部署前校验名称格式并检查是否与当前地域已有的 Runtime 重名；名称重复时部署会报错并提示修改。部署结果中会同时返回智能体名称和 Runtime 名称。
 
 创建新 Runtime 时，访问鉴权默认为 API Key；如需改用用户身份验证，可在部署配置区选择 VeIdentity 用户池。Studio 服务端使用自身配置的火山引擎凭证加载当前账号可见的用户池列表，浏览器不接触凭证。列表中会标记当前 Studio 登录所用的用户池：选择该用户池时，Studio 会把登录后验证的 JWT 转发给 Runtime，调用方无需另行获取令牌；选择其他用户池时，调用方需使用该用户池签发的 JWT 访问 Runtime。用户池所在地域通过 `VEIDENTITY_REGION` 环境变量确定。火山引擎模式下未设置 `VEIDENTITY_REGION` 时，依次回退到 `REGION` 环境变量与默认地域 `cn-beijing`；BytePlus 模式固定为 `ap-southeast-1`。
+
+
+<Note>
+  创建新 Runtime 且未启用 Harness Sidecar 时，Studio 会在当前云账号中查找第一个已附加 `AgentKitDefaultRuntimeAccess` 系统策略的 IAM 角色并复用（分页遍历全部角色）。未找到时，Studio 创建名为 `AgentKit_Runtime_Default_ServiceRole_<随机字符>` 的新角色并仅附加该策略。已有角色保留其当前全部权限。查找角色时发生错误会中止部署，而非回退到创建新角色。该行为适用于火山引擎和 BytePlus；更新已有 Runtime 或使用 Sidecar 部署时保持各自的现有角色行为不变。
+</Note>
 
 ### 配置构建资源
 
