@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 迁移 | 存量项目迁移新增迁移效果评测：开启后，迁移完成时自动部署临时 Runtime、逐条执行评测用例（1–100 个，支持手动输入和批量粘贴）、按维度评分并生成 HTML 报告。标准评测包含语义一致性、输出约束、工作流与工具一致性 3 个维度；可切换为自定义维度。报告展示 0–100 分、证据覆盖率、执行成功率和差异证据，不给出通过或不通过的判定。评测数据集和报告作为不可变资产存储在 Studio 私有 TOS 存储桶中，仅任务所有者可访问。评测失败或终止不影响迁移产物。开启评测时 Dev Sandbox Session 有效期从 1 小时延长至 2 小时。评测需要管理员配置 Studio 持久化存储。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#迁移效果评测) |
 | Studio Sandbox 工作区 | 部署、命令行更新和云上 OTA 共用 Studio Sandbox 工作区创建流程：BytePlus 创建的 Tool 类型从 `Private` 改为 `StudioEnv`，火山引擎继续使用 `Private`。创建时获取模型凭据并配置模型名称、地址、API Key、鉴权和快照；已有工作区绑定保持不变。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#部署到-vefaas) · [更新已部署的 Studio](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) · [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#沙箱信息) |
 | Studio 角色 | Studio 角色管理改为基于 Identity 用户组。`veadk studio deploy` 的 `--admin` 和 `--developer` 参数替换为 `--super-admin`，指定用户池内已有用户的邮箱或 UID 作为初始超级管理员。新增超级管理员角色，拥有管理员全部权限并可使用用户管理功能查询用户池用户、修改角色。首次部署不指定超级管理员时所有登录用户默认为管理员；指定后其余用户默认为普通用户。角色存储在 Identity 中，后续部署和更新保留已保存的角色。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#studio-角色与-runtime-权限) |
 | Studio 更新 | `veadk studio update` 新增 `--super-admin` 选项：为已有部署启用 Identity 用户管理并迁移旧的 `VEADK_STUDIO_ADMINS` 和 `VEADK_STUDIO_DEVELOPERS` 环境变量，将旧名单中的账号逐一匹配到 Identity 并保留原角色，迁移成功后清空旧角色变量。也可用于为没有超级管理员的部署设置首位超级管理员。 | [更新已部署的 Studio](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) |
