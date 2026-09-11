@@ -24,6 +24,10 @@ VeADK 提供一组在 [AgentKit 沙箱](https://console.volcengine.com/agentkit)
 - `from veadk.tools.builtin_tools.invoke_skill import invoke_skill`
 - `from veadk.tools.builtin_tools.poll_skill import poll_skill`
 
+<Note>
+如果需要将完整的任务委派给远端沙箱，而非由协调智能体逐工具调用，可以使用 `AgentkitRemoteSandboxAgent` 子智能体。详见[远端沙箱子智能体](/productions/veadk/preview/zh/components/agent/remote-sandbox-agent)。
+</Note>
+
 ## 环境变量与前提
 
 <Warning>

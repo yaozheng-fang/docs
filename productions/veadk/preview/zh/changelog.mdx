@@ -8,6 +8,7 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 智能体 | 新增 `AgentkitRemoteSandboxAgent`，一个原生的 ADK 子智能体，将 AgentKit Skill 或 CodeEnv 沙箱会话包装为独立智能体。可作为根智能体直接运行，也可注册到 `Agent` 的 `sub_agents` 列表中，由协调智能体通过 `transfer_to_agent` 委派任务。支持自动发现沙箱类型、会话租约管理、入站身份凭证转发和流式事件返回。 | [远端沙箱子智能体](/productions/veadk/preview/zh/components/agent/remote-sandbox-agent) |
 | Studio 创建 | Studio 新增 DeepSeek Harness 创建模式：在创建菜单中选择「快速创建」后，可选择「DeepSeek Harness」Agent 类型进入配置页面，配置 DeepSeek 模型服务、自定义模型提供方、命令执行、工具调用、子智能体模型选择和 DeepSeek 网络搜索等参数，然后预览、导出或部署为 AgentKit Runtime。部署的容器运行 DeepSeek Harness，通过 HTTP 接口（`/ping`、`/invocations`）提供调用能力。 | [DeepSeek Harness 创建与部署](/productions/veadk/preview/zh/components/frontend/deepseek-harness) |
 | Studio Sandbox | Studio 新增持久化代码项目功能：每位用户拥有一个持久的云端 Sandbox，可在工作区中创建、命名和重新打开项目。项目以目录形式存放在 `/home/gem/Projects` 下，项目列表保存在 Sandbox 文件系统中，Studio 重启后仍然可用。创建新项目复用用户已有的 Sandbox 会话，打开项目时切换 VS Code 工作目录。Sandbox 启用持久化快照，休眠后自动恢复最近一次可用快照。镜像预装 VeADK Python 环境、code-server、BasedPyright 和 Ruff 等开发工具。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#studio-sandbox-代码项目) |
 | Studio 部署 | `veadk studio deploy` 新增自动创建 Studio Sandbox Tool：默认规格为 8 核 CPU、16 GB 内存，启用持久化快照，使用与部署地域对应的 `studio-sandbox-1.0.1` 镜像。创建时与其他沙箱 Tool 并行执行，并自动获取模型凭据注入 `MODEL_AGENT_NAME`、`MODEL_AGENT_BASE_URL` 和 `MODEL_AGENT_API_KEY`。可通过 `STUDIO_WORKSPACE_IMAGE` 环境变量指定其他镜像，通过 `--studio-sandbox-tool-id`（或环境变量 `STUDIO_WORKSPACE_TOOL_ID`）指定已配置好的持久化 Tool 以直接复用。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#部署到-vefaas) |
