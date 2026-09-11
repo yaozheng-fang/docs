@@ -682,11 +682,132 @@ The following frameworks are supported:
 | :--- | :--- | :--- |
 | Archive size | 20 MiB | Maximum size of a single uploaded archive. |
 | Uncompressed size | 20 MiB | Maximum total size after extraction. |
-| Session TTL | 1 hour | Lifetime of the Dev Sandbox Session; artifacts in the temporary migration environment become unavailable after expiry. |
+| Session TTL | 1 hour (2 hours when evaluation is enabled) | Lifetime of the Dev Sandbox Session; artifacts in the temporary migration environment become unavailable after expiry. |
 | Framework selection | — | Structured frameworks (LangChain, LangGraph, Google ADK, Strands, AgentCore) require an entry file; Dify and Any do not accept a Structured entry. |
 | Application name | 63 characters | Lowercase letters, digits, and hyphens only; must start and end with a letter or digit. |
 | Artifact safety | — | Each file in the migration ZIP is verified against the manifest by size and SHA256; path traversal, symlinks, and files that modify Agent runtime methods are rejected. |
 | Delivery content | — | When downloading a ZIP or deploying a migration artifact, the delivery includes configuration files from the project's `.agentkit/` directory (such as `agentkit.yaml` and `Dockerfile`) but excludes build artifacts and migration session state within that directory. |
+
+### Migration effect evaluation
+
+Migration effect evaluation is an optional step in existing-project migration. When enabled, Studio automatically deploys a temporary Runtime, executes evaluation cases against the migrated agent, scores the behavioral differences between the original and migrated agents, and generates a viewable and downloadable HTML report. Evaluation is off by default and does not affect the migration flow when disabled. Evaluation failure or cancellation does not hide or roll back the migration artifact; saved source versions remain fully usable.
+
+<Note>
+  Migration effect evaluation requires the administrator to configure Studio persistent storage (`VEADK_STUDIO_TOS_BUCKET` and `VEADK_STUDIO_TOS_REGION`). When not configured, the evaluation toggle shows "Migration effect evaluation is unavailable in this environment" while migration itself is unaffected. See <a href="#studio-persistent-storage">Studio persistent storage</a> for configuration.
+</Note>
+
+#### Enabling evaluation
+
+When creating a migration task, the "Migration effect evaluation" toggle in the migration workspace is off by default. When enabled, the workspace shows two tabs — "Migration" and "Evaluation" — letting you configure evaluation cases while migration is in progress.
+
+Enabling evaluation extends the Dev Sandbox Session TTL from 1 hour to 2 hours to accommodate temporary Runtime deployment, case execution, and evaluation analysis.
+
+#### Configuring evaluation cases
+
+Before migration completes, fill in evaluation cases on the "Evaluation" tab. Cases are locked once upload starts and cannot be modified.
+
+Two input methods are supported:
+
+| Input method | Description |
+| :--- | :--- |
+| Manual | Add cases one by one, entering user input, expected outcome, and requirements. |
+| Paste multiple | Enter one case per line as user input for quick bulk addition. |
+
+Each evaluation case includes:
+
+| Field | Required | Type | Limit | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| User input | Yes | `str` | Conversation text per case up to 32 KiB; at most 20 messages per case | The real user request the migrated agent should handle. |
+| Expected outcome | No | `str` | Up to 16 KiB | Describe what the agent should accomplish; exact wording is not required. |
+| Requirements | No | `list[str]` | At most 20 items; each up to 2 KiB | Specific conditions the agent output must satisfy. |
+
+<Note>
+  The total normalized dataset must not exceed 10 MiB, with 1–100 cases.
+</Note>
+
+#### Evaluation dimensions
+
+Evaluation dimensions determine which aspects of behavioral consistency are checked in the report. Two modes are supported:
+
+| Mode | Default dimensions | Description |
+| :--- | :--- | :--- |
+| Standard evaluation | Semantic fidelity, output contract, workflow/tool fidelity | Suitable for most migrations; dimensions cannot be changed. |
+| Custom dimensions | User selects from the dimensions below | Choose one or more dimensions based on business risk. |
+
+Available dimensions:
+
+| Dimension | Description |
+| :--- | :--- |
+| Semantic fidelity | Checks whether intent, conclusions, and key facts remain consistent. |
+| Output contract | Checks required fields, structure, language, and formatting constraints. |
+| Workflow and tool fidelity | Checks observable workflow branches and tool-driven behavior. |
+| Context and memory fidelity | Checks supported multi-turn context and memory behavior. |
+| Boundary and error fidelity | Checks invalid input, missing information, and dependency failures. |
+| Safety and refusal fidelity | Checks existing authorization, refusal, and sensitive-data boundaries. |
+
+<Note>
+  The evaluation method and dimensions cannot change after upload starts.
+</Note>
+
+#### Evaluation workflow
+
+Once the migration artifact is deployable, evaluation runs automatically in the following order:
+
+1. **Prepare evaluation environment**: Validate the migration artifact and evaluation cases.
+2. **Provide environment variables** (only when required): If the migration artifact declares required or optional environment variables, Studio pauses evaluation and prompts for input. Submitting the variables resumes evaluation.
+3. **Deploy temporary Runtime**: Deploy a temporary Runtime from the migration artifact to execute evaluation cases.
+4. **Execute cases**: Send each evaluation case to the temporary Runtime and capture output and raw Runtime observations.
+5. **Run evaluation analysis**: In a single resumable Codex thread, score the behavioral differences between the original and migrated agents per dimension, generating evidence and gap descriptions.
+6. **Generate evaluation report**: Aggregate per-dimension scores, evidence coverage, and execution results into an HTML report.
+
+<Warning>
+  The temporary Runtime deployed during evaluation is always cleaned up before evaluation completes or is cancelled. Regardless of whether evaluation succeeds or fails, Studio reconciles Runtime cleanup on completion or cancellation, ensuring no cloud resources are left behind.
+</Warning>
+
+<Note>
+  If migration does not produce an evaluable artifact (migration failed or was cancelled), evaluation is automatically cancelled and does not execute.
+</Note>
+
+#### Evaluation report
+
+After evaluation completes, the "Evaluation" tab shows a report summary including overall fidelity score (0–100), evidence coverage, execution success rate, N/A count, lowest-scoring cases, execution issues, and critical evidence. The report does not issue a pass/fail verdict; it presents quantitative scores and difference evidence. Click "View report" to preview the full HTML report in a side drawer, with download support.
+
+The report and the locked evaluation dataset are stored as immutable assets in the private Studio TOS bucket, accessible only to the task owner.
+
+| Report field | Description |
+| :--- | :--- |
+| Overall fidelity | 0–100 score; N/A when evidence is insufficient. |
+| Evidence coverage | Ratio of dimensions with evidence to total dimensions. |
+| Execution success | Ratio of successfully completed cases to total cases. |
+| N/A count | Number of dimensions with insufficient evidence, excluded from scores. |
+| Lowest-scoring cases | Cases with the lowest scores and their difference evidence. |
+| Execution issues | Cases that failed to execute and their error details. |
+| Critical evidence | Evidence entries with Critical severity. |
+| Evaluation limitations | Known limitations affecting the evaluation conclusion. |
+
+#### Evaluation states
+
+The migration task list and the "Evaluation" tab display the current evaluation state:
+
+| State | Description |
+| :--- | :--- |
+| Evaluation is off | Migration effect evaluation is not enabled. |
+| Waiting for evaluation cases | Evaluation is enabled but cases have not been saved yet. |
+| Evaluation starts automatically after migration | Cases are saved; waiting for migration to complete. |
+| Preparing the evaluation environment | Validating the migration artifact and evaluation cases. |
+| Runtime environment variables are required | The temporary Runtime needs environment variables to start. |
+| Deploying a temporary Runtime | Deploying the temporary Runtime for evaluation. |
+| Running evaluation cases | Executing evaluation cases and capturing output. |
+| Running evaluation analysis | Scoring per dimension and generating evidence. |
+| Aggregating evaluation results | Summarizing scores and evidence, generating the report. |
+| Evaluation completed | The report is ready for viewing and download. |
+| Evaluation incomplete | An error occurred during evaluation. |
+| Evaluation requires attention | The migration artifact is not deployable or session time is insufficient; resolve and retry. |
+| Evaluation cancelled | The user manually cancelled evaluation, or migration did not produce an evaluable artifact. |
+
+<Note>
+  Failed evaluations can be retried. Retrying reuses the same locked dataset and dimension configuration, redeploys the temporary Runtime, and re-executes. If the migration artifact declares environment variables, they must be re-entered on retry.
+</Note>
 
 ### Add skills
 
