@@ -2359,7 +2359,7 @@ The deployer's long-lived access and secret keys are not written to the VeFaaS a
 
 When `--sandbox-chat-codex-tool-id` is omitted, deployment creates the AgentKit CodeEnv Tool for built-in agents in the region selected by `--region`; the deploy command also creates an additional DevEnv Tool for the Dev Sandbox. Sessions created by these Tools use the same region as the VeFaaS Function and API Gateway. Model credentials are configured only on the respective Tools; the VeFaaS Function receives only the Tool IDs. You can pass existing Tool IDs when suitable Tools are already available in the same region.
 
-Deployment also provisions a snapshot-enabled Studio Sandbox Tool concurrently alongside the other sandbox Tools, for [code projects](#studio-sandbox-code-projects). Model credentials (`MODEL_AGENT_NAME`, `MODEL_AGENT_BASE_URL`, and `MODEL_AGENT_API_KEY`) are obtained automatically and injected into the Tool. The Tool defaults to 8 CPU cores and 16 GB of memory, using the `studio-sandbox` image corresponding to the deployment region:
+Deployment also provisions a snapshot-enabled Studio Sandbox Tool concurrently alongside the other sandbox Tools, for [code projects](#studio-sandbox-code-projects). Model credentials (`MODEL_AGENT_NAME`, `MODEL_AGENT_BASE_URL`, and `MODEL_AGENT_API_KEY`) are obtained automatically and injected into the Tool. The Tool type depends on the cloud provider: BytePlus creates a `StudioEnv`-type Tool and Volcengine creates a `Private`-type Tool. Deployment, CLI updates, and cloud OTA updates share the same provisioning flow; existing workspace bindings are preserved. The Tool defaults to 8 CPU cores and 16 GB of memory, using the `studio-sandbox` image corresponding to the deployment region:
 
 | Cloud | Region | Image |
 | --- | --- | --- |
@@ -2471,7 +2471,7 @@ veadk studio deploy \
 | `--precheck-only` | Boolean flag | `false` | Run the read-only IAM permission pre-check and exit without creating cloud resources. |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | Auto-create | AgentKit CodeEnv Tool ID for built-in agents; also read from `SANDBOX_CHAT_CODEX`. |
 | `--sandbox-dev-tool-id` | `str \| None` | Auto-create | AgentKit DevEnv Tool ID for the Dev Sandbox; also read from `SANDBOX_DEV`. |
-| `--studio-sandbox-tool-id` | `str \| None` | Auto-create | Private Tool ID for Studio Sandbox code projects; also read from `STUDIO_WORKSPACE_TOOL_ID`. When an existing persistent Tool is specified, it is reused without creating or modifying its configuration. |
+| `--studio-sandbox-tool-id` | `str \| None` | Auto-create | Tool ID for Studio Sandbox code projects; also read from `STUDIO_WORKSPACE_TOOL_ID`. When an existing persistent Tool is specified, it is reused without creating or modifying its configuration. |
 | `STUDIO_WORKSPACE_IMAGE` | `str` | Region-dependent | Overrides the image reference used by the Studio Sandbox. Must be accessible in the selected region. |
 | `--studio-update-bucket` | `str \| None` | `veadk-studio` (Volcengine) / `veadk-studio-byteplus` (BytePlus) | TOS bucket holding immutable Studio release bundles; written to the function env as `VEADK_STUDIO_UPDATE_BUCKET`. Also read from `VEADK_STUDIO_UPDATE_BUCKET`. |
 | `--studio-update-prefix` | `str` | `veadk/studio/main` | TOS object prefix for the Studio main release channel. Also read from `VEADK_STUDIO_UPDATE_PREFIX`. |
@@ -2857,7 +2857,7 @@ Displays the TOS address used by Studio persistent storage. When `VEADK_STUDIO_T
 
 ### Sandbox information
 
-Lists the sandbox Tools configured in Studio and their IDs, including Codex Sandbox (`SANDBOX_CHAT_CODEX`), DeepSeek Harness Sandbox (`SANDBOX_CHAT_CODEX`), OpenClaw Sandbox (`SANDBOX_CHAT_OPENCLAW`), Hermes Sandbox (`SANDBOX_CHAT_HERMES`), Dev Sandbox (`SANDBOX_DEV`), and Studio Sandbox (`STUDIO_WORKSPACE_TOOL_ID`), shown in a fixed order. The Studio Sandbox is used for [code projects](#studio-sandbox-code-projects) and is a Private-type Tool with persistent snapshots enabled. DeepSeek Harness Sandbox shares the same AgentKit CodeEnv Tool as Codex Sandbox (`SANDBOX_CHAT_CODEX`), so the two display the same Tool ID. Configured Tool IDs provide a link to the corresponding Tool detail page in the cloud console. Tools without a configured ID show "Not configured".
+Lists the sandbox Tools configured in Studio and their IDs, including Codex Sandbox (`SANDBOX_CHAT_CODEX`), DeepSeek Harness Sandbox (`SANDBOX_CHAT_CODEX`), OpenClaw Sandbox (`SANDBOX_CHAT_OPENCLAW`), Hermes Sandbox (`SANDBOX_CHAT_HERMES`), Dev Sandbox (`SANDBOX_DEV`), and Studio Sandbox (`STUDIO_WORKSPACE_TOOL_ID`), shown in a fixed order. The Studio Sandbox is used for [code projects](#studio-sandbox-code-projects) and is a Tool with persistent snapshots enabled (`StudioEnv` type on BytePlus, `Private` type on Volcengine). DeepSeek Harness Sandbox shares the same AgentKit CodeEnv Tool as Codex Sandbox (`SANDBOX_CHAT_CODEX`), so the two display the same Tool ID. Configured Tool IDs provide a link to the corresponding Tool detail page in the cloud console. Tools without a configured ID show "Not configured".
 
 #### Sandbox image update
 
@@ -2866,7 +2866,7 @@ The sandbox information area includes a "Check for updates" button at the top. W
 Administrators can update prebuilt sandbox Tools whose status is "Ready" and that have an available update. An available update is either a mismatched image version or, for Codex-type Tools, a need to backfill model environment variables. Clicking the update button next to a Tool submits an update request to the cloud provider, setting the Tool's image to the latest published version. For Codex-type Tools, if the Tool's environment variables are missing `MODEL_AGENT_API_KEY` or `MODEL_AGENT_BASE_URL` while both `CODEX_API_KEY` and `CODEX_BASE_URL` are present, the missing `MODEL_AGENT_*` variables are backfilled from the corresponding `CODEX_*` variables during the update; existing values are not overwritten. After the update is submitted, Studio polls the Tool status until it returns to "Ready" with the updated image, then displays the result next to the Tool. Keys are never sent to the browser at any point.
 
 <Note>
-  When Codex Sandbox and DeepSeek Harness Sandbox share the same AgentKit Tool, they share update state and the update is applied only once. Snapshot and non-snapshot Tools are checked and updated independently. Private-type Tools do not have corresponding prebuilt published images and cannot be updated through this feature.
+  When Codex Sandbox and DeepSeek Harness Sandbox share the same AgentKit Tool, they share update state and the update is applied only once. Snapshot and non-snapshot Tools are checked and updated independently. The `Private` (Volcengine) and `StudioEnv` (BytePlus) Tool types used by the Studio Sandbox do not have corresponding prebuilt published images and cannot be updated through this feature.
 </Note>
 
 <Note>
