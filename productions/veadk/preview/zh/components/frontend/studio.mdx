@@ -2299,8 +2299,9 @@ Dev Sandbox 技能生成需要管理员配置处于 `Ready` 状态的 AgentKit D
 | `--oauth2-provider` | `str \| None` | `OAUTH2_PROVIDER`；配置用户池时默认为 `veidentity` | SSO provider 标识。 |
 | `--oauth2-provider-label` | `str \| None` | `OAUTH2_PROVIDER_LABEL` | 登录按钮文案。未设置时，使用 VeIdentity 登录的默认文案按云服务商区分：火山引擎为「火山引擎 Identity」，BytePlus 为「BytePlus Identity」。 |
 | `--auth-mode` | `frontend \| gateway` | `frontend` | `frontend` 由 Studio 处理登录；`gateway` 信任上游网关转发的 JWT 身份。也可通过 `VEADK_FRONTEND_AUTH_MODE` 设置。 |
-| `--admin` | `str \| None` | `None` | 逗号分隔的管理员名单（用户名或 OAuth 邮箱）。省略 `--admin` 与 `--developer` 时，所有登录用户都按 `admin` 处理。也可通过 `VEADK_STUDIO_ADMINS` 设置。 |
-| `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
+| `--super-admin` | `str \| None` | `None` | 配置 Identity 用户池时的初始超级管理员邮箱或 UID。指定后启用 Identity 角色管理，其余用户默认为普通用户。也可通过 `VEADK_STUDIO_SUPER_ADMIN` 设置。 |
+| `--admin` | `str \| None` | `None` | 逗号分隔的管理员名单（用户名或 OAuth 邮箱）。仅在本地未配置 Identity 用户池时生效。也可通过 `VEADK_STUDIO_ADMINS` 设置。 |
+| `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。仅在本地未配置 Identity 用户池时生效。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
 | `--generated-agent-test-run-ttl` | `int` | `1800` | 生成智能体的临时测试进程保留秒数。 |
 | `--open` / `--no-open` | `bool` | `--no-open` | 服务就绪后是否打开默认浏览器；`--vite` 模式下忽略。 |
 
@@ -2433,7 +2434,7 @@ veadk studio deploy \
 ```
 
 <Note>
-  应用内更新仅对具备 `admin` 角色的登录用户开放，更新 Studio 自身的 VeFaaS Function，不影响已部署的 AgentKit Runtime。更新时补齐云资源使用部署者配置的火山引擎或 BytePlus 凭证。
+  应用内更新仅对具备管理员或超级管理员角色的登录用户开放，更新 Studio 自身的 VeFaaS Function，不影响已部署的 AgentKit Runtime。更新时补齐云资源使用部署者配置的火山引擎或 BytePlus 凭证。
 </Note>
 
 ### 部署参数
@@ -2452,8 +2453,7 @@ veadk studio deploy \
 | `--environment-cp-workspace` | `str \| None` | `None` | 环境镜像构建使用的已有 CodePipeline Workspace ID 或名称。省略时 Studio 创建或复用托管的 Workspace。该选项不从环境变量读取。 |
 | `--environment-cr-repository` | `str \| None` | `None` | 环境镜像构建使用的已有 Container Registry 仓库，格式为 `registry/namespace/repository`。省略时 Studio 创建或复用托管的 CR 资源。该选项不从环境变量读取。 |
 | `--vefaas-application-template-id` | `str \| None` | 内置模板 | 覆盖 VeFaaS Application Center 的内置模板 ID。也可通过 `VEFAAS_APPLICATION_TEMPLATE_ID` 设置。 |
-| `--admin` | `str \| None` | `None` | 逗号分隔的管理员名单（用户名或 OAuth 邮箱）。省略 `--admin` 与 `--developer` 时，所有登录用户都按 `admin` 处理。也可通过 `VEADK_STUDIO_ADMINS` 设置。 |
-| `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
+| `--super-admin` | `str \| None` | `None` | 初始超级管理员的邮箱或 Identity UID，用户须已存在于用户池中。首次部署省略时所有登录用户默认为管理员；指定后其余用户默认为普通用户。后续部署保留 Identity 中已保存的角色。也可通过 `VEADK_STUDIO_SUPER_ADMIN` 设置。 |
 | `--site-title` | `str \| None` | `None` | 自定义 Studio 名称，最多 16 个字符。 |
 | `--site-logo` | `str \| None` | `None` | 自定义 Studio Logo，支持本地图片路径或 HTTP(S) URL；部署时打包到 VeFaaS。 |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway 名称；省略时复用已有网关，没有可用网关时创建。 |
@@ -2529,8 +2529,7 @@ veadk studio deploy \
   --vestack-openapi-url "https://openapi.example.com" \
   --vestack-agentkit-region "e70" \
   --vestack-apig-cluster-id "<cluster-id>" \
-  --admin "admin@example.com" \
-  --developer "dev@example.com"
+  --super-admin "admin@example.com"
 ```
 
 部署流程执行以下操作：
@@ -2784,6 +2783,7 @@ veadk studio update --vefaas-app-name "veadk-studio"
 | `--path` | `str` | `.` | 要构建的 VeADK 源码目录。 |
 | `--site-title` | `str \| None` | 保留云上值 | 显式传入时替换 Studio 名称。 |
 | `--site-logo` | `str \| None` | 保留云上值 | 显式传入时替换 Studio Logo。 |
+| `--super-admin` | `str \| None` | `None` | 启用 Identity 用户管理并迁移已部署的管理员/开发者名单。传入用户邮箱或 UID 作为初始超级管理员。 |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | 保留云上值 | 显式传入时替换内置智能体使用的 Tool ID。 |
 | `--sandbox-dev-tool-id` | `str \| None` | 保留云上值 | 显式传入时替换开发沙箱使用的 Tool ID。 |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | 更新操作使用的 Access Key。 |
@@ -2795,32 +2795,36 @@ veadk studio update --vefaas-app-name "veadk-studio"
 
 ## Studio 角色与 Runtime 权限
 
-`--admin` 和 `--developer` 各自接收逗号分隔的本地用户名或 OAuth 邮箱名单。空格会被忽略，身份匹配不区分大小写；同一身份同时出现在两个名单时，`admin` 优先。本地启动示例：
-
-```bash
-veadk studio \
-  --admin "admin,admin@example.com" \
-  --developer "alice,alice@example.com,bob"
-```
-
-也可以分别通过 `VEADK_STUDIO_ADMINS` 和 `VEADK_STUDIO_DEVELOPERS` 环境变量设置这两个名单。部署 Studio 时使用相同参数：
+部署 Studio 时，角色管理通过 Identity 用户组实现。部署时唯一的角色参数是 `--super-admin`，指定用户池内已有用户的邮箱或 UID：
 
 ```bash
 veadk studio deploy \
-  --vefaas-app-name "veadk-studio" \
-  --admin "admin@example.com" \
-  --developer "alice@example.com,bob@example.com"
+  --user-pool-id <pool-id> \
+  --allowed-client-id <client-id> \
+  --vefaas-app-name <app-name> \
+  --super-admin "owner@example.com"
 ```
 
-两项都不传时，所有登录用户都按 `admin` 处理，拥有全部 Studio 能力并可见全部 Runtime。只要传入任一名单就会启用角色权限；未命中名单的身份为普通用户。
+首次部署不指定超级管理员时，所有登录用户默认都是管理员，包括后续新增用户；指定后，其余用户默认是普通用户。默认角色和用户角色都存储在 Identity 中，后续部署和更新保留已保存的角色，不会重新套用初始化配置。
 
-| 功能 | admin | developer | 普通用户 |
-| :--- | :--- | :--- | :--- |
-| 添加、调试和部署智能体 | 允许 | 允许 | 不允许；「智能体」页面中的创建入口不可用 |
-| 查看和连接 Runtime | 全部 Runtime | 仅自己创建的 Runtime | 仅自己创建的 Runtime |
-| 管理或删除 Runtime | 全部 Studio 管理的 Runtime | 仅自己创建的 Runtime | 不允许 |
+只有超级管理员可见并可使用「用户管理」，查询当前用户池的用户并修改角色。超级管理员拥有管理员的全部权限，初始超级管理员不能在 Studio 内降级。已有部署没有超级管理员时，可运行 `veadk studio update --vefaas-app-name <app-name> --super-admin <email-or-uid>` 设置首位超级管理员，其他人的角色保持不变。
 
-Studio 根据登录账号限制 Runtime 的可见范围；没有创建者记录的历史 Runtime 仅 `admin` 可见。
+| 功能 | 超级管理员 | 管理员 | 开发者 | 普通用户 |
+| :--- | :--- | :--- | :--- | :--- |
+| 用户管理 | 允许 | 不允许 | 不允许 | 不允许 |
+| 添加、调试和部署智能体 | 允许 | 允许 | 允许 | 不允许 |
+| 查看和连接 Runtime | 全部 | 全部 | 仅自己创建的 | 仅自己创建的 |
+| 管理或删除 Runtime | 全部 Studio 管理的 | 全部 Studio 管理的 | 仅自己创建的 | 不允许 |
+
+新版 Studio 在每次已认证的后端请求中读取 Identity 用户组，角色修改后刷新页面即可看到变化。账号区域显示对应角色徽标。
+
+云上更新会把旧环境变量 `VEADK_STUDIO_ADMINS`、`VEADK_STUDIO_DEVELOPERS` 中的账号逐一匹配到 Identity，保留原角色，成功后清空旧角色变量。名单中的账号必须唯一匹配；匹配失败或权限不足时停止迁移并保留旧配置。旧名单为空时保留「全部为管理员」；有名单时，其余人仍是普通用户。不会自动将旧管理员升级成超级管理员。
+
+<Note>
+  旧更新器不包含迁移逻辑时，由新版首次启动完成迁移并清理函数配置。已发布 Revision 的环境快照可能仍保留原值，但 Identity 初始化完成后不会再次覆盖角色。旧部署需要 Identity 用户组读写权限；可先补齐权限，或使用新版 CLI 更新，由 CLI 更新 Studio 托管的 IAM 策略。火山引擎和 BytePlus 遵循同样规则。
+</Note>
+
+本地未配置 Identity 用户池时，仍兼容 `veadk studio --admin ... --developer ...`；`deploy` 已移除这两个参数。
 
 <Warning>
   本地用户名保存在浏览器中，可被用户修改或冒充，仅适用于本地开发与功能验证。生产环境必须使用 OAuth 或 gateway 认证，以经过验证的登录信息确定身份与权限。
@@ -2833,15 +2837,15 @@ Studio 根据登录账号限制 Runtime 的可见范围；没有创建者记录�
 未携带可信登录身份时，访问本地会话会返回 401。非管理员用户访问其他用户的会话会返回 403。
 
 <Note>
-  即使未配置 `--admin` 与 `--developer`（此时所有登录用户拥有全部 Studio 能力），跨用户会话访问仍要求显式出现在管理员名单中。该限制独立于角色权限，不会因「全部用户为管理员」的遗留模式而放开。
+  即使所有登录用户拥有管理员角色（首次部署未指定超级管理员时的默认行为），跨用户会话访问仍要求显式出现在管理员名单中。该限制独立于角色权限，不会因「全部用户为管理员」的遗留模式而放开。
 </Note>
 
-列在 `--admin` 管理员名单中的身份可以访问其他用户的本地会话，用于排查与支持；此类访问会记录审计日志，包含操作者、目标用户、请求方法与路径。
+管理员和超级管理员可以访问其他用户的本地会话，用于排查与支持；此类访问会记录审计日志，包含操作者、目标用户、请求方法与路径。
 
 
 ## 查看系统信息
 
-登录后，侧边栏底部的账号菜单提供「系统信息」入口，选择后在当前页面上方打开系统信息页面，展示 Studio 的版本、存储、沙箱信息和用户池。页面左上角的返回按钮可回到打开系统信息前所在的页面，当前页面保持不变。页面中的 TOS 存储桶、沙箱 Tool 和用户池均提供跳转到对应云服务商控制台的链接，点击后在新标签页打开。该页面仅对 `admin` 角色开放，所有资源标识均为只读；管理员可对需要更新的沙箱 Tool 执行镜像更新（见[沙箱信息](#沙箱信息)）。
+登录后，侧边栏底部的账号菜单提供「系统信息」入口，选择后在当前页面上方打开系统信息页面，展示 Studio 的版本、存储、沙箱信息和用户池。页面左上角的返回按钮可回到打开系统信息前所在的页面，当前页面保持不变。页面中的 TOS 存储桶、沙箱 Tool 和用户池均提供跳转到对应云服务商控制台的链接，点击后在新标签页打开。该页面仅对管理员和超级管理员角色开放，所有资源标识均为只读；管理员可对需要更新的沙箱 Tool 执行镜像更新（见[沙箱信息](#沙箱信息)）。
 
 ### 通用
 

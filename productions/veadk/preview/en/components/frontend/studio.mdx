@@ -2299,8 +2299,9 @@ When running Studio locally with `veadk studio --vite`, the Studio backend start
 | `--oauth2-provider` | `str \| None` | `OAUTH2_PROVIDER`; defaults to `veidentity` with a pool | SSO provider identifier. |
 | `--oauth2-provider-label` | `str \| None` | `OAUTH2_PROVIDER_LABEL` | Login-button label. When unset, the default label for VeIdentity login follows the cloud provider: "火山引擎 Identity" for volcengine and "BytePlus Identity" for byteplus. |
 | `--auth-mode` | `frontend \| gateway` | `frontend` | `frontend` handles login in Studio; `gateway` trusts JWT identity forwarded by an upstream gateway. It also reads `VEADK_FRONTEND_AUTH_MODE`. |
-| `--admin` | `str \| None` | `None` | Comma-separated admin list (usernames or OAuth emails). Omitting both `--admin` and `--developer` treats every signed-in user as an `admin`. Also reads `VEADK_STUDIO_ADMINS`. |
-| `--developer` | `str \| None` | `None` | Comma-separated developer list (usernames or OAuth emails). Also reads `VEADK_STUDIO_DEVELOPERS`. |
+| `--super-admin` | `str \| None` | `None` | Initial super administrator email or UID when an Identity user pool is configured. Enables Identity role management; other users default to regular users. Also reads `VEADK_STUDIO_SUPER_ADMIN`. |
+| `--admin` | `str \| None` | `None` | Comma-separated admin list (usernames or OAuth emails). Only effective locally without an Identity pool. Also reads `VEADK_STUDIO_ADMINS`. |
+| `--developer` | `str \| None` | `None` | Comma-separated developer list (usernames or OAuth emails). Only effective locally without an Identity pool. Also reads `VEADK_STUDIO_DEVELOPERS`. |
 | `--generated-agent-test-run-ttl` | `int` | `1800` | Lifetime in seconds for temporary generated-agent test processes. |
 | `--open` / `--no-open` | `bool` | `--no-open` | Open the default browser when ready. Ignored with `--vite`. |
 
@@ -2433,7 +2434,7 @@ veadk studio deploy \
 ```
 
 <Note>
-  In-app updates are available only to signed-in users with the `admin` role. They update Studio's own VeFaaS Function and do not affect deployed AgentKit Runtimes. Cloud-resource provisioning during the update uses the deployer's configured Volcengine or BytePlus credentials.
+  In-app updates are available only to signed-in users with the admin or super admin role. They update Studio's own VeFaaS Function and do not affect deployed AgentKit Runtimes. Cloud-resource provisioning during the update uses the deployer's configured Volcengine or BytePlus credentials.
 </Note>
 
 ### Deployment options
@@ -2452,8 +2453,7 @@ veadk studio deploy \
 | `--environment-cp-workspace` | `str \| None` | `None` | Existing CodePipeline workspace ID or name for Studio environment image builds. When omitted, Studio creates or reuses a managed workspace. This option is not read from environment variables. |
 | `--environment-cr-repository` | `str \| None` | `None` | Existing Container Registry repository as `registry/namespace/repository` for Studio environment images. When omitted, Studio creates or reuses managed CR resources. This option is not read from environment variables. |
 | `--vefaas-application-template-id` | `str \| None` | Built-in template | Override the built-in VeFaaS Application Center template ID. Also read from `VEFAAS_APPLICATION_TEMPLATE_ID`. |
-| `--admin` | `str \| None` | `None` | Comma-separated admin list (usernames or OAuth emails). Omitting both `--admin` and `--developer` treats every signed-in user as an `admin`. Also reads `VEADK_STUDIO_ADMINS`. |
-| `--developer` | `str \| None` | `None` | Comma-separated developer list (usernames or OAuth emails). Also reads `VEADK_STUDIO_DEVELOPERS`. |
+| `--super-admin` | `str \| None` | `None` | Initial super administrator email or Identity UID. The user must already exist in the pool. Omit on first deployment to make everyone an admin; supplying it makes other users regular users by default. Later deployments preserve Identity roles. Also reads `VEADK_STUDIO_SUPER_ADMIN`. |
 | `--site-title` | `str \| None` | `None` | Custom Studio name, up to 16 characters. |
 | `--site-logo` | `str \| None` | `None` | Custom Studio logo as a local image path or HTTP(S) URL; bundled into VeFaaS during deployment. |
 | `--gateway-name` | `str` | `""` | Serverless API Gateway name. If omitted, an existing gateway is reused or a gateway is created when none exists. |
@@ -2529,8 +2529,7 @@ veadk studio deploy \
   --vestack-openapi-url "https://openapi.example.com" \
   --vestack-agentkit-region "e70" \
   --vestack-apig-cluster-id "<cluster-id>" \
-  --admin "admin@example.com" \
-  --developer "dev@example.com"
+  --super-admin "admin@example.com"
 ```
 
 The deployment performs the following steps:
@@ -2784,6 +2783,7 @@ The update also creates or updates the scheduled-task scheduler functions and co
 | `--path` | `str` | `.` | VeADK source checkout to build. |
 | `--site-title` | `str \| None` | Preserve deployed value | Replace the Studio name only when supplied. |
 | `--site-logo` | `str \| None` | Preserve deployed value | Replace the Studio logo only when supplied. |
+| `--super-admin` | `str \| None` | `None` | Enable Identity user management and migrate the deployed admin/developer lists. Provide an existing user's email or UID as the initial super administrator. |
 | `--sandbox-chat-codex-tool-id` | `str \| None` | Preserve deployed value | Replace the built-in-agent Tool ID only when supplied. |
 | `--sandbox-dev-tool-id` | `str \| None` | Preserve deployed value | Replace the Dev Sandbox Tool ID only when supplied. |
 | `--volcengine-access-key` | `str \| None` | `VOLCENGINE_ACCESS_KEY` | Access key used for the update. |
@@ -2795,32 +2795,36 @@ The update also creates or updates the scheduled-task scheduler functions and co
 
 ## Studio roles and Runtime access
 
-`--admin` and `--developer` each accept a comma-separated list of local usernames or OAuth email addresses. Whitespace is ignored and matching is case-insensitive. If the same identity appears in both lists, `admin` takes precedence. For a local Studio:
-
-```bash
-veadk studio \
-  --admin "admin,admin@example.com" \
-  --developer "alice,alice@example.com,bob"
-```
-
-The equivalent environment variables are `VEADK_STUDIO_ADMINS` and `VEADK_STUDIO_DEVELOPERS`. Use the same options for a deployed Studio:
+When deploying Studio, role management is backed by Identity user groups. The only deployment role option is `--super-admin`, which accepts an existing Identity user's email or UID:
 
 ```bash
 veadk studio deploy \
-  --vefaas-app-name "veadk-studio" \
-  --admin "admin@example.com" \
-  --developer "alice@example.com,bob@example.com"
+  --user-pool-id <pool-id> \
+  --allowed-client-id <client-id> \
+  --vefaas-app-name <app-name> \
+  --super-admin "owner@example.com"
 ```
 
-Omitting both options treats every signed-in user as an `admin`, granting full Studio capabilities and visibility into all Runtimes. Supplying either list enables role-based access control; an identity that does not match either list is a regular user.
+On first deployment, omitting this option makes all signed-in users admins, including future users. Supplying it makes other users regular users by default. The default and individual roles are stored in Identity. Later deployments and updates preserve existing assignments.
 
-| Capability | admin | developer | Regular user |
-| :--- | :--- | :--- | :--- |
-| Add, debug, and deploy agents | Allowed | Allowed | Denied; the create entry on the Agents page is disabled |
-| View and connect to Runtimes | All Runtimes | Own Runtimes only | Own Runtimes only |
-| Manage or delete Runtimes | All Studio-managed Runtimes | Own Runtimes only | Denied |
+Only super admins can see and use **User management** to list pool users and change roles. They inherit every admin capability. Studio protects the initial super admin from demotion. To assign the first super admin to an existing installation without changing other roles, run `veadk studio update --vefaas-app-name <app-name> --super-admin <email-or-uid>`.
 
-Studio restricts Runtime visibility according to the signed-in account. Existing Runtimes without a recorded creator are visible only to `admin` users.
+| Capability | Super admin | Admin | Developer | Regular user |
+| :--- | :--- | :--- | :--- | :--- |
+| Manage users | Allowed | Denied | Denied | Denied |
+| Add, debug, and deploy agents | Allowed | Allowed | Allowed | Denied |
+| View and connect to Runtimes | All | All | Own only | Own only |
+| Manage or delete Runtimes | All Studio-managed | All Studio-managed | Own only | Denied |
+
+The backend reads current Identity group membership for each authenticated request. Refreshing the page reflects role changes in permissions and the account badge.
+
+In-app updates match the old `VEADK_STUDIO_ADMINS` and `VEADK_STUDIO_DEVELOPERS` entries to Identity users and preserve their roles. Only after migration succeeds are the old role environment values cleared. Unmatched or ambiguous entries and insufficient permissions stop migration and retain the old configuration. Empty legacy lists preserve the all-admin default; with explicit lists, unlisted users remain regular users. Existing admins are never automatically promoted to super admin.
+
+<Note>
+  If the old updater predates migration, the new runtime migrates on first startup and clears the Function configuration. Published revisions may retain their old environment snapshots, but these lists never overwrite initialized Identity roles. Older deployments need Identity user/group read and membership write permissions before upgrading; alternatively, the new CLI update refreshes the managed Studio IAM policy. These rules apply to both Volcengine and BytePlus.
+</Note>
+
+Local sessions without an Identity pool still support `veadk studio --admin ... --developer ...`; `deploy` no longer accepts these options.
 
 <Warning>
   A local username is stored in the browser and can be changed or impersonated. Use it only for local development and feature testing. Production deployments must use OAuth or gateway authentication so identity and permissions are determined from verified sign-in information.
@@ -2833,15 +2837,15 @@ When Studio is running with OAuth or gateway authentication, local ADK session r
 Requests that target local sessions without a trusted signed-in identity receive a 401. A non-admin user who attempts to access another user's sessions receives a 403.
 
 <Note>
-  Even when neither `--admin` nor `--developer` is configured (so every signed-in user has full Studio capabilities), cross-user session access still requires an explicit entry in the administrator list. This restriction is independent of role permissions and is not relaxed by the legacy "all users are admins" mode.
+  Even when every signed-in user has the admin role (the default when no super admin is specified on first deployment), cross-user session access still requires an explicit entry in the administrator list. This restriction is independent of role permissions and is not relaxed by the legacy "all users are admins" mode.
 </Note>
 
-Identities listed in the `--admin` administrator list may access other users' local sessions for troubleshooting and support; such access is recorded in an audit log containing the actor, target user, request method, and path.
+Admins and super admins may access other users' local sessions for troubleshooting and support; such access is recorded in an audit log containing the actor, target user, request method, and path.
 
 
 ## View system information
 
-After signing in, the account menu at the bottom of the sidebar offers a "System info" entry. Selecting it opens the system information page over the current page, which displays the Studio version, storage, sandbox information, and user pools. The back button in the top-left corner of the page returns to the page you were on before opening System info; the previous page is preserved. The TOS bucket, sandbox Tools, and user pools each provide a link that opens the corresponding page in the cloud console in a new tab. This page is available only to the `admin` role, and all resource identifiers are read-only; administrators can update sandbox Tools that have available image updates (see [Sandbox information](#sandbox-information)).
+After signing in, the account menu at the bottom of the sidebar offers a "System info" entry. Selecting it opens the system information page over the current page, which displays the Studio version, storage, sandbox information, and user pools. The back button in the top-left corner of the page returns to the page you were on before opening System info; the previous page is preserved. The TOS bucket, sandbox Tools, and user pools each provide a link that opens the corresponding page in the cloud console in a new tab. This page is available only to users with the admin or super admin role, and all resource identifiers are read-only; administrators can update sandbox Tools that have available image updates (see [Sandbox information](#sandbox-information)).
 
 ### General
 
