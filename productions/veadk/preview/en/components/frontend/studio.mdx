@@ -2173,6 +2173,14 @@ Skill spaces are loaded by region and support filtering by name. Administrators 
   When creating a skill space you must select a region: for Volcengine the options are `cn-beijing` and `cn-shanghai`, defaulting to `cn-beijing`; for BytePlus the option is `ap-southeast-1`. Skill space cards display their region; spaces without an explicit region show the current cloud provider's default region.
 </Note>
 
+<Note>
+  Studio maintains two system skill spaces: `studio_share_space` is the enterprise shared skill space, always shown first in the Skills library, where administrators can maintain shared skills; `studio_review_space` stores submitted skill versions for review and is excluded from the Skills library and skill selectors. Each space is created once per cloud provider region and `VEADK_STUDIO_PROJECT` (or `default`). System spaces cannot be renamed or deleted; content in the review space can only be modified through the skill review workflow. When creating or renaming a skill space, user-entered names that conflict with reserved system space names are rejected.
+</Note>
+
+<Note>
+  When creating a personal skill space, Studio generates a unique cloud name containing only lowercase letters, numbers, and underscores, and stores the user-entered name in the skill space's `display_name` tag. The Skills library cards, details, and selectors prefer the display name and fall back to the cloud name when the tag is missing or blank. Skill lookups and exports continue to use the original cloud name.
+</Note>
+
 #### Manage skills
 
 After entering a skill space, you can browse all skills within it and filter by name. Each skill supports the following actions:
@@ -2184,6 +2192,7 @@ After entering a skill space, you can browse all skills within it and filter by 
 | Optimize | Uses the Dev Sandbox to optimize an existing skill, producing an improved version that can overwrite the original. Requires the Dev Sandbox to be configured. |
 | Delete | Requires confirmation before deletion. Deleting a skill affects all spaces that reference it. |
 | Local upload | Upload a ZIP file to the current skill space. The ZIP file must not exceed 20 MiB; file format, count, and path safety are validated before upload. |
+| Submit for review | Submit a selected version of a personal skill for review. Studio copies the version snapshot into an independent skill in the review space, preserving the original name and recording the submitter. Duplicate submissions of the same source version are rejected while pending or approved. |
 
 <Note>
   When uploading a ZIP, Studio checks that the archive contains `SKILL.md` and validates file count and path safety, automatically ignoring macOS metadata files inside `__MACOSX` directories. Full frontmatter and skill format validation is performed by ADK at load time. A validation function is available to pre-check ZIP contents before upload.
@@ -2193,6 +2202,10 @@ After entering a skill space, you can browse all skills within it and filter by 
 
 <Note>
   When viewing files or downloading a ZIP, Studio downloads the skill package from the skill space's region and ignores macOS metadata files such as `__MACOSX` directories, `.DS_Store`, and `._`-prefixed files while extracting. For skills using the legacy SkillSpace interface type, Studio falls back to resolving the skill by name so their file list and `SKILL.md` still load. A download or parsing failure returns a structured retryable error; retry after verifying the region, credentials, and network.
+</Note>
+
+<Note>
+  Skills support native version history. Uploading a ZIP with the same skill name as an existing skill creates a new version under the original skill ID and updates only its personal space association. Both ZIP uploads and optimized source updates wait for a new ready version instead of reusing an old running version. You can inspect files and submit reviews for a selected historical version from the version dialog.
 </Note>
 
 #### Generate skills with the Dev Sandbox
@@ -2250,6 +2263,55 @@ The model list is read from the DevEnv Tool configuration; a model ID can also b
 ##### Optimize an existing skill
 
 When browsing skills in a skill space, you can select "Optimize" for an existing skill. The optimization workflow is similar to creation but uses the existing skill as the source: enter an optimization goal, start a Dev Sandbox session, and generate an improved version. After optimization, you can choose to overwrite the original skill or publish it as a new skill.
+
+#### Skill review workflow
+
+The skill review workflow lets you submit personal skill versions to the review space for administrator approval before publishing them to the enterprise shared skill space.
+
+<Steps>
+  <Step title="Submit for review">
+    Submit a selected version from a personal skill's action row. Studio copies the version snapshot into an independent skill in the review space, preserving the original name and writing the submitter's display name to the `author` tag. The source space, skill name, version, and submission time are also recorded in tags. Duplicate submissions of the same source version are rejected while pending or approved; a returned version can be resubmitted as a new request.
+  </Step>
+  <Step title="Administrator review">
+    Administrators review submitted skill versions and files in the Review Center. They can approve (with an optional comment) or return (with a required reason and optional comment). On approval, Studio copies the version snapshot into `studio_share_space`. After a return, the submitter can resubmit after fixing the issues; earlier decisions remain in history.
+  </Step>
+  <Step title="Shared skill management">
+    Administrators can maintain approved shared skills in `studio_share_space`. Shared skills are read-only snapshots, independent of personal skill versions.
+  </Step>
+</Steps>
+
+<Note>
+  Review actions are performed by administrators in the Review Center. Submitters can view the review status, reviewer, decision time, comments, and return reasons from the personal skill list, details, and version dialog.
+</Note>
+
+#### Automatic skill assessment
+
+Submitted skill versions are automatically assessed using AI. Assessment uses the same model as automatic agent creation and scores through the Ark structured-output API.
+
+| Dimension | Weight | Description |
+| :--- | :--- | :--- |
+| Safety | 40% | Evaluates whether the skill poses security risks. |
+| Usability | 25% | Evaluates whether the skill is easy to understand and use. |
+| Completeness | 15% | Evaluates whether the skill's functionality is fully covered. |
+| Reliability | 10% | Evaluates the skill's stability across different scenarios. |
+| Maintainability | 10% | Evaluates the maintainability of the skill's code and documentation. |
+
+Studio calculates the weighted total and includes per-dimension scoring rationale, risks, and suggestions. Assessment reads only the fixed submitted snapshot without running its code or tools. Each dimension receives a score and rationale; when file coverage is incomplete, the safety, completeness, and total scores may be omitted.
+
+<Note>
+  Assessment reads at most 100 text files, with up to 40,000 characters per file and 120,000 characters total. Omitted, binary, and truncated files are disclosed in the report.
+</Note>
+
+<Note>
+  Assessment reports are stored under the `review-scores/` directory in the Studio persistent storage bucket. Review status, total score, assessment time, model, and report location are recorded in skill tags. Administrators and the submitting user can view the full JSON report; administrators can retry failed assessments. Completed reports are immutable. Manual review decisions and published shared skills remain independent of AI scores.
+</Note>
+
+#### Review Center
+
+The Review Center is located in the sidebar's Administration group, alongside User Management. It is visible only to administrators; the group is hidden entirely when no entries are visible.
+
+Administrators can switch between skill and agent review requests in the Review Center. Skill review requests are loaded from the regional review space, with search, refresh, and status filters. Each request shows the AI assessment status and total score; the details view exposes per-dimension scoring rationale, risks, file coverage, model metadata, and JSON report download. Review requests support approval (with an optional comment) or return (with a required reason and optional comment), and display reviewer details and history.
+
 ### Knowledge
 
 The Knowledge tab lets you create and manage user-owned AgentKit knowledge bases, and upload files or import web pages as knowledge data. Knowledge bases are created on the AgentKit platform; creation and write operations require Studio to use Volcengine or BytePlus credentials to call the AgentKit knowledge service.
