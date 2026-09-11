@@ -60,7 +60,8 @@
                           "productions/veadk/preview/zh/components/agent/system-prompt",
                           "productions/veadk/preview/zh/components/agent/prompt-management",
                           "productions/veadk/preview/zh/components/agent/structured-output",
-                          "productions/veadk/preview/zh/components/agent/skills"
+                          "productions/veadk/preview/zh/components/agent/skills",
+                          "productions/veadk/preview/zh/components/agent/remote-sandbox-agent"
                         ]
                       },
                       {
@@ -4778,7 +4779,8 @@
                           "productions/veadk/preview/en/components/agent/system-prompt",
                           "productions/veadk/preview/en/components/agent/prompt-management",
                           "productions/veadk/preview/en/components/agent/structured-output",
-                          "productions/veadk/preview/en/components/agent/skills"
+                          "productions/veadk/preview/en/components/agent/skills",
+                          "productions/veadk/preview/en/components/agent/remote-sandbox-agent"
                         ]
                       },
                       {
