@@ -168,7 +168,8 @@
                       "productions/veadk/preview/zh/components/frontend/veadk-web",
                       "productions/veadk/preview/zh/components/frontend/veadk-frontend",
                       "productions/veadk/preview/zh/components/frontend/a2ui",
-                      "productions/veadk/preview/zh/components/frontend/studio"
+                      "productions/veadk/preview/zh/components/frontend/studio",
+                      "productions/veadk/preview/zh/components/frontend/deepseek-harness"
                     ]
                   },
                   {
@@ -4885,7 +4886,8 @@
                       "productions/veadk/preview/en/components/frontend/veadk-web",
                       "productions/veadk/preview/en/components/frontend/veadk-frontend",
                       "productions/veadk/preview/en/components/frontend/a2ui",
-                      "productions/veadk/preview/en/components/frontend/studio"
+                      "productions/veadk/preview/en/components/frontend/studio",
+                      "productions/veadk/preview/en/components/frontend/deepseek-harness"
                     ]
                   },
                   {
