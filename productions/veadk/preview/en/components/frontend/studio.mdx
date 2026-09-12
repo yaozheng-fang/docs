@@ -1180,7 +1180,7 @@ A private VPC runtime does not return a public data-plane address after deployme
 
 ## Manage agents
 
-Manage Agents lists the AgentKit Runtimes visible to the current user. Visibility is determined by the signed-in account role: `admin` sees all Runtimes, while `developer` and regular users see only their own. The list defaults to the Beijing region and can be switched to Shanghai. When the visible scope includes all Runtimes, Runtimes created by the current user are marked "Created by me." The list exposes:
+Manage Agents lists the AgentKit Runtimes visible to the current user. Visibility is determined by the signed-in account role: `admin` sees all Runtimes, while `developer` and regular users see their own Runtimes and agents approved as enterprise-visible. The list defaults to the Beijing region and can be switched to Shanghai. When the visible scope includes all Runtimes, Runtimes created by the current user are marked "Created by me." Each agent card shows its visibility status (private or enterprise-visible) and review status (pending, approved, returned, withdrawn). The list exposes:
 
 - Runtime name, ID, status, region, and creation time;
 - Model, description, project, version, resources, and update time;
@@ -1193,6 +1193,10 @@ Studio does not store the Runtime API key in the browser. The management page th
 <Warning>
   Delete permanently removes the corresponding AgentKit runtime. Confirm that it no longer serves traffic and back up required data and configuration before proceeding.
 </Warning>
+
+<Note>
+  An agent with a pending review application must be withdrawn first, and a published agent must be unpublished first, before it can be modified or deleted. See [Agent publication review](#agent-publication-review).
+</Note>
 
 <Note>
   Before deleting, Studio shows a confirmation dialog listing the agents or drafts that will be removed; deletion only proceeds after confirmation. While deletion is in progress, the affected agents are temporarily hidden from the list. If the deleted agent is the one in use for the current conversation, Studio clears the current selection and returns to the agent management page.
@@ -2310,7 +2314,48 @@ Studio calculates the weighted total and includes per-dimension scoring rational
 
 The Review Center is located in the sidebar's Administration group, alongside User Management. It is visible only to administrators; the group is hidden entirely when no entries are visible.
 
-Administrators can switch between skill and agent review requests in the Review Center. Skill review requests are loaded from the regional review space, with search, refresh, and status filters. Each request shows the AI assessment status and total score; the details view exposes per-dimension scoring rationale, risks, file coverage, model metadata, and JSON report download. Review requests support approval (with an optional comment) or return (with a required reason and optional comment), and display reviewer details and history.
+Administrators can switch between skill and agent review requests in the Review Center, with region, status filters, and search.
+
+Skill review requests are loaded from the regional review space. Each request shows the AI assessment status and total score; the details view exposes per-dimension scoring rationale, risks, file coverage, model metadata, and JSON report download. Review requests support approval (with an optional comment) or return (with a required reason and optional comment), and display reviewer details and history.
+
+Agent review requests are loaded from the Runtime list for the selected region, showing agents with a submitted review application. Each request shows the agent name, applicant, submission time, current version, and model; the details view shows the agent description, application notes, and configuration fingerprint verification result. Administrators can approve (with an optional comment), return (with a required reason and optional comment), or publish directly. After a review action, the applicant can see the review status, reviewer, decision time, and comments on the agent card. See [Agent publication review](#agent-publication-review).
+
+#### Agent publication review
+
+Agent publication review allows developers to request that a deployed agent be shared with everyone in the organization, subject to administrator approval. Review records are stored in Runtime tags, independently of skill reviews.
+
+<Steps>
+  <Step title="Submit a request">
+    On the agent card in the "Manage agents" page, click "Request publication" and enter an application note (up to 20 characters). The agent must have been deployed through Studio (the Runtime tag `veadk:managed` must be `true`) and be in a running or ready state. After submission, the agent enters a pending review state. The application record is written to Runtime tags, including the application ID, status, submission time, application note, and configuration fingerprint.
+  </Step>
+  <Step title="Administrator review">
+    Administrators view applications in the Agent tab of the Review Center and can approve (with an optional comment, up to 256 characters), return (with a required reason, up to 256 characters, and an optional comment), or publish directly. On approval, Studio verifies that the configuration fingerprint matches the one captured at submission; if the agent configuration has changed since submission, approval is rejected and the administrator is prompted to return the application first. Direct publish skips the application flow and lets the administrator set the agent to enterprise-visible immediately. Reviewer information, decision time, and comments are written to Runtime tags.
+  </Step>
+  <Step title="Enterprise visibility and unpublish">
+    After approval or direct publish, the agent is marked as visible to everyone in the organization. All users can see and use the agent from the agent list. The agent owner or an administrator can unpublish the agent; after unpublishing, other users can no longer access the agent.
+  </Step>
+</Steps>
+
+The review status can be one of the following:
+
+| Status | Description |
+| :--- | :--- |
+| Pending | An application has been submitted and is awaiting administrator review. |
+| Approved | The administrator has approved the application; the agent is visible to everyone. |
+| Returned | The administrator returned the application; the submitter can resubmit after adjustments. |
+| Withdrawn | The submitter withdrew the application before a decision was made. |
+
+<Warning>
+  An agent with a pending application must be withdrawn before it can be modified or deleted; a published agent must be unpublished first. After unpublishing, other users can no longer access the agent through the Studio proxy, but an already-running conversation stream is not terminated.
+</Warning>
+
+<Note>
+  Enterprise-visible agents expose conversation capabilities to other users through the Studio proxy. Other users can view agent information and start conversations, but only access their own sessions; agent management, logs, credentials, and other users' sessions remain restricted.
+</Note>
+
+<Note>
+  Review records are stored in Runtime tags, including the application ID, status, submission time, application note, configuration fingerprint, reviewer information, and review comments. Each submission replaces the previous application record. The configuration fingerprint verifies whether the agent configuration has changed since submission, preventing an approved agent from differing from the actual deployed content. Reviewer avatars and names are resolved through the Identity user pool.
+</Note>
 
 ### Knowledge
 
@@ -2996,8 +3041,11 @@ Only super admins can see and use **User management** to list pool users and cha
 | :--- | :--- | :--- | :--- | :--- |
 | Manage users | Allowed | Denied | Denied | Denied |
 | Add, debug, and deploy agents | Allowed | Allowed | Allowed | Denied |
-| View and connect to Runtimes | All | All | Own only | Own only |
+| View and connect to Runtimes | All | All | Own and enterprise-visible | Own and enterprise-visible |
 | Manage or delete Runtimes | All Studio-managed | All Studio-managed | Own only | Denied |
+| Request agent publication | Allowed | Allowed | Allowed | Denied |
+| Approve or publish agents directly | Allowed | Allowed | Denied | Denied |
+| Unpublish agents | Allowed | Allowed | Own only | Denied |
 
 The backend reads current Identity group membership for each authenticated request. Refreshing the page reflects role changes in permissions and the account badge.
 
