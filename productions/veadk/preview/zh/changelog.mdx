@@ -8,6 +8,9 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 智能体审核 | 新增智能体公开审核工作流：开发者可从智能体卡片申请公开已部署的智能体，管理员在审核中心的智能体标签页中查看申请并选择通过、退回或直接公开。审核通过后智能体标记为全员可见，企业内所有用户可查看并使用；其他用户仅可访问自己的会话，管理操作和凭据仍受限制。审核记录存储在 Runtime 标签中，包括申请 ID、状态、提交说明、配置指纹和审核者信息。配置指纹防止审批通过后与实际部署不一致。待审核的智能体须先撤回才能修改或删除，已公开的智能体须先取消公开。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能体公开审核) |
+| Studio 智能体审核 | 审核中心新增智能体审核标签页，管理员可按地域和状态筛选查看智能体公开申请，查看智能体名称、申请人、版本、模型和配置指纹校验结果，并通过（可附审批意见）、退回（必须填写退回理由）或直接公开。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#审核中心) |
+| Studio Runtime 可见性 | 非管理员用户可见的 Runtime 范围扩展：除自己创建的 Runtime 外，非管理员用户还可查看和使用已通过审核标记为全员可见的 Runtime。管理操作、日志和凭据仍仅限所有者和管理员。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#studio-角色与-runtime-权限) |
 | Studio 技能审核 | 新增技能审核工作流：用户可从个人技能操作行提交选定版本至审核空间，Studio 将版本快照复制为独立技能并记录提交者信息。管理员在审核中心查看提交的技能版本和文件，可通过（可附评论）或退回（必须填写退回原因，可附评论）。通过后技能快照复制到企业共享技能空间 `studio_share_space`。被退回的版本可重新提交，历史审核决定保留。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#技能审核工作流) |
 | Studio 技能评测 | 提交审核的技能版本自动进行 AI 评测：使用与自动创建智能体相同的模型，通过火山方舟结构化输出接口评分。评测维度包括安全性（40%）、易用性（25%）、完整性（15%）、可靠性（10%）和可维护性（10%），Studio 计算加权总分并附带评分理由、风险点和建议。评测只读取提交快照，不运行代码或工具。评测报告存储在 Studio 持久化存储桶中，管理者和提交者可查看完整 JSON 报告，管理者可重试失败评测。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#自动技能评测) |
 | Studio 审核中心 | 侧边栏「管控」分组新增审核中心，与用户管理并列，仅管理员可见。管理员可切换查看技能和智能体的审核请求，支持搜索、刷新和状态筛选。每条请求显示 AI 评测状态和总分；详情中展示各维度评分理由、风险点、文件覆盖情况、模型信息和 JSON 报告下载。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#审核中心) |
