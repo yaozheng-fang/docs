@@ -8,6 +8,8 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 前端对话 | 新增 ConversationFlow 对话渲染组件，覆盖思考过程、工具调用、子智能体移交、图表、文件预览、授权卡片和媒体播放等消息场景。对话支持渲染 ECharts 与 Mermaid 图表（含源码切换和放大查看）、图片放大、视频与音频原生播放控制、文件预览和长时任务进度展示；消息区域使用固定高度滚动区域，用户消息靠右、模型回复靠左，不显示头像和名称。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
+| 前端开发 | 新增组件预览系统：在 `frontend` 目录运行 `npm run dev:components` 打开独立的组件预览页面，按基础组件、复合组件、布局、节点组件和 AI APP 分组浏览共享组件库，包含设计 Token、明暗主题切换和从 TypeScript 接口生成的参数表。此入口独立于 Studio 生产构建，不替换现有业务页面。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend#组件预览) |
 | Studio 智能体审核 | 新增智能体公开审核工作流：开发者可从智能体卡片申请公开已部署的智能体，管理员在审核中心的智能体标签页中查看申请并选择通过、退回或直接公开。审核通过后智能体标记为全员可见，企业内所有用户可查看并使用；其他用户仅可访问自己的会话，管理操作和凭据仍受限制。审核记录存储在 Runtime 标签中，包括申请 ID、状态、提交说明、配置指纹和审核者信息。配置指纹防止审批通过后与实际部署不一致。待审核的智能体须先撤回才能修改或删除，已公开的智能体须先取消公开。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能体公开审核) |
 | Studio 智能体审核 | 审核中心新增智能体审核标签页，管理员可按地域和状态筛选查看智能体公开申请，查看智能体名称、申请人、版本、模型和配置指纹校验结果，并通过（可附审批意见）、退回（必须填写退回理由）或直接公开。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#审核中心) |
 | Studio Runtime 可见性 | 非管理员用户可见的 Runtime 范围扩展：除自己创建的 Runtime 外，非管理员用户还可查看和使用已通过审核标记为全员可见的 Runtime。管理操作、日志和凭据仍仅限所有者和管理员。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#studio-角色与-runtime-权限) |

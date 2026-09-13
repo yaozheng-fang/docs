@@ -8,7 +8,7 @@ VeADK 自带一个生产级 React 前端——一个面向企业的智能体应�
 
 - **创建智能体**：当前可通过自定义配置创建智能体，产出可运行的 VeADK 项目（`agent.py`、`requirements.txt` 等），并可在线预览、编辑与下载。智能模式、模板和工作流入口显示为「敬请期待」，暂不可用。
 - **多模态消息**：上传图片、TXT、Markdown、PDF 和视频；用户附件与模型返回的媒体均可预览并随历史会话重新加载。
-- **对话与调试**：与智能体多轮对话，展示思考过程、工具调用、Token 与用时；内置工具（网页搜索、图像生成、视频生成、长期记忆检索、知识库检索）在执行时显示专属图标与运行状态；对话中还会渲染智能体返回的 [A2UI](/productions/veadk/preview/zh/components/frontend/a2ui) 富界面卡片。
+- **对话与调试**：与智能体多轮对话，展示思考过程、工具调用、子智能体移交、Token 与用时；对话支持渲染 ECharts 与 Mermaid 图表（含源码切换和放大查看）、图片放大、视频与音频播放、文件预览和长时任务进度；内置工具（网页搜索、图像生成、视频生成、长期记忆检索、知识库检索）在执行时显示专属图标与运行状态；对话中还会渲染智能体返回的 [A2UI](/productions/veadk/preview/zh/components/frontend/a2ui) 富界面卡片。
 - **停止生成**：智能体回复过程中，输入框的发送按钮变为停止按钮，点击后中断当前回复。已接收的内容保留在对话中，停止后可立即在同一会话中发送下一条消息。该能力在 `veadk frontend` 与 `veadk studio` 的对话页面（含沙箱会话）均生效。
 - **上下文用量指示器**：输入框发送按钮旁显示当前模型的上下文窗口用量。悬停或聚焦时展开 100 格用量构成图，将上下文占用分为系统与工具（估算）、输入与历史、输出与思考、剩余容量四部分。系统与工具占用为估算值，因为模型使用量统计未单独报告该部分。上下文窗口大小按云服务商和模型名称确定。该能力在 `veadk frontend` 与 `veadk studio` 的智能体对话页面均生效。
 - **智能体选择器**：左上角切换智能体；悬停可查看该智能体的模型与挂载的工具。
@@ -64,6 +64,15 @@ veadk frontend --agents-dir examples
 ```bash
 veadk frontend --dev --vite --agents-dir examples   # 仅 API，为 Vite 放行 CORS
 cd frontend && npm run dev                    # http://localhost:5173，代理 API
+```
+
+### 组件预览
+
+`frontend` 目录包含一个独立的组件预览页面，用于浏览共享组件库中的组件实现。预览页面不依赖后端服务，按基础组件、复合组件、布局、节点组件和 AI APP 分组展示，包含设计 Token、明暗主题切换和从 TypeScript 接口生成的参数表。此入口独立于 Studio 生产构建，不替换现有业务页面。
+
+```bash
+cd frontend && npm run dev:components
+# 打开 http://127.0.0.1:5186/components-preview/
 ```
 
 ## `veadk frontend` 命令
