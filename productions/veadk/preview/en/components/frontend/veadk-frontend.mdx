@@ -8,7 +8,7 @@ VeADK ships a production-grade React frontend — an enterprise agent-applicatio
 
 - **Create agents**: custom configuration is the available project-creation flow, producing a runnable VeADK project (`agent.py`, `requirements.txt`, and so on) that you can preview, edit, and download. Intelligent, template, and workflow entries are marked as coming soon and cannot be selected.
 - **Multimodal messages**: upload images, TXT, Markdown, PDF, and video; both user attachments and model-returned media can be previewed and restored from history.
-- **Chat and debug**: multi-turn conversations showing thinking, tool calls, token usage and timing; built-in tools (web search, image generation, video generation, memory retrieval, knowledge-base retrieval) display dedicated icons and running status while executing; conversations also render the [A2UI](/productions/veadk/preview/en/components/frontend/a2ui) rich-UI cards an agent returns.
+- **Chat and debug**: multi-turn conversations showing thinking, tool calls, sub-agent handoffs, token usage and timing; conversations render ECharts and Mermaid charts (with source-code switching and zoom), image zoom, video and audio playback, file previews, and long-running task progress; built-in tools (web search, image generation, video generation, memory retrieval, knowledge-base retrieval) display dedicated icons and running status while executing; conversations also render the [A2UI](/productions/veadk/preview/en/components/frontend/a2ui) rich-UI cards an agent returns.
 - **Stop generation**: while an agent is replying, the composer's send button becomes a stop button; clicking it cancels only the active response, preserves any content already received, and immediately enables the next turn in the same session. This applies to both the `veadk frontend` and `veadk studio` conversation pages, including sandbox conversations.
 - **Context usage meter**: a context usage indicator beside the Send button shows the current model's context window occupancy. Hovering or focusing it expands a 100-cell usage map that breaks down the context into system and tool overhead (estimated), input and history, output and reasoning, and remaining capacity. System and tool usage is an estimate because the model's usage metadata does not report it separately. The context window size is determined by the cloud provider and model name. This applies to both the `veadk frontend` and `veadk studio` agent conversation pages.
 - **Agent picker**: switch agents from the top-left; hover an agent to see its model and mounted tools.
@@ -64,6 +64,15 @@ Use `--vite` to serve only the API and allow CORS from the Vite dev server (`htt
 ```bash
 veadk frontend --dev --vite --agents-dir examples   # API only, CORS for Vite
 cd frontend && npm run dev                    # http://localhost:5173, proxies API
+```
+
+### Component preview
+
+The `frontend` directory includes a standalone component preview page for browsing the shared component library. The preview runs without a backend service, organized by primitives, composites, layouts, node components, and AI APP components, with design tokens, light/dark theme switching, and parameter tables generated from TypeScript interfaces. This entry point is independent of the Studio production build and does not replace existing pages.
+
+```bash
+cd frontend && npm run dev:components
+# open http://127.0.0.1:5186/components-preview/
 ```
 
 ## The `veadk frontend` command
