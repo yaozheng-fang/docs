@@ -1,0 +1,206 @@
+---
+title: "DeepSeek Harness 创建与部署"
+---
+
+DeepSeek Harness 创建模式是 Studio 中的一种智能体创建方式，用于配置、预览和部署基于 DeepSeek Harness 的容器化智能体运行时。该模式生成包含 Dockerfile、配置文件和运行时适配器的完整容器项目，可直接部署到 AgentKit Runtime，也可以导出为 ZIP 在本地构建和运行。
+
+<Note>
+  该功能目前处于 Beta 阶段，配置界面会标注 Beta 徽标。
+</Note>
+
+## 何时使用
+
+| 场景 | 适用情况 |
+| --- | --- |
+| 使用 DeepSeek 模型构建智能体 | 通过 DeepSeek 官方模型或兼容 API 的自定义模型服务运行智能体 |
+| 容器化部署 | 生成独立的 DeepSeek Harness 容器项目，部署为 AgentKit Runtime 后通过 HTTP API 调用 |
+| 自定义模型路由 | 添加多个模型提供方和模型，配置子智能体的模型选择策略 |
+
+## 创建入口
+
+在 Studio 的「智能体」页面中点击「创建智能体」，在创建菜单中选择「快速创建」。在弹出的 Agent 类型选择对话框中选择「DeepSeek Harness」并点击「继续」，进入 DeepSeek Harness 配置页面。
+
+## 配置项
+
+配置页面按分区组织，每个分区对应 DeepSeek Harness 的一类原生设置。未填写的字段继承部署镜像中的默认值。
+
+### 会话默认设置
+
+默认模型、Agent 预设和权限用于新会话。预设需要存在于部署的 Harness 中。
+
+| 配置项 | 配置路径 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 默认提供方 | `agent-default-model.provider` | `deepseek-official` | 默认模型提供方，可选内置提供方或已添加的自定义提供方 |
+| 默认模型 | `agent-default-model.model` | `deepseek-flash` | 默认推理模型，选项随所选提供方变化 |
+| 默认推理强度 | `agent-default-model.reasoningEffort` | — | 模型的推理强度等级；自定义提供方的模型未声明推理强度时使用服务端设置 |
+| 默认 Agent 预设 | `agent-presets.default` | `standard` | Agent 预设名称，可选 `standard`、`minimal`、`ptc`、`cordis`，也可输入自定义值 |
+| 默认权限预设 | `permission.defaultPreset` | `workspace-write` | 权限预设，可选 `read-only`（只读）、`workspace-write`（可写工作区）、`danger-full-access`（完整访问且不请求确认） |
+
+### DeepSeek 模型服务
+
+DeepSeek 官方提供方的模型服务参数。
+
+| 配置项 | 配置路径 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 密钥环境变量 | `llm-deepseek.apiKeyEnv` | `DEEPSEEK_API_KEY` | 存放 DeepSeek API Key 的环境变量名称，仅填写变量名，实际密钥由部署环境提供 |
+| 服务地址 | `llm-deepseek.baseURL` | — | DeepSeek 模型服务地址，需为 HTTP 或 HTTPS 地址且不在 URL 中包含凭据 |
+| 思考模式 | `llm-deepseek.thinking` | — | 思考模式开关，可选 `enabled` 或 `disabled` |
+| 推理强度 | `llm-deepseek.reasoningEffort` | `high` | 推理强度等级，可选 `off`、`low`、`high`、`max` |
+| 每次请求的输出上限 | `llm-deepseek.maxTokens` | `256000` | 单次请求的最大输出 token 数 |
+| 默认上下文容量 | `llm-deepseek.defaultContextWindow` | `1000000` | 默认上下文窗口大小 |
+| 流式空闲超时 | `llm-deepseek.streamIdleTimeoutMs` | `300000` | 流式响应的空闲超时时间（毫秒） |
+
+### 自定义模型提供方
+
+可添加自定义模型服务，填写端点、协议和模型 ID，支持火山引擎和 BytePlus 等兼容服务。
+
+每个自定义提供方包含以下字段：
+
+| 字段 | 说明 |
+| :--- | :--- |
+| 提供方 ID | 以小写字母开头，可包含小写字母、数字、点、下划线和连字符，不能使用保留 ID（如 `deepseek-official`、`constructor`、`prototype`） |
+| 显示名称 | 可选，默认使用提供方 ID |
+| 服务地址 | 模型服务的 HTTP 或 HTTPS 地址 |
+| 接口协议 | API 协议，可选 `openai-completions`、`openai-responses`、`anthropic-messages` |
+| 密钥环境变量 | 存放该提供方 API Key 的环境变量名称 |
+
+每个提供方可配置多个模型，每个模型包含以下字段：
+
+| 字段 | 说明 |
+| :--- | :--- |
+| 模型 ID | 服务端的模型标识 |
+| 显示名称 | 可选的模型显示名称 |
+| 上下文容量 | 模型的上下文窗口大小 |
+| 最大输出容量 | 模型的最大输出 token 数 |
+
+### 命令执行
+
+Shell 命令执行的超时与输出限制。
+
+| 配置项 | 配置路径 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 默认执行超时 | `bash.timeoutMs` | `60000` | 默认命令执行超时（毫秒） |
+| 最大执行超时 | `bash.maxTimeoutMs` | `600000` | 最大命令执行超时（毫秒） |
+| 输出上限 | `bash.maxOutputBytes` | `64000` | 命令输出上限（字节） |
+
+### 工具调用
+
+| 配置项 | 配置路径 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 并行工具调用上限 | `agent-loop.maxParallelToolCalls` | — | 单次工具调用循环中的最大并行调用数 |
+
+### 子智能体模型选择
+
+控制子智能体可选择的模型范围。
+
+| 配置项 | 配置路径 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 启用模型选择 | `subagent-model-selection.enabled` | `false` | 启用后，子智能体只能从已配置的 `allowedModels` 列表中选择模型 |
+
+启用模型选择后，需至少添加一组提供方和模型作为可选项。
+
+### DeepSeek 网络搜索
+
+DeepSeek 原生网络搜索工具的参数。
+
+| 配置项 | 配置路径 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 密钥环境变量 | `web-search-deepseek.apiKeyEnv` | `DEEPSEEK_API_KEY` | 存放搜索服务 API Key 的环境变量名称 |
+| 搜索服务地址 | `web-search-deepseek.baseURL` | — | 搜索服务地址 |
+| 搜索模型 | `web-search-deepseek.model` | `deepseek-v4-flash` | 用于网络搜索的模型 |
+| 接口版本 | `web-search-deepseek.apiVersion` | `2023-06-01` | 搜索 API 版本 |
+| 搜索输出上限 | `web-search-deepseek.maxTokens` | `4096` | 搜索结果的最大输出 token 数 |
+| 搜索次数上限 | `web-search-deepseek.maxUses` | `5` | 单次任务中网络搜索的最大使用次数 |
+
+## 预览、导出与部署
+
+配置完成后，页面底部提供三个操作：
+
+| 操作 | 说明 |
+| --- | --- |
+| 预览 | 在代码浏览器中查看生成的项目文件，不执行构建或部署 |
+| 导出配置 | 将生成的项目文件下载为 ZIP 压缩包 |
+| 部署 | 进入部署流程，将项目部署到 AgentKit Runtime |
+
+配置校验失败时，页面会高亮显示需要修改的字段并展开对应分区，可直接在页面中修正。
+
+## 部署到 AgentKit
+
+选择部署后，页面进入部署配置界面。部署流程与自定义创建一致，可选择发布区域、网络模式和 Runtime 名称。部署时 Studio 通过 CodePipeline 构建容器镜像，推送到容器镜像仓库，然后创建 AgentKit Runtime。
+
+<Warning>
+  部署会创建云端运行资源并产生费用。执行前应确认区域、Runtime 名称和所需密钥环境变量无误。
+</Warning>
+
+部署时需要提供以下密钥环境变量（根据配置自动确定）：
+
+- `DEEPSEEK_API_KEY`：DeepSeek 官方提供方的 API Key（使用默认提供方时必填）
+- 自定义提供方的密钥环境变量：每个自定义提供方对应一个密钥环境变量，需在部署时提供
+
+密钥值仅在部署时通过环境变量传入，不会写入 `settings.yaml`、Dockerfile 或构建参数。
+
+## 容器运行时
+
+部署的容器基于 Node.js 镜像构建，安装 DeepSeek Harness npm 包作为运行时基础层。容器以 `node` 用户运行，工作目录为 `/workspace`。启动时将导出的 `settings.yaml` 复制到 DeepSeek Harness 的配置目录，使每次启动使用导出的配置覆盖已有设置。
+
+容器内的 DeepSeek Harness 原生 Web 服务在 `127.0.0.1:3080` 上私有运行。运行时适配器作为原生插件加载，在端口 `8000` 上暴露 HTTP 接口，可通过 `_FAAS_RUNTIME_PORT` 或 `PORT` 环境变量覆盖端口。
+
+### HTTP 接口
+
+| 端点 | 方法 | 说明 |
+| --- | --- | --- |
+| `/ping` | `GET` | 健康检查，返回 `200` 表示就绪，`503` 表示正在启动 |
+| `/invocations` | `POST` | 调用智能体并返回响应 |
+
+`POST /invocations` 请求体：
+
+```json title="请求体"
+{
+  "prompt": "你好",
+  "session_id": "optional-session-id"
+}
+```
+
+成功响应：
+
+```json title="成功响应"
+{
+  "response": "...",
+  "session_id": "...",
+  "agent_preset": "standard"
+}
+```
+
+同一会话已有正在进行的调用时返回 `409`；请求格式错误返回 `400`；智能体运行超时返回 `504`；智能体未正常完成返回 `502`。默认调用超时为 300 秒，可通过 `DSH_INVOCATION_TIMEOUT_MS` 环境变量配置。客户端断开连接或超时会取消当前调用。
+
+### 持久化
+
+会话和工作区文件依赖挂载的持久化存储。未配置持久化存储时，容器替换会丢失本地会话。多实例部署需要会话路由或共享存储。
+
+<Note>
+  运行时网关认证保护调用接口。本地运行时应将容器端口绑定到回环地址。适配器本身不实现额外的认证层。
+</Note>
+
+## 本地构建与运行
+
+导出的项目包含可直接构建的 Dockerfile。在项目目录中执行：
+
+```bash
+docker build -t deepseek-harness-agent .
+```
+
+使用默认 DeepSeek 提供方时，设置 `DEEPSEEK_API_KEY` 并运行：
+
+```bash
+docker run --rm -p 127.0.0.1:8000:8000 -e DEEPSEEK_API_KEY deepseek-harness-agent
+```
+
+使用自定义提供方时，还需通过 `-e` 传入对应的密钥环境变量。
+
+<Warning>
+  不要将密钥值写入 Dockerfile、settings.yaml 或构建参数。`.env.example` 文件仅列出环境变量名称，不会被自动加载。
+</Warning>
+
+## 配置范围
+
+编辑器覆盖 DeepSeek Harness 的常用原生设置，包括默认模型、预设、权限、DeepSeek 模型服务、自定义模型提供方、命令执行、工具调用、子智能体模型选择和网络搜索。其他原生插件和预设文件设置不在编辑器范围内。预设需要存在于部署的 Harness 中；自定义预设和额外插件需显式安装并添加到构建上下文。

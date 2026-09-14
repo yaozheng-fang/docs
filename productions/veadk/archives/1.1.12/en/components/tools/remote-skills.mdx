@@ -1,0 +1,192 @@
+---
+title: "Remote skills proxy"
+---
+
+## Overview
+
+Remote skills provide a declarative way to expose skills hosted in the AgentKit Skills Sandbox as individual tools on an agent. You describe each remote skill — its name, description, and input schema — in a JSON manifest, and VeADK generates a corresponding tool function for each one. When the agent calls a tool, the framework forwards the request to the remote sandbox via `execute_skills`; the actual skill code runs only on the remote side and is never loaded or executed locally.
+
+Remote skills are useful when you want to:
+
+- Expose remote skills as standalone tools so the agent can invoke them by name with structured arguments;
+- Control the timeout for each skill individually;
+- Manage the skill list through a declarative manifest instead of writing tool functions one by one in code.
+
+<Note>
+Remote skills reuse the sandbox infrastructure and credential configuration of `execute_skills`. Environment variables, Tool IDs, and other prerequisites are the same as those described on the [Code sandboxes](/productions/veadk/preview/en/components/tools/code-sandbox) page.
+</Note>
+
+## Usage
+
+Import path:
+
+```python
+from veadk.tools.builtin_tools.remote_skills import (
+    RemoteSkillDefinition,
+    load_remote_skill_definitions,
+    build_remote_skill_tools,
+)
+```
+
+Steps:
+
+1. Write a JSON manifest describing the remote skills to expose;
+2. Call `load_remote_skill_definitions` to load the manifest into a list of `RemoteSkillDefinition`;
+3. Call `build_remote_skill_tools` to convert the definitions into tool functions;
+4. Pass the tool functions to the `Agent` `tools` parameter.
+
+```python title="remote_skills_agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.remote_skills import (
+    load_remote_skill_definitions,
+    build_remote_skill_tools,
+)
+
+definitions = load_remote_skill_definitions("remote-skills.json")
+tools = build_remote_skill_tools(definitions)
+
+agent = Agent(
+    name="remote_skill_agent",
+    instruction="Call the appropriate remote skill for the user's request.",
+    skills=["space:your-skill-space-id"],
+    skills_mode="skills_sandbox",
+    tools=tools,
+)
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("Write a technical report")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+You can also pass a JSON string directly instead of a file path:
+
+```python
+definitions = load_remote_skill_definitions(
+    '{"remote_skills": [{"name": "report_writer", "description": "Generate a technical report", "input_schema": {"type": "object"}}]}'
+)
+tools = build_remote_skill_tools(definitions)
+```
+
+## Manifest format
+
+The manifest is a JSON object containing a `remote_skills` array. Each element describes one remote skill:
+
+```json title="remote-skills.json"
+{
+  "remote_skills": [
+    {
+      "name": "report_writer",
+      "description": "Write a technical report from the given parameters",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": ["doc", "pdf"],
+            "description": "Output format"
+          }
+        },
+        "required": ["format"]
+      },
+      "display_name": "Report writer",
+      "timeout": 600
+    }
+  ]
+}
+```
+
+### Skill fields
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | — | Skill name, used as the generated tool function name. Must be unique. |
+| `description` | `str` | — | Skill description, included in the tool's docstring so the model can decide when to call it. |
+| `input_schema` | `dict` | — | JSON Schema describing the structure of `arguments`. |
+| `display_name` | `str` | `None` | Optional display name. |
+| `timeout` | `int` | `1800` | Execution timeout for the skill, in seconds. Must be between 1 and 1800. |
+| `timeout_seconds` | `int` | `1800` | Alias for `timeout`; when both are present, `timeout` takes precedence. |
+
+<Warning>
+`name` and `description` must be non-empty strings, and `input_schema` must be a JSON object; otherwise loading raises an error. `timeout` (or `timeout_seconds`) must be between 1 and 1800. Duplicate `name` values are not allowed in the same manifest.
+</Warning>
+
+## Generated tool function
+
+`build_remote_skill_tools` generates one tool function per `RemoteSkillDefinition`. The function name is taken from the skill's `name`, and the docstring contains the description and input schema. The generated tool function signature is:
+
+```python
+def remote_skill(
+    query: str,
+    arguments: dict[str, Any] | None = None,
+    tool_context: ToolContext | None = None,
+) -> str:
+    ...
+```
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | — | The query instruction passed to the remote skill. |
+| `arguments` | `dict[str, Any] \| None` | `None` | Skill input arguments, which must conform to the `input_schema` declared in the manifest. |
+| `tool_context` | `ToolContext \| None` | `None` | Tool runtime context, injected automatically by VeADK; required at call time. |
+
+When the tool runs, the framework assembles `skill_name`, `query`, `arguments`, and an auto-generated `request_id` into a query input, sends it to the remote sandbox via `execute_skills`, and enforces the timeout configured on the skill definition.
+
+<Note>
+`tool_context` is marked optional in the signature but is required at call time; omitting it raises an error. VeADK injects it automatically during agent execution — you do not need to pass it manually.
+</Note>
+
+## API
+
+### RemoteSkillDefinition
+
+`RemoteSkillDefinition` is the runtime definition of a skill, holding its name, description, input schema, and timeout configuration.
+
+| Attribute | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | — | Skill name. |
+| `description` | `str` | — | Skill description. |
+| `input_schema` | `dict[str, Any]` | — | JSON Schema for the input arguments. |
+| `display_name` | `str \| None` | `None` | Display name. |
+| `timeout` | `int` | `1800` | Execution timeout in seconds. |
+
+### load_remote_skill_definitions
+
+```python
+def load_remote_skill_definitions(
+    value: str | os.PathLike[str],
+) -> list[RemoteSkillDefinition]:
+    ...
+```
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `value` | `str \| os.PathLike[str]` | — | A JSON string or a path to a local manifest file. |
+
+Returns a list of `RemoteSkillDefinition`. When the value starts with `{`, it is parsed as a JSON string; otherwise it is read as a file path.
+
+### build_remote_skill_tools
+
+```python
+def build_remote_skill_tools(
+    definitions: list[RemoteSkillDefinition],
+    *,
+    executor: Callable[..., str] = execute_skills,
+) -> list[Callable[..., str]]:
+    ...
+```
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `definitions` | `list[RemoteSkillDefinition]` | — | Skill definitions. |
+| `executor` | `Callable[..., str]` | `execute_skills` | Executor function, defaulting to `execute_skills`; typically left unchanged. |
+
+Returns a list of tool functions that can be passed directly to the `Agent` `tools` parameter.

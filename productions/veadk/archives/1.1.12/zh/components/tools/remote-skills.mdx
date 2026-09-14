@@ -1,0 +1,192 @@
+---
+title: "远程技能代理"
+---
+
+## 功能说明
+
+远程技能代理（Remote Skills）提供一种声明式方式，将托管在 AgentKit Skills Sandbox 中的远端技能以独立工具的形式注册到智能体。开发者通过一份 JSON 清单描述每个远端技能的名称、描述和输入 Schema，VeADK 据此为每个技能生成对应的工具函数；智能体调用工具时，框架通过 `execute_skills` 将请求转发到远端沙箱执行，本地不加载也不运行技能的真实代码。
+
+远程技能代理适用于以下场景：
+
+- 需要将远端技能暴露为独立工具，使智能体能够按技能名称和参数自主调用；
+- 需要为每个技能单独控制超时时间；
+- 希望以声明式配置管理技能列表，而非在代码中逐个编写工具函数。
+
+<Note>
+远程技能代理复用 `execute_skills` 的沙箱基础设施与凭证配置。环境变量、Tool ID 等前提条件与[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)页面中的说明一致，此处不再重复。
+</Note>
+
+## 使用方法
+
+导入路径：
+
+```python
+from veadk.tools.builtin_tools.remote_skills import (
+    RemoteSkillDefinition,
+    load_remote_skill_definitions,
+    build_remote_skill_tools,
+)
+```
+
+使用步骤如下：
+
+1. 编写一份 JSON 清单文件，描述需要暴露的远端技能；
+2. 调用 `load_remote_skill_definitions` 加载清单，得到 `RemoteSkillDefinition` 列表；
+3. 调用 `build_remote_skill_tools` 将定义转换为工具函数列表；
+4. 将工具函数注册到 `Agent` 的 `tools` 参数。
+
+```python title="remote_skills_agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.remote_skills import (
+    load_remote_skill_definitions,
+    build_remote_skill_tools,
+)
+
+definitions = load_remote_skill_definitions("remote-skills.json")
+tools = build_remote_skill_tools(definitions)
+
+agent = Agent(
+    name="remote_skill_agent",
+    instruction="根据用户需求调用合适的远程技能。",
+    skills=["space:your-skill-space-id"],
+    skills_mode="skills_sandbox",
+    tools=tools,
+)
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("撰写一份技术报告")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+也可以直接传入 JSON 字符串而非文件路径：
+
+```python
+definitions = load_remote_skill_definitions(
+    '{"remote_skills": [{"name": "report_writer", "description": "生成技术报告", "input_schema": {"type": "object"}}]}'
+)
+tools = build_remote_skill_tools(definitions)
+```
+
+## 清单格式
+
+清单为一个 JSON 对象，包含 `remote_skills` 数组，每个元素描述一个远端技能：
+
+```json title="remote-skills.json"
+{
+  "remote_skills": [
+    {
+      "name": "report_writer",
+      "description": "根据输入参数撰写技术报告",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": ["doc", "pdf"],
+            "description": "输出格式"
+          }
+        },
+        "required": ["format"]
+      },
+      "display_name": "报告撰写",
+      "timeout": 600
+    }
+  ]
+}
+```
+
+### 技能字段
+
+| 字段 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | — | 技能名称，作为生成工具函数的函数名，必须唯一。 |
+| `description` | `str` | — | 技能描述，用于生成工具的 Docstring，模型据此判断何时调用。 |
+| `input_schema` | `dict` | — | 技能输入参数的 JSON Schema，描述 `arguments` 的结构。 |
+| `display_name` | `str` | `None` | 可选的展示名称。 |
+| `timeout` | `int` | `1800` | 单个技能执行的超时时间，单位为秒。取值范围为 1–1800。 |
+| `timeout_seconds` | `int` | `1800` | `timeout` 的别名，二者同时存在时以 `timeout` 为准。 |
+
+<Warning>
+`name` 和 `description` 必须为非空字符串，`input_schema` 必须为 JSON 对象，否则加载时会报错。`timeout`（或 `timeout_seconds`）必须在 1–1800 之间。清单中不允许出现重复的 `name`。
+</Warning>
+
+## 生成的工具函数
+
+`build_remote_skill_tools` 为每个 `RemoteSkillDefinition` 生成一个工具函数。函数名取自技能的 `name`，函数 Docstring 包含技能描述和输入 Schema。生成的工具函数签名如下：
+
+```python
+def remote_skill(
+    query: str,
+    arguments: dict[str, Any] | None = None,
+    tool_context: ToolContext | None = None,
+) -> str:
+    ...
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | — | 传递给远端技能的查询指令。 |
+| `arguments` | `dict[str, Any] \| None` | `None` | 技能输入参数，须符合清单中声明的 `input_schema`。 |
+| `tool_context` | `ToolContext \| None` | `None` | 工具运行时上下文，由 VeADK 自动注入；调用时必须提供。 |
+
+工具执行时，框架将 `skill_name`、`query`、`arguments` 和自动生成的 `request_id` 组装为查询输入，通过 `execute_skills` 发送到远端沙箱，并使用技能定义中配置的 `timeout` 控制超时。
+
+<Note>
+`tool_context` 在签名中标记为可选，但实际调用时必须提供，否则会报错。VeADK 在智能体运行时自动注入该参数，无需手动传入。
+</Note>
+
+## API
+
+### RemoteSkillDefinition
+
+`RemoteSkillDefinition` 是技能的运行时定义，包含技能名称、描述、输入 Schema 和超时配置。
+
+| 属性 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | — | 技能名称。 |
+| `description` | `str` | — | 技能描述。 |
+| `input_schema` | `dict[str, Any]` | — | 输入参数的 JSON Schema。 |
+| `display_name` | `str \| None` | `None` | 展示名称。 |
+| `timeout` | `int` | `1800` | 执行超时时间，单位为秒。 |
+
+### load_remote_skill_definitions
+
+```python
+def load_remote_skill_definitions(
+    value: str | os.PathLike[str],
+) -> list[RemoteSkillDefinition]:
+    ...
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `value` | `str \| os.PathLike[str]` | — | JSON 字符串或本地清单文件路径。 |
+
+返回 `RemoteSkillDefinition` 列表。传入的值以 `{` 开头时按 JSON 字符串解析，否则按文件路径读取。
+
+### build_remote_skill_tools
+
+```python
+def build_remote_skill_tools(
+    definitions: list[RemoteSkillDefinition],
+    *,
+    executor: Callable[..., str] = execute_skills,
+) -> list[Callable[..., str]]:
+    ...
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `definitions` | `list[RemoteSkillDefinition]` | — | 技能定义列表。 |
+| `executor` | `Callable[..., str]` | `execute_skills` | 执行器函数，默认为 `execute_skills`，通常无需修改。 |
+
+返回工具函数列表，可直接传入 `Agent` 的 `tools` 参数。
