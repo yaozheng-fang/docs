@@ -1,0 +1,122 @@
+---
+title: "出站认证"
+---
+
+出站认证解决智能体访问第三方服务时的凭据问题。Agent Identity 加密保管 API Key 与 OAuth 令牌，凭据不写入代码，并自动缓存、刷新与轮换。按场景选择认证方式：
+
+| 认证方式 | 提供商类型 | 适用场景 |
+| --- | --- | --- |
+| API Key | API Key | 简单、固定凭证的服务间通信 |
+| OAuth2 M2M | OAuth Client | 后端服务间认证，支持令牌过期与刷新 |
+| OAuth2 用户委托 | OAuth Client | 应用代表用户访问，需用户授权同意 |
+
+## 创建出站凭据
+
+<Steps>
+  <Step title="开通 Agent Identity">
+    访问 [Agent Identity](https://console.volcengine.com/identity) 开通页，勾选同意服务条款后开通并授权。
+  </Step>
+  <Step title="新建出站凭据">
+    在控制台选择 **身份认证 › 出站凭据托管**，按认证方式新建 API Key 或 OAuth Client，并填写相应凭证（API Key、Client ID、Client Secret、回调 URL 等）。
+  </Step>
+</Steps>
+
+## 在智能体中使用
+
+创建凭据后，用两个封装把凭据注入智能体：普通函数工具用 `VeIdentityFunctionTool`，MCP 工具集用 `VeIdentityMcpToolset`。二者都接收一个 `auth_config`——由下述各认证方式生成——运行时凭据由 Agent Identity 自动注入。
+
+```python
+from veadk.integrations.ve_identity import VeIdentityFunctionTool, VeIdentityMcpToolset
+from google.adk.agents.mcp import StdioServerParameters
+
+# 函数工具：auth_config 决定凭据来源，into 指定注入形参
+tool = VeIdentityFunctionTool(func=call_api, auth_config=auth_config, into="api_key")
+
+# MCP 工具集：同样传入 auth_config
+toolset = VeIdentityMcpToolset(
+    auth_config=auth_config,
+    connection_params=StdioServerParameters(command="python", args=["-m", "my_mcp_server"]),
+)
+```
+
+## API Key
+
+最简单的方式，适用于服务间通信与固定凭证场景。在控制台 **新建 › 新建 API Key** 填写名称、第三方服务的 API Key 与传递方式（Header 或 Query）。用 `api_key_auth` 生成 `auth_config`：
+
+```python
+from veadk.integrations.ve_identity import api_key_auth
+
+auth_config = api_key_auth(provider_name="my-api-provider")
+```
+
+## OAuth2 M2M
+
+用于服务间通信，比 API Key 更安全且支持令牌刷新。在控制台 **新建 › 新建 OAuth Client**，OAuth2 流程选 **机器对机器（M2M）**；凭据可用内置提供商（Lark、Coze、Google、GitHub）、OIDC 发行者 URL，或完全自定义的端点。用 `oauth2_auth` 生成，`auth_flow="M2M"`：
+
+```python
+from veadk.integrations.ve_identity import oauth2_auth
+
+auth_config = oauth2_auth(
+    provider_name="my-oauth2-m2m-provider",
+    scopes=["api://your-service/.default"],
+    auth_flow="M2M",
+)
+```
+
+## OAuth2 用户委托
+
+用于应用代表用户访问第三方服务的场景。在控制台 **新建 › 新建 OAuth Client**，OAuth2 流程选 **用户委托（USER_FEDERATION）**，并填写回调 URL。用 `oauth2_auth` 生成，`auth_flow="USER_FEDERATION"`：
+
+```python
+from veadk.integrations.ve_identity import oauth2_auth
+
+auth_config = oauth2_auth(
+    provider_name="github-oauth2-provider",
+    scopes=["repo", "user"],
+    auth_flow="USER_FEDERATION",
+    callback_url="https://your-app.com/oauth/callback",
+)
+```
+
+用户首次使用时需在第三方服务中授权，Agent Identity 自动完成授权流程与后续的令牌交换、刷新；用户撤销授权后调用会报错，应提示用户重新授权。
+
+### 回调地址
+
+在第三方 OAuth2 提供商中配置回调地址时，按区域使用以下 Agent Identity 地址：
+
+- **北京**：`https://auth.id.cn-beijing.volces.com/api/v1/oauth2callback`
+- **上海**：`https://auth.id.cn-shanghai.volces.com/api/v1/oauth2callback`
+- **广州**：`https://auth.id.cn-guangzhou.volces.com/api/v1/oauth2callback`
+
+用户授权后，提供商将授权码与状态重定向到该地址，由 Agent Identity 处理令牌交换。
+
+## 示例
+
+以下智能体通过用户委托认证连接火山引擎 ECS 的 MCP 服务，代表用户查询实例并执行命令：
+
+```python
+import asyncio
+from veadk import Agent
+from veadk.integrations.ve_identity import VeIdentityMcpToolset, oauth2_auth
+from veadk.integrations.ve_identity.auth_processor import AuthRequestProcessor
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+
+ecs_tools = VeIdentityMcpToolset(
+    auth_config=oauth2_auth(
+        provider_name="volc-ecs-oauth2-provider",
+        scopes=["read"],
+        auth_flow="USER_FEDERATION",
+    ),
+    connection_params=StreamableHTTPConnectionParams(url="https://ecs.mcp.volcbiz.com/ecs/mcp"),
+)
+
+agent = Agent(
+    tools=[ecs_tools],
+    system_prompt="你是火山引擎 ECS 助手，可以查询 ECS 实例信息并执行服务器命令。",
+    run_processor=AuthRequestProcessor(),
+)
+
+asyncio.run(agent.run("查询我的 ECS 实例列表，并在一台运行中的实例上执行 `uname -a`"))
+```
+
+更多细节见 [Agent Identity 官方文档](https://www.volcengine.com/docs/86848/2080920?lang=zh)。

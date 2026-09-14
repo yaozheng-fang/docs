@@ -10,7 +10,6 @@ VeADK 1.1.12 发布于 2026 年 9 月 14 日。下表列出该版本的公开用
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
-| Studio 部署 | `veadk studio deploy` 在 BytePlus 模式下的部署依赖文件中新增 `--extra-index-url https://pypi.org/simple`，使 pip 在 BytePlus 默认包索引中找不到包时回退到 PyPI 公共源，避免因缺少包导致部署失败。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#部署到-vefaas) |
 | Studio 智能开发 | 智能模式和存量项目迁移的模型选择器改为仅展示当前云服务商允许用于智能开发的模型。火山引擎与 BytePlus 各有独立的开发模型允许列表，不在列表中的模型不会出现在选择器中，也不会被接受为智能开发或迁移会话的默认模型。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能模式) · [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
 | Studio 迁移 | 迁移效果评测评分改为确定性计算：每个维度的原始评分先四舍五入为 0–100 的整数，用例分数和维度均分均基于这些整数计算，综合一致性总分基于维度均分计算。每次求平均时排除 N/A 项并四舍五入取整，保证报告中各层级的评分与低分用例排序一致且可复现。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#评测报告) |
 | Studio 智能开发 | 智能开发流式响应在静默期间每 15 秒发送一次心跳，保持连接活跃而不重置 Codex 的不活跃超时。当 Codex 本轮任务被中断时（包括在重连后发现的中断），Studio 明确报告中断状态，不会发布新版本或等待不活跃超时。活动轮次在连接断开后可在同一 Thread 上恢复；新的任务进度重置恢复余量，重连和读取未变化的状态不延长不活跃截止时间或重启任务。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话管理) |
