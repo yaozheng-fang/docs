@@ -96,6 +96,7 @@ title: "更新日志"
 | Studio 智能体工作台 | 编辑智能体名称时，Studio 在输入或失焦时即时显示名称校验错误（如不符合命名规则或名称在结构中不唯一），无需等待提交。此前仅在提交时才显示名称校验错误。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.7` 更新为 `1.1.10`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 部署 | 火山引擎模式下，生成的 Dockerfile 安装 Python 依赖时依次尝试腾讯云镜像源、中科大镜像源和 PyPI 官方源，提高内部镜像不可用时依赖安装的成功率；BytePlus 模式仅使用默认源。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
+| Studio 迁移 | 迁移效果评测失败时，进度条高亮显示失败的阶段（准备评测环境、部署临时 Runtime、执行用例、评测分析或汇总结果），并在失败面板中展示诊断信息，包括失败阶段、错误码、任务 ID、评测轮次、Runtime 名称和错误详情。错误详情来自临时 Runtime 部署或评测执行的输出，经服务端脱敏与截断后展示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#评测状态) |
 
 ## 1.1.8
 

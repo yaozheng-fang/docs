@@ -809,6 +809,10 @@ The migration task list and the "Evaluation" tab display the current evaluation 
   Failed evaluations can be retried. Retrying reuses the same locked dataset and dimension configuration, redeploys the temporary Runtime, and re-executes. If the migration artifact declares environment variables, they must be re-entered on retry.
 </Note>
 
+<Note>
+  When evaluation fails, the progress bar highlights the failed stage (preparing the evaluation environment, deploying the temporary Runtime, executing cases, evaluation analysis, or aggregating results). The failure panel shows diagnostic information including the failure stage, error code, task ID, evaluation attempt, Runtime name, and error details. Error details are derived from the temporary Runtime deployment or evaluation execution output, redacted and truncated on the server before display, and can be expanded or collapsed.
+</Note>
+
 ### Add skills
 
 When creating an agent, add skills from the following sources. Skill files are written to the generated project's `skills/` directory:
