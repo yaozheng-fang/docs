@@ -98,6 +98,7 @@ title: "更新日志"
 | Studio 项目生成 | 生成的智能体项目 `requirements.txt` 中 `veadk-python` 默认版本从 `1.1.7` 更新为 `1.1.10`。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 部署 | 火山引擎模式下，生成的 Dockerfile 安装 Python 依赖时依次尝试腾讯云镜像源、中科大镜像源和 PyPI 官方源，提高内部镜像不可用时依赖安装的成功率；BytePlus 模式仅使用默认源。 | [部署到 AgentKit](/productions/veadk/preview/zh/deploy/agentkit) |
 | Studio 迁移 | 迁移效果评测失败时，进度条高亮显示失败的阶段（准备评测环境、部署临时 Runtime、执行用例、评测分析或汇总结果），并在失败面板中展示诊断信息，包括失败阶段、错误码、任务 ID、评测轮次、Runtime 名称和错误详情。错误详情来自临时 Runtime 部署或评测执行的输出，经服务端脱敏与截断后展示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#评测状态) |
+| Studio 迁移 | 迁移效果评测评分改为确定性计算：每个维度的原始评分先四舍五入为 0–100 的整数，用例分数和维度均分均基于这些整数计算，综合一致性总分基于维度均分计算。每次求平均时排除 N/A 项并四舍五入取整，保证报告中各层级的评分与低分用例排序一致且可复现。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#评测报告) |
 | Studio 智能开发 | 智能开发流式响应在静默期间每 15 秒发送一次心跳，保持连接活跃而不重置 Codex 的不活跃超时。当 Codex 本轮任务被中断时（包括在重连后发现的中断），Studio 明确报告中断状态，不会发布新版本或等待不活跃超时。活动轮次在连接断开后可在同一 Thread 上恢复；新的任务进度重置恢复余量，重连和读取未变化的状态不延长不活跃截止时间或重启任务。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话管理) |
 | Studio Codex 会话 | 内置 Codex 会话在连接断开后自动恢复传输并继续当前 Thread。传输层恢复不会重置不活跃超时，活动轮次中的新进度重置恢复余量，而重连和读取未变化的状态不延长不活跃截止时间。显式停止请求、不活跃超时、任务取消和传输层失败具有各自不同的原因标识，取消操作不等同于用户主动停止。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能体对话与内置智能体) |
 
