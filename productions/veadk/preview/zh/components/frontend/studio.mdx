@@ -2580,6 +2580,10 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
   部署完成后，Studio 会将 VeFaaS 函数的最小实例数设置为 1，使部署后始终保留一个预热实例，避免首次访问冷启动。
 </Note>
 
+<Note>
+  使用 `--provider byteplus` 部署时，生成的依赖文件会在顶部添加 `--extra-index-url https://pypi.org/simple`，使 pip 在 BytePlus 默认包索引中找不到包时回退到 PyPI 公共源，避免因缺少包导致部署失败。
+</Note>
+
 
 部署凭据按以下顺序解析：优先使用 `--volcengine-access-key` / `--volcengine-secret-key` 显式传入；未提供时读取当前进程的 `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` 环境变量；两者均缺失时，读取 `~/.volc/credentials` 中的 `[default]` 配置。任一来源解析到完整的 Access Key 与 Secret Key 即可继续部署。STS 临时凭证的 Session Token 通过 `--volcengine-session-token` 显式传入，或依次读取 `VOLCENGINE_SESSION_TOKEN`、`VOLC_SESSIONTOKEN` 环境变量和 `~/.volc/credentials` 中 `[default]` 配置的 `session_token` 字段；未提供时留空，仅使用长期 AK/SK。
 

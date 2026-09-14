@@ -2580,6 +2580,10 @@ To deploy the unreleased Studio capabilities documented in Preview, run this com
   After deployment, Studio sets the VeFaaS function's minimum instance count to 1, keeping one warm instance so that the first request after deployment does not incur a cold start.
 </Note>
 
+<Note>
+  When deploying with `--provider byteplus`, the staged requirements file includes `--extra-index-url https://pypi.org/simple` at the top, allowing pip to fall back to the public PyPI index when packages are unavailable from the BytePlus default package index, preventing deployment failures caused by missing packages.
+</Note>
+
 
 Deployment credentials are resolved in the following order: explicit `--volcengine-access-key` / `--volcengine-secret-key` options take precedence; otherwise the `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY` environment variables of the current process are read; when neither is present, the `[default]` profile in `~/.volc/credentials` is used. Any source that yields a complete access key and secret key is sufficient to proceed. For STS temporary credentials, the session token is supplied via `--volcengine-session-token`, or resolved from the `VOLCENGINE_SESSION_TOKEN` / `VOLC_SESSIONTOKEN` environment variables and the `session_token` field of the `[default]` profile in `~/.volc/credentials`; when not provided it is left empty and only long-lived AK/SK are used.
 
