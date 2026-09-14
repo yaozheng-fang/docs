@@ -789,6 +789,10 @@ The report and the locked evaluation dataset are stored as immutable assets in t
 | Critical evidence | Evidence entries with Critical severity. |
 | Evaluation limitations | Known limitations affecting the evaluation conclusion. |
 
+<Note>
+  Scores are deterministic: each raw dimension score is rounded half up to a 0–100 integer before aggregation. Case scores and dimension averages are computed from those integers, and the overall score is the average of rounded dimension averages. Each average rounds half up and excludes N/A values, ensuring that scores at every level are consistent with report validation and lowest-scoring case rankings.
+</Note>
+
 #### Evaluation states
 
 The migration task list and the "Evaluation" tab display the current evaluation state:
