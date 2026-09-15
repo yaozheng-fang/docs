@@ -2020,7 +2020,7 @@ Adds a GitHub Actions workflow to an existing repository for continuous publishi
   The continuous delivery and template import workflows require the GitHub Secrets that match the current cloud provider to be configured in the repository: `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and the optional `VOLCENGINE_SESSION_TOKEN` in Volcengine mode; `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN` in BytePlus mode. These Secrets are managed in GitHub and do not pass through Studio.
 </Note>
 
-### Pull Request automated review
+### GitHub Pull Request automated review
 
 Uses a GitHub App to automatically review pull requests in an isolated Sandbox and publishes the results as GitHub Reviews. After an administrator configures the GitHub App, users install the App to their repositories and enable review per repository in Studio. GitHub sends Pull Request webhooks to Studio, which creates Sandbox review tasks and publishes the results to the corresponding PR.
 
@@ -2064,6 +2064,54 @@ Automated PR review requires Studio persistent storage to be configured (`VEADK_
 #### Review records
 
 Studio records recent automatically triggered and manually started review tasks and displays them in the "Review records" section. Each record includes the PR link, status (started, completed, ignored, failed), trigger type (webhook or manual), event type, and time. Records with an in-progress review offer an "Open Session" button to jump to the corresponding Sandbox session.
+
+### Merge Request automated review
+
+Uses GitLab OAuth to automatically review merge requests in an isolated Sandbox and publishes the results as GitLab Discussions and comments. After an administrator configures a GitLab OAuth application, users connect their own GitLab account in Studio, select target projects, and enable review. GitLab sends Merge Request webhooks to Studio, which creates Sandbox review tasks and publishes the results to the corresponding MR.
+
+<Warning>
+  Automated MR review only reviews non-draft MRs from the same project (`open`, `reopen`, `update` events), not fork MRs. Draft MRs (marked as Work in Progress or with titles starting with `Draft:` or `WIP:`) are not reviewed.
+</Warning>
+
+#### Administrator configuration
+
+Create an OAuth application in your GitLab instance, record the Client ID and Client Secret, and set the redirect URI to the Studio path `/web/gitlab/oauth/callback` (for example `https://<Studio address>/web/gitlab/oauth/callback`). The OAuth application scope must include `api`. Then configure Studio with the following environment variables:
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `VEADK_GITLAB_BASE_URL` | `https://gitlab.com` | GitLab instance URL; must be an HTTPS URL without path parameters. Specify the actual URL for self-hosted GitLab instances. |
+| `VEADK_GITLAB_WEBHOOK_SECRET` | — | GitLab webhook verification token; must match the value configured in the project webhook. |
+| `VEADK_GITLAB_OAUTH_CLIENT_ID` | — | GitLab OAuth application Client ID. |
+| `VEADK_GITLAB_OAUTH_CLIENT_SECRET` | — | GitLab OAuth application Client Secret. |
+| `VEADK_GITLAB_OAUTH_REDIRECT_URI` | — | OAuth redirect URI, pointing to the Studio `/web/gitlab/oauth/callback` path. |
+| `VEADK_GITLAB_GROUP_ID_OR_PATH` | — | GitLab Group ID or path to restrict the project list scope. When unset, all projects where the current user is a member are listed; when set, only projects within that group (including subgroups) are listed. |
+| `VEADK_STUDIO_PUBLIC_BASE_URL` | — | Public base URL of Studio, used to generate the GitLab webhook callback URL. When unset, project webhooks cannot be created automatically. |
+
+<Note>
+  For local startup, provide the above configuration through environment variables. When deploying to VeFaaS, `veadk studio deploy` and `veadk studio update` forward the GitLab configuration environment variables to the function environment.
+</Note>
+
+Automated MR review requires Studio persistent storage to be configured (`VEADK_STUDIO_TOS_BUCKET` and `VEADK_STUDIO_TOS_REGION`) to persist per-user GitLab OAuth credentials, per-project review toggles, and review records. Without persistent storage, users cannot connect GitLab, enable review, or view records.
+
+#### Usage flow
+
+1. After the administrator completes the configuration, the "Merge Request automated review" page displays a "Connect GitLab" button.
+2. Click "Connect GitLab" to redirect to the GitLab authorization page. After authorization, Studio redirects back automatically. Studio saves the GitLab OAuth credential under the current signed-in user's identity; each user maintains their own authorization independently.
+3. After authorization, Studio loads the list of GitLab projects accessible to the current user. Toggle review on for each project that should receive automated reviews. When review is enabled, Studio automatically creates a webhook in the target project pointing to Studio (path `/web/gitlab/app/webhook`) and uses the Webhook Secret to verify requests.
+4. Subsequent non-draft MRs in the target project automatically trigger Sandbox review tasks; review results are published as GitLab Discussions (supporting line-level positioning) and comments on the corresponding MR.
+5. You can also enter an MR URL from an enabled project in the "Review now" section to manually start a review.
+
+<Note>
+  The project list supports search by project path or name and paginated loading. Enabling review requires the current user to have Maintainer or higher permissions (access level ≥ 40) in the target project, so that Studio can automatically create and manage the project webhook. Manual review requires the MR URL's project to have GitLab connected and review enabled.
+</Note>
+
+<Note>
+  When the GitLab OAuth access token expires, Studio automatically refreshes it using the refresh token. If refresh fails, Studio marks the project as authorization invalid and the user must reconnect GitLab.
+</Note>
+
+#### Review records
+
+Studio records recent automatically triggered and manually started review tasks and displays them in the "Review records" section. Each record includes the MR link, status (started, completed, ignored, failed), trigger type (webhook or manual), event type, and time. Records with an in-progress review offer an "Open Session" button to jump to the corresponding Sandbox session.
 
 ### Feishu bot
 
@@ -3036,6 +3084,7 @@ The update also creates or updates the scheduled-task scheduler functions and co
 | `--byteplus-access-key` | `str \| None` | `BYTEPLUS_ACCESS_KEY` | BytePlus update access key, used only with `--provider byteplus`. |
 | `--byteplus-secret-key` | `str \| None` | `BYTEPLUS_SECRET_KEY` | BytePlus update secret key, used only with `--provider byteplus`. |
 | `--byteplus-session-token` | `str \| None` | `BYTEPLUS_SESSION_TOKEN` | BytePlus STS temporary-credential session token, used only with `--provider byteplus`. |
+| `--skip-cronjob-scheduler` | `bool` (flag) | Off | Update only the main Studio Application and leave the existing scheduled-task scheduler unchanged. Useful when you only need to update Studio code without affecting the scheduler service. |
 
 ## Studio roles and Runtime access
 
