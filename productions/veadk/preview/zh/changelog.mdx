@@ -4,6 +4,15 @@ title: "更新日志"
 
 本更新日志累计记录 VeADK 1.0.0 至当前版本的全部公开用户能力变化，已发布版本按从新到旧排列。
 
+## 未发布
+
+下表列出尚未对应已发布 tag 的 Preview 公开用户能力变化。
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Studio 项目生成 | 快速创建模式生成的 `requirements.txt` 中 `veadk-python` 固定版本从 1.1.10 更新为 1.1.11。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| 模型 | 使用非原生模型接口时，429 限流自动重试不再深拷贝请求中的工具对象，修复了使用带线程锁等不可序列化状态的自定义函数工具时重试可能失败的问题。 | [模型](/productions/veadk/preview/zh/components/agent/model) |
+
 ## 1.1.12
 
 VeADK 1.1.12 发布于 2026 年 9 月 14 日。下表列出该版本的公开用户能力变化；完整提交记录见 [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.1.12)。
