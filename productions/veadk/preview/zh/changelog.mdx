@@ -8,6 +8,8 @@ title: "更新日志"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 自动化 | 新增 GitLab MR 自动评审：通过 GitLab OAuth 连接用户账号，选择目标项目并开启评审后，目标项目中的非草稿 MR 自动触发隔离 Sandbox 评审任务，评审结果发布为 GitLab Discussions 和评论。管理员通过环境变量配置 GitLab OAuth 应用和 Webhook Secret。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#gitlab-mr-自动评审) |
+| Studio 更新 | `veadk studio update` 新增 `--skip-cronjob-scheduler` 标志，跳过定时任务调度器的更新，仅更新主 Studio Application。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) |
 | Studio 项目生成 | 快速创建模式生成的 `requirements.txt` 中 `veadk-python` 固定版本从 1.1.11 更新为 1.1.13。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 对话历史 | 修复包含多个用户与助手轮次的会话历史中助手回复错位的问题：此前查看多轮对话历史时，助手回复可能与对应的用户消息错位显示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能体对话与内置智能体) |
 

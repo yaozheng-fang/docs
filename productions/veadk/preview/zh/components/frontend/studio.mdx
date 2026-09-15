@@ -2020,7 +2020,7 @@ Studio 侧边栏的「自动化」页面提供研发工具和消息渠道的自�
   持续交付和模板导入工作流均需要在仓库中配置与当前云服务商对应的 GitHub Secrets：火山引擎模式为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 与可选的 `VOLCENGINE_SESSION_TOKEN`；BytePlus 模式为 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 与可选的 `BYTEPLUS_SESSION_TOKEN`。这些 Secrets 在 GitHub 中管理，不经过 Studio。
 </Note>
 
-### PR 自动评审
+### GitHub PR 自动评审
 
 通过 GitHub App 在隔离的 Sandbox 中自动评审 Pull Request，并将评审结果发布为 GitHub Review。管理员配置 GitHub App 后，用户将 App 安装到目标仓库并在 Studio 中为各仓库开启评审；GitHub 向 Studio 发送 Pull Request webhook，Studio 自动创建 Sandbox 评审任务并将结果发布到对应 PR。
 
@@ -2064,6 +2064,54 @@ PR 自动评审需要 Studio 已配置持久化存储（`VEADK_STUDIO_TOS_BUCKET
 #### 评审记录
 
 Studio 记录最近自动触发和手动发起的评审任务，在「评审记录」区域展示。每条记录包含 PR 链接、状态（评审中、已完成、已忽略、失败）、触发方式（自动触发或手动发起）、触发事件类型和时间。评审中的记录可点击「打开 Session」跳转到对应的 Sandbox 会话。
+
+### GitLab MR 自动评审
+
+通过 GitLab OAuth 在隔离的 Sandbox 中自动评审 Merge Request，并将评审结果发布为 GitLab Discussions 和评论。管理员配置 GitLab OAuth 应用后，用户在 Studio 中连接自己的 GitLab 账号，选择目标项目并开启评审；GitLab 向 Studio 发送 Merge Request webhook，Studio 自动创建 Sandbox 评审任务并将结果发布到对应 MR。
+
+<Warning>
+  MR 自动评审仅评审目标项目的非草稿 MR（`open`、`reopen`、`update` 事件），不评审 fork 仓库的 MR。草稿 MR（标记为 Work in Progress 或标题以 `Draft:`、`WIP:` 开头）不会被评审。
+</Warning>
+
+#### 管理员配置
+
+在 GitLab 实例中创建一个 OAuth 应用，记录 Client ID、Client Secret，并将回调地址指向 Studio 的 `/web/gitlab/oauth/callback` 路径（例如 `https://<Studio 地址>/web/gitlab/oauth/callback`）。OAuth 应用的 scope 需包含 `api`。然后通过以下环境变量配置 Studio：
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `VEADK_GITLAB_BASE_URL` | `https://gitlab.com` | GitLab 实例地址，必须为不含路径参数的 HTTPS 地址。自建 GitLab 实例时需指定实际地址。 |
+| `VEADK_GITLAB_WEBHOOK_SECRET` | — | GitLab Webhook 验证令牌，需与项目 webhook 中配置的值一致。 |
+| `VEADK_GITLAB_OAUTH_CLIENT_ID` | — | GitLab OAuth 应用的 Client ID。 |
+| `VEADK_GITLAB_OAUTH_CLIENT_SECRET` | — | GitLab OAuth 应用的 Client Secret。 |
+| `VEADK_GITLAB_OAUTH_REDIRECT_URI` | — | OAuth 回调地址，指向 Studio 的 `/web/gitlab/oauth/callback` 路径。 |
+| `VEADK_GITLAB_GROUP_ID_OR_PATH` | — | 限制项目列表范围的 GitLab Group ID 或路径。未设置时列出当前用户有成员身份的全部项目；设置时仅列出该 Group（含子组）下的项目。 |
+| `VEADK_STUDIO_PUBLIC_BASE_URL` | — | Studio 的公网访问地址，用于生成 GitLab webhook 回调地址。未设置时无法自动创建项目 webhook。 |
+
+<Note>
+  本地启动时通过环境变量提供上述配置。部署到 VeFaaS 时，`veadk studio deploy` 和 `veadk studio update` 会将 GitLab 配置环境变量透传到函数环境。
+</Note>
+
+MR 自动评审需要 Studio 已配置持久化存储（`VEADK_STUDIO_TOS_BUCKET` 与 `VEADK_STUDIO_TOS_REGION`），用于保存各用户的 GitLab OAuth 凭证、项目评审开关和评审记录。未配置持久化存储时，用户无法连接 GitLab、开启评审或查看记录。
+
+#### 使用流程
+
+1. 管理员完成上述配置后，Studio 的「GitLab MR 自动评审」页面显示「连接 GitLab」按钮。
+2. 点击「连接 GitLab」，跳转到 GitLab 授权页面，授权后自动返回 Studio。Studio 使用当前登录用户的身份保存 GitLab OAuth 凭证，每个用户独立维护自己的授权。
+3. 授权成功后，Studio 加载当前用户可访问的 GitLab 项目列表。在项目列表中为需要自动评审的项目开启评审开关。开启评审时，Studio 自动在目标项目中创建指向 Studio 的 webhook（路径为 `/web/gitlab/app/webhook`），并使用 Webhook Secret 验证请求。
+4. 后续目标项目中创建或更新的非草稿 MR 会自动触发 Sandbox 评审任务，评审完成后结果发布为对应 MR 的 GitLab Discussions（支持定位到具体代码行）和评论。
+5. 也可以在「立刻评审」区域输入已启用项目的 MR URL，手动发起一次评审。
+
+<Note>
+  项目列表支持按项目路径或名称搜索，分页加载。开启评审要求当前用户在目标项目中具有 Maintainer 及以上权限（access level ≥ 40），以便 Studio 自动创建和管理项目 webhook。手动评审要求输入的 MR URL 所属项目已连接 GitLab 且已开启评审。
+</Note>
+
+<Note>
+  GitLab OAuth 访问令牌过期时，Studio 会自动使用刷新令牌续期。刷新失败时，Studio 会将该项目标记为授权失效，需用户重新连接 GitLab。
+</Note>
+
+#### 评审记录
+
+Studio 记录最近自动触发和手动发起的评审任务，在「评审记录」区域展示。每条记录包含 MR 链接、状态（评审中、已完成、已忽略、失败）、触发方式（自动触发或手动发起）、触发事件类型和时间。评审中的记录可点击「打开 Session」跳转到对应的 Sandbox 会话。
 
 ### 飞书机器人
 
@@ -3036,6 +3084,7 @@ veadk studio update --vefaas-app-name "veadk-studio"
 | `--byteplus-access-key` | `str \| None` | `BYTEPLUS_ACCESS_KEY` | BytePlus 更新凭证的 Access Key，仅在 `--provider byteplus` 时使用。 |
 | `--byteplus-secret-key` | `str \| None` | `BYTEPLUS_SECRET_KEY` | BytePlus 更新凭证的 Secret Key，仅在 `--provider byteplus` 时使用。 |
 | `--byteplus-session-token` | `str \| None` | `BYTEPLUS_SESSION_TOKEN` | BytePlus STS 临时凭证的 Session Token，仅在 `--provider byteplus` 时使用。 |
+| `--skip-cronjob-scheduler` | `bool`（标志） | 关闭 | 仅更新主 Studio Application，保留现有定时任务调度器不变。适用于仅需更新 Studio 代码而不希望影响调度服务的场景。 |
 
 ## Studio 角色与 Runtime 权限
 
