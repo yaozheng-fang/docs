@@ -1,0 +1,206 @@
+---
+title: "DeepSeek Harness creation and deployment"
+---
+
+DeepSeek Harness creation mode is an agent creation method in Studio for configuring, previewing, and deploying a containerized agent runtime based on DeepSeek Harness. This mode generates a complete container project including a Dockerfile, configuration files, and a runtime adapter, which can be deployed directly to an AgentKit Runtime or exported as a ZIP for local build and execution.
+
+<Note>
+  This feature is currently in Beta; the configuration page displays a Beta badge.
+</Note>
+
+## When to use
+
+| Scenario | Suitability |
+| --- | --- |
+| Building agents with DeepSeek models | Run agents through the DeepSeek official models or compatible custom model services |
+| Containerized deployment | Generate an independent DeepSeek Harness container project that deploys as an AgentKit Runtime callable via HTTP API |
+| Custom model routing | Add multiple model providers and models, and configure sub-agent model selection policies |
+
+## Creation entry point
+
+On the Studio "Agents" page, click "Create agent" and select "Quick create" from the creation menu. In the agent type selection dialog, choose "DeepSeek Harness" and click "Continue" to enter the DeepSeek Harness configuration page.
+
+## Configuration
+
+The configuration page is organized into sections, each corresponding to a category of native DeepSeek Harness settings. Fields left blank inherit the default values from the deployed image.
+
+### Session defaults
+
+The default model, Agent preset, and permissions apply to new sessions. The preset must exist in the deployed Harness.
+
+| Setting | Configuration path | Default | Description |
+| :--- | :--- | :--- | :--- |
+| Default provider | `agent-default-model.provider` | `deepseek-official` | Default model provider; can be the built-in provider or an added custom provider |
+| Default model | `agent-default-model.model` | `deepseek-flash` | Default inference model; options change with the selected provider |
+| Default reasoning effort | `agent-default-model.reasoningEffort` | — | Reasoning effort level; custom providers' models that do not declare reasoning levels use the server-side setting |
+| Default Agent preset | `agent-presets.default` | `standard` | Agent preset name; options include `standard`, `minimal`, `ptc`, `cordis`, or a custom value |
+| Default permission preset | `permission.defaultPreset` | `workspace-write` | Permission preset; options are `read-only`, `workspace-write`, `danger-full-access` (full access without approval prompts) |
+
+### DeepSeek model service
+
+Parameters for the DeepSeek official provider.
+
+| Setting | Configuration path | Default | Description |
+| :--- | :--- | :--- | :--- |
+| API key environment variable | `llm-deepseek.apiKeyEnv` | `DEEPSEEK_API_KEY` | Name of the environment variable holding the DeepSeek API key; enter only the variable name, the actual secret is supplied by the deployment environment |
+| Base URL | `llm-deepseek.baseURL` | — | DeepSeek model service URL; must be HTTP or HTTPS without credentials in the URL |
+| Thinking mode | `llm-deepseek.thinking` | — | Thinking mode toggle; options are `enabled` or `disabled` |
+| Reasoning effort | `llm-deepseek.reasoningEffort` | `high` | Reasoning effort level; options are `off`, `low`, `high`, `max` |
+| Output limit per request | `llm-deepseek.maxTokens` | `256000` | Maximum output tokens per request |
+| Default context capacity | `llm-deepseek.defaultContextWindow` | `1000000` | Default context window size |
+| Stream idle timeout | `llm-deepseek.streamIdleTimeoutMs` | `300000` | Idle timeout for streaming responses (milliseconds) |
+
+### Custom model providers
+
+Add custom model services with their endpoints, protocols, and model IDs, including compatible Volcengine and BytePlus services.
+
+Each custom provider includes:
+
+| Field | Description |
+| :--- | :--- |
+| Provider ID | Starts with a lowercase letter; may contain lowercase letters, digits, dots, underscores, and hyphens; reserved IDs (`deepseek-official`, `constructor`, `prototype`) are not allowed |
+| Display name | Optional; defaults to the provider ID |
+| Base URL | HTTP or HTTPS URL of the model service |
+| API protocol | API protocol; options are `openai-completions`, `openai-responses`, `anthropic-messages` |
+| API key environment variable | Name of the environment variable holding the provider's API key |
+
+Each provider can configure multiple models with:
+
+| Field | Description |
+| :--- | :--- |
+| Model ID | Server-side model identifier |
+| Display name | Optional model display name |
+| Context capacity | Model context window size |
+| Maximum output capacity | Maximum output tokens for the model |
+
+### Command execution
+
+Timeout and output limits for shell command execution.
+
+| Setting | Configuration path | Default | Description |
+| :--- | :--- | :--- | :--- |
+| Default execution timeout | `bash.timeoutMs` | `60000` | Default command execution timeout (milliseconds) |
+| Maximum execution timeout | `bash.maxTimeoutMs` | `600000` | Maximum command execution timeout (milliseconds) |
+| Output limit | `bash.maxOutputBytes` | `64000` | Command output limit (bytes) |
+
+### Tool calls
+
+| Setting | Configuration path | Default | Description |
+| :--- | :--- | :--- | :--- |
+| Parallel tool-call limit | `agent-loop.maxParallelToolCalls` | — | Maximum parallel tool calls in a single tool-call loop |
+
+### Sub-agent model selection
+
+Controls which models sub-agents may select.
+
+| Setting | Configuration path | Default | Description |
+| :--- | :--- | :--- | :--- |
+| Enable model selection | `subagent-model-selection.enabled` | `false` | When enabled, sub-agents can only select models from the configured `allowedModels` list |
+
+When model selection is enabled, at least one provider/model pair must be added as an allowed model.
+
+### DeepSeek web search
+
+Parameters for the DeepSeek native web search tool.
+
+| Setting | Configuration path | Default | Description |
+| :--- | :--- | :--- | :--- |
+| API key environment variable | `web-search-deepseek.apiKeyEnv` | `DEEPSEEK_API_KEY` | Name of the environment variable holding the search service API key |
+| Search base URL | `web-search-deepseek.baseURL` | — | Search service URL |
+| Search model | `web-search-deepseek.model` | `deepseek-v4-flash` | Model used for web search |
+| API version | `web-search-deepseek.apiVersion` | `2023-06-01` | Search API version |
+| Search output limit | `web-search-deepseek.maxTokens` | `4096` | Maximum output tokens for search results |
+| Maximum search uses | `web-search-deepseek.maxUses` | `5` | Maximum number of web searches per task |
+
+## Preview, export, and deploy
+
+After configuration, the page footer provides three actions:
+
+| Action | Description |
+| --- | --- |
+| Preview | View generated project files in the code browser without building or deploying |
+| Export configuration | Download generated project files as a ZIP archive |
+| Deploy | Enter the deployment flow to deploy the project to an AgentKit Runtime |
+
+When configuration validation fails, the page highlights fields requiring correction and expands the corresponding sections for immediate fixes.
+
+## Deploy to AgentKit
+
+Selecting deploy enters the deployment configuration page. The deployment flow matches custom creation: you can select the deployment region, network mode, and Runtime name. During deployment, Studio builds the container image through CodePipeline, pushes it to the container registry, and creates an AgentKit Runtime.
+
+<Warning>
+  Deployment creates cloud resources and incurs costs. Verify the region, Runtime name, and required secret environment variables before proceeding.
+</Warning>
+
+The following secret environment variables are required during deployment (determined automatically from the configuration):
+
+- `DEEPSEEK_API_KEY`: API key for the DeepSeek official provider (required when using the default provider)
+- Custom provider secret environment variables: each custom provider has a corresponding secret environment variable that must be supplied at deployment
+
+Secret values are passed through environment variables only at deployment time; they are never written to `settings.yaml`, the Dockerfile, or build arguments.
+
+## Container runtime
+
+The deployed container is built from a Node.js image and installs the DeepSeek Harness npm package as the runtime base layer. The container runs as the `node` user with `/workspace` as the working directory. On startup, the exported `settings.yaml` is copied to the DeepSeek Harness configuration directory, ensuring each start uses the exported configuration to override any existing settings.
+
+The DeepSeek Harness native web service runs privately on `127.0.0.1:3080` inside the container. The runtime adapter is loaded as a native plugin and exposes HTTP endpoints on port `8000`, which can be overridden via the `_FAAS_RUNTIME_PORT` or `PORT` environment variable.
+
+### HTTP endpoints
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/ping` | `GET` | Health check; returns `200` when ready, `503` while starting |
+| `/invocations` | `POST` | Invoke the agent and return the response |
+
+`POST /invocations` request body:
+
+```json title="Request body"
+{
+  "prompt": "Hello",
+  "session_id": "optional-session-id"
+}
+```
+
+Success response:
+
+```json title="Success response"
+{
+  "response": "...",
+  "session_id": "...",
+  "agent_preset": "standard"
+}
+```
+
+If a session already has an active invocation, `409` is returned. Malformed input returns `400`. Agent execution timeout returns `504`. If the agent turn does not complete successfully, `502` is returned. The default invocation timeout is 300 seconds, configurable via the `DSH_INVOCATION_TIMEOUT_MS` environment variable. Client disconnection or timeout cancels the active turn.
+
+### Persistence
+
+Session and workspace files depend on mounted persistent storage. Without persistent storage, container replacement loses local sessions. Multi-replica deployments require session routing or shared storage.
+
+<Note>
+  Runtime gateway authentication protects the invocation API. When running locally, bind the container port to the loopback address. The adapter itself does not implement an additional authentication layer.
+</Note>
+
+## Local build and run
+
+The exported project includes a Dockerfile that can be built directly. In the project directory:
+
+```bash
+docker build -t deepseek-harness-agent .
+```
+
+When using the default DeepSeek provider, set `DEEPSEEK_API_KEY` and run:
+
+```bash
+docker run --rm -p 127.0.0.1:8000:8000 -e DEEPSEEK_API_KEY deepseek-harness-agent
+```
+
+When using custom providers, also pass the corresponding secret environment variables with `-e`.
+
+<Warning>
+  Never put secret values in the Dockerfile, settings.yaml, or build arguments. The `.env.example` file lists environment variable names only and is not loaded automatically.
+</Warning>
+
+## Configuration scope
+
+The editor covers common native DeepSeek Harness settings, including default model, preset, permissions, DeepSeek model service, custom model providers, command execution, tool calls, sub-agent model selection, and web search. Other native plugin and preset-file settings are outside the editor's scope. Presets must exist in the deployed Harness; custom presets and extra plugins must be explicitly installed and added to the build context.

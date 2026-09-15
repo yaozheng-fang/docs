@@ -1,0 +1,222 @@
+---
+title: "Harness"
+---
+
+Harness is a VeADK execution enhancement extension that provides two mutually exclusive integration modes: an in-process plugin mode and a managed Sidecar mode. The in-process mode loads Harness plugins into the application process to prepare context, compact tool results, and verify answers for each turn. The managed Sidecar mode runs all enhancement behavior in a separate managed runtime, and the application process does not load the related plugins.
+
+<Warning>
+  The two modes cannot be combined. When managed Sidecar mode is enabled, `HarnessExtension.plugins()` always returns an empty list, and the application process does not load any `veadk.extensions.harness.plugins` implementation.
+</Warning>
+
+## When to use
+
+| Mode | Use case |
+| --- | --- |
+| In-process plugins | Local development, testing, or lightweight deployments that do not require a separate runtime service |
+| Managed Sidecar | Production deployments on an AgentKit-managed cloud runtime that isolates enhancement behavior into a separate runtime |
+
+## Installation
+
+The base Harness extension is bundled with VeADK and requires no additional installation. To use the Headroom compression provider, install the `harness` extra:
+
+```bash
+pip install "veadk-python[harness]"
+```
+
+## In-process plugin mode
+
+The in-process mode builds a plugin list via `build_harness_plugins()` and attaches it to the `Runner`:
+
+```python
+from veadk.extensions.harness.plugins import build_harness_plugins
+from veadk import Agent, Runner
+
+agent = Agent(name="research_agent")
+runner = Runner(
+    agent=agent,
+    app_name="research",
+    plugins=build_harness_plugins(
+        components=["invocation_context", "compactor", "response_verification"],
+        profile="research",
+    ),
+)
+```
+
+### Plugin capabilities
+
+| Plugin | Main hooks | Purpose |
+| :--- | :--- | :--- |
+| `HarnessInvocationContextPlugin` | `on_user_message_callback`, `before_model_callback` | Prepares task anchors, recent context, and tool-use guardrails |
+| `HarnessCompressPlugin` | `before_model_callback`, `after_tool_callback` | Shrinks oversized tool outputs while preserving useful facts |
+| `HarnessResponseVerificationPlugin` | `after_tool_callback`, `after_model_callback`, `on_event_callback` | Records tool receipts and flags unsupported final claims |
+
+### Configuration via environment variables
+
+Use `build_harness_plugins_from_env()` to build plugins from environment variables:
+
+```python
+from veadk.extensions.harness.env import build_harness_plugins_from_env
+
+plugins = build_harness_plugins_from_env()
+```
+
+Related environment variables:
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `HARNESS_ENHANCE_ENABLED` | `false` | Whether to enable in-process Harness plugins |
+| `HARNESS_ENHANCE_COMPONENTS` | `invocation_context,compactor,response_verification` | Enabled plugin components, comma-separated |
+| `HARNESS_ENHANCE_PROFILE` | `default` | Plugin profile |
+| `HARNESS_COMPRESSION_PROVIDER` | `builtin` | Compression provider, either `builtin` or `headroom` |
+| `HARNESS_MAX_CONTEXT_CHARS` | `24000` | Maximum context size in characters |
+| `HARNESS_MAX_TOOL_RESULT_CHARS` | `4000` | Tool result compaction threshold in characters |
+| `HARNESS_STORE_PATH` | — | Harness store path; uses in-memory storage when unset |
+| `HARNESS_VERIFIER_MODE` | `observe` | Answer verification mode, either `observe` or `block` |
+
+Both `HARNESS_ENHANCE_*` and `HARNESS_*` prefixed variables are read; the `ENHANCE` prefix takes precedence.
+
+## Managed Sidecar mode
+
+The managed Sidecar mode starts a managed runtime via `HarnessExtension`. The runtime is responsible for executing all Harness enhancement behavior. `HarnessExtension` only starts the runtime, applies model and MCP bindings, and manages its lifecycle.
+
+### Enable via environment variables
+
+Set `HARNESS_SIDECAR_ENABLED=true` and `HarnessExtension.from_env()` reads the relevant environment variables and starts the Sidecar:
+
+```python
+from veadk.extensions.harness import HarnessExtension
+
+extension = HarnessExtension.from_env()
+plugins = extension.plugins()  # Returns an empty list in managed Sidecar mode
+```
+
+<Note>
+  `HarnessExtension` supports the context manager protocol and automatically closes the Sidecar on exit:
+  ```python
+  with HarnessExtension.from_env() as extension:
+      ...
+  ```
+</Note>
+
+### Enable via constructor parameter
+
+You can also enable the Sidecar directly via the `sidecar` parameter:
+
+```python
+from veadk.extensions.harness import HarnessExtension
+
+extension = HarnessExtension(
+    sidecar=True,
+    profile="default",
+)
+```
+
+The `sidecar` parameter accepts a boolean or a configuration dict. When a dict is provided, its fields are used to resolve the Sidecar plan; when `True` is provided, default configuration is used.
+
+<Warning>
+  When Sidecar mode is enabled, the `components` parameter cannot be passed. Component selection is controlled through `component_overrides` in the Sidecar configuration.
+</Warning>
+
+### Enable via configuration object
+
+Use `HarnessSidecarConfig` to build a complete configuration, then pass it to `HarnessExtension`:
+
+```python
+from veadk.extensions.harness import HarnessExtension
+from veadk.extensions.harness.sidecar_runtime import HarnessSidecarConfig
+
+config = HarnessSidecarConfig(
+    enabled=True,
+    profile="default",
+)
+extension = HarnessExtension(sidecar=config)
+```
+
+`HarnessSidecarConfig.from_env()` can also build a configuration object from environment variables.
+
+### Sidecar status
+
+| Property / method | Return value | Description |
+| :--- | :--- | :--- |
+| `sidecar_status` | `str` | Sidecar status: `ok`, `degraded`, `disabled`, or `not_started` |
+| `sidecar_env` | `dict[str, str]` | Environment variable bindings injected by the Sidecar into the application process |
+| `sidecar_status_payload()` | `dict` | Status snapshot suitable for route responses, containing `enabled`, `status`, `planHash`, and `effectiveComponents` |
+| `close()` | `None` | Closes the Sidecar and releases runtime resources |
+
+### Sidecar environment variables
+
+The managed Sidecar mode is configured through the following environment variables. Defaults are used when not explicitly set.
+
+#### General configuration
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `HARNESS_SIDECAR_ENABLED` | `false` | Whether to enable the managed Sidecar |
+| `HARNESS_SIDECAR_FAIL_OPEN` | `true` | Whether to continue in degraded mode if Sidecar startup fails; set to `false` to raise an error on failure |
+| `HARNESS_SIDECAR_TRANSPORT` | `local` | Transport mode, either `local` or `apig_runtime_port` |
+| `HARNESS_PROFILE` | `default` | Optimization profile, either `default` or `ops` |
+| `HARNESS_SIDECAR_CATALOG_VERSION` | `2026.07.1` | Component catalog version |
+| `HARNESS_SIDECAR_RUNTIME_VERSION` | — | Runtime version |
+| `HARNESS_SIDECAR_COMPONENT_OVERRIDES` | — | Component overrides, a JSON object with component IDs as keys and booleans as values |
+| `HARNESS_RUNTIME_COMPONENTS` | — | Runtime components, comma-separated |
+| `AGENTKIT_HARNESS_RUNTIME_COMMAND` | — | Runtime startup command |
+
+#### Model proxy configuration
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `HARNESS_MODEL_PROXY_ENABLED` | `true` | Whether to enable the model proxy |
+| `HARNESS_MODEL_PROXY_HOST` | `127.0.0.1` | Model proxy listen address |
+| `HARNESS_MODEL_PROXY_PORT` | `0` | Model proxy listen port; `0` for auto-assignment |
+| `HARNESS_MODEL_UPSTREAM_BASE_URL_ENV` | `MODEL_AGENT_API_BASE` | Name of the environment variable holding the upstream model API base URL |
+| `HARNESS_MODEL_UPSTREAM_API_KEY_ENV` | `MODEL_AGENT_API_KEY` | Name of the environment variable holding the upstream model API key |
+| `HARNESS_MODEL_PREFER_CONFIGURED_UPSTREAM_API_KEY` | `false` | Whether to prefer the configured upstream API key |
+| `HARNESS_MODEL_COMPRESSION_PROVIDER` | `noop` | Compression provider, either `noop` or `headroom` |
+
+#### MCP gateway configuration
+
+| Environment variable | Default | Description |
+| :--- | :--- | :--- |
+| `HARNESS_MCP_GATEWAY_ENABLED` | Profile-dependent | Whether to enable the MCP gateway; enabled by default for the `ops` profile |
+| `HARNESS_MCP_GATEWAY_HOST` | `127.0.0.1` | MCP gateway listen address |
+| `HARNESS_MCP_GATEWAY_PORT` | `0` | MCP gateway listen port; `0` for auto-assignment |
+| `HARNESS_MCP_UPSTREAMS_ENV` | `MCP_URLS` | Name of the environment variable holding the upstream MCP URL list |
+| `HARNESS_MCP_UPSTREAM_API_KEY_ENV` | `MCP_API_KEY` | Name of the environment variable holding the upstream MCP API key |
+| `HARNESS_MCP_PREFER_CONFIGURED_UPSTREAM_API_KEY` | `false` | Whether to prefer the configured upstream API key |
+| `HARNESS_MCP_FAIL_OPEN` | `true` | Whether to continue running if the MCP gateway fails |
+| `HARNESS_MCP_READONLY_SEGMENTS` | — | Read-only protected paths, comma-separated |
+| `HARNESS_MCP_PRESETS` | — | MCP presets, comma-separated |
+
+## HarnessExtension parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `enabled` | `bool \| None` | `None` | Whether to enable in-process plugins; ignored in Sidecar mode |
+| `components` | `Iterable[str] \| str \| None` | `None` | In-process plugin component list; cannot be passed in Sidecar mode |
+| `profile` | `str` | `default` | Optimization profile |
+| `store` | `HarnessStoreProtocol \| None` | `None` | Harness store |
+| `context_config` | `HarnessInvocationContextConfig \| None` | `None` | Context configuration |
+| `compaction_config` | `ToolResultCompactorConfig \| None` | `None` | Compaction configuration |
+| `verifier_config` | `FinalResponseVerifierConfig \| None` | `None` | Answer verification configuration |
+| `sidecar` | `bool \| Mapping[str, Any] \| Any \| None` | `None` | Sidecar configuration; pass `True` or a configuration object to enable managed Sidecar mode |
+| `env` | `Mapping[str, str] \| None` | `None` | Environment variable mapping |
+
+<Note>
+  When `profile` is `ops`, the in-process mode default components include `long_run_control`.
+</Note>
+
+<Warning>
+  The managed Sidecar mode requires an AgentKit-managed cloud runtime environment. Enabling it in an environment without the Sidecar Runtime causes a startup error or degraded operation, depending on the value of `HARNESS_SIDECAR_FAIL_OPEN`.
+</Warning>
+
+## Direct module usage
+
+Individual modules from the in-process mode can also be used directly:
+
+```python
+from veadk.extensions.harness import HarnessInvocationContextBuilder, HarnessInvocationRef
+
+context = HarnessInvocationRef(session_id="session-1", invocation_id="run-1")
+builder = HarnessInvocationContextBuilder()
+bundle = builder.prepare_context(context, user_input="Summarize these tool results.")
+```

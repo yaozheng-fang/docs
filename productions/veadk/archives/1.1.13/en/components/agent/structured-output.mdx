@@ -1,0 +1,63 @@
+---
+title: "Structured output"
+---
+
+Pass a Pydantic model as `output_schema` and the agent's reply is guaranteed to
+match that model's structure — ideal for extraction and classification where you
+want to parse the result directly.
+
+## Define a schema and create the agent
+
+```python
+from pydantic import BaseModel, Field
+from veadk import Agent
+
+class Ticket(BaseModel):
+    summary: str = Field(description="One-line summary of the issue.")
+    category: str = Field(description="One of: billing, bug, feature_request, other.")
+    priority: str = Field(description="One of: low, medium, high.")
+
+agent = Agent(
+    name="ticket_extractor",
+    instruction="Extract a support ticket from the user's message.",
+    output_schema=Ticket,
+)
+```
+
+## Parse the result
+
+`run` returns a JSON string that matches the schema, which you can parse
+directly with Pydantic:
+
+```python
+from veadk import Runner
+
+raw = await Runner(agent=agent, app_name="structured_output").run(
+    messages="The billing page crashes every time I open it — third time now, please fix it.",
+    session_id="demo-session",
+)
+ticket = Ticket.model_validate_json(raw)
+```
+
+## Use Ark-native structured output
+
+Adding `enable_responses=True` to the above makes VeADK use Volcengine Ark's
+Responses API, converting `output_schema` into Ark's native `json_schema`
+(`strict: true`) enforced on the model side. This is more reliable than the
+default approach, which relies on prompting the model to produce JSON.
+
+```python
+agent = Agent(
+    name="ticket_extractor",
+    instruction="Extract a support ticket from the user's message.",
+    output_schema=Ticket,
+    enable_responses=True,
+)
+```
+
+This relies on Ark's Responses API and therefore requires an Ark model.
+
+<Warning>
+  When `output_schema` is set, the agent returns only the structured result and
+  cannot call tools or transfer to sub-agents.
+</Warning>
