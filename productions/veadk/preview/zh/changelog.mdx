@@ -18,6 +18,8 @@ title: "更新日志"
 | Studio MCP 凭证 | 简化 MCP 工具凭证编辑流程：移除更改服务地址后的凭证复用确认步骤，Token 输入框始终可编辑并支持显示与隐藏切换；调试测试中提交的 MCP 凭证会同样应用到部署运行时环境。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 知识库 | VikingDB 知识库后端新增 `api_key` 参数与环境变量 `DATABASE_VIKING_API_KEY`：设置后知识检索使用 API Key 鉴权，无需 AK/SK 或 IAM 凭证即可检索已有集合；未配置 AK/SK 时跳过集合管理预检，创建、删除、列举集合与上传文件等管理操作仍需 AK/SK 或 IAM 凭证。 | [使用 VikingDB 知识库存储](/productions/veadk/preview/zh/components/knowledge/viking) |
 | 长期记忆 | VikingDB 记忆库后端新增 `api_key` 参数与环境变量 `DATABASE_VIKINGMEM_API_KEY`：设置后记忆读写操作使用 API Key 鉴权，无需 AK/SK 或 IAM 凭证即可访问已有集合；未配置 AK/SK 时跳过集合管理预检，创建、列举、删除集合等管理操作仍需 AK/SK 或 IAM 凭证。 | [使用 VikingDB 存储](/productions/veadk/preview/zh/components/memory/vikingdb) |
+| A2A | 调用 AgentKit A2A Registry 中的下游智能体时，支持解析 A2A 1.0 AgentCard：当 AgentCard 未提供顶层 `url` 字段时，从 `supportedInterfaces` 中按协议绑定类型和版本解析调用地址，优先选择 JSONRPC 绑定与 1.0 协议版本。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound#a2a-调用中的身份透传) |
+| A2A | 下游 AgentCard 在 `capabilities.extensions` 中声明凭据提供方时，VeADK 自动从身份服务获取托管 API Key 并构造认证头，无需在 VeADK 侧手动配置 API Key。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound#托管-api-key-凭据鉴权) |
 
 ## 1.1.13
 
