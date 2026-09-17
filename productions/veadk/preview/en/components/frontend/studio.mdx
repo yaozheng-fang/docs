@@ -2965,6 +2965,41 @@ The two branches are generated independently and in parallel. Each branch uses a
 
 The model used for branch comparison defaults to `doubao-seed-2-0-lite-260428` and can be overridden with the `VEADK_STUDIO_BRANCH_MODEL` environment variable. The tool timeout is 120 seconds.
 
+### Session artifacts
+
+The Studio BFF dynamic tools include a `studio_write_artifact` (Save session artifact) tool. When enabled in a conversation that supports Studio tools, the agent can save generated reports, charts, documents, and other output as UTF-8 text files that become artifacts of the current session. The tool runs in the Studio BFF using Studio's configured TOS bucket and server-side credentials; storage credentials are never sent to the Runtime or browser.
+
+The user and session identifiers are determined by the authenticated tool context — the agent cannot select the owner, session, bucket, or credentials through its parameters. Files are saved to `artifacts/{user_id}/{session_id}/{relative_file_path}`. Saving the same path replaces the existing file for the current session.
+
+The tool accepts the following input parameters:
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `path` | `string` | A relative file path within the session artifact directory, 1–1024 characters. |
+| `content` | `string` | The complete UTF-8 text content of the file, up to 1 MiB. |
+
+On success, the tool returns the artifact path, file name, MIME type, size, and SHA-256 digest. Supported formats include HTML, SVG, Markdown, JSON, CSV, and code in UTF-8 text, with a maximum file size of 1 MiB per file.
+
+#### Browsing and previewing artifacts
+
+A "Session artifacts" button above the chat composer opens an artifact browser panel. The panel lists saved artifacts for the current session as a file tree, supporting refresh and pagination; the list auto-refreshes after a reply completes. Switching sessions closes the previous preview.
+
+Previewable formats include HTML, Markdown, images, JSON, and plain text. HTML previews render in a scriptless sandbox that allows only inline styles and up to 32 authenticated, same-session relative images; external resources and scripts are disabled. Other file formats can be downloaded directly.
+
+<Note>
+  Preview limits are 5 MB per file and 20 MB total for embedded images; larger files can be accessed via download. Small files are prefetched after replies to speed up display when the panel opens; a bounded per-session cache survives closing the panel.
+</Note>
+
+#### Storage configuration
+
+The session artifacts feature depends on Studio persistent storage, which requires the `VEADK_STUDIO_TOS_BUCKET` and `VEADK_STUDIO_TOS_REGION` environment variables. See [Studio persistent storage](#studio-persistent-storage). The Studio execution identity needs read, write, and list access to the bucket. Reads and writes use the Studio bucket's region on both Volcengine and BytePlus.
+
+When Studio storage is configured, artifact previews always use that bucket, even if the Runtime has an unrelated TOS mount. When Studio storage is not configured, the reader retains support for an existing Runtime artifact mount, but the write tool is unavailable.
+
+<Warning>
+  The tool only saves files to the current session's artifact directory; it does not collect arbitrary files from `/tmp` or an independent Sandbox. The tool executes through the Studio BFF and requires no Runtime-side TOS mount or separate mount credentials.
+</Warning>
+
 ## AgentKit CLI terminal
 
 The Studio sidebar footer provides a "Try AgentKit CLI" entry. Clicking it opens a terminal dialog over the current page. The terminal runs inside an AgentKit Dev Sandbox and automatically executes `agentkit --help` and `agentkit --version` on startup, providing a quick way to inspect the available AgentKit CLI commands and the installed version.
