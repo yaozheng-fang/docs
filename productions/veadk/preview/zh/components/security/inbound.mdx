@@ -97,6 +97,21 @@ setup_oauth2(
 )
 ```
 
+通过 UID 复用已有用户池和客户端时，可同时提供 `client_uid` 与 `client_secret`，跳过启动时的客户端查询：
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_uid="pool-xxxx",
+        client_uid="client-xxxx",
+        client_secret="your-existing-client-secret",
+        redirect_uri="https://myapp.com/oauth2/callback",
+        auto_create=False,
+    ),
+)
+```
+
 接入非 VeIdentity 的 OAuth2 提供商时，直接构造 `OAuth2Config`：
 
 ```python
@@ -128,8 +143,11 @@ setup_oauth2(
 
 | 参数 | 默认值 | 说明 |
 | --- | --- | --- |
-| `user_pool_name` | 必填 | VeIdentity 用户池名称 |
-| `client_name` | 必填 | 用户池客户端名称 |
+| `user_pool_name` | 必填 | VeIdentity 用户池名称（未提供 `user_pool_uid` 时使用） |
+| `user_pool_uid` | `None` | 用户池 UID，优先于 `user_pool_name` |
+| `client_name` | 必填 | 用户池客户端名称（未提供 `client_uid` 时使用） |
+| `client_uid` | `None` | 客户端 UID，优先于 `client_name` |
+| `client_secret` | `None` | 已有客户端密钥；与 `client_uid` 同时提供时跳过启动时的客户端查询 |
 | `redirect_uri` | 必填 | OAuth2 回调 URL |
 | `auto_create` | `True` | 资源不存在时自动创建 |
 | `auto_register_callback` | `True` | 自动注册回调 URL |
