@@ -1,0 +1,254 @@
+---
+title: "Bash 工具集"
+---
+
+## 功能说明
+
+`BashToolset` 是一组只读文件系统工具集，提供十个常见 Shell 命令的读取能力，但不启动 Shell 进程，也不接受命令行选项。所有工具使用 Python 标准库实现，在配置的权限范围内安全地读取文件和目录。
+
+| 工具 | 说明 |
+| :--- | :--- |
+| `cat` | 读取文本文件内容 |
+| `pwd` | 返回当前工作目录 |
+| `ls` | 列出目录下的子项 |
+| `find` | 按文件名通配符递归查找文件或目录 |
+| `grep` | 按字面文本搜索文件内容，返回匹配行 |
+| `head` | 读取文件开头若干行 |
+| `tail` | 读取文件末尾若干行 |
+| `wc` | 统计文件的行数、词数和字节数 |
+| `stat` | 返回文件或目录的类型、大小、权限和修改时间 |
+| `diff` | 比较两个文本文件的差异，输出统一格式差异 |
+
+导入路径：`from veadk.tools.builtin_tools.bash_toolset import BashToolset`
+
+<Note>
+`BashToolset` 仅支持 Linux 和 macOS。所有工具均为只读操作，不执行写入、删除或命令执行。
+</Note>
+
+## 何时使用
+
+当智能体需要读取工作目录中的文件、浏览目录结构、搜索文件内容或比较文件差异时，使用 `BashToolset`。与[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)不同，`BashToolset` 在本地进程内执行，不依赖远端沙箱，适合需要快速、安全地读取本地文件的场景。
+
+<Warning>
+`BashToolset` 提供的是应用层访问控制，而非操作系统级沙箱。主机仍需控制允许目录内的文件重命名、硬链接和挂载操作，防止权限绕过。超时会取消调用方并协作停止读取工作线程，但被阻塞的文件系统调用无法被 Python 线程强制中断。
+</Warning>
+
+## 使用示例
+
+```python title="bash_toolset_agent.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.bash_toolset import BashToolset
+
+toolset = BashToolset(
+    working_directory="/workspace",
+    allowed_tools=["cat", "find", "grep", "ls"],
+    exclude_patterns=[".env", ".env.*", ".ssh", "private"],
+)
+
+agent = Agent(
+    name="code_reader_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="An agent that reads and searches local files.",
+    instruction="使用提供的只读工具读取和搜索工作目录中的文件，回答用户的问题。",
+    tools=[toolset],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("查看 main.py 的内容并总结它的功能")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 参数
+
+### 构造参数
+
+```python
+BashToolset(
+    working_directory=None,
+    *,
+    allowed_directories=None,
+    allowed_tools=None,
+    exclude_patterns=None,
+    timeout=10.0,
+    max_output_bytes=32_768,
+    max_read_bytes=8 * 1024 * 1024,
+    max_entries=10_000,
+)
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `working_directory` | `str \| Path \| None` | `None`（当前工作目录） | 相对路径的基准目录。目录必须已存在。 |
+| `allowed_directories` | `Sequence[str \| Path] \| None` | `None`（使用工作目录） | 允许访问的根目录列表。相对路径基于工作目录解析。 |
+| `allowed_tools` | `Sequence[str] \| None` | `None`（全部十个工具） | 启用的工具名称。传入空序列会禁用所有工具。不支持的工具名称会报错。 |
+| `exclude_patterns` | `Sequence[str] \| None` | `None`（常见凭证文件） | 排除规则，区分大小写的 glob 通配符。匹配文件名和根目录相对路径（含祖先路径，可排除整个目录）。传入 `None` 使用默认排除项；传入 `[]` 清除所有排除项。 |
+| `timeout` | `float` | `10.0` | 单次调用的最大等待时间，单位为秒。必须为有限正数。 |
+| `max_output_bytes` | `int` | `32768` | 返回输出字段的最大 UTF-8 字节数。必须为正整数。 |
+| `max_read_bytes` | `int` | `8388608`（8 MB） | 单次调用读取输入的最大总字节数。必须为正整数。 |
+| `max_entries` | `int` | `10000` | 单次调用遍历的最大目录条目数。必须为正整数。 |
+
+<Note>
+默认排除项为：`.env`、`.env.*`、`.ssh`、`.aws`、`*.pem`、`*.key`。传入空列表 `[]` 可显式清除全部排除项，使所有匹配权限范围的文件可被读取。
+</Note>
+
+权限检查同时应用于请求路径和解析后的符号链接目标。递归操作跳过符号链接、排除的条目和特殊文件（如命名管道）。
+
+### 返回格式
+
+所有工具返回一个字典，包含以下字段：
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `output` | `str` | 工具输出内容。发生错误或资源限制时可能为部分输出。 |
+| `error` | `str \| None` | 错误信息。成功时为 `None`。 |
+| `truncated` | `bool` | 输出是否因超过 `max_output_bytes` 而被截断。 |
+
+## 工具说明
+
+### cat
+
+读取指定路径的文本文件内容。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path` | `str` | — | 文件路径，可为绝对路径或相对于工作目录的相对路径。 |
+
+### pwd
+
+返回工具集的工作目录，不接收参数。
+
+### ls
+
+列出目录下的子项，不跟随符号链接。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path` | `str` | `"."` | 要列出的目录。 |
+| `show_hidden` | `bool` | `False` | 是否包含隐藏文件（以 `.` 开头的文件），排除项仍生效。 |
+
+### find
+
+按文件名通配符递归查找文件或目录，不跟随符号链接。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path` | `str` | `"."` | 搜索的起始目录。 |
+| `pattern` | `str` | `"*"` | 文件名通配符，如 `*.py`。 |
+| `file_type` | `str` | `"all"` | 筛选类型：`all`、`file` 或 `directory`。 |
+| `max_depth` | `int` | `20` | 搜索深度，取值范围为 0–100。`1` 仅列出直接子项。 |
+
+### grep
+
+按字面文本搜索文件内容，返回匹配行及其路径和行号。不支持正则表达式。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `pattern` | `str` | — | 要搜索的字面文本。 |
+| `path` | `str` | `"."` | 搜索的文件或目录。 |
+| `recursive` | `bool` | `True` | 当路径为目录时是否递归搜索子目录。 |
+| `ignore_case` | `bool` | `False` | 是否忽略大小写进行匹配。 |
+| `file_pattern` | `str` | `"*"` | 搜索目录时用于筛选文件名的通配符。 |
+| `max_depth` | `int` | `20` | 递归搜索的最大深度，取值范围为 0–100。 |
+
+### head
+
+读取文件开头若干行。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path` | `str` | — | 要读取的文件。 |
+| `lines` | `int` | `10` | 读取的行数，取值范围为 0–10000。 |
+
+### tail
+
+读取文件末尾若干行。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path` | `str` | — | 要读取的文件。 |
+| `lines` | `int` | `10` | 读取的行数，取值范围为 0–10000。 |
+
+### wc
+
+统计文件的换行符数、空格分隔词数和字节数，返回 JSON 格式结果。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path` | `str` | — | 要统计的文件。受 `max_read_bytes` 限制。 |
+
+### stat
+
+返回文件或目录的类型、大小、权限和修改时间，返回 JSON 格式结果。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path` | `str` | — | 要查看的文件或目录。 |
+
+### diff
+
+使用统一差异格式比较两个文本文件，每个文件最多读取 2000 行。
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `path_a` | `str` | — | 原始文件路径。 |
+| `path_b` | `str` | — | 变更文件路径。 |
+| `context_lines` | `int` | `3` | 差异上下文中包含的未变更行数，取值范围为 0–100。 |
+
+## 配置多个允许目录
+
+`BashToolset` 支持配置多个允许访问的根目录，使智能体能够跨目录读取文件：
+
+```python title="bash_toolset_multi_root.py"
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.bash_toolset import BashToolset
+
+toolset = BashToolset(
+    working_directory="/workspace/project",
+    allowed_directories=["/workspace/project", "/workspace/docs"],
+    allowed_tools=["cat", "ls", "find", "grep"],
+    exclude_patterns=[".env", ".env.*"],
+    timeout=30.0,
+    max_output_bytes=65536,
+)
+
+agent = Agent(
+    name="multi_root_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="An agent that reads files across multiple directories.",
+    instruction="读取代码和文档目录中的文件，回答用户的问题。",
+    tools=[toolset],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("比较 src/main.py 和 docs/design.md 的内容")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 安全说明
+
+<Warning>
+- `BashToolset` 的权限控制在创建时固定，后续修改传入的列表不会影响已创建的工具集。
+- 应用层访问控制不能替代操作系统级沙箱。主机需要控制允许目录内的文件重命名、硬链接和挂载操作。
+- 文件打开使用描述符级路径遍历（`O_NOFOLLOW`），防止在路径校验和文件打开之间替换符号链接，但无法防止文件系统层面的竞争条件。
+- 超时取消调用方并协作停止读取工作线程；被阻塞的文件系统调用无法被 Python 线程强制中断。
+</Warning>
