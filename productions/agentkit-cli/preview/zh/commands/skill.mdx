@@ -2,7 +2,7 @@
 title: "管理平台技能与本地技能包"
 ---
 
-`skill` 命令组用于管理 AgentKit 技能平台上的技能：列出、查看详情、查看版本、查看技能空间，以及删除技能。`skills` 命令组用于处理本地 AgentKit 技能包，当前提供批量生成安全壳 Skill 的能力。
+`skill` 管理 AgentKit 平台上的技能与技能空间；`skills` 用于安全壳生成、上传、下载和成对发布真实技能与安全壳技能
 
 ## 命令总览
 
@@ -14,6 +14,10 @@ title: "管理平台技能与本地技能包"
 | `skill spaces` | 列出技能空间。 |
 | `skill delete` | 删除平台技能。 |
 | `skills secure` | 从本地技能目录生成安全壳 Skill。 |
+| `skills upload` | 上传本地或 GitHub 技能包 |
+| `skills download` | 下载指定技能版本 |
+| `skills download-space` | 下载整个技能空间 |
+| `skills publish-secure` | 成对发布真实技能与安全壳技能 |
 
 ## skill list
 
@@ -102,3 +106,110 @@ agentkit skills secure ./skills --output ./skills-secure --force
 ```
 
 生成结果适用于只需要提交任务、轮询进度并展示结果的托管智能体。真实 Skill 的执行仍发生在 AgentKit Skill Sandbox 中。
+
+## skills upload
+
+将技能包上传到所选平台，每个技能的 `SKILL.md` 必须包含 `name` 和 `description`
+
+<Warning>
+上传会将技能正文、脚本和资源发送到目标平台，并可能创建 TOS 存储资源。请检查技能目录，避免包含 `.env`、密钥或其他不应上传的文件
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<skillsDir>` | 包含 `SKILL.md` 的目录、含多个技能子目录的根目录，或 GitHub 目录 URL | 必填 |
+| `--source <source>` | 上传目标：`ark_ma` 或 `agentkit` | `SKILL_SOURCE` → `ark_ma` |
+| `--api-key <key>` | 火山方舟 API Key，仅用于 `ark_ma` | `ARK_API_KEY` |
+| `--endpoint <url>` | 火山方舟技能上传地址 | `https://ark.cn-beijing.volces.com/api/v3/skills` |
+| `--skill-space-id <ids>` | AgentKit 技能空间 ID，可用逗号分隔多个空间 | `SKILL_SPACE_ID` |
+| `-r, --region <region>` | AgentKit 区域 | 云厂商与配置 |
+| `-p, --project <name>` | AgentKit 上传所用 TOS 项目 | `default` |
+| `--display-title <title>` | 单个火山方舟技能的显示标题 | — |
+| `--dry-run` | 校验并展示上传计划，不发送文件 | `false` |
+| `--json` | 输出 JSON 结果 | `false` |
+
+```bash
+agentkit skills upload ./skills --source agentkit --skill-space-id ss-example --dry-run
+agentkit skills upload ./skills --source agentkit --skill-space-id ss-example
+agentkit skills upload ./skills/report --source ark_ma
+```
+
+未指定 AgentKit 技能空间时，交互终端会列出空间供选择；非交互环境必须设置 `--skill-space-id` 或 `SKILL_SPACE_ID`。`--dry-run` 不要求选择空间，也不创建远端资源。上传限制为每个技能最多 500 个文件、单文件最多 25 MiB、文件总量与压缩包各最多 50 MiB
+
+GitHub 来源使用 `https://github.com/<owner>/<repo>/tree/<ref>/<path>`，需要本地 Git。火山方舟使用 `ARK_API_KEY`；AgentKit 使用所选火山引擎或 BytePlus 账号的云凭据
+
+## skills download
+
+下载指定技能并解压到本地目录
+
+<Warning>
+解压会覆盖目标目录中的同名文件，不额外确认；请使用新的输出目录
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<id>` | 技能 ID | 必填 |
+| `-o, --output <dir>` | 解压输出目录 | `./<id>` |
+| `--source <source>` | 当前仅支持 `agentkit` | `SKILL_SOURCE` → `agentkit` |
+| `--version <version>` | 指定下载版本 | 平台当前版本 |
+| `-r, --region <region>` | AgentKit 区域 | 云厂商与配置 |
+| `-p, --project <name>` | AgentKit 项目 | — |
+| `--json` | 输出 JSON 结果 | `false` |
+
+```bash
+agentkit skills download s-example --output ./downloaded-skill --source agentkit
+```
+
+需要本地 `unzip`。压缩包最大 50 MiB，不安全的解压路径会被拒绝；`ark_ma` 尚不支持下载
+
+## skills download-space
+
+下载空间内所有技能，按技能 ID 建立子目录，并使用该空间绑定的技能版本
+
+<Warning>
+解压会覆盖目标目录中的同名文件，不额外确认；请使用新的输出目录
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<skillSpaceId>` | 技能空间 ID | 必填 |
+| `-o, --output <dir>` | 解压输出目录 | `./<skillSpaceId>` |
+| `--source <source>` | 当前仅支持 `agentkit` | `SKILL_SOURCE` → `agentkit` |
+| `-r, --region <region>` | AgentKit 区域 | 云厂商与配置 |
+| `-p, --project <name>` | AgentKit 项目 | — |
+| `--json` | 输出 JSON 结果 | `false` |
+
+```bash
+agentkit skills download-space ss-example --output ./downloaded-space --source agentkit
+```
+
+需要本地 `unzip`。压缩包最大 50 MiB，不安全的解压路径会被拒绝；`ark_ma` 尚不支持下载
+
+## skills publish-secure
+
+将真实技能与可独立调用的安全壳技能发布到两个新建的技能空间，随后读取两个空间核验发布结果。安全壳保留技能名称、描述和远程调用脚本，不包含真实技能的指令与资源
+
+<Warning>
+实际发布会创建两个技能空间并上传技能；真实空间仍包含完整技能内容，应分别配置两个空间的访问权限。操作可能部分成功，请根据返回的空间 ID 和逐项结果处理失败，重复运行会创建新的空间
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<skillsDir>` | 本地技能目录或 GitHub 目录 URL | 必填 |
+| `--space-name-prefix <name>` | 两个新技能空间的名称前缀 | 从来源目录名生成 |
+| `-o, --output-dir <dir>` | 保留生成的安全壳技能 | 不保留 |
+| `-r, --region <region>` | AgentKit 区域 | 云厂商与配置 |
+| `-p, --project <name>` | AgentKit 项目 | `default` |
+| `--force` | 覆盖输出目录中的生成文件 | `false` |
+| `--dry-run` | 校验并显示计划，不创建空间或上传技能 | `false` |
+| `-y, --yes` | 跳过发布确认；非交互环境必填 | `false` |
+| `--json` | 输出 JSON 结果 | `false` |
+
+```bash
+agentkit skills publish-secure ./skills --dry-run
+agentkit skills publish-secure ./skills --space-name-prefix reports --output-dir ./secure-skills --yes
+```
+
+空间名称为 `<prefix>_real_<suffix>` 与 `<prefix>_secure_<suffix>`，后缀随机生成。交互终端先显示计划再请求确认，`--json` 或 CI 等非交互环境必须显式传入 `--yes`
+
+执行安全壳前，为真实空间创建或选择已绑定该空间的 `Skill` 沙箱工具，在客户端运行环境安装 `agentkit-sdk-python>=0.8,<0.9`，并通过 SDK 默认凭据链提供凭据。设置 `AGENTKIT_TOOL_ID` 为该工具 ID；`AGENTKIT_REGION` 默认 `cn-beijing`，其他区域需显式配置

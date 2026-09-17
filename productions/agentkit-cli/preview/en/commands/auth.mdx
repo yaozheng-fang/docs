@@ -2,11 +2,11 @@
 title: "Authentication & login"
 ---
 
-The `auth` command group handles SSO authentication: log in through the browser and store short-lived STS credentials or only the user's OIDC session, clear the session, show the current identity, manage login profiles, and prepare CLI SSO login resources for an organization. `login`, `logout`, and `whoami` are also available as top-level commands (e.g. `agentkit login`).
+The `auth` command group handles console and SSO authentication: log in through the browser and store short-lived STS credentials or only the user's OIDC session, clear the session, show the current identity, manage login profiles, and prepare CLI SSO login resources for an organization. `login`, `logout`, and `whoami` are also available as top-level commands (e.g. `agentkit login`).
 
 ## auth login
 
-Authenticate through browser SSO. The default mode exchanges the OIDC login result for short-lived STS credentials. `--identity-only` stores only the user's OIDC session, allowing `harness invoke` to automatically forward the user `id_token` to a matching `custom_jwt` Runtime, but it does not create AgentKit management credentials. Generic `invoke run` calls to a `custom_jwt` Runtime still need an explicit `Authorization` header through `--headers`.
+Authenticate through the selected cloud console or a supplied SSO address. SSO exchanges the OIDC login result for short-lived STS credentials. `--identity-only` stores only the user's OIDC session, allowing `harness invoke` to automatically forward the user `id_token` to a matching `custom_jwt` Runtime, but it does not create AgentKit management credentials. Generic `invoke run` calls to a `custom_jwt` Runtime still need an explicit `Authorization` header through `--headers`.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
@@ -14,7 +14,9 @@ Authenticate through browser SSO. The default mode exchanges the OIDC login resu
 | `-p, --profile <name>` | Use a named, pre-seeded profile instead of an address | None |
 | `--duration <seconds>` | Requested STS credential lifetime (seconds) | `3600` |
 | `--identity-only` | Store only the user's OIDC session without performing the STS role exchange. | `false` |
-| `--no-open` | Don't open a browser — just print the login URL (headless/SSH) | `false` |
+| `--no-open` | Print the login URL without opening a browser; use `--remote` for console login over SSH | `false` |
+| `--console` | Use the selected cloud console even with an active SSO profile | `false` |
+| `--remote` | Authorize console login on another device and paste the code into this terminal | `false` |
 
 ```bash
 agentkit auth login
@@ -250,3 +252,18 @@ agentkit auth admin publish \
 ```
 
 Publish-only mode requires `--issuer`, `--client-id`, `--role-trn`, and `--provider-trn` together. `--issuer` must be an HTTPS URL without username, password, query string, or fragment; `--role-trn` and `--provider-trn` must belong to the currently authenticated account. `--bucket` must be a TOS bucket name with 3 to 63 lowercase letters, digits, or hyphens, starting and ending with a letter or digit.
+
+## Console login and credential precedence
+
+Without an address, login reuses the selected provider’s existing profile or opens console login when none exists. `--console` forces console login; `--remote` supports remote servers that cannot receive local browser callbacks. Console login cannot be combined with an SSO address or `--identity-only`
+
+```bash
+agentkit login --console
+agentkit --provider byteplus login --console
+agentkit login --console --remote
+agentkit whoami
+```
+
+Volcengine and BytePlus console sessions are stored separately. `whoami` and `logout` select the current provider’s session. Valid environment credentials keep priority over cached login credentials
+
+Commands that require cloud credentials can start browser login when credentials are missing in an interactive terminal. Global `--no-auto-login` disables it. CI, JSON/raw output, `--yes`, and non-interactive terminals require credentials in advance. Local-only operations and dry runs do not trigger automatic login

@@ -1,0 +1,8 @@
+---
+title: "读取定时任务"
+openapi: "/productions/api-reference/openapi/zh/harness-runtime.json GET /harness/cronjobs/{job_id}"
+---
+
+需要使用 AgentKit CLI 0.54.0 部署并[启用定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)的 Harness Runtime
+
+`active` 可包含排队、运行中或尚未保存到历史的最终结果。`last_run` 只包含最近已保存到执行历史的摘要

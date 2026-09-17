@@ -1,0 +1,81 @@
+---
+title: "定时任务概览"
+---
+
+Harness 定时任务按周期或指定时间执行消息，并将任务定义、执行状态和结果保存在 TOS。HTTP 接口统一位于 `/harness/cronjobs`，基于 AgentKit CLI **0.54.0** 打包部署的 Harness Runtime
+
+## 启用条件
+
+这些接口仅在 AgentKit CLI 部署的 Harness 启用 `cronjob` 后存在。直接启动 VeADK 基础服务不会提供这组接口，未启用定时任务的 Harness 部署也不会挂载这些路径
+
+当前支持服务鉴权的 Harness，例如 Runtime API Key 认证，并要求服务能直接使用模型凭证。共享 OAuth 部署依赖交互用户的委托身份，不支持后台定时任务
+
+<Warning>
+启用后至少保留一个运行实例，会产生 Runtime 容量与 TOS 费用。任务消息和解析后的 MCP 凭据会保存到 TOS，需限制桶的访问权限。API 响应会隐藏 MCP 凭据的原始值
+</Warning>
+
+准备已有 TOS 桶，在包含 `harness.yaml` 的项目目录启用并部署
+
+```bash
+agentkit harness deploy --cronjob \
+  --cronjob-tos-bucket my-harness-jobs --region cn-beijing
+```
+
+```yaml title="harness.yaml"
+cronjob:
+  enabled: true
+  tos_bucket: my-harness-jobs
+  tos_region: cn-beijing
+  concurrency: 8
+  lease_seconds: 60
+  poll_seconds: 5
+```
+
+运行时角色需要对应任务存储前缀的 TOS 权限；部署身份需具备创建或绑定该策略的权限。BytePlus 使用相同配置结构，并选择相应云服务商、区域与桶。完整配置范围、默认值与权限要求见 [Harness 定时任务](/productions/agentkit-cli/preview/zh/commands/harness-cronjob#启用定时任务)
+
+## 发起请求
+
+`HARNESS_URL` 使用部署返回的 Runtime 基础地址，`HARNESS_TOKEN` 使用该服务要求的访问凭证。请求不使用模型 API Key 作为接口认证
+
+```bash
+export HARNESS_URL="https://<runtime-endpoint>"
+export HARNESS_TOKEN="<runtime-api-key>"
+
+curl "${HARNESS_URL}/harness/cronjobs/status" \
+  -H "Authorization: Bearer ${HARNESS_TOKEN}"
+```
+
+创建任务后保存返回的 `cronjob_id`，作为后续请求的 `job_id` 路径参数。执行开始后，通过任务的 `active.run_id`、`last_run.run_id` 或执行历史获取 `run_id`
+
+```bash
+export CRONJOB_ID="<cronjob_id>"
+export RUN_ID="<run_id>"
+```
+
+## 调度与执行行为
+
+| 设置或状态 | 行为 |
+| --- | --- |
+| `schedule.cron` | 五字段 cron，按 IANA 时区计算周期触发 |
+| `schedule.at` | 包含时区偏移的一次性时间，创建启用任务时必须在未来 |
+| `misfire_policy: latest` | 停机恢复后补跑最近一次错过的触发，不逐次重放全部历史触发 |
+| `misfire_policy: skip` | 最近一次触发的延迟不超过 `misfire_grace_seconds` 时执行，否则记为 `skipped` |
+| 上次执行尚未结束 | 本次重叠触发记为 `skipped`，同一任务不会主动并行执行 |
+| 超时或失败 | 记为 `failed`，本次执行不自动重试，后续周期仍可触发 |
+| 执行结果不确定 | 记为 `interrupted` 并暂停任务，核对外部操作结果后再恢复 |
+
+每次执行使用独立会话。任务覆盖配置使用本组创建接口中的 `harness` 结构，未覆盖字段继承已部署智能体；TOS 保存最终输出，因此读取历史不依赖本地会话是否还存在
+
+外部操作不保证只发生一次。取消或中断也无法撤销工具已经完成的操作，恢复前应核对结果
+
+## 结果与分页
+
+`GET /harness/cronjobs` 返回任务列表，默认每页 `100` 条；`GET /harness/cronjobs/{job_id}/runs` 返回执行历史，默认每页 `20` 条。两者的 `limit` 范围均为 `1–1000`，将返回的 `next_cursor` 原样用于后续请求，空字符串表示没有下一页
+
+执行状态包括 `queued`、`running`、`succeeded`、`failed`、`cancelled`、`skipped` 和 `interrupted`。执行历史按计划触发时间从新到旧排列；刚完成但尚未保存到历史的结果，可先通过任务详情的 `active` 或单次执行结果接口读取
+
+暂停任务会阻止未来触发并取消排队执行，不会终止正在运行的执行。取消接口可以请求停止一次运行，默认配置下通常约 20 秒内检查取消请求。调度状态接口仅反映处理本次请求的副本，不是整个集群的汇总状态
+
+## 创建幂等性
+
+创建接口接受 `idempotency_key`。相同键和相同请求返回原任务，HTTP 状态仍为 `201`；相同键对应不同输入返回 `422`。没有幂等键时，每次请求都会创建新任务，重试创建请求时应重复使用原键

@@ -2,7 +2,7 @@
 title: "Manage platform and local skills"
 ---
 
-The `skill` command group manages skills on the AgentKit skill platform: list, show details, list versions, list skill spaces, and delete skills. The `skills` command group works with local AgentKit skill packages and currently provides bulk secure Skill generation.
+`skill` manages skills and spaces on AgentKit. `skills` generates wrappers, uploads and downloads packages, and publishes paired real and secure skills
 
 ## Command overview
 
@@ -14,6 +14,10 @@ The `skill` command group manages skills on the AgentKit skill platform: list, s
 | `skill spaces` | List skill spaces. |
 | `skill delete` | Delete a platform skill. |
 | `skills secure` | Generate secure Skill wrappers from a local skills directory. |
+| `skills upload` | Upload local or GitHub skill packages |
+| `skills download` | Download a skill version |
+| `skills download-space` | Download a skill space |
+| `skills publish-secure` | Publish paired real and secure skills |
 
 ## skill list
 
@@ -102,3 +106,110 @@ agentkit skills secure ./skills --output ./skills-secure --force
 ```
 
 The generated wrappers are intended for managed agents that only need to submit a task, poll progress, and show the result. The real Skill still runs inside the AgentKit Skill Sandbox.
+
+## skills upload
+
+Upload skill packages to the selected platform. Each SKILL.md must contain `name` and `description`
+
+<Warning>
+Uploading sends skill instructions, scripts, and resources to the destination and may create TOS storage resources. Review the directory for `.env` files, credentials, and other files that should not be uploaded
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `<skillsDir>` | Directory with SKILL.md, a parent of skill directories, or a GitHub directory URL | Required |
+| `--source <source>` | Upload destination: `ark_ma` or `agentkit` | `SKILL_SOURCE` → `ark_ma` |
+| `--api-key <key>` | Ark API key for `ark_ma` | `ARK_API_KEY` |
+| `--endpoint <url>` | Ark skill upload endpoint | `https://ark.cn-beijing.volces.com/api/v3/skills` |
+| `--skill-space-id <ids>` | AgentKit skill space IDs, comma-separated | `SKILL_SPACE_ID` |
+| `-r, --region <region>` | AgentKit region | Provider / configuration |
+| `-p, --project <name>` | TOS project for AgentKit uploads | `default` |
+| `--display-title <title>` | Display title for a single Ark skill | — |
+| `--dry-run` | Validate and show the upload plan without sending files | `false` |
+| `--json` | Output JSON results | `false` |
+
+```bash
+agentkit skills upload ./skills --source agentkit --skill-space-id ss-example --dry-run
+agentkit skills upload ./skills --source agentkit --skill-space-id ss-example
+agentkit skills upload ./skills/report --source ark_ma
+```
+
+When no AgentKit space is specified, interactive terminals offer a space selector. Non-interactive environments require `--skill-space-id` or `SKILL_SPACE_ID`. Dry runs do not require a space or create remote resources. Each skill is limited to 500 files, 25 MiB per file, and 50 MiB for both total file size and the ZIP package
+
+GitHub sources use `https://github.com/<owner>/<repo>/tree/<ref>/<path>` and require Git. Ark uses `ARK_API_KEY`; AgentKit uses cloud credentials for the selected Volcengine or BytePlus account
+
+## skills download
+
+Download a skill package and extract it locally
+
+<Warning>
+Extraction overwrites files with matching names without confirmation. Use a new output directory
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `<id>` | Skill ID | Required |
+| `-o, --output <dir>` | Extraction directory | `./<id>` |
+| `--source <source>` | Only `agentkit` is supported | `SKILL_SOURCE` → `agentkit` |
+| `--version <version>` | Version to download | Current platform version |
+| `-r, --region <region>` | AgentKit region | Provider / configuration |
+| `-p, --project <name>` | AgentKit project | — |
+| `--json` | Output JSON results | `false` |
+
+```bash
+agentkit skills download s-example --output ./downloaded-skill --source agentkit
+```
+
+Requires local `unzip`. ZIP packages are limited to 50 MiB and unsafe extraction paths are rejected. Downloads from `ark_ma` are not supported
+
+## skills download-space
+
+Download every skill at the version bound to the space, using a subdirectory for each skill ID
+
+<Warning>
+Extraction overwrites files with matching names without confirmation. Use a new output directory
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `<skillSpaceId>` | Skill space ID | Required |
+| `-o, --output <dir>` | Extraction directory | `./<skillSpaceId>` |
+| `--source <source>` | Only `agentkit` is supported | `SKILL_SOURCE` → `agentkit` |
+| `-r, --region <region>` | AgentKit region | Provider / configuration |
+| `-p, --project <name>` | AgentKit project | — |
+| `--json` | Output JSON results | `false` |
+
+```bash
+agentkit skills download-space ss-example --output ./downloaded-space --source agentkit
+```
+
+Requires local `unzip`. ZIP packages are limited to 50 MiB and unsafe extraction paths are rejected. Downloads from `ark_ma` are not supported
+
+## skills publish-secure
+
+Publish real skills and portable secure wrappers into two newly created skill spaces, then read both spaces to verify the pairs. Wrappers contain names, descriptions, and remote invocation scripts without real skill instructions or resources
+
+<Warning>
+Publication creates two spaces and uploads packages. The real space contains the full skills; configure access to each space appropriately. Publication can partially succeed. Inspect the returned space IDs and per-item results before retrying; another invocation creates new spaces
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `<skillsDir>` | Local skill directory or GitHub directory URL | Required |
+| `--space-name-prefix <name>` | Name prefix for the two new spaces | Derived from source directory |
+| `-o, --output-dir <dir>` | Retain generated secure skills locally | Not retained |
+| `-r, --region <region>` | AgentKit region | Provider / configuration |
+| `-p, --project <name>` | AgentKit project | `default` |
+| `--force` | Overwrite generated files in the output directory | `false` |
+| `--dry-run` | Validate and show the plan without creating spaces or uploading skills | `false` |
+| `-y, --yes` | Skip publication confirmation; required non-interactively | `false` |
+| `--json` | Output JSON results | `false` |
+
+```bash
+agentkit skills publish-secure ./skills --dry-run
+agentkit skills publish-secure ./skills --space-name-prefix reports --output-dir ./secure-skills --yes
+```
+
+Space names are `<prefix>_real_<suffix>` and `<prefix>_secure_<suffix>`, with a random suffix. Interactive terminals show a plan and request confirmation. JSON output and CI require explicit `--yes`
+
+Before executing a wrapper, create or select a `Skill` sandbox tool bound to the real space. Install `agentkit-sdk-python>=0.8,<0.9` in the client runtime and provide credentials through the SDK default credential chain. Set `AGENTKIT_TOOL_ID` to that tool ID. `AGENTKIT_REGION` defaults to `cn-beijing`; set it explicitly for other regions

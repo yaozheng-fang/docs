@@ -22,6 +22,7 @@ No Node.js required — one command installs the standalone binary and puts `age
 Verify the install:
 
 ```bash
+agentkit --version
 agentkit --help
 ```
 
@@ -32,6 +33,8 @@ agentkit --help
 <Note>
   The install script writes managed `agentkit` and `ak` dispatch entries into the zsh, bash, or fish startup configuration so the standalone CLI takes priority over Python commands with the same name from pip, pipx, venv, or Conda after the shell reloads. If the current environment already has a Python `agentkit` command, the installer preserves it and writes a restorable shim; the uninstall script restores that entry when it is still managed by the installer. Set `AGENTKIT_NO_MODIFY_PATH=1` to skip automatic shell configuration changes and print the block to add manually.
 </Note>
+
+The installer retrieves the latest standalone release. Use `agentkit upgrade` to update an existing installation. This documentation covers the 0.54.0 release
 
 ## Authentication
 
@@ -93,3 +96,14 @@ The CLI signs every cloud OpenAPI request. Provide credentials for the cloud pro
 
 See the [command reference](/productions/agentkit-cli/preview/en/commands), or run `agentkit tree`
 to print the command tree. To switch cloud provider or region, run `agentkit config --cloud_provider byteplus --region ap-southeast-1` in the project.
+
+## Sign in through the console
+
+Use console login to obtain temporary credentials without configuring access keys. `--console` explicitly selects console login when an SSO profile already exists
+
+```bash
+agentkit login --console
+agentkit --provider byteplus login --console
+```
+
+On a remote server, use `agentkit login --remote`. See [authentication](/productions/agentkit-cli/preview/en/commands/auth#console-login-and-credential-precedence) for credential precedence and automatic login

@@ -13,6 +13,8 @@ title: "管理运行时"
 | `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
 | `-p, --project <name>` | 项目名称。 | default |
 | `--json` | 输出原始 JSON。 | `false` |
+| `--gateway-mode <mode>` | 按 `Shared` 或 `Exclusive` 筛选 | — |
+| `--gateway-instance-id <id>` | 按网关实例 ID 筛选 | — |
 
 ```bash
 agentkit runtime list --project demo
@@ -140,3 +142,13 @@ agentkit runtime release my-agent --rev 3
 ```bash
 agentkit runtime update my-agent --cpu-milli 1000 --memory-mb 2048 --auto-release
 ```
+
+## 网关信息与变更限制
+
+`runtime list` 显示网关信息，`runtime show` 显示网关模式、实例 ID 与名称。可按网关筛选运行时
+
+```bash
+agentkit runtime list --gateway-mode Exclusive --gateway-instance-id gateway-example --json
+```
+
+网关模式、网关实例与网络配置只能在创建时设置。`runtime update --json` 不允许修改这些字段；需要不同网关时，应使用新的运行时名称创建，并迁移调用方

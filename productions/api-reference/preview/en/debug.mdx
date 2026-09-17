@@ -2,10 +2,15 @@
 title: "Debugging"
 ---
 
-Debug routes carry the `Debug` tag and are intended for development and visualization.
+Inspect event traces, session traces, and agent graphs
 
-| Method | Path | Purpose |
+<Note>
+These endpoints use `/dev/...` paths and require the development server. A regular `adk api_server` does not expose them. See [Agent API Server overview](/productions/api-reference/preview/en/agent-api-server/overview) for startup options
+</Note>
+
+| Method | Path | Endpoint |
 | --- | --- | --- |
-| GET | `/debug/trace/{event_id}` | Get trace information by event ID; returns 404 if not found. |
-| GET | `/debug/trace/session/{session_id}` | Get the list of trace spans for a session. |
-| GET | `/dev/{app_name}/graph` | Return the agent graph in DOT format; the optional `dark_mode` query parameter toggles the theme. Returns `GetEventGraphResult` (with `dot_src`). |
+| GET | `/dev/apps/{app_name}/debug/trace/{event_id}` | [Get an event trace](/productions/api-reference/preview/en/agent-api-server/get-event-trace) |
+| GET | `/dev/apps/{app_name}/users/{user_id}/sessions/{session_id}/events/{event_id}/graph` | [Get an event graph](/productions/api-reference/preview/en/agent-api-server/get-event-graph) |
+| GET | `/dev/apps/{app_name}/debug/trace/session/{session_id}` | [Get session traces](/productions/api-reference/preview/en/agent-api-server/get-session-trace) |
+| GET | `/dev/apps/{app_name}/graph` | [Get the agent graph](/productions/api-reference/preview/en/agent-api-server/get-agent-graph) |

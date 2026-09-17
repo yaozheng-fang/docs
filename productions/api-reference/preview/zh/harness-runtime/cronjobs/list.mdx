@@ -1,0 +1,8 @@
+---
+title: "列出定时任务"
+openapi: "/productions/api-reference/openapi/zh/harness-runtime.json GET /harness/cronjobs"
+---
+
+需要使用 AgentKit CLI 0.54.0 部署并[启用定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)的 Harness Runtime
+
+将返回的 `next_cursor` 原样传给下一次请求。空字符串表示最后一页；不要将本接口的任务排列顺序视为创建时间排序

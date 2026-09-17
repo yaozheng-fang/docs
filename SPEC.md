@@ -38,7 +38,7 @@
 - 不佳：`title: "SQLite（本地文件）"`
 - 推荐：`title: "使用 SQLite 存储"`
 
-新建页面必须在 YAML frontmatter 中提供 `title`，不要添加 `description`。页面标题下不展示副标题；需要说明页面用途时，应在正文首段中自然说明。
+新建页面必须在 YAML frontmatter 中提供 `title`，不要添加 `description`。HTTP API 单接口页面还需提供 `openapi`，绑定对应语言的规范文件、方法和路径，以使用原生接口展示。页面标题下不展示副标题；需要说明页面用途时，应在正文首段中自然说明。
 
 ## 中文文案约定
 

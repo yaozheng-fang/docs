@@ -12,6 +12,7 @@ AgentKit CLI 的命令按组组织，下方每一组单独成篇，逐个命令�
 | --- | --- | --- |
 | `-v, --version` | - | 输出当前 CLI 版本并退出。 |
 | `--provider <provider>` | 未设置 | 覆盖当前命令使用的云厂商，可选值为 `volcengine` 或 `byteplus`。 |
+| `--no-auto-login` | `false` | 缺少云凭据时直接失败，不启动浏览器登录 |
 
 云厂商按以下顺序确定：`--provider`、`AGENTKIT_CLOUD_PROVIDER`、`CLOUD_PROVIDER`、项目配置、用户级默认配置，最后回退到 `volcengine`。
 
@@ -34,7 +35,6 @@ agentkit --provider byteplus runtime list
   <Card title="memory" href="/productions/agentkit-cli/preview/zh/commands/memory">管理记忆库</Card>
   <Card title="model-gateway" href="/productions/agentkit-cli/preview/zh/commands/model-gateway">管理 Model Gateway、模型提供方和调用方</Card>
   <Card title="mcp service" href="/productions/agentkit-cli/preview/zh/commands/mcp">管理 MCP 服务</Card>
-  <Card title="model-gateway" href="/productions/agentkit-cli/preview/zh/commands/model-gateway">管理 Model Gateway</Card>
   <Card title="sandbox" href="/productions/agentkit-cli/preview/zh/commands/sandbox">创建沙箱、执行命令、管理会话</Card>
   <Card title="env" href="/productions/agentkit-cli/preview/zh/commands/env">管理自托管沙箱环境</Card>
   <Card title="skill / skills" href="/productions/agentkit-cli/preview/zh/commands/skill">管理平台技能与本地技能包</Card>
@@ -47,11 +47,14 @@ agentkit --provider byteplus runtime list
   <Card title="eval target" href="/productions/agentkit-cli/preview/zh/commands/eval/target">管理 TEA 评测目标</Card>
   <Card title="eval run" href="/productions/agentkit-cli/preview/zh/commands/eval/run">提交评测实验</Card>
   <Card title="eval experiment" href="/productions/agentkit-cli/preview/zh/commands/eval/experiment">查看实验与结果</Card>
-  <Card title="eval target" href="/productions/agentkit-cli/preview/zh/commands/eval/target">查看 TEA 评测目标</Card>
   <Card title="migrate" href="/productions/agentkit-cli/preview/zh/commands/migrate">迁移已有智能体应用</Card>
   <Card title="auth" href="/productions/agentkit-cli/preview/zh/commands/auth">SSO 鉴权、登录 profile 与组织接入配置</Card>
   <Card title="onboard" href="/productions/agentkit-cli/preview/zh/commands/onboard">安装内置技能</Card>
   <Card title="tree" href="/productions/agentkit-cli/preview/zh/commands/tree">查看完整命令树</Card>
   <Card title="upgrade" href="/productions/agentkit-cli/preview/zh/commands/upgrade">检查并安装 CLI 更新</Card>
   <Card title="docs" href="/productions/agentkit-cli/preview/zh/commands/docs">在浏览器中查看文档</Card>
+  <Card title="user" href="/productions/agentkit-cli/preview/zh/commands/user">管理用户池用户</Card>
+  <Card title="department" href="/productions/agentkit-cli/preview/zh/commands/department">管理部门与成员</Card>
+  <Card title="group" href="/productions/agentkit-cli/preview/zh/commands/group">管理用户组</Card>
+  <Card title="harness-cronjob" href="/productions/agentkit-cli/preview/zh/commands/harness-cronjob">管理 Harness 定时任务</Card>
 </CardGroup>

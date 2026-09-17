@@ -6,6 +6,101 @@ title: "更新日志"
 
 当前没有未发布的公开变更。
 
+## 0.54.0 - 2026-09-17
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Harness | 新增持久化定时任务，可创建周期或一次性调用、查询执行与结果、暂停、恢复和取消；任务与结果保存在 TOS | [Harness 定时任务](/productions/agentkit-cli/preview/zh/commands/harness-cronjob) |
+| Harness | 支持远程 MCP 配置与逐次调用覆盖，支持 streamable-http、SSE 和环境变量凭据 | [Harness](/productions/agentkit-cli/preview/zh/commands/harness#远程-mcp-服务) |
+| 技能 | 新增成对安全发布：创建真实与安全壳技能空间，上传并核验版本，支持本地校验和输出保留 | [管理平台技能与本地技能包](/productions/agentkit-cli/preview/zh/commands/skill#skills-publish-secure) |
+| 用户 | 补充用户精确查询、字段更新和删除 | [用户管理](/productions/agentkit-cli/preview/zh/commands/user) |
+| 部门 | 新增部门层级管理与批量添加、移除、转移用户 | [部门管理](/productions/agentkit-cli/preview/zh/commands/department) |
+| 用户组 | 新增用户组创建、精确查询、描述更新与删除 | [用户组管理](/productions/agentkit-cli/preview/zh/commands/group) |
+
+## 0.53.0 - 2026-09-14
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 用户 | 新增用户池批量创建用户，支持 JSON 文件或重复参数，逐项报告结果 | [用户管理](/productions/agentkit-cli/preview/zh/commands/user#user-create) |
+
+## 0.52.19 - 2026-09-14
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 鉴权 | 新增火山引擎与 BytePlus 控制台登录、远程授权码登录和缺少凭据时的交互登录，全局 `--no-auto-login` 可关闭自动登录 | [鉴权与登录](/productions/agentkit-cli/preview/zh/commands/auth#控制台登录与凭据优先级) |
+| 沙箱 | 新增快照创建、详情、列表、恢复与删除，区分用户会话 ID 和实例 ID | [使用沙箱](/productions/agentkit-cli/preview/zh/commands/sandbox#会话快照) |
+| 沙箱 | 角色选择展示策略校验结果，支持确认创建默认角色，明确技能沙箱所需权限 | [使用沙箱](/productions/agentkit-cli/preview/zh/commands/sandbox#技能空间角色与-jwt) |
+| 发布 | 创建运行时优先复用合适角色，更新保留原角色；构建核验镜像摘要并清理临时 TOS 源码包 | [发布](/productions/agentkit-cli/preview/zh/commands/release#发布等待与运行时角色) |
+
+## 0.52.18 - 2026-09-09
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 运行时 | 支持专属网关创建配置与查询筛选，明确网关和网络配置创建后不可修改 | [agentkit.yaml](/productions/agentkit-cli/preview/zh/agentkit-yaml#专属运行时网关) |
+| MCP | 服务创建支持专属网关和后端访问方式，列表支持按网关实例筛选 | [管理 MCP 服务](/productions/agentkit-cli/preview/zh/commands/mcp#专属网关) |
+| 沙箱 | 工具创建支持 JWT 发现地址、允许客户端和通用角色选项 | [使用沙箱](/productions/agentkit-cli/preview/zh/commands/sandbox#技能空间角色与-jwt) |
+| 发布 | 托管 Harness Sidecar 支持北京区域部署 | [发布](/productions/agentkit-cli/preview/zh/commands/release#发布等待与运行时角色) |
+
+## 0.52.17 - 2026-09-07
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| Harness | 调用支持 YAML/JSON 配置、命令行优先级、合并配置与增强选项 | [Harness](/productions/agentkit-cli/preview/zh/commands/harness#调用配置文件) |
+| 迁移 | 迁移项目的 SDK 依赖下限更新为 0.8.6 | [迁移已有智能体](/productions/agentkit-cli/preview/zh/commands/migrate#迁移入口与交付校验) |
+
+## 0.52.16 - 2026-09-03
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 迁移 | 保留已通过校验的生命周期交付结果，避免因模板布局差异被重复拒绝 | [迁移已有智能体](/productions/agentkit-cli/preview/zh/commands/migrate#迁移入口与交付校验) |
+
+## 0.52.15 - 2026-09-03
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 迁移 | 交付启动入口读取 `common.entry_point`；无效入口保留为部分结果并给出警告 | [迁移已有智能体](/productions/agentkit-cli/preview/zh/commands/migrate#迁移入口与交付校验) |
+
+## 0.52.14 - 2026-09-02
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 发布 | 托管 Sidecar 可使用仅私有网络的运行时网关绑定 | [发布](/productions/agentkit-cli/preview/zh/commands/release#发布等待与运行时角色) |
+
+## 0.52.13 - 2026-09-01
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 安装 | 发行维护，无新增公开命令或配置；安装与升级继续使用独立发行包入口 | [快速开始](/productions/agentkit-cli/preview/zh/quickstart#安装) |
+
+## 0.52.12 - 2026-09-01
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 技能 | 支持下载单个技能或整个技能空间，保留空间绑定版本 | [管理平台技能与本地技能包](/productions/agentkit-cli/preview/zh/commands/skill#skills-download) |
+| 技能 | 上传至 AgentKit 时支持交互选择技能空间，非交互模式明确要求空间 ID | [管理平台技能与本地技能包](/productions/agentkit-cli/preview/zh/commands/skill#skills-upload) |
+
+## 0.52.11 - 2026-08-31
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 安装 | 发行包维护，无新增公开命令或配置 | [快速开始](/productions/agentkit-cli/preview/zh/quickstart#安装) |
+
+## 0.52.10 - 2026-08-31
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 发布 | 托管 Sidecar 发布兼容已有的 Header API Key 鉴权 | [发布](/productions/agentkit-cli/preview/zh/commands/release#发布等待与运行时角色) |
+
+## 0.52.9 - 2026-08-31
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 技能 | 新增技能上传，支持火山方舟与 AgentKit 来源、本地或 GitHub 目录，以及上传前校验 | [管理平台技能与本地技能包](/productions/agentkit-cli/preview/zh/commands/skill#skills-upload) |
+| 沙箱 | 创建工具时可选择技能空间并保存绑定 | [使用沙箱](/productions/agentkit-cli/preview/zh/commands/sandbox#技能空间角色与-jwt) |
+| 沙箱 | 构建显示状态与耗时，打开主页前等待浏览器就绪 | [使用沙箱](/productions/agentkit-cli/preview/zh/commands/sandbox#sandbox-build) |
+| 发布 | 运行时就绪等待延长至 15 分钟，并支持环境变量覆盖 | [发布](/productions/agentkit-cli/preview/zh/commands/release#发布等待与运行时角色) |
+| 前端 | 保留 Identity 登录回调、Cookie 与返回路径，维持前端登录会话 | [agentkit.yaml](/productions/agentkit-cli/preview/zh/agentkit-yaml#前端登录会话) |
+
 ## 0.52.8 - 2026-08-26
 
 - [skills 命令] [`skills secure`](/productions/agentkit-cli/preview/zh/commands/skill#skills-secure) 可从本地技能目录批量生成面向托管智能体安装的安全壳 Skill，保留 `name` 与 `description`，但不复制真实 Skill 的 Prompt、references、scripts、依赖或凭证。

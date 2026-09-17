@@ -22,6 +22,7 @@ title: "快速开始"
 安装完成后验证：
 
 ```bash
+agentkit --version
 agentkit --help
 ```
 
@@ -32,6 +33,8 @@ agentkit --help
 <Note>
   安装脚本会在 zsh、bash 或 fish 的启动配置中写入受管理的 `agentkit` 与 `ak` 调度入口，使独立 CLI 在 shell 重新加载后优先于 pip、pipx、venv 或 Conda 中同名的 Python 命令。若当前环境中已有同名 Python 入口，安装脚本会先保留原入口并写入可恢复的 shim，卸载脚本会在仍由安装脚本管理时恢复原入口。设置 `AGENTKIT_NO_MODIFY_PATH=1` 可跳过自动修改 shell 配置，脚本会打印需要手动加入的配置块。
 </Note>
+
+安装脚本默认获取最新独立发行包，也可用 `agentkit upgrade` 更新已有安装。本文按 0.54.0 发布内容维护
 
 ## 鉴权
 
@@ -92,3 +95,14 @@ CLI 会对每一次云端 OpenAPI 请求签名。按使用的云厂商或登录�
 </Steps>
 
 完整命令见 [命令参考](/productions/agentkit-cli/preview/zh/commands)，或运行 `agentkit tree` 打印命令树。需要切换云厂商或区域时，运行 `agentkit config --cloud_provider byteplus --region ap-southeast-1` 更新项目配置。
+
+## 使用控制台登录
+
+没有 AK/SK 时，可通过控制台获取临时凭据；已有 SSO profile 时，`--console` 可明确选择控制台方式
+
+```bash
+agentkit login --console
+agentkit --provider byteplus login --console
+```
+
+远程服务器使用 `agentkit login --remote`。凭据优先级与自动登录规则见 [鉴权与登录](/productions/agentkit-cli/preview/zh/commands/auth#控制台登录与凭据优先级)

@@ -1,0 +1,12 @@
+---
+title: "Create a scheduled task"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /harness/cronjobs"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+Exactly one of `schedule.cron` and `schedule.at` must be non-null. For an enabled one-time task, `at` must include a timezone offset and lie in the future
+
+Use a stable `idempotency_key` when retrying creation. Identical requests with the same key return the same task and HTTP `201`; different input with that key returns `422`. Omitting the key creates a new task on every request
+
+`harness` uses the task override structure shown on this page. Omitted fields inherit deployed settings. Each execution uses a separate session, and its final output is persisted in TOS

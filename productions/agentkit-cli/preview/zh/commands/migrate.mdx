@@ -168,3 +168,9 @@ agentkit migrate ./source-agent --framework any list --json
 agentkit migrate ./dify-export --framework dify status <job-id>
 agentkit migrate ./source-agent --framework any status --job-id <job-id> --json
 ```
+
+## 迁移入口与交付校验
+
+迁移结果的启动入口以交付目录中 `agentkit.yaml` 的 `common.entry_point` 为准，支持入口位于子目录，不要求固定为 `main.py`。已通过交付校验的生命周期项目不会因模板文件布局不同而被重复判为失败
+
+配置无效或入口缺失时，如存在可保留的旧入口，结果会标记为部分交付并附带警告，不能直接视为可部署成功。按报告修复入口后再构建和部署。迁移生成的项目使用 `agentkit-sdk-python>=0.8.6`，以满足运行所需的 SDK 兼容性

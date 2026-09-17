@@ -1,0 +1,75 @@
+---
+title: "Agent API Server overview"
+---
+
+Agent API Server provides application discovery, session management, agent execution, artifacts, and memory ingestion. This section documents the Google ADK HTTP service, including the corresponding endpoints exposed when `veadk web` loads VeADK agents
+
+This reference uses **Google ADK 2.2.0** as its interface baseline. VeADK supports a broad dependency range, so the endpoints available in a deployment depend on its installed Google ADK version. Check `GET /version` before integrating
+
+## Choose a service
+
+| Service | Start command | Endpoint scope |
+| --- | --- | --- |
+| Agent API Server | `adk api_server` | Applications, sessions, execution, artifacts, memory, and health checks |
+| Server with the development UI | `veadk web`, `adk web`, or `adk api_server --with_ui` | The core endpoints plus evaluation and debugging under `/dev/apps/{app_name}` |
+| Harness Runtime | [Harness Runtime API](/productions/api-reference/preview/en/harness-runtime/overview) | Harness execution and session protocols, with a separate server address and API definition |
+
+These endpoints are separate from AgentKit cloud resource management APIs and do not describe every custom HTTP route an application may expose after deployment to AgentKit
+
+## Start the server
+
+Prepare an agent application using the ADK directory layout, such as `agents/travel_assistant/agent.py` exporting `root_agent`. Configure the model credentials and application dependencies in the server environment
+
+From the project root containing `agents`, run:
+
+```bash
+adk api_server --host 127.0.0.1 --port 8000 agents
+```
+
+For VeADK memory integration and the evaluation and debugging UI, use:
+
+```bash
+veadk web --host 127.0.0.1 --port 8000 agents
+```
+
+The base URL is `http://localhost:8000`. Verify the server version and available applications:
+
+```bash
+curl http://localhost:8000/version
+curl http://localhost:8000/list-apps
+```
+
+Evaluation requires additional dependencies. Install the extension matching the server version to avoid changing the API baseline:
+
+```bash
+python -m pip install "google-adk[eval]==2.2.0"
+```
+
+Local session and artifact storage is enabled by default. Explicit storage URIs or disabling local storage change this behavior. Unless `--auto_create_session` is enabled, create a session before calling `/run` or `/run_sse`
+
+## Addresses and fields
+
+| Item | Convention |
+| --- | --- |
+| Application namespace | `/apps/{app_name}` |
+| Session namespace | `/apps/{app_name}/users/{user_id}/sessions/{session_id}` |
+| Non-streaming invocation | `POST /run`, returning a JSON event array after completion |
+| Streaming invocation | `POST /run_sse`, returning `text/event-stream` |
+| Development endpoints | `/dev/apps/{app_name}`, requiring the development UI |
+| Path prefix | Add the deployment prefix before these paths when using a reverse proxy or `--url_prefix` |
+
+Use the field names shown on each endpoint page. Most models use camelCase fields such as `appName`, `sessionId`, and `newMessage`. Some models, including evaluation sets, retain snake_case fields such as `eval_set_id` and `eval_cases`; do not rename fields globally
+
+Google ADK 2.x moved evaluation and debugging into the development namespace. Older paths such as `/apps/{app_name}/eval-sets` or `/debug/trace/...` do not apply to this baseline. The compatibility group includes only paths that the current server still exposes
+
+## Authentication and interactive requests
+
+Examples assume a local server without configured login authentication and do not require a universal API key. `user_id` identifies a session namespace; it does not authenticate the caller. If a deployment uses VeADK OAuth2, gateway authentication, or another access control mechanism, follow that deployment's authentication requirements. Model API keys are not server access credentials
+
+<Warning>
+Sessions, artifacts, memory, and traces may contain user data. The examples bind only to the local machine. Configure authentication and access control before exposing the server, and restrict development endpoints to trusted callers
+</Warning>
+
+Endpoint pages display methods, paths, parameters, request bodies, response schemas, and language examples. Interactive requests are real requests: use the deployment's server address and meet its authentication, connectivity, and cross-origin requirements. Delete and replace operations modify real data
+
+Use `curl -N` to inspect live streaming events; the interactive request panel may not render each event as it arrives. `/run_live` uses WebSocket, while A2A and optional triggers use separate protocols and are outside the default HTTP endpoint scope of this section

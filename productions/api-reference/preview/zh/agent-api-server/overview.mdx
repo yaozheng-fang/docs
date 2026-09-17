@@ -1,0 +1,75 @@
+---
+title: "Agent API Server 概述"
+---
+
+Agent API Server 提供应用发现、会话管理、智能体运行、制品读写和记忆写入接口。本章描述 Google ADK 的 HTTP 服务，也适用于通过 `veadk web` 加载 VeADK 智能体时提供的对应接口
+
+本章以 **Google ADK 2.2.0** 的接口定义为基线。VeADK 支持的依赖版本范围较宽，实际服务的接口随安装的 Google ADK 版本变化；部署前可通过 `GET /version` 核对版本
+
+## 选择服务
+
+| 服务 | 使用方式 | 接口范围 |
+| --- | --- | --- |
+| Agent API Server | `adk api_server` | 应用、会话、运行、制品、记忆与健康检查 |
+| 启用开发界面的服务 | `veadk web`、`adk web` 或 `adk api_server --with_ui` | 上述接口，以及 `/dev/apps/{app_name}` 下的评测和调试接口 |
+| Harness Runtime | [Harness Runtime 接口](/productions/api-reference/preview/zh/harness-runtime/overview) | Harness 的运行与会话协议，使用独立的服务地址和接口定义 |
+
+这些接口不是 AgentKit 云资源管理 API，也不等同于部署到 AgentKit 后由应用自行提供的所有 HTTP 路由
+
+## 启动服务
+
+先准备一个符合 ADK 目录约定的智能体应用，例如 `agents/travel_assistant/agent.py`，其中导出 `root_agent`。模型凭证和应用依赖应在运行服务的环境中配置
+
+在包含 `agents` 目录的项目根目录执行：
+
+```bash
+adk api_server --host 127.0.0.1 --port 8000 agents
+```
+
+如需 VeADK 的记忆集成、评测和调试界面，可使用：
+
+```bash
+veadk web --host 127.0.0.1 --port 8000 agents
+```
+
+基础地址为 `http://localhost:8000`。通过以下请求确认服务版本与可用应用：
+
+```bash
+curl http://localhost:8000/version
+curl http://localhost:8000/list-apps
+```
+
+执行评测还需要安装评测依赖；安装与服务相同版本的扩展，避免接口版本发生变化：
+
+```bash
+python -m pip install "google-adk[eval]==2.2.0"
+```
+
+默认启用本地会话和制品存储；指定存储 URI 或禁用本地存储时行为相应改变。未启用 `--auto_create_session` 时，应先创建会话，再调用 `/run` 或 `/run_sse`
+
+## 地址与字段
+
+| 内容 | 约定 |
+| --- | --- |
+| 应用命名空间 | `/apps/{app_name}` |
+| 会话命名空间 | `/apps/{app_name}/users/{user_id}/sessions/{session_id}` |
+| 一次性调用 | `POST /run`，等待完成后返回 JSON 事件数组 |
+| 流式调用 | `POST /run_sse`，返回 `text/event-stream` |
+| 开发接口 | `/dev/apps/{app_name}`，需要启用开发界面 |
+| 路径前缀 | 使用反向代理或 `--url_prefix` 时，将实际前缀加在本章路径之前 |
+
+请求和响应字段以每个接口的定义为准。多数模型使用 `appName`、`sessionId`、`newMessage` 等 camelCase 字段，评测集等部分模型仍保留 `eval_set_id`、`eval_cases` 等 snake_case 字段，不应统一替换
+
+Google ADK 2.x 已将评测和调试迁到开发接口命名空间。旧版 `/apps/{app_name}/eval-sets` 或 `/debug/trace/...` 路径不能直接用于本章基线版本。兼容接口分组仅列出当前服务实际保留的路径
+
+## 认证与交互式请求
+
+本章默认以未配置登录认证的本地服务为例，不要求统一的 API Key。`user_id` 是会话命名空间，不能代替调用者身份认证。若服务启用了 VeADK OAuth2、网关认证或其他访问控制，请遵循该部署的认证方式；不要把模型 API Key 作为服务访问凭证
+
+<Warning>
+会话、制品、记忆和追踪可能包含用户数据。默认示例仅监听本机；对外开放服务前应配置认证与访问控制，开发接口应仅允许受信任的调用者访问
+</Warning>
+
+接口页展示方法、路径、参数、请求体、响应结构和语言示例。交互式请求会发送真实请求；需填写当前部署地址，并满足其认证、网络连通性和跨域配置。删除和替换操作会修改实际数据
+
+流式接口可用 `curl -N` 检查实时事件，页面的交互式请求面板不保证逐事件显示。`/run_live` 使用 WebSocket，A2A 与可选触发器使用各自协议，不属于本章默认 HTTP 接口范围

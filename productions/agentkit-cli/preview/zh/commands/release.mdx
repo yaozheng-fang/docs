@@ -51,7 +51,7 @@ agentkit release config --name my-agent --force
 
 根据 `.agentkit/agentkit.yaml` 在云端构建镜像，并把构建产物写入 `.agentkit/artifacts/`。
 
-启用托管 Harness Sidecar 时，构建阶段会把应用依赖作为应用层依赖安装在平台托管基础镜像之上。`requirements.txt` 中的 `agentkit_sdk_python` 会随应用一起保留，以便选择明确的公开 SDK 版本；`veadk-python` 与已废弃的 `agentkit-harness-sidecar-integration` 独立包会从构建上下文中移除，避免与托管基础镜像中的 VeADK 源码冲突。构建会验证托管基础镜像中的公开 VeADK 源码与 `agentkit-sdk-python` 版本边界。
+启用托管 Harness Sidecar 时，SDK、ADK、MCP、Starlette 与 VeADK 使用托管基础镜像提供的兼容版本；应用只安装其余业务依赖。构建会校验平台依赖的版本边界，避免应用依赖覆盖托管运行环境
 
 托管 Sidecar 构建必须使用当前 CLI 生成的 `.agentkit/Dockerfile`。如果项目使用用户自定义的根目录 `Dockerfile`，或旧版 `.agentkit/Dockerfile` 不符合当前托管构建结构，`release build` 会在构建前失败；重新运行 `agentkit release config --force` 可生成当前模板，执行前请先保留需要手动维护的 Dockerfile 修改。
 
@@ -82,3 +82,15 @@ agentkit release apply
 ```
 
 消息渠道与前端发布配置仍写在 `.agentkit/agentkit.yaml`，字段说明见 [agentkit.yaml](/productions/agentkit-cli/preview/zh/agentkit-yaml)。
+
+## 发布等待与运行时角色
+
+创建运行时时，显式指定的 IAM 角色必须存在；未指定角色时，CLI 优先复用具备 `AgentKitDefaultRuntimeAccess` 策略的角色，否则创建新角色。更新运行时会保留原角色，不自动修改已有角色策略；启用定时任务时所需的 TOS 前缀权限另行配置
+
+发布等待运行时就绪的默认时间为 15 分钟，可用 `AGENTKIT_RUNTIME_READY_TIMEOUT_MS` 设置正整数毫秒值。运行时已发布但客户端超时时，先查看状态，避免重复创建资源
+
+```bash
+AGENTKIT_RUNTIME_READY_TIMEOUT_MS=1200000 agentkit release apply
+```
+
+托管 Sidecar 支持北京区域和仅私有网络的网关绑定，也支持已有的 Header API Key 鉴权。构建成功后解析镜像摘要并写入产物记录；无法确认镜像已进入仓库时构建失败。构建结束会清理临时 TOS 源码包，成功构建后的清理失败也会使命令报错

@@ -1,0 +1,12 @@
+---
+title: "创建定时任务"
+openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /harness/cronjobs"
+---
+
+需要使用 AgentKit CLI 0.54.0 部署并[启用定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)的 Harness Runtime
+
+`schedule.cron` 与 `schedule.at` 必须且只能设置一个非 null 值。创建启用的一次性任务时，`at` 必须在未来且包含时区偏移
+
+建议提供稳定的 `idempotency_key`。相同键和相同请求返回同一任务，状态仍为 `201`；相同键对应不同请求返回 `422`。省略幂等键时，每次请求都会新建任务
+
+`harness` 使用本页的任务覆盖结构，未提供字段继承部署配置。每次执行使用独立会话，最终输出保存在 TOS

@@ -31,7 +31,10 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
 | `knowledge` (`kb`) | knowledge bases |
 | `memory` (`mem`) | memory collections |
 | `model-gateway` (`mgw`) | unified model gateway, model providers, and consumers |
-| `harness` | Harness defined by a `harness.yaml` |
+| `user` | User-pool users |
+| `department` | Department hierarchy and membership |
+| `group` | User-pool groups |
+| `harness` | Configure, deploy, invoke Harness, and manage scheduled tasks |
 | `chat` | chat with shared OAuth Harnesses through tenant aliases |
 | `invoke` | call a deployed runtime |
 | `auth` | SSO login, identity, login profiles, and organization SSO setup |
@@ -42,7 +45,7 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
 | `sandbox` | run commands and manage sessions in a sandbox |
 | `env` (`environment`) | manage the Runtime for Claude self-host sandbox environments |
 | `skill` | skills on the AgentKit skill platform |
-| `skills` | local AgentKit skill packages |
+| `skills` | Upload, download, generate wrappers, and publish paired skills |
 | `destroy` | delete a deployed runtime |
 | `upgrade` | check for and install AgentKit CLI updates |
 | `tree` | print the command tree |
@@ -60,5 +63,5 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
   pass `-r, --region`.
 - Every product command accepts global `--provider volcengine|byteplus` to
   override the cloud provider for that command.
-- Destructive commands (`delete`, `remove`, `destroy`) prompt for confirmation;
+- Deletion behavior is command-specific. Most delete commands require confirmation; `sandbox snapshot delete` deletes immediately and has no `--yes` option
   pass `-y` to skip.

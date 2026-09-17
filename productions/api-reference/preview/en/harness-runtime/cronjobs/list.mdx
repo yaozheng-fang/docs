@@ -1,0 +1,8 @@
+---
+title: "List scheduled tasks"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json GET /harness/cronjobs"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+Pass `next_cursor` unchanged to the next request. An empty string marks the final page; task order should not be interpreted as creation-time order

@@ -1,0 +1,117 @@
+---
+title: "内置工具"
+---
+
+`harness.tools` 为本次调用追加内置工具，值是以英文逗号分隔的工具名称字符串，例如 `"web_search,web_fetch"`。它不接收工具对象、函数参数或 Python 导入路径
+
+## 适用版本与范围
+
+本页以 AgentKit CLI **0.54.0** 默认部署的 **VeADK 1.0.8** 为基线。该版本提供下面列出的 **13 个**可按名称加载的工具；它们都是单个工具，不是包含多个工具的工具集
+
+请求级 `tools` 适用于非共享 OAuth Harness 的 `POST /harness/invoke`，以及携带 `harness` 配置的 `POST /run_sse`。共享 OAuth Harness 不开放工具、模型和提示词等通用请求级配置，不能通过这些字段临时增加工具。部署时配置的 `TOOLS` 决定基础工具；未设置或为空时，不按名称加载本页中的内置工具
+
+名称是否受支持，取决于服务端实际安装的 VeADK 版本。自定义镜像或手动升级依赖后，应按照[实际运行环境](#查询实际运行环境)确认清单
+
+## 支持的工具
+
+注册名称不代表相应云服务、凭证和沙箱已经就绪。下表中的环境变量均配置在 **Harness 服务端**，不放入 HTTP 请求的 `tools` 字段
+
+| 名称 | 用途 | 使用条件 |
+| --- | --- | --- |
+| `web_search` | 搜索互联网，返回网页结果摘要 | 火山引擎联网搜索服务与可用 AK/SK 或执行角色凭证；BytePlus 条件见下文 |
+| `parallel_web_search` | 并行搜索多个查询，按查询返回结果摘要 | 火山引擎联网搜索服务，凭证与 `web_search` 相同；该版本不会切换至 BytePlus 搜索服务 |
+| `web_fetch` | 获取公开网页，提取 Markdown 或纯文本；也支持 PDF 文本 | 无额外 API Key；需要访问目标公网地址，读取 PDF 还需安装 `pypdf`；不执行网页 JavaScript，不支持读取私网地址 |
+| `vesearch` | 搜索互联网、社交媒体和新闻，并返回汇总内容 | 已开通的搜索智能体、`TOOL_VESEARCH_ENDPOINT` 与可用服务凭证；可显式设置 `TOOL_VESEARCH_API_KEY` |
+| `link_reader` | 读取网页、PDF 或抖音视频的标题和正文 | 火山方舟 LinkReader 服务与有效方舟凭证；可设置 `MODEL_AGENT_API_KEY`；一次最多传入 3 个链接 |
+| `run_code` | 在 AgentKit 沙箱中执行 Python 或 Bash，返回执行结果 | 可用的代码沙箱、`AGENTKIT_TOOL_ID_SCRIPT` 和调用沙箱的凭证；未设置专用 ID 时使用 `AGENTKIT_TOOL_ID` |
+| `coding` | 将编码任务交给预配置的 OpenCode 沙箱执行 | 已配置 OpenCode 的 AgentKit 沙箱、`AGENTKIT_TOOL_ID_OPENCODE` 和调用沙箱的凭证；未设置专用 ID 时使用 `AGENTKIT_TOOL_ID` |
+| `image_generate` | 按提示词和参考图片生成单张图片或组图 | 可用的图像生成模型与权限；可设置 `MODEL_IMAGE_API_KEY`、`MODEL_IMAGE_NAME` 和 `MODEL_IMAGE_API_BASE` |
+| `image_edit` | 根据提示词编辑原图，支持批量任务 | 可用的图像编辑模型与权限；可设置 `MODEL_EDIT_API_KEY`、`MODEL_EDIT_NAME` 和 `MODEL_EDIT_API_BASE` |
+| `video_generate` | 根据文本、首尾帧或多模态参考素材生成视频，支持批量任务 | 可用的视频生成模型与权限；可设置 `MODEL_VIDEO_API_KEY`、`MODEL_VIDEO_NAME` 和 `MODEL_VIDEO_API_BASE` |
+| `text_to_speech` | 将文本合成为 PCM 音频，返回服务端保存路径 | 已开通语音合成服务、`TOOL_VESPEECH_APP_ID` 和可用语音凭证；可显式设置 `TOOL_VESPEECH_API_KEY`；音色和输出目录见下文 |
+| `get_city_weather` | 返回预置城市的固定示例天气 | 无服务凭证；城市使用英文名；数据仅用于演示，不是实时天气 |
+| `get_location_weather` | 返回随机生成的示例天气 | 无服务凭证；数据仅用于演示，不是实时天气 |
+
+如果需要读取 PDF，将 `pypdf` 加入 Harness 的部署依赖并重新构建镜像；只读取普通网页时无需该 PDF 解析依赖
+
+### 搜索和沙箱凭证
+
+火山引擎搜索优先使用 `TOOL_WEB_SEARCH_ACCESS_KEY`、`TOOL_WEB_SEARCH_SECRET_KEY`，也可以使用 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 或运行环境中的执行角色凭证
+
+使用 BytePlus 搜索时设置 `CLOUD_PROVIDER=byteplus` 和 `BYTEPLUS_WEB_SEARCH_API_KEY`。VeADK 1.0.8 的 `web_search` 仍要求可解析的 AK/SK 或执行角色凭证；BytePlus AK/SK 可通过 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 配置。不要假设 `parallel_web_search` 同样支持 BytePlus 搜索
+
+`run_code` 与 `coding` 需要对目标沙箱具有调用权限。凭证可使用运行环境的执行角色，或配置对应云环境的 AK/SK；沙箱所在区域通过 `AGENTKIT_TOOL_REGION` 配置。BytePlus 使用 `CLOUD_PROVIDER=byteplus`，默认区域为 `ap-southeast-1`；火山引擎默认区域为 `cn-beijing`
+
+### 图像、视频和语音
+
+图像生成、图像编辑、视频生成未设置专用 API Key 时，会复用 `MODEL_AGENT_API_KEY` 或 VeADK 的默认模型凭证。工具名正确也不代表账号已开通该生成模型；API 地址、模型名称和凭证必须属于兼容的服务。将图片结果上传到 TOS 时，还需要配置 `DATABASE_TOS_BUCKET` 及可用的 TOS 访问凭证
+
+语音音色通过 `TOOL_VESPEECH_SPEAKER` 设置，默认值为 `zh_female_vv_uranus_bigtts`；音频目录通过 `TOOL_VESPEECH_AUDIO_OUTPUT_PATH` 设置，默认使用服务端临时目录。返回的文件路径不是公开下载地址
+
+<Warning>
+搜索、沙箱执行和音视频生成等工具可能产生云资源费用。工具凭证及执行环境应与允许智能体访问的资源相匹配
+</Warning>
+
+## 传入方式与合并行为
+
+| `harness.tools` 的值 | 本次调用的行为 |
+| --- | --- |
+| 不传该字段 | 使用部署时已有的工具 |
+| `""` 或只有空白、逗号 | 不追加工具，保留已有工具 |
+| `"web_search,web_fetch"` | 在已有工具基础上追加这两个工具；同名工具不重复追加 |
+| `" web_search, web_fetch "` | 去掉每个名称两端的空白，再按名称加载 |
+| 未知名称或大小写错误 | 记录警告并跳过该名称，其余可加载工具继续生效 |
+| 数组、对象或 `null` | 不符合字符串字段要求，请求校验失败 |
+
+请求中的 `tools` **追加工具，不替换或清空部署时的工具**，且不会持久修改部署配置。缺少 Python 依赖或初始化所需凭证导致某个工具无法加载时，也会记录警告并跳过；已加载工具在实际执行时仍可能因凭证、权限或外部服务问题失败
+
+`tools` 只选择交给智能体使用的工具。查询词、图片任务、代码内容等具体工具参数由智能体在调用工具时提供，不写成 `harness.tools` 内的对象。选择工具也不保证智能体每次都会调用它
+
+以下请求在非共享 OAuth Harness 中，为本次调用增加两个无需云服务凭证的工具。服务仍需具备可用的推理模型配置
+
+```bash
+curl -X POST http://localhost:8000/harness/invoke \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "harness_name": "harness_app",
+    "prompt": "读取 https://example.com 的内容，并说明北京的示例天气",
+    "harness": {
+      "tools": "web_fetch,get_city_weather"
+    },
+    "run_agent_request": {
+      "user_id": "demo-user",
+      "session_id": "tools-demo"
+    }
+  }'
+```
+
+通过云网关调用时，按网关配置添加认证信息；工具所需的服务端凭证与 HTTP 调用方的网关凭证分别配置
+
+## 与 MCP 和技能的区别
+
+| 字段 | 接收的内容 | 用途 |
+| --- | --- | --- |
+| `tools` | 本页列出的内置工具名称，逗号分隔字符串 | 加载 VeADK 已提供的单个工具 |
+| `mcp_servers` | MCP 服务配置列表 | 连接远程 MCP 服务，发现并使用该服务提供的工具 |
+| `skills` | 技能引用，逗号分隔字符串 | 加载技能说明和资源，支持技能中心路径、技能空间或空间中的单个技能 |
+
+MCP 服务里的工具名称、技能名称和任意 Python 函数名不能直接写进 `tools`。技能可以使用 `clawhub/owner/skill`、`ss-...` 或 `ss-...:s-...` 形式的引用；这些引用属于 `skills`，不是内置工具名称
+
+VeADK 1.0.8 的名称清单不包含 `video_task_query`、`ppt_generate`、`bash_toolset` 或 `run_sandbox_agent`。某项能力能在其他 VeADK 接口中使用，不代表能通过当前 Harness 的 `tools` 字段按同名加载
+
+## 查询实际运行环境
+
+在 **Harness 使用的同一个 Python 环境或容器内**运行以下命令，查看安装版本和可按名称加载的工具。只在个人电脑的其他环境执行，不能证明部署中的工具清单
+
+```bash
+python - <<'PY'
+from importlib.metadata import version
+from veadk.tools import list_builtin_tools
+
+print("VeADK:", version("veadk-python"))
+for name in list_builtin_tools():
+    print(name)
+PY
+```
+
+`list_builtin_tools()` 列出当前版本支持的名称，不会验证云服务权限、凭证或沙箱可用性。若请求没有出现预期工具，先确认版本、名称与服务端加载警告，再检查该工具的运行条件

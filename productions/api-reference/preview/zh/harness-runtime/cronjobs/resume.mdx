@@ -1,0 +1,10 @@
+---
+title: "恢复定时任务"
+openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /harness/cronjobs/{job_id}/resume"
+---
+
+需要使用 AgentKit CLI 0.54.0 部署并[启用定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)的 Harness Runtime
+
+恢复已暂停任务时，从当前时间计算下次触发，不补跑暂停期间的全部历史触发。一次性计划已没有未来触发时间时返回 `422`
+
+如果任务因执行 `interrupted` 而暂停，应先核对已发生的外部操作，再决定恢复，避免重复产生外部影响

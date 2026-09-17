@@ -120,6 +120,8 @@ docker_build:
 | `runtime_bindings.memory_id` | 绑定的记忆库 ID。 | — |
 | `runtime_bindings.tool_id` | 绑定的工具 ID。 | — |
 | `runtime_bindings.mcp_toolset_id` | 绑定的 MCP 工具集 ID。 | — |
+| `runtime_gateway_mode` | 运行时网关模式 `Shared` 或 `Exclusive` | `Shared` |
+| `runtime_gateway_instance_id` | 专属网关实例 ID，Exclusive 模式必填 | — |
 | `runtime_network.mode` | 网络模式：`public`、`private` 或 `hybrid`。`private` 关闭公网并启用私有网络；`hybrid` 保留公网并启用私有网络。 | 平台默认 |
 | `runtime_network.vpc_id` | 私有网络使用的 VPC ID；`mode` 为 `private` 或 `hybrid` 时必填。 | — |
 | `runtime_network.subnet_ids` | 私有网络使用的子网 ID 列表；`mode` 为 `private` 或 `hybrid` 时至少提供一个，最多 5 个。 | `[]` |
@@ -270,7 +272,7 @@ frontend:
 # apmplus: true                # enable APMPlus monitoring
 
 # ── Advanced (optional) ──────────────────────────────────
-# role_name: ""                # IAM role; auto-created when omitted
+# role_name: ""                # IAM role; reuse a qualified role or create one when omitted
 
 # ── Infrastructure ───────────────────────────────────────
 # Where the image is built and stored. "Auto" = created & managed for you.
@@ -502,7 +504,7 @@ envs:
 
 | 字段 | 说明 |
 | --- | --- |
-| `role_name` | IAM 角色名称，省略时自动创建。 |
+| `role_name` | IAM 角色名称；创建时校验显式角色，未指定时优先复用符合默认权限要求的角色，否则创建新角色；更新保留原角色 |
 
 ## 基础设施
 
@@ -527,3 +529,28 @@ envs:
 ## 构建
 
 `dockerfile` 字段指定构建镜像所用的 Dockerfile 路径，默认为 `.agentkit/Dockerfile`；若项目根目录存在 `./Dockerfile` 则改用它。容器内进程必须监听 `0.0.0.0:8000`，运行时会探测该端口以判断实例是否就绪。
+
+## 专属运行时网关
+
+生命周期配置在 `launch_types.cloud` 或 `launch_types.hybrid` 中使用 `runtime_gateway_mode` 和 `runtime_gateway_instance_id`；发布配置在 `runtime` 中使用 `gateway_mode` 和 `gateway_instance_id`
+
+```yaml title=".agentkit/agentkit.yaml"
+runtime:
+  gateway_mode: Exclusive
+  gateway_instance_id: gateway-example
+```
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `runtime.gateway_mode` | 网关模式，`Shared` 或 `Exclusive` | `Shared` |
+| `runtime.gateway_instance_id` | 已有专属网关实例 ID | Exclusive 模式必填 |
+
+Exclusive 模式不能同时设置运行时网络配置，网络跟随网关实例；Shared 模式不能指定网关实例 ID。网关绑定在创建后不可更改，更新配置与原绑定冲突时会停止发布
+
+```bash
+agentkit config --runtime_gateway_mode Exclusive --runtime_gateway_instance_id gateway-example
+```
+
+## 前端登录会话
+
+启用前端 BFF 与 Identity 登录时，前端代理保留登录回调、会话 Cookie 与返回路径，使登录后请求能够继续使用原会话。保持前端配置中的 issuer、client ID 与已登记回调地址一致，无需为此修正增加新的配置字段

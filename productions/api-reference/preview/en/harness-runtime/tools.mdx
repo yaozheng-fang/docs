@@ -1,0 +1,117 @@
+---
+title: "Built-in tools"
+---
+
+`harness.tools` adds built-in tools for one invocation. Its value is a comma-separated string of tool names, such as `"web_search,web_fetch"`. It does not accept tool objects, function arguments, or Python import paths
+
+## Version and scope
+
+This page describes AgentKit CLI **0.54.0** with its default **VeADK 1.0.8** dependency. This version exposes **13 tools** by name, listed below. Every entry is an individual tool, not a toolset containing multiple tools
+
+Request-level `tools` is available on non-shared-OAuth Harness deployments through `POST /harness/invoke` and `POST /run_sse` requests carrying a `harness` configuration. Shared OAuth Harness deployments do not expose general request-level tool, model, or prompt overrides. These fields cannot add temporary tools to those deployments. The deployment's `TOOLS` configuration defines its base tools. If it is unset or empty, none of the tools on this page are loaded by name
+
+Supported names depend on the VeADK version installed on the server. For custom images or manually upgraded dependencies, [check the actual runtime](#check-the-actual-runtime) before using a name
+
+## Supported tools
+
+A registered name does not mean its cloud service, credentials, or sandbox is ready. Configure the environment variables below on the **Harness server**, not inside the HTTP request's `tools` field
+
+| Name | Purpose | Requirements |
+| --- | --- | --- |
+| `web_search` | Search the web and return summaries of matching pages | Volcengine web search with valid AK/SK or execution-role credentials; see the BytePlus conditions below |
+| `parallel_web_search` | Run multiple web searches concurrently and return results by query | Volcengine web search with the same credentials as `web_search`; this version does not switch to the BytePlus search service |
+| `web_fetch` | Fetch public pages as Markdown or plain text; also extract PDF text | No additional API key; the target public URL must be reachable, and PDF extraction requires `pypdf`; does not execute JavaScript or access private network addresses |
+| `vesearch` | Search the web, social media, and news and return a summary | An enabled search agent, `TOOL_VESEARCH_ENDPOINT`, and valid service credentials; set `TOOL_VESEARCH_API_KEY` explicitly if needed |
+| `link_reader` | Read titles and content from web pages, PDFs, or Douyin videos | Volcengine Ark LinkReader access and valid Ark credentials, optionally supplied as `MODEL_AGENT_API_KEY`; at most 3 URLs per call |
+| `run_code` | Execute Python or Bash in an AgentKit sandbox and return the result | An available code sandbox, `AGENTKIT_TOOL_ID_SCRIPT`, and sandbox invocation credentials; falls back to `AGENTKIT_TOOL_ID` when the specific ID is unset |
+| `coding` | Delegate a coding task to a preconfigured OpenCode sandbox | An AgentKit sandbox configured with OpenCode, `AGENTKIT_TOOL_ID_OPENCODE`, and sandbox invocation credentials; falls back to `AGENTKIT_TOOL_ID` when the specific ID is unset |
+| `image_generate` | Generate one or more images from prompts and reference images | Access to an available image-generation model; configure `MODEL_IMAGE_API_KEY`, `MODEL_IMAGE_NAME`, and `MODEL_IMAGE_API_BASE` as needed |
+| `image_edit` | Edit source images from prompts, including batch tasks | Access to an available image-editing model; configure `MODEL_EDIT_API_KEY`, `MODEL_EDIT_NAME`, and `MODEL_EDIT_API_BASE` as needed |
+| `video_generate` | Generate videos from text, first/last frames, or multimodal references, including batch tasks | Access to an available video-generation model; configure `MODEL_VIDEO_API_KEY`, `MODEL_VIDEO_NAME`, and `MODEL_VIDEO_API_BASE` as needed |
+| `text_to_speech` | Synthesize PCM audio from text and return its server-side path | An enabled speech synthesis service, `TOOL_VESPEECH_APP_ID`, and valid speech credentials; set `TOOL_VESPEECH_API_KEY` explicitly if needed; see voice and output settings below |
+| `get_city_weather` | Return fixed example weather for predefined cities | No service credentials; use English city names; demonstration data, not live weather |
+| `get_location_weather` | Return randomly generated example weather | No service credentials; demonstration data, not live weather |
+
+To read PDFs, include `pypdf` in the Harness deployment dependencies and rebuild the image. Ordinary web-page extraction does not require this PDF parser
+
+### Search and sandbox credentials
+
+Volcengine search prefers `TOOL_WEB_SEARCH_ACCESS_KEY` and `TOOL_WEB_SEARCH_SECRET_KEY`. It can also use `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`, or the runtime's execution-role credentials
+
+For BytePlus search, set `CLOUD_PROVIDER=byteplus` and `BYTEPLUS_WEB_SEARCH_API_KEY`. In VeADK 1.0.8, `web_search` still requires resolvable AK/SK or execution-role credentials. Set BytePlus AK/SK through `BYTEPLUS_ACCESS_KEY` and `BYTEPLUS_SECRET_KEY`. Do not assume that `parallel_web_search` also supports BytePlus search
+
+`run_code` and `coding` require permission to invoke the target sandbox. Use the runtime's execution role or the appropriate cloud provider's AK/SK. Configure the sandbox region with `AGENTKIT_TOOL_REGION`. With `CLOUD_PROVIDER=byteplus`, the default region is `ap-southeast-1`; the Volcengine default is `cn-beijing`
+
+### Images, video, and speech
+
+When no dedicated API key is configured, image generation, image editing, and video generation reuse `MODEL_AGENT_API_KEY` or VeADK's default model credentials. A valid tool name does not grant access to its generation model. The API URL, model name, and credentials must identify a compatible service. Uploading image results to TOS additionally requires `DATABASE_TOS_BUCKET` and valid TOS access credentials
+
+Set the speech voice with `TOOL_VESPEECH_SPEAKER`, which defaults to `zh_female_vv_uranus_bigtts`. Set the audio output directory with `TOOL_VESPEECH_AUDIO_OUTPUT_PATH`; by default, it uses the server's temporary directory. The returned file path is not a public download URL
+
+<Warning>
+Search, sandbox execution, and media generation can incur cloud resource charges. Configure tool credentials and execution environments for the resources the agent is allowed to access
+</Warning>
+
+## Input and merge behavior
+
+| `harness.tools` value | Behavior for this invocation |
+| --- | --- |
+| Field omitted | Keep the deployment's existing tools |
+| `""`, or only whitespace and commas | Add nothing and keep existing tools |
+| `"web_search,web_fetch"` | Add these tools to the existing tools; do not add another tool with the same name |
+| `" web_search, web_fetch "` | Trim whitespace around each name before loading |
+| Unknown name or incorrect capitalization | Log a warning and skip that name; other loadable tools remain available |
+| An array, object, or `null` | Fail request validation because the field requires a string |
+
+Request-level `tools` **adds tools; it does not replace or clear deployment tools**, and it does not persistently change the deployment configuration. A missing Python dependency or credential required during initialization also causes that tool to be skipped with a warning. Tools that load successfully can still fail during execution because of credentials, permissions, or external services
+
+`tools` selects the tools available to the agent. The agent supplies search queries, image tasks, code, and other tool arguments when calling a tool; these are not objects inside `harness.tools`. Making a tool available does not guarantee that the agent calls it on every request
+
+The following request adds two tools that do not require cloud service credentials to one invocation of a non-shared-OAuth Harness. The service still needs a working reasoning-model configuration
+
+```bash
+curl -X POST http://localhost:8000/harness/invoke \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "harness_name": "harness_app",
+    "prompt": "Read https://example.com and report the example weather for Beijing",
+    "harness": {
+      "tools": "web_fetch,get_city_weather"
+    },
+    "run_agent_request": {
+      "user_id": "demo-user",
+      "session_id": "tools-demo"
+    }
+  }'
+```
+
+When calling through a cloud gateway, add authentication as required by that gateway. Server-side tool credentials and the HTTP caller's gateway credentials are configured separately
+
+## MCP and skills
+
+| Field | Input | Purpose |
+| --- | --- | --- |
+| `tools` | Comma-separated string of built-in tool names listed on this page | Load individual tools provided by VeADK |
+| `mcp_servers` | List of MCP server configurations | Connect to remote MCP servers and discover and use their tools |
+| `skills` | Comma-separated string of skill references | Load skill instructions and resources from a skill-hub path, a skill space, or one skill in a space |
+
+Names of MCP tools, skills, or arbitrary Python functions cannot be used directly in `tools`. Skill references such as `clawhub/owner/skill`, `ss-...`, and `ss-...:s-...` belong in `skills`, not the built-in tool list
+
+The VeADK 1.0.8 name list does not include `video_task_query`, `ppt_generate`, `bash_toolset`, or `run_sandbox_agent`. Availability through another VeADK interface does not make a capability loadable by the same name through this Harness field
+
+## Check the actual runtime
+
+Run the following command **inside the Python environment or container used by Harness** to inspect its installed version and supported names. Running it in a different environment on your computer does not verify the deployed tool list
+
+```bash
+python - <<'PY'
+from importlib.metadata import version
+from veadk.tools import list_builtin_tools
+
+print("VeADK:", version("veadk-python"))
+for name in list_builtin_tools():
+    print(name)
+PY
+```
+
+`list_builtin_tools()` lists names supported by the installed version. It does not validate cloud permissions, credentials, or sandbox availability. If an expected tool is missing, check the version, name, and server-side loading warnings, then verify the tool's runtime requirements

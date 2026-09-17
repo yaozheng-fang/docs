@@ -2,10 +2,15 @@
 title: "调试"
 ---
 
-调试相关路由带有 `Debug` 标签，主要供开发调试与可视化使用。
+查看事件、会话跟踪和智能体图
 
-| 方法 | 路径 | 用途 |
+<Note>
+这些接口使用 `/dev/...` 路径，需要启动开发服务。普通 `adk api_server` 不提供这些接口；启动方式见 [Agent API Server 概览](/productions/api-reference/preview/zh/agent-api-server/overview)
+</Note>
+
+| 方法 | 路径 | 接口 |
 | --- | --- | --- |
-| GET | `/debug/trace/{event_id}` | 按事件 ID 获取追踪信息，未找到返回 404。 |
-| GET | `/debug/trace/session/{session_id}` | 获取指定会话的追踪 span 列表。 |
-| GET | `/dev/{app_name}/graph` | 以 DOT 格式返回智能体图，可选 `dark_mode` 查询参数；返回 `GetEventGraphResult`（含 `dot_src`）。 |
+| GET | `/dev/apps/{app_name}/debug/trace/{event_id}` | [获取事件追踪](/productions/api-reference/preview/zh/agent-api-server/get-event-trace) |
+| GET | `/dev/apps/{app_name}/users/{user_id}/sessions/{session_id}/events/{event_id}/graph` | [获取事件关联图](/productions/api-reference/preview/zh/agent-api-server/get-event-graph) |
+| GET | `/dev/apps/{app_name}/debug/trace/session/{session_id}` | [获取会话追踪](/productions/api-reference/preview/zh/agent-api-server/get-session-trace) |
+| GET | `/dev/apps/{app_name}/graph` | [获取智能体图](/productions/api-reference/preview/zh/agent-api-server/get-agent-graph) |

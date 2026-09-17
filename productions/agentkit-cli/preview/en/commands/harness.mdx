@@ -14,6 +14,7 @@ Create a harness directory (`harness.yaml` + `.env.example`) for a Harness.
 | `-r, --region <region>` | Deployment region. | Selected provider's default region |
 | `-y, --yes` | Skip prompts and use defaults | `false` |
 | `-f, --force` | Scaffold into a non-empty directory / overwrite `harness.yaml` | `false` |
+| `--mcp-server <json>` | Remote MCP server JSON; repeatable, or pass `[]` alone to clear the list | No override |
 
 ```bash
 agentkit harness init my-harness
@@ -95,6 +96,7 @@ capacity:
 
 # Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
 tools: []
+mcp_servers: []
 
 # Skill Hub slugs, ss-... spaces, or ss-...:s-... refs.
 #   env: SKILLS  flag: --skills (comma-separated)
@@ -335,6 +337,7 @@ Set fields in `harness.yaml` (partial update; only the flags you pass are change
 | `--registry-top-k <n>` | Maximum AgentCards to retrieve; must be a positive integer. | None |
 | `--registry-endpoint <url>` | AgentKit A2A registry endpoint. | Current cloud environment's AgentKit endpoint |
 | `--registry-region <region>` | AgentKit A2A registry region. | `cloud.region` |
+| `--mcp-server <json>` | Remote MCP server JSON; repeatable, or pass `[]` alone to clear the list | No override |
 
 ```bash
 agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
@@ -371,6 +374,9 @@ Build the harness image and create or update the runtime from `harness.yaml`.
 | `-p, --project <name>` | AgentKit project | `default` |
 | `--discovery-url <url>` | OIDC discovery URL (enables OAuth2/JWT, overrides `harness.yaml`) | None |
 | `--allowed-id <ids>` | Comma-separated allowed client IDs (overrides `harness.yaml`) | None |
+| `--cronjob` | Enable persistent scheduled tasks | `false` |
+| `--cronjob-tos-bucket <bucket>` | Existing TOS bucket for task definitions, state, and results | `cronjob.tos_bucket` |
+| `--cronjob-tos-region <region>` | TOS bucket region | Runtime region |
 
 ```bash
 agentkit harness deploy --project default --region cn-beijing
@@ -396,7 +402,7 @@ Invoke a deployed Harness and optionally override its model, system prompt, tool
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<name>` | Harness or Runtime name (required). | — |
-| `<message>` | User message to send (required). | — |
+| `[message]` | User message; when omitted, read `message` or `prompt` from the invocation config | — |
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 | `--rev <n>` | Runtime version to invoke. | Current version |
 | `--user-id <id>` | `user_id` for this run. | `agentkit_user` |
@@ -418,6 +424,10 @@ Invoke a deployed Harness and optionally override its model, system prompt, tool
 | `--registry-endpoint <url>` | A2A registry endpoint. | Config value |
 | `--registry-region <region>` | A2A registry region. | Runtime region |
 | `--protocol <protocol>` | Transport protocol: `invoke` or `run_sse`. | `run_sse` |
+| `--mcp-server <json>` | Remote MCP server JSON; repeatable, or pass `[]` alone to clear the list | No override |
+| `-c, --config <path>` | Read YAML or JSON configuration for this invocation | — |
+| `--harness-merge` | Ask the target runtime to merge overrides with its default Harness configuration | Omitted; server behavior applies |
+| `--harness-enhance <json>` | Send a one-time `harness_enhance` JSON object; requires support in the target runtime | — |
 
 ```bash
 agentkit harness invoke my-harness "Hello, introduce yourself"
@@ -464,3 +474,76 @@ agentkit harness sidecar resolve \
 ```
 
 In the output, `effective_components` is the final enabled component list, `activation_targets` describes whether runtime components, the model proxy, and the MCP gateway are enabled, `warnings` lists valid selections that need attention, and `plan_hash` is used after release to verify the plan loaded by the runtime. `mcp_resilience` automatically includes SQL read-only protection; `sql_readonly` cannot be selected directly with `--component`. When you use the `ops` profile but disable `mcp_resilience`, the plan warns that SQL read-only protection is disabled.
+
+## Remote MCP servers
+
+Configure `mcp_servers` in `harness.yaml` to use remote MCP services alongside built-in tools. `harness init` and `harness set` save configuration; `harness dev` and `harness deploy` load it, while `harness invoke` can override it for a single request
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `mcp_servers` | Server list; an empty list disables remote MCP | `[]` |
+| `protocol` | `streamable-http` or `sse` | `streamable-http` |
+| `endpoint` | Required HTTP(S) URL without user information or a fragment | — |
+| `api_key` | Optional credential sent as `Authorization: Bearer`; supports environment placeholders | — |
+
+```yaml title="harness.yaml"
+mcp_servers:
+  - protocol: streamable-http
+    endpoint: https://mcp.example.com/mcp
+    api_key: ${MCP_API_KEY}
+```
+
+```bash
+agentkit harness set --mcp-server '{"endpoint":"https://mcp.example.com/mcp","api_key":"${MCP_API_KEY}"}'
+agentkit harness invoke my-harness "List available reports" --mcp-server '{"endpoint":"https://mcp.example.com/mcp","api_key":"${MCP_API_KEY}"}'
+agentkit harness invoke my-harness "Answer without remote tools" --mcp-server '[]'
+```
+
+Set `MCP_API_KEY` in the project `.env` and exclude that file from version control. `init` and `set` preserve placeholders; deployment, local execution, and invocation resolve them. Command-line MCP servers replace the entire list from the invocation config. An empty list cannot be combined with another `--mcp-server`. Omitted MCP settings inherit the deployment; an explicit empty list removes remote MCP servers while keeping built-in tools
+
+Shared OAuth Harnesses accept only `mcp_servers` as Harness overrides and reject other override fields
+
+## Invocation configuration file
+
+Use `--config` for reusable invocation settings. Command-line values take precedence over the file. Fields from the file are sent for this request, and omitted agent settings follow the target runtime defaults. The file does not modify `harness.yaml` or redeploy the runtime
+
+```yaml title="invoke.yaml"
+message: Summarize the latest operational report
+protocol: run_sse
+user_id: report-reader
+max_llm_calls: 8
+harness:
+  system_prompt: Produce a concise report with sources
+  tools: [web_search]
+  mcp_servers:
+    - endpoint: https://mcp.example.com/mcp
+      api_key: ${MCP_API_KEY}
+```
+
+```bash
+agentkit harness invoke my-harness --config invoke.yaml
+agentkit harness invoke my-harness "Focus on unresolved issues" --config invoke.yaml --max-llm-calls 4
+```
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `message` / `prompt` | Message string | Required in the file or positional argument |
+| `region`, `rev` | Target region and runtime version | Resolved region; current version |
+| `user_id`, `session_id` | User and session IDs | `agentkit_user`; random session |
+| `token`, `tip_token_key`, `apikey` / `api_key` | Explicit invocation credentials | — |
+| `raw` | Output raw responses | `false` |
+| `protocol` | `invoke` or `run_sse` | `run_sse` |
+| `max_llm_calls` | Positive maximum model call count for the run | Target runtime default |
+| `harness` / `overrides` | Per-request agent override object | — |
+| `harness.model_name`, `harness.system_prompt`, `harness.runtime` | Model, instruction, and runtime backend | No override |
+| `harness.tools`, `harness.skills` | Comma-separated strings or lists of strings | No override |
+| `harness.mcp_servers` | Remote MCP server list for the request | No override |
+| `registry`, `registry_space_id`, `registry_space_name`, `registry_top_k`, `registry_endpoint`, `registry_region` | A2A registry and retrieval settings; `registry_top_k` is a positive integer | No override |
+| `harness_merge` | Boolean sent to target runtimes that support merging defaults | Omitted |
+| `harness_enhance` | Enhancement object; `components` accepts a string list or comma-separated string. Fields require target runtime support | Omitted |
+
+Model, tools, skills, system prompt, and runtime settings may also appear at the top level, where they override nested fields. `model.name` can supply the model name. Environment expansion is supported for MCP credentials; do not assume arbitrary invocation fields expand placeholders. Prefer login sessions or supported default credential sources
+
+## Scheduled tasks
+
+With `cronjob` enabled, use `harness cronjob` to create recurring or one-time invocations, inspect results, and pause, resume, or cancel work. See [Harness scheduled tasks](/productions/agentkit-cli/preview/en/commands/harness-cronjob) for configuration, options, and limitations

@@ -43,3 +43,7 @@ agentkit deploy \
 <Warning>
 Harness deploy creates or updates a cloud runtime and may rewrite `harness.json` in the current directory with endpoint, runtime id, and auth information. Confirm the working directory, Harness name, and target project before running it.
 </Warning>
+
+## Runtime roles
+
+For runtime creation, an explicit IAM role must exist. Otherwise the CLI reuses a role with `AgentKitDefaultRuntimeAccess` or creates a new one. Updates retain the existing role without modifying its policies automatically; scheduled tasks configure their required TOS prefix permissions separately

@@ -1,0 +1,10 @@
+---
+title: "Resume a scheduled task"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /harness/cronjobs/{job_id}/resume"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+Resuming a paused task calculates the next occurrence from the current time and does not replay every occurrence missed during the pause. A one-time schedule with no future occurrence returns `422` when resumed from a paused state
+
+If a task was paused after an `interrupted` execution, inspect completed external actions before resuming to avoid duplicate effects

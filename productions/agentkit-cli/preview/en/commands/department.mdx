@@ -1,0 +1,155 @@
+---
+title: "Manage departments"
+---
+
+Manage department hierarchies and user membership in an existing user pool
+
+<Note>
+Create the user pool first and sign in with permission to manage it. Every operation requires `--user-pool-id`. Use global `--provider` to select Volcengine or BytePlus and the matching account and region
+</Note>
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `department create` | Create a department in a user pool |
+| `department update` | Update a department's fields in a user pool |
+| `department list` | List child departments in a user pool |
+| `department add-users` | Add users to a department |
+| `department remove-users` | Remove users from a department |
+| `department change-users` | Move users from one department to another |
+| `department delete` | Delete a department from a user pool |
+
+## department create
+
+Create a department in a user pool
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--name <name>` | department name | Required |
+| `--parent-department-id <uid>` | parent department UID; use "root" for top-level departments | Required |
+| `--description <text>` | department description | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON result instead of a human-readable summary | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit department create --user-pool-id pool-example --name Engineering --parent-department-id root
+```
+
+## department update
+
+Update a department's fields in a user pool
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--department-id <uid>` | department UID to update | Required |
+| `--parent-department-id <uid>` | new parent department UID | — |
+| `--name <name>` | new department name | — |
+| `--description <text>` | new description; pass "" to clear | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output a JSON summary instead of human-readable lines | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit department update --user-pool-id pool-example --department-id dept-example --description "Product engineering"
+```
+
+## department list
+
+List child departments in a user pool
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--parent-department-id <uid>` | parent department UID; use "root" for top-level departments | Required |
+| `--department-id <uid>` | filter by department UID | — |
+| `--name <name>` | filter by department name | — |
+| `--max-results <count>` | maximum departments to return in this page (0-100; default: server default) | Server default |
+| `--next-token <token>` | pagination token from the previous response | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON results instead of a table | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit department list --user-pool-id pool-example --parent-department-id root --max-results 20 --json
+```
+
+Pass the returned `nextToken` to `--next-token` to read subsequent pages; the CLI does not fetch every page automatically
+
+## department add-users
+
+Add users to a department
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--department-id <uid>` | department UID | Required |
+| `--user-id <uid>` | User ID; repeat for 1–100 users | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON results instead of a table | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit department add-users --user-pool-id pool-example --department-id dept-example --user-id user-alice --user-id user-bob
+```
+
+## department remove-users
+
+Remove users from a department
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--department-id <uid>` | department UID | Required |
+| `--user-id <uid>` | User ID; repeat for 1–100 users | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON results instead of a table | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit department remove-users --user-pool-id pool-example --department-id dept-example --user-id user-alice
+```
+
+## department change-users
+
+Move users from one department to another
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--origin-department-id <uid>` | current department UID | Required |
+| `--target-department-id <uid>` | target department UID | Required |
+| `--user-id <uid>` | User ID; repeat for 1–100 users | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON results instead of a table | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit department change-users --user-pool-id pool-example --origin-department-id dept-source --target-department-id dept-target --user-id user-alice
+```
+
+## department delete
+
+Delete a department from a user pool
+
+<Warning>
+Deletion is irreversible. Check the user pool and resource IDs. Interactive terminals prompt for confirmation; scripts must pass `--yes`
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--department-id <uid>` | department UID to delete | Required |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `-y, --yes` | skip confirmation | `false` |
+| `--json` | output a JSON summary instead of a human-readable line | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit department delete --user-pool-id pool-example --department-id dept-example --yes
+```
+
+Membership changes return a result for each user. Partial failures produce a nonzero exit status; successful changes are not rolled back

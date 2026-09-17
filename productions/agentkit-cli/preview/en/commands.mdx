@@ -15,6 +15,7 @@ Place global options before the subcommand. They apply to the current command.
 | --- | --- | --- |
 | `-v, --version` | - | Print the current CLI version and exit. |
 | `--provider <provider>` | Not set | Override the cloud provider for the current command. Valid values are `volcengine` and `byteplus`. |
+| `--no-auto-login` | `false` | Fail on missing cloud credentials without opening browser login |
 
 The provider is resolved in this order: `--provider`, `AGENTKIT_CLOUD_PROVIDER`, `CLOUD_PROVIDER`, project configuration, user-level defaults, then `volcengine`.
 
@@ -37,7 +38,6 @@ agentkit --provider byteplus runtime list
   <Card title="memory" href="/productions/agentkit-cli/preview/en/commands/memory">Manage memory collections</Card>
   <Card title="model-gateway" href="/productions/agentkit-cli/preview/en/commands/model-gateway">Manage Model Gateway, model providers, and consumers</Card>
   <Card title="mcp service" href="/productions/agentkit-cli/preview/en/commands/mcp">Manage MCP services</Card>
-  <Card title="model-gateway" href="/productions/agentkit-cli/preview/en/commands/model-gateway">Manage Model Gateway</Card>
   <Card title="sandbox" href="/productions/agentkit-cli/preview/en/commands/sandbox">Create sandboxes, run commands, manage sessions</Card>
   <Card title="env" href="/productions/agentkit-cli/preview/en/commands/env">Manage self-host sandbox environments</Card>
   <Card title="skill / skills" href="/productions/agentkit-cli/preview/en/commands/skill">Manage platform and local skills</Card>
@@ -50,11 +50,14 @@ agentkit --provider byteplus runtime list
   <Card title="eval target" href="/productions/agentkit-cli/preview/en/commands/eval/target">Manage TEA evaluation targets</Card>
   <Card title="eval run" href="/productions/agentkit-cli/preview/en/commands/eval/run">Submit evaluation experiments</Card>
   <Card title="eval experiment" href="/productions/agentkit-cli/preview/en/commands/eval/experiment">View experiments and results</Card>
-  <Card title="eval target" href="/productions/agentkit-cli/preview/en/commands/eval/target">Inspect TEA evaluation targets</Card>
   <Card title="migrate" href="/productions/agentkit-cli/preview/en/commands/migrate">Migrate an existing agent application</Card>
   <Card title="auth" href="/productions/agentkit-cli/preview/en/commands/auth">SSO authentication, profiles, and organization setup</Card>
   <Card title="onboard" href="/productions/agentkit-cli/preview/en/commands/onboard">Install bundled skills</Card>
   <Card title="tree" href="/productions/agentkit-cli/preview/en/commands/tree">View the complete command tree</Card>
   <Card title="upgrade" href="/productions/agentkit-cli/preview/en/commands/upgrade">Check for and install CLI updates</Card>
   <Card title="docs" href="/productions/agentkit-cli/preview/en/commands/docs">View the docs in your browser</Card>
+  <Card title="user" href="/productions/agentkit-cli/preview/en/commands/user">Manage user-pool users</Card>
+  <Card title="department" href="/productions/agentkit-cli/preview/en/commands/department">Manage departments and membership</Card>
+  <Card title="group" href="/productions/agentkit-cli/preview/en/commands/group">Manage user groups</Card>
+  <Card title="harness-cronjob" href="/productions/agentkit-cli/preview/en/commands/harness-cronjob">Manage scheduled Harness tasks</Card>
 </CardGroup>

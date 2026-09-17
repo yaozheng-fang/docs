@@ -13,6 +13,8 @@ List all runtimes.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `-p, --project <name>` | Project name. | default |
 | `--json` | Output raw JSON. | `false` |
+| `--gateway-mode <mode>` | Filter by `Shared` or `Exclusive` | — |
+| `--gateway-instance-id <id>` | Filter by gateway instance ID | — |
 
 ```bash
 agentkit runtime list --project demo
@@ -140,3 +142,13 @@ Update a runtime's configuration. This does not release the new version unless `
 ```bash
 agentkit runtime update my-agent --cpu-milli 1000 --memory-mb 2048 --auto-release
 ```
+
+## Gateway details and update restrictions
+
+`runtime list` displays gateway information, and `runtime show` includes gateway mode, instance ID, and name. Filter runtimes by their gateway
+
+```bash
+agentkit runtime list --gateway-mode Exclusive --gateway-instance-id gateway-example --json
+```
+
+Gateway mode, instance, and network configuration are creation-time settings. `runtime update --json` rejects changes to these fields. Create a runtime under a new name and migrate callers when a different gateway is required

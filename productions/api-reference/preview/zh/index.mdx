@@ -1,28 +1,22 @@
 ---
-title: "概述"
+title: "API 概览"
 ---
 
-Google ADK 内置了一个基于 FastAPI 的 API server，用于承载已加载的智能体，并对外提供会话管理、智能体运行、制品（artifact）读写、记忆写入与评测等能力。本参考文档按功能分组说明各路由的方法、路径、请求参数与响应结构，供在 ADK 之上构建客户端或集成服务时参考。
+HTTP API 参考按服务分为 Agent API Server 和 Harness Runtime。先选择实际部署的服务，再查看对应接口的参数、响应和调用示例
 
-## 基础路径
-
-所有路由都以 `/apps/{app_name}` 作为智能体应用的命名空间，会话相关路由进一步以 `/users/{user_id}/sessions/{session_id}` 定位到具体用户与会话。
-
-## 通用路径参数
-
-| 参数 | 类型 | 说明 |
+| 服务 | 适用场景 | 参考 |
 | --- | --- | --- |
-| `app_name` | string | 智能体应用名称，作为大多数路由的命名空间。 |
-| `user_id` | string | 用户 ID，用于定位某用户在某应用下的会话与记忆。 |
-| `session_id` | string | 会话 ID，用于定位具体会话及其制品。 |
+| Agent API Server | 调用已加载的智能体，管理应用、会话、制品和记忆；开发服务另提供评测与调试接口 | [Agent API Server 接口](/productions/api-reference/preview/zh/agent-api-server/overview) |
+| Harness Runtime | 调用 Harness，在请求中配置模型、工具和技能等执行选项，管理会话，以及管理已启用的定时任务 | [Harness Runtime 接口](/productions/api-reference/preview/zh/harness-runtime/overview) |
+
+两类服务可能使用相同路径，但请求字段、默认行为和认证条件需以对应服务的接口说明为准。每个接口页分别展示路径、查询、请求头和请求体参数，以及响应结构与示例
+
+## 调用接口
+
+示例中的本地地址用于开发服务；调用已部署服务时，使用实际服务地址及其要求的认证信息。接口页提供 cURL、Python 和 JavaScript 示例，可按需要填写参数进行在线调试
+
+流式接口返回 `text/event-stream`。使用页面提供的流式调用示例读取持续返回的事件；cURL 示例中的 `-N` 用于关闭输出缓冲
 
 <Note>
-请求体字段名遵循源码定义，均为 `snake_case`。制品版本（`ArtifactVersion`）等部分响应模型在序列化时会转换为 `camelCase`，字段含义与此处描述一致。
+创建、更新、删除、运行智能体和评测等请求会操作当前选定的服务。发送请求前核对服务地址和资源标识，运行智能体及云端资源可能产生费用
 </Note>
-
-## 服务信息
-
-| 方法 | 路径 | 用途 |
-| --- | --- | --- |
-| GET | `/health` | 健康检查，返回 `{"status": "ok"}`。 |
-| GET | `/version` | 返回 ADK 版本、语言与运行时语言版本。 |

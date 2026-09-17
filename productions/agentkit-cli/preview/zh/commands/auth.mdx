@@ -2,11 +2,11 @@
 title: "鉴权与登录"
 ---
 
-`auth` 命令组用于 SSO 鉴权：通过浏览器登录并存储短时 STS 凭据或仅保存用户 OIDC 会话、清除会话、查看当前身份、管理登录配置，以及为组织准备 CLI SSO 登录资源。`login`、`logout`、`whoami` 同时提供为顶层命令（如 `agentkit login`）。
+`auth` 命令组用于控制台登录与 SSO 鉴权：通过浏览器登录并存储短时 STS 凭据或仅保存用户 OIDC 会话、清除会话、查看当前身份、管理登录配置，以及为组织准备 CLI SSO 登录资源。`login`、`logout`、`whoami` 同时提供为顶层命令（如 `agentkit login`）。
 
 ## auth login
 
-通过浏览器 SSO 完成鉴权。默认模式会使用 OIDC 登录结果换取短时 STS 凭据；`--identity-only` 只保存用户 OIDC 会话，可供 `harness invoke` 在匹配的 `custom_jwt` Runtime 上自动转发用户 `id_token`，但不创建 AgentKit 管理凭据。通用 `invoke run` 调用 `custom_jwt` Runtime 时仍需通过 `--headers` 显式传入 `Authorization`。
+通过浏览器完成当前云厂商的控制台登录，或使用指定 SSO 地址登录。SSO 模式使用 OIDC 登录结果换取短时 STS 凭据；`--identity-only` 只保存用户 OIDC 会话，可供 `harness invoke` 在匹配的 `custom_jwt` Runtime 上自动转发用户 `id_token`，但不创建 AgentKit 管理凭据。通用 `invoke run` 调用 `custom_jwt` Runtime 时仍需通过 `--headers` 显式传入 `Authorization`。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -14,7 +14,9 @@ title: "鉴权与登录"
 | `-p, --profile <name>` | 使用预置的命名配置，替代直接传入地址 | 无 |
 | `--duration <seconds>` | 请求的 STS 凭据有效期（秒） | `3600` |
 | `--identity-only` | 只保存用户 OIDC 会话，不执行 STS 角色交换。 | `false` |
-| `--no-open` | 不打开浏览器，仅打印登录 URL（用于无头环境/SSH） | `false` |
+| `--no-open` | 仅打印登录 URL，不打开浏览器；远程控制台登录使用 `--remote` | `false` |
+| `--console` | 强制使用当前云厂商的控制台登录，即使已有 SSO profile | `false` |
+| `--remote` | 在另一设备完成控制台授权，将授权码粘贴回当前终端 | `false` |
 
 ```bash
 agentkit auth login
@@ -250,3 +252,18 @@ agentkit auth admin publish \
 ```
 
 仅发布模式要求 `--issuer`、`--client-id`、`--role-trn` 和 `--provider-trn` 四个参数同时提供。`--issuer` 必须是 HTTPS URL，不能包含用户名、密码、查询参数或 fragment；`--role-trn` 与 `--provider-trn` 必须属于当前鉴权账号。`--bucket` 必须是 3 到 63 个小写字母、数字或连字符组成的 TOS bucket 名称，并以字母或数字开头和结尾。
+
+## 控制台登录与凭据优先级
+
+不传地址时优先使用当前云厂商已有的登录配置；无配置时进入控制台登录。`--console` 强制切换到控制台，`--remote` 用于远程服务器或无法接收本地浏览器回调的终端。控制台模式不能与 SSO 地址或 `--identity-only` 同时使用
+
+```bash
+agentkit login --console
+agentkit --provider byteplus login --console
+agentkit login --console --remote
+agentkit whoami
+```
+
+火山引擎与 BytePlus 的控制台会话分别保存，`whoami` 和 `logout` 按当前云厂商选择会话。已配置的有效环境凭据仍优先于登录缓存，不会被登录覆盖
+
+需要云凭据的命令在交互终端缺少凭据时可启动浏览器登录。全局 `--no-auto-login` 禁止自动登录；CI、`--json`、`--raw`、`--yes` 或非交互终端也不会弹出自动登录，需事先提供凭据。纯本地操作和 `--dry-run` 不触发此流程

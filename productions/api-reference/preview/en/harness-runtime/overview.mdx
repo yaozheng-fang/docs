@@ -1,0 +1,98 @@
+---
+title: "Harness Runtime overview"
+---
+
+This section covers Harness Runtime deployed with AgentKit CLI `agentkit harness deploy`, including invocation, sessions, artifacts, memory, and optional scheduled tasks
+
+The deployment baseline is **AgentKit CLI 0.54.0**. Default KeyAuth deployments pin **VeADK 1.0.8** and **AgentKit SDK 0.8.0**; inherited endpoints were verified with **Google ADK 2.2.0**. The CLI does not pin an exact ADK version; query `GET /version` for the installed version. Shared OAuth deployments use SDK 0.8.2 and have the authentication and override restrictions described below
+
+## Choose an invocation endpoint
+
+| Endpoint | Response | Use case |
+| --- | --- | --- |
+| `POST /harness/invoke` | JSON after completion | KeyAuth deployments with per-request model, tool, skill, instruction, and MCP overrides |
+| `POST /run_sse` | SSE events | ADK message payloads and MCP overrides; general KeyAuth overrides return one event after completion |
+| `POST /run` | JSON event array after completion | Standard ADK invocation with MCP overrides |
+| `POST /invoke` | SSE events | Compatibility invocation with text in `prompt` and user/session headers |
+
+Sessions use the application name `harness_agent`. The deployed Harness name identifies the Runtime and is not a replacement for the application name in session paths. Query `GET /list-apps` to confirm the loaded application
+
+`/get_agent_config` is not an endpoint of the CLI deployment. `harness_merge`, `harness_enhance`, `harness.mcp`, and `selected_skills` are also not supported request fields for this deployment
+
+## Connect to the service
+
+Use the access URL returned by deployment for a cloud Runtime. A local server typically uses `http://localhost:8000`
+
+The following example targets a KeyAuth deployment with a Runtime API key. Set `HARNESS_URL` to the Runtime URL and `HARNESS_API_KEY` to its access credential. This credential is separate from model API keys and MCP service credentials
+
+```bash
+curl "$HARNESS_URL/list-apps" \
+  -H "Authorization: Bearer $HARNESS_API_KEY"
+
+curl -X POST "$HARNESS_URL/apps/harness_agent/users/user-001/sessions" \
+  -H "Authorization: Bearer $HARNESS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"session-001","state":{}}'
+
+curl -N "$HARNESS_URL/run_sse" \
+  -H "Authorization: Bearer $HARNESS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"app_name":"harness_agent","user_id":"user-001","session_id":"session-001","new_message":{"role":"user","parts":[{"text":"Hello"}]},"streaming":true}'
+```
+
+Omit Authorization for a local server without gateway authentication. Shared OAuth deployments require the configured user-pool JWT and a user ID matching the verified identity. `/run` and `/run_sse` without general overrides require an existing session; `/invoke` checks and creates the session
+
+## Request overrides
+
+Only fields explicitly supplied in `harness` apply to the request. Omitted fields inherit the deployment configuration. Model defaults shown in schema tables do not mean that omission resets the deployed setting
+
+| Field | Behavior |
+| --- | --- |
+| `model_name`, `system_prompt`, `runtime` | Replace the corresponding setting for the request |
+| `tools` | Comma-separated [built-in tool names](/productions/api-reference/preview/en/harness-runtime/tools), appended with deduplication; an empty string does not clear existing tools |
+| `skills` | Comma-separated Skill Hub slugs, skill-space IDs, or space:skill references, appended for this request |
+| `mcp_servers` | Replace the full list; omission inherits it and an empty array disables remote MCP for the request |
+| `registry_space_id`, `registry_endpoint`, `registry_region`, `registry_top_k` | Override the agent registry settings for this request |
+| `max_llm_calls` | Model-call limit, at least 1; `run_agent_request` takes precedence over `harness`, followed by deployment configuration |
+
+MCP servers use the following structure. `protocol` defaults to `streamable-http` and also supports `sse`. `endpoint` must be an HTTP(S) URL without user information or a fragment; `api_key` is optional and must not contain line breaks
+
+```json
+{
+  "harness": {
+    "mcp_servers": [
+      {
+        "protocol": "streamable-http",
+        "endpoint": "https://mcp.example.com/mcp",
+        "api_key": "<mcp-service-token>"
+      }
+    ]
+  }
+}
+```
+
+When using general overrides with `/run_sse`, use the top-level `app_name`, `user_id`, `session_id`, and `new_message` fields shown in this section. Other inherited endpoints use the field names displayed on their individual pages; do not rename all fields globally
+
+See [Scheduled jobs](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview) for setup, scheduling behavior, and execution management
+
+## Deployment restrictions
+
+| Feature | KeyAuth | Shared OAuth |
+| --- | --- | --- |
+| `/harness/invoke` | Available | Not exposed |
+| General model, tool, skill, and instruction overrides | Available | Not supported |
+| `mcp_servers` overrides | Available | Available; only MCP overrides are supported |
+| Scheduled tasks | Available when explicitly enabled, with service credentials and TOS | Not supported |
+| Request size | Determined by the deployment gateway and service configuration | POST, PUT, and PATCH require Content-Length and a body no larger than 128 KiB |
+
+Shared OAuth requests return 411 without a valid Content-Length and 413 when the body exceeds the limit. Application requests return 503 until Runtime identity is bound; a successful health probe alone does not mean agent invocation is available
+
+## Responses and availability
+
+HTTP 200 from an SSE endpoint means that the response stream has started; the stream may still contain an `error` event. `/harness/invoke` can also return an error result with HTTP 200, so inspect its `error` field
+
+Artifact, memory, development evaluation, and debugging endpoints are inherited from the installed SDK/ADK versions. Operations can fail when evaluation dependencies or backend configuration are missing; development endpoints should not be public application entry points. WebSocket `/run_live` and A2A use separate protocols and are outside this HTTP operation list
+
+<Warning>
+Invocations use deployed models, tools, and cloud resources and may incur charges. Sessions, artifacts, memory, and traces may contain user data. The interactive request panel sends real requests; delete and replace operations modify real data. Confirm the address, access rights, and target before sending a request
+</Warning>

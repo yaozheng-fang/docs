@@ -1,0 +1,6 @@
+---
+title: "流式运行智能体"
+openapi: "/productions/api-reference/openapi/zh/agent-api-server.json POST /run_sse"
+---
+
+每条 SSE 消息的 `data` 包含一个 JSON 事件，字段结构与[一次性运行接口](/productions/api-reference/preview/zh/agent-api-server/run)响应数组中的事件相同。HTTP 响应始终为事件流；`streaming` 控制模型是否产生增量输出

@@ -6,6 +6,101 @@ title: "Changelog"
 
 There are currently no unreleased public changes.
 
+## 0.54.0 - 2026-09-17
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Harness | Persistent scheduled tasks support recurring or one-time invocation, history and results, pause, resume, and cancellation with TOS persistence | [Harness scheduled tasks](/productions/agentkit-cli/preview/en/commands/harness-cronjob) |
+| Harness | Remote MCP configuration and request overrides support streamable-http, SSE, and credential placeholders | [Harness](/productions/agentkit-cli/preview/en/commands/harness#remote-mcp-servers) |
+| Skills | Paired secure publication creates real and wrapper spaces, uploads and verifies versions, and supports dry runs and retained output | [Manage platform and local skills](/productions/agentkit-cli/preview/en/commands/skill#skills-publish-secure) |
+| Users | Add exact-match user listing, field updates, and deletion | [Manage users](/productions/agentkit-cli/preview/en/commands/user) |
+| Departments | Add department hierarchy management and batch user membership changes | [Manage departments](/productions/agentkit-cli/preview/en/commands/department) |
+| Groups | Add group creation, exact-match queries, description updates, and deletion | [Manage groups](/productions/agentkit-cli/preview/en/commands/group) |
+
+## 0.53.0 - 2026-09-14
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Users | Add batch user creation from JSON files or repeated flags, with per-user outcomes | [Manage users](/productions/agentkit-cli/preview/en/commands/user#user-create) |
+
+## 0.52.19 - 2026-09-14
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Authentication | Add Volcengine and BytePlus console login, remote authorization codes, and interactive login for missing credentials; `--no-auto-login` disables automatic login | [Authentication & login](/productions/agentkit-cli/preview/en/commands/auth#console-login-and-credential-precedence) |
+| Sandbox | Add snapshot creation, inspection, listing, restoration, and deletion with distinct user-session and instance IDs | [Use sandboxes](/productions/agentkit-cli/preview/en/commands/sandbox#session-snapshots) |
+| Sandbox | Role selection displays policy validation and can create a default role after confirmation; skill sandbox permissions are documented | [Use sandboxes](/productions/agentkit-cli/preview/en/commands/sandbox#skill-spaces-roles-and-jwt) |
+| Release | Runtime creation reuses qualified roles and updates retain existing roles; builds verify image digests and clean temporary source archives | [Release](/productions/agentkit-cli/preview/en/commands/release#readiness-and-runtime-roles) |
+
+## 0.52.18 - 2026-09-09
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Runtime | Add exclusive gateway creation settings and query filters, with creation-only gateway and network bindings | [agentkit.yaml](/productions/agentkit-cli/preview/en/agentkit-yaml#exclusive-runtime-gateways) |
+| MCP | MCP service creation supports exclusive gateways and backend access type; listing can filter by gateway instance | [Manage MCP services](/productions/agentkit-cli/preview/en/commands/mcp#exclusive-gateways) |
+| Sandbox | Tool creation supports JWT discovery, allowed clients, and a general role option | [Use sandboxes](/productions/agentkit-cli/preview/en/commands/sandbox#skill-spaces-roles-and-jwt) |
+| Release | Managed Harness Sidecar supports deployment in Beijing | [Release](/productions/agentkit-cli/preview/en/commands/release#readiness-and-runtime-roles) |
+
+## 0.52.17 - 2026-09-07
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Harness | Invocation supports YAML/JSON configuration, command-line precedence, merge controls, and enhancement options | [Harness](/productions/agentkit-cli/preview/en/commands/harness#invocation-configuration-file) |
+| Migration | Generated migration projects require SDK 0.8.6 or later | [Migrate an existing agent](/productions/agentkit-cli/preview/en/commands/migrate#migration-entry-point-and-delivery-validation) |
+
+## 0.52.16 - 2026-09-03
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Migration | Preserve validated lifecycle deliveries instead of rejecting them for template layout differences | [Migrate an existing agent](/productions/agentkit-cli/preview/en/commands/migrate#migration-entry-point-and-delivery-validation) |
+
+## 0.52.15 - 2026-09-03
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Migration | Resolve delivery startup from `common.entry_point`; invalid entries produce partial results and warnings where recoverable | [Migrate an existing agent](/productions/agentkit-cli/preview/en/commands/migrate#migration-entry-point-and-delivery-validation) |
+
+## 0.52.14 - 2026-09-02
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Release | Managed Sidecar supports private-only runtime gateway bindings | [Release](/productions/agentkit-cli/preview/en/commands/release#readiness-and-runtime-roles) |
+
+## 0.52.13 - 2026-09-01
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Installation | Release maintenance with no new public commands or settings; standalone installation and upgrades remain the supported path | [Quickstart](/productions/agentkit-cli/preview/en/quickstart#install) |
+
+## 0.52.12 - 2026-09-01
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Skills | Download a skill or an entire skill space at its bound versions | [Manage platform and local skills](/productions/agentkit-cli/preview/en/commands/skill#skills-download) |
+| Skills | AgentKit uploads offer interactive skill-space selection and require explicit space IDs non-interactively | [Manage platform and local skills](/productions/agentkit-cli/preview/en/commands/skill#skills-upload) |
+
+## 0.52.11 - 2026-08-31
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Installation | Release packaging maintenance with no new public commands or settings | [Quickstart](/productions/agentkit-cli/preview/en/quickstart#install) |
+
+## 0.52.10 - 2026-08-31
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Release | Managed Sidecar publication accepts existing header-based API-key authentication | [Release](/productions/agentkit-cli/preview/en/commands/release#readiness-and-runtime-roles) |
+
+## 0.52.9 - 2026-08-31
+
+| Module | Changes | Link |
+| --- | --- | --- |
+| Skills | Add uploads to Ark and AgentKit from local or GitHub directories, with dry-run validation | [Manage platform and local skills](/productions/agentkit-cli/preview/en/commands/skill#skills-upload) |
+| Sandbox | Tool creation can select a skill space and save its binding | [Use sandboxes](/productions/agentkit-cli/preview/en/commands/sandbox#skill-spaces-roles-and-jwt) |
+| Sandbox | Build output shows status and elapsed time; home-page opening waits for browser readiness | [Use sandboxes](/productions/agentkit-cli/preview/en/commands/sandbox#sandbox-build) |
+| Release | Runtime readiness waits default to 15 minutes with an environment override | [Release](/productions/agentkit-cli/preview/en/commands/release#readiness-and-runtime-roles) |
+| Frontend | Preserve Identity callbacks, cookies, and return paths to maintain frontend login sessions | [agentkit.yaml](/productions/agentkit-cli/preview/en/agentkit-yaml#frontend-login-sessions) |
+
 ## 0.52.8 - 2026-08-26
 
 - [skills commands] [`skills secure`](/productions/agentkit-cli/preview/en/commands/skill#skills-secure) generates secure Skill wrappers in bulk from a local skills directory. The generated wrappers keep `name` and `description` but do not copy the real Skill prompt, references, scripts, dependencies, or credentials.

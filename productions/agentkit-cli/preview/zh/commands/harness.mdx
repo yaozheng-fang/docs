@@ -14,6 +14,7 @@ title: "Harness"
 | `-r, --region <region>` | 部署区域。 | 所选云厂商的默认区域 |
 | `-y, --yes` | 跳过交互提示并使用默认值 | `false` |
 | `-f, --force` | 在非空目录中脚手架 / 覆盖已有 `harness.yaml` | `false` |
+| `--mcp-server <json>` | 远程 MCP 服务 JSON，可重复；单独传 `[]` 清空列表 | 不覆盖 |
 
 ```bash
 agentkit harness init my-harness
@@ -95,6 +96,7 @@ capacity:
 
 # Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
 tools: []
+mcp_servers: []
 
 # Skill Hub slugs, ss-... spaces, or ss-...:s-... refs.
 #   env: SKILLS  flag: --skills (comma-separated)
@@ -335,6 +337,7 @@ short_term_memory:
 | `--registry-top-k <n>` | 最多检索的 AgentCard 数量，必须为正整数。 | 无 |
 | `--registry-endpoint <url>` | AgentKit A2A registry 端点。 | 当前云环境的 AgentKit 端点 |
 | `--registry-region <region>` | AgentKit A2A registry 区域。 | `cloud.region` |
+| `--mcp-server <json>` | 远程 MCP 服务 JSON，可重复；单独传 `[]` 清空列表 | 不覆盖 |
 
 ```bash
 agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
@@ -371,6 +374,9 @@ agentkit harness dev --reload --port 8000
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 | `--discovery-url <url>` | OIDC discovery URL（启用 OAuth2/JWT，覆盖 `harness.yaml`） | 无 |
 | `--allowed-id <ids>` | 逗号分隔的允许客户端 ID（覆盖 `harness.yaml`） | 无 |
+| `--cronjob` | 启用持久化定时任务 | `false` |
+| `--cronjob-tos-bucket <bucket>` | 保存任务、状态和结果的已有 TOS 桶名 | `cronjob.tos_bucket` |
+| `--cronjob-tos-region <region>` | TOS 桶所在区域 | 运行时区域 |
 
 ```bash
 agentkit harness deploy --project default --region cn-beijing
@@ -396,7 +402,7 @@ agentkit harness deploy --project default --region cn-beijing
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<name>` | Harness 或 Runtime 名称（必填）。 | — |
-| `<message>` | 要发送的用户消息（必填）。 | — |
+| `[message]` | 用户消息；省略时读取调用配置的 `message` 或 `prompt` | — |
 | `-r, --region <region>` | 云区域。 | 自动感知 |
 | `--rev <n>` | 要调用的 Runtime 版本。 | 当前版本 |
 | `--user-id <id>` | 本次运行的 `user_id`。 | `agentkit_user` |
@@ -418,6 +424,10 @@ agentkit harness deploy --project default --region cn-beijing
 | `--registry-endpoint <url>` | A2A registry 端点。 | 配置值 |
 | `--registry-region <region>` | A2A registry 区域。 | Runtime 区域 |
 | `--protocol <protocol>` | 传输协议：`invoke` 或 `run_sse`。 | `run_sse` |
+| `--mcp-server <json>` | 远程 MCP 服务 JSON，可重复；单独传 `[]` 清空列表 | 不覆盖 |
+| `-c, --config <path>` | 读取本次调用的 YAML 或 JSON 配置 | — |
+| `--harness-merge` | 要求目标运行时合并覆盖项与其默认 Harness 配置 | 不发送，使用服务端行为 |
+| `--harness-enhance <json>` | 传入一次性 `harness_enhance` JSON 对象，需目标运行时支持 | — |
 
 ```bash
 agentkit harness invoke my-harness "你好，介绍一下你自己"
@@ -464,3 +474,76 @@ agentkit harness sidecar resolve \
 ```
 
 输出中的 `effective_components` 是最终启用组件；`activation_targets` 描述运行时组件、模型代理和 MCP 网关是否会被启用；`warnings` 列出有效但需要关注的选择结果；`plan_hash` 用于发布后核验运行时实际加载的计划。`mcp_resilience` 会自动带上 SQL 只读保护，`sql_readonly` 不能作为 `--component` 直接选择。使用 `ops` profile 但关闭 `mcp_resilience` 时，计划会提示 SQL 只读保护已关闭。
+
+## 远程 MCP 服务
+
+在 `harness.yaml` 中配置 `mcp_servers`，即可与内置工具同时使用远程 MCP 服务。`harness init` 和 `harness set` 保存配置，`harness dev`、`harness deploy` 加载配置，`harness invoke` 可仅覆盖本次调用
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `mcp_servers` | 服务列表；空列表禁用远程 MCP | `[]` |
+| `protocol` | `streamable-http` 或 `sse` | `streamable-http` |
+| `endpoint` | 必填的 HTTP(S) 地址，不接受 URL 用户信息或片段 | — |
+| `api_key` | 可选凭据，以 `Authorization: Bearer` 发送；支持环境变量占位符 | — |
+
+```yaml title="harness.yaml"
+mcp_servers:
+  - protocol: streamable-http
+    endpoint: https://mcp.example.com/mcp
+    api_key: ${MCP_API_KEY}
+```
+
+```bash
+agentkit harness set --mcp-server '{"endpoint":"https://mcp.example.com/mcp","api_key":"${MCP_API_KEY}"}'
+agentkit harness invoke my-harness "List available reports" --mcp-server '{"endpoint":"https://mcp.example.com/mcp","api_key":"${MCP_API_KEY}"}'
+agentkit harness invoke my-harness "Answer without remote tools" --mcp-server '[]'
+```
+
+在当前项目的 `.env` 中设置 `MCP_API_KEY`，并将 `.env` 排除在版本控制之外。`init` 和 `set` 保留占位符；部署、运行或调用时解析实际值。命令行 MCP 列表整体替换调用配置中的列表，`[]` 不能与其他 `--mcp-server` 同时使用。请求未指定 MCP 时沿用部署配置；显式空列表只清除远程 MCP，不清除内置工具
+
+共享 OAuth Harness 只接受 `mcp_servers` 作为 Harness 覆盖项；其他覆盖字段会被拒绝
+
+## 调用配置文件
+
+使用 `--config` 保存可复用的调用设置。命令行参数优先于调用文件，文件中的字段再作为本次请求发送；未指定的智能体字段沿用目标运行时支持的默认行为。配置文件不会修改 `harness.yaml` 或重新部署运行时
+
+```yaml title="invoke.yaml"
+message: Summarize the latest operational report
+protocol: run_sse
+user_id: report-reader
+max_llm_calls: 8
+harness:
+  system_prompt: Produce a concise report with sources
+  tools: [web_search]
+  mcp_servers:
+    - endpoint: https://mcp.example.com/mcp
+      api_key: ${MCP_API_KEY}
+```
+
+```bash
+agentkit harness invoke my-harness --config invoke.yaml
+agentkit harness invoke my-harness "Focus on unresolved issues" --config invoke.yaml --max-llm-calls 4
+```
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `message` / `prompt` | 消息字符串 | 必须在文件或位置参数中提供 |
+| `region`, `rev` | 目标区域和运行时版本 | 自动解析、当前版本 |
+| `user_id`, `session_id` | 本次运行的用户和会话 ID | `agentkit_user`；随机会话 |
+| `token`, `tip_token_key`, `apikey` / `api_key` | 显式调用凭据 | — |
+| `raw` | 是否输出原始响应 | `false` |
+| `protocol` | `invoke` 或 `run_sse` | `run_sse` |
+| `max_llm_calls` | 本次运行的最大模型调用次数，正整数 | 目标运行时默认值 |
+| `harness` / `overrides` | 本次智能体覆盖对象 | — |
+| `harness.model_name`, `harness.system_prompt`, `harness.runtime` | 模型、系统提示词、运行后端 | 不覆盖 |
+| `harness.tools`, `harness.skills` | 逗号分隔字符串或字符串数组 | 不覆盖 |
+| `harness.mcp_servers` | 本次使用的远程 MCP 列表 | 不覆盖 |
+| `registry`, `registry_space_id`, `registry_space_name`, `registry_top_k`, `registry_endpoint`, `registry_region` | A2A 注册表与检索参数；`registry_top_k` 为正整数 | 不覆盖 |
+| `harness_merge` | 布尔值，传给支持合并默认配置的目标运行时 | 不发送 |
+| `harness_enhance` | 增强配置对象，`components` 支持字符串数组或逗号分隔字符串，具体字段需目标运行时支持 | 不发送 |
+
+`harness` 中的模型、工具、技能、系统提示词和运行后端也可写在顶层；同名顶层字段覆盖嵌套字段，`model.name` 可作为模型名称来源。除 MCP 凭据占位符外，不应假定任意调用字段会展开环境变量；凭据优先使用登录会话或命令支持的默认凭据来源
+
+## 定时任务
+
+启用 `cronjob` 后，可通过 `harness cronjob` 创建周期或一次性调用，查看结果，并暂停、恢复或取消执行。完整配置、参数与限制见 [Harness 定时任务](/productions/agentkit-cli/preview/zh/commands/harness-cronjob)

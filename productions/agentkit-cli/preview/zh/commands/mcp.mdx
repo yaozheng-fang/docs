@@ -22,6 +22,7 @@ title: "管理 MCP 服务"
 | `-r, --region <region>` | 火山引擎区域。 | 自动探测 |
 | `-p, --project <name>` | AgentKit 项目名称。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
+| `--gateway-instance-id <id>` | 按专属网关实例 ID 筛选 | — |
 
 ```bash
 agentkit mcp service list --project default
@@ -76,6 +77,9 @@ agentkit mcp service show customer-tools
 | `--tag <key=value>` | 自定义标签。可重复传入，键不能重复。 | 空 |
 | `--path <path>` | MCP 服务访问路径。 | `/mcp` |
 | `--protocol <type>` | 协议类型；当前仅支持 `mcp`。 | `mcp` |
+| `--gateway-mode <mode>` | 网关模式：`Shared` 或 `Exclusive` | `shared` |
+| `--gateway-instance-id <id>` | 专属网关实例 ID，Exclusive 模式必填 | — |
+| `--backend-access-type <type>` | 专属网关访问后端的方式：`Public` 或 `Private` | 服务端默认值 |
 
 以下示例创建一个使用公网与 API Key 入站鉴权的服务：
 
@@ -131,3 +135,25 @@ agentkit mcp service create \
 ```bash
 agentkit mcp service delete customer-tools
 ```
+
+## 专属网关
+
+专属网关模式要求已有网关实例，并沿用该实例的网络。不能同时指定私有或混合 `--network`、`--vpc-id` 或 `--subnet-id`；共享网关不能设置 `--gateway-instance-id` 与 `--backend-access-type`
+
+```bash
+agentkit mcp service list --gateway-instance-id gateway-example --json
+```
+
+以下示例使用已有专属网关创建服务，并通过私网访问后端。执行前请将镜像地址和网关 ID 替换为实际资源；创建服务可能产生云资源费用
+
+```bash
+agentkit mcp service create \
+  --name internal-tools \
+  --image-url cr-cn-beijing.volces.com/agentkit/internal-tools:latest \
+  --inbound-api-key-name primary-key \
+  --gateway-mode Exclusive \
+  --gateway-instance-id gateway-example \
+  --backend-access-type Private
+```
+
+创建后，使用 `agentkit mcp service show internal-tools` 核对网关与后端访问方式

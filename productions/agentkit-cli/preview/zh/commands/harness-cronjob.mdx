@@ -1,0 +1,255 @@
+---
+title: "Harness 定时任务"
+---
+
+定时任务在 Harness 内按计划执行消息，将任务、执行状态和结果保存在 TOS。适合周期报告、巡检和指定时间执行的工作
+
+## 启用定时任务
+
+<Warning>
+启用后需保持至少一个运行实例，产生运行时容量与 TOS 费用。任务内容和解析后的 MCP 凭据会保存在 TOS，应限制桶的访问权限。部署身份需要为运行时角色创建或绑定限定到任务存储前缀的 TOS 策略的权限
+</Warning>
+
+先准备已有 TOS 桶，在包含 `harness.yaml` 的项目目录运行
+
+```bash
+agentkit harness deploy --cronjob --cronjob-tos-bucket my-harness-jobs --region cn-beijing
+```
+
+```yaml title="harness.yaml"
+cronjob:
+  enabled: true
+  tos_bucket: my-harness-jobs
+  tos_region: cn-beijing
+  concurrency: 8
+  lease_seconds: 60
+  poll_seconds: 5
+```
+
+BytePlus 使用 `cloud.provider: byteplus`、对应运行时区域和 TOS 桶；部署参数也可使用全局 `--provider byteplus`。桶名不能写成完整域名。当前只支持服务鉴权的 Harness，例如 API Key；共享 OAuth Harness 不支持后台任务
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `cronjob.enabled` | 启用调度；整个块省略时关闭 | 配置块存在时为 `true` |
+| `cronjob.tos_bucket` | 已有 TOS 桶名，启用时必填 | — |
+| `cronjob.tos_region` | TOS 桶区域 | 运行时区域 |
+| `cronjob.tos_prefix` | 任务存储前缀；重新部署应保持稳定，独立部署应使用不同前缀 | `harness-cronjobs/v1/<provider>/<region>/<project>/<harness>` |
+| `cronjob.concurrency` | 每个实例的并发上限，1–128 | `8` |
+| `cronjob.lease_seconds` | 执行租约秒数，30–600 | `60` |
+| `cronjob.poll_seconds` | 调度轮询秒数，1–60 | `5` |
+
+## 命令总览
+
+| 命令 | 说明 |
+| --- | --- |
+| `harness cronjob create` | 创建周期或一次性任务 |
+| `harness cronjob list` | 列出任务定义与状态 |
+| `harness cronjob status` | 查看响应本次请求的运行实例的调度状态 |
+| `harness cronjob get` | 查看指定任务 |
+| `harness cronjob pause` | 暂停后续调度与排队执行，不终止正在运行的任务 |
+| `harness cronjob resume` | 恢复已暂停任务 |
+| `harness cronjob runs` | 按从新到旧的顺序查询执行历史 |
+| `harness cronjob result` | 读取一次执行的最终结果 |
+| `harness cronjob cancel` | 请求取消指定执行 |
+
+## harness cronjob create
+
+创建周期或一次性任务
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `--name <name>` | 任务名称，必填 | 必填 |
+| `--prompt <text>` | 执行消息；未指定时读取配置中的 message 或 prompt | — |
+| `--cron <expression>` | 五字段 cron 表达式，与 --at 二选一 | — |
+| `--at <datetime>` | 包含时区偏移的未来 ISO 8601 时间，与 --cron 二选一 | — |
+| `--timezone <zone>` | IANA 时区名称 | `Asia/Shanghai` |
+| `-c, --config <path>` | 本次任务的 Harness 调用 YAML/JSON 配置 | — |
+| `--timeout <seconds>` | 单次执行超时秒数，范围 1–10800 | `1800` |
+| `--misfire <policy>` | 错过触发时间后的策略：latest 或 skip | `latest` |
+| `--grace <seconds>` | skip 策略允许的延迟秒数，范围 0–86400 | `120` |
+| `--idempotency-key <key>` | 创建请求的幂等键；重试时保持相同 | 随机 UUID |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob create my-harness --name morning-report --cron "0 9 * * 1-5" --timezone Asia/Shanghai --prompt "Summarize yesterday’s progress" --idempotency-key morning-report-v1
+```
+
+返回结果包含 `cronjob_id`。相同幂等键与相同输入返回同一任务，输入改变则拒绝。一次性任务将 `--cron` 替换为未来时间，例如 `--at "2026-10-01T09:00:00+08:00"`。`--config` 使用 [Harness 调用配置](/productions/agentkit-cli/preview/zh/commands/harness#调用配置文件) 中的消息、`harness` 和模型调用上限；未覆盖字段继承部署配置
+
+## harness cronjob list
+
+列出任务定义与状态
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `--limit <count>` | 每页结果数量 | `100` |
+| `--cursor <cursor>` | 上一页返回的 next_cursor | — |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob list my-harness
+```
+
+将返回的 `next_cursor` 传入 `--cursor` 读取下一页
+
+## harness cronjob status
+
+查看响应本次请求的运行实例的调度状态
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob status my-harness
+```
+
+## harness cronjob get
+
+查看指定任务
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `<cronjob_id>` | 任务 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob get my-harness "$CRONJOB_ID"
+```
+
+## harness cronjob pause
+
+暂停后续调度与排队执行，不终止正在运行的任务
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `<cronjob_id>` | 任务 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob pause my-harness "$CRONJOB_ID"
+```
+
+## harness cronjob resume
+
+恢复已暂停任务
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `<cronjob_id>` | 任务 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob resume my-harness "$CRONJOB_ID"
+```
+
+## harness cronjob runs
+
+按从新到旧的顺序查询执行历史
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `<cronjob_id>` | 任务 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `--limit <count>` | 每页结果数量 | `20` |
+| `--cursor <cursor>` | 上一页返回的 next_cursor | — |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob runs my-harness "$CRONJOB_ID"
+```
+
+将返回的 `next_cursor` 传入 `--cursor` 读取下一页
+
+## harness cronjob result
+
+读取一次执行的最终结果
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `<cronjob_id>` | 任务 ID | 必填 |
+| `<run_id>` | 执行 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob result my-harness "$CRONJOB_ID" "$RUN_ID"
+```
+
+## harness cronjob cancel
+
+请求取消指定执行
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `<harness>` | Harness 名称或运行时 ID | 必填 |
+| `<cronjob_id>` | 任务 ID | 必填 |
+| `<run_id>` | 执行 ID | 必填 |
+| `-r, --region <region>` | 运行时区域 | — |
+| `--apikey <key>` | 显式运行时 API Key | — |
+| `--token <token>` | 显式 Bearer token | — |
+| `--endpoint <url>` | 直接连接的 Harness 地址，也支持本地服务 | — |
+| `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit harness cronjob cancel my-harness "$CRONJOB_ID" "$RUN_ID"
+```
+
+## 调度、恢复与结果
+
+- 每次执行使用独立会话，最终结果保存在 TOS，重启后仍可查询
+- 同一任务的上次执行尚未结束时，新的触发记为 `skipped`
+- `latest` 在恢复后补跑最近一次错过的触发；`skip` 只在最近一次触发的延迟不超过 `--grace` 时执行，不逐次补跑历史触发
+- 失败和超时不会自动重试，下一次计划仍可执行
+- 工作实例停止或失去租约时，执行记为 `interrupted`，任务暂停；检查外部操作结果后再恢复周期任务或新建一次性任务
+- 暂停不会终止正在执行的任务，`cancel` 请求在执行租约续期时处理，默认通常在约 20 秒内被检查
+- `status` 只反映响应请求的实例；`runs` 按从新到旧返回。结果保存到历史前的短暂阶段可先通过 `get` 或 `result` 查看
+
+外部操作不保证只发生一次，例如工具完成外部写入后实例立即中断。恢复前应核对已发生的操作，避免重复执行。调度会扫描保留的任务，任务量增加时应结合 TOS 请求量调整轮询间隔

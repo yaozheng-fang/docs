@@ -43,3 +43,7 @@ agentkit deploy \
 <Warning>
 Harness 部署会创建或更新云端运行时，并可能改写当前目录的 `harness.json` 以记录端点、运行时 ID 与鉴权信息。执行前确认当前目录、Harness 名称和目标项目。
 </Warning>
+
+## 运行时角色
+
+创建运行时时，显式指定的 IAM 角色必须存在；未指定角色时，CLI 优先复用具备 `AgentKitDefaultRuntimeAccess` 策略的角色，否则创建新角色。更新运行时会保留原角色，不自动修改已有角色策略；启用定时任务时所需的 TOS 前缀权限另行配置

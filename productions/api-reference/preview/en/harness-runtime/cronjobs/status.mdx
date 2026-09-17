@@ -1,0 +1,8 @@
+---
+title: "Get scheduler status"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json GET /harness/cronjobs/status"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+This endpoint describes only the replica serving the request. Different requests can report different replicas in a deployment with multiple replicas. `last_error` is the most recently recorded scheduling error and is not guaranteed to clear immediately after a successful scan

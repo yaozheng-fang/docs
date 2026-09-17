@@ -1,0 +1,6 @@
+---
+title: "Run an agent with SSE"
+openapi: "/productions/api-reference/openapi/en/agent-api-server.json POST /run_sse"
+---
+
+Each SSE message contains a JSON event in its `data` field, using the same event structure as the response array from [non-streaming execution](/productions/api-reference/preview/en/agent-api-server/run). The HTTP response always uses SSE; `streaming` controls incremental model output

@@ -1,0 +1,125 @@
+---
+title: "Manage users"
+---
+
+Manage users in an existing user pool, including batch creation, exact-match queries, updates, and deletion
+
+<Note>
+Create the user pool first and sign in with permission to manage it. Every operation requires `--user-pool-id`. Use global `--provider` to select Volcengine or BytePlus and the matching account and region
+</Note>
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `user create` | Create 1-1000 users in a user pool (batch; reports per-user success/failure) |
+| `user update` | Update one user's fields in a user pool (omitted flags keep current values; an empty string clears --name/--email/--phone) |
+| `user delete` | Delete one user from a user pool (irreversible) |
+| `user list` | List users in a user pool (exact-match filters; token-based pagination) |
+
+## Field constraints
+
+Usernames must contain 2–64 ASCII letters, digits, dots, underscores, or hyphens. They cannot start with a digit or contain consecutive dots. Names, email addresses, and external identity provider IDs have a 255-character limit. Email addresses must be valid, and phone numbers must use E.164 format. Each create batch accepts 1–1000 users. Updates can clear the name, email, or phone with an empty string, but cannot clear the username
+
+## user create
+
+Create 1-1000 users in a user pool (batch; reports per-user success/failure)
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID to create the users in | Required |
+| `--file <path>` | JSON file of users, a top-level array or `{"users": [...]}` (objects with camelCase fields); cannot be combined with per-user flags | — |
+| `--preferred-username <username>` | preferred username; repeat once per user, matched by position across flags | — |
+| `--name <name>` | display name; repeat per user to align with --preferred-username | — |
+| `--email <email>` | email address; repeat per user to align with --preferred-username | — |
+| `--phone <phone>` | phone in E.164, e.g. +8613800138000; repeat per user to align with --preferred-username | — |
+| `--external-provider-id <id>` | external identity provider id; repeat per user to align with --preferred-username | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON results instead of a table | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit user create --user-pool-id pool-example --preferred-username alice --name Alice --email alice@example.com
+```
+
+## user update
+
+Update one user's fields in a user pool (omitted flags keep current values; an empty string clears --name/--email/--phone)
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID holding the user | Required |
+| `--user-id <uid>` | ID of the user to update | Required |
+| `--preferred-username <username>` | new preferred username (cannot be empty) | — |
+| `--name <name>` | new display name; pass "" to clear | — |
+| `--email <email>` | new email; pass "" to clear | — |
+| `--phone <phone>` | new phone in E.164, e.g. +8613800138000; pass "" to clear | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output a JSON summary instead of a human-readable line | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit user update --user-pool-id pool-example --user-id user-example --name "Alice Chen"
+```
+
+## user delete
+
+Delete one user from a user pool (irreversible)
+
+<Warning>
+Deletion is irreversible. Check the user pool and resource IDs. Interactive terminals prompt for confirmation; scripts must pass `--yes`
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID holding the user | Required |
+| `--user-id <uid>` | ID of the user to delete | Required |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `-y, --yes` | skip the confirmation prompt | `false` |
+| `--json` | output a JSON summary instead of a human-readable line | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit user delete --user-pool-id pool-example --user-id user-example --yes
+```
+
+## user list
+
+List users in a user pool (exact-match filters; token-based pagination)
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID to list users from | Required |
+| `--email <email>` | filter by exact email address | — |
+| `--preferred-username <username>` | filter by exact preferred username | — |
+| `--name <name>` | filter by exact display name | — |
+| `--max-results <count>` | maximum users to return in this page (0-100; 0 uses the server default) | Server default |
+| `--next-token <token>` | pagination token from the previous response | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON results instead of a table | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit user list --user-pool-id pool-example --max-results 20 --json
+```
+
+Pass the returned `nextToken` to `--next-token` to read subsequent pages; the CLI does not fetch every page automatically
+
+## Batch input file
+
+Create `users.json` as an array or an object containing a `users` array. Each user requires `preferredUsername`; other fields are optional
+
+```json title="users.json"
+{
+  "users": [
+    {"preferredUsername": "alice", "name": "Alice", "email": "alice@example.com"},
+    {"preferredUsername": "bob", "name": "Bob"}
+  ]
+}
+```
+
+```bash
+agentkit user create --user-pool-id pool-example --file users.json --json
+```
+
+Repeated flags are matched by position, and optional fields cannot outnumber usernames. A batch can partially succeed; any failed item produces a nonzero exit status. Retry only failed items

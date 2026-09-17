@@ -1,0 +1,8 @@
+---
+title: "Get a scheduled task"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json GET /harness/cronjobs/{job_id}"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+`active` can contain a queued execution, a running execution, or a final result not yet persisted in history. `last_run` summarizes the most recent execution already saved in history

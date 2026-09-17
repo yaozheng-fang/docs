@@ -52,6 +52,8 @@ title: "配置"
 | `--no-runtime_enable_shared_internet_access` | 私有网络下禁用共享公网出口。 | — |
 | `--runtime-enable-shared-internet-access` | `--runtime_enable_shared_internet_access` 的 kebab-case 写法。 | 当前配置值 |
 | `--no-runtime-enable-shared-internet-access` | `--no-runtime_enable_shared_internet_access` 的 kebab-case 写法。 | — |
+| `--runtime_gateway_mode <mode>` / `--runtime-gateway-mode <mode>` | 新运行时网关模式：`Shared` 或 `Exclusive` | 当前配置，未配置时 `Shared` |
+| `--runtime_gateway_instance_id <id>` / `--runtime-gateway-instance-id <id>` | 专属网关实例 ID，Exclusive 模式必填 | — |
 
 ```bash
 agentkit config --init \
@@ -99,3 +101,11 @@ agentkit config --global --set defaults.cloud_provider=byteplus
 <Note>
 命令执行时会先读取环境变量，再读取项目配置和用户级配置。所有产品命令都支持全局 `--provider volcengine|byteplus`，可临时覆盖本次命令使用的云厂商。区域值必须是小写、以连字符分隔的区域代码，例如 `cn-beijing` 或 `ap-southeast-1`；包含路径、查询参数、大写字母或非区域主机名的值会被拒绝。
 </Note>
+
+## 配置专属网关
+
+在创建运行时前选择已有专属网关，并清除该策略中的独立运行时网络配置。绑定创建后不可更改，完整规则见 [专属运行时网关](/productions/agentkit-cli/preview/zh/agentkit-yaml#专属运行时网关)
+
+```bash
+agentkit config --runtime_gateway_mode Exclusive --runtime_gateway_instance_id gateway-example
+```

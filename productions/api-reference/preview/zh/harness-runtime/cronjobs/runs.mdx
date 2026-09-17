@@ -1,0 +1,10 @@
+---
+title: "列出执行历史"
+openapi: "/productions/api-reference/openapi/zh/harness-runtime.json GET /harness/cronjobs/{job_id}/runs"
+---
+
+需要使用 AgentKit CLI 0.54.0 部署并[启用定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)的 Harness Runtime
+
+返回已保存的执行历史，按计划触发时间从新到旧排列。运行中和刚完成但尚未保存到历史的执行，先通过[读取定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/get)或[读取执行结果](/productions/api-reference/preview/zh/harness-runtime/cronjobs/result)查看
+
+将 `next_cursor` 原样用于下一页请求；空字符串表示没有后续页面

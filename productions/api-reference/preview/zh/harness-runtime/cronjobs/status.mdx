@@ -1,0 +1,8 @@
+---
+title: "读取调度状态"
+openapi: "/productions/api-reference/openapi/zh/harness-runtime.json GET /harness/cronjobs/status"
+---
+
+需要使用 AgentKit CLI 0.54.0 部署并[启用定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)的 Harness Runtime
+
+本接口仅描述处理本次请求的单个运行副本，多副本部署时不同请求可能返回不同结果。`last_error` 是最近记录的调度错误，即使后续扫描成功，也不保证立即清空

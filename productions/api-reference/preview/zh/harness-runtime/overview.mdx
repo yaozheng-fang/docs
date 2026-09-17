@@ -1,0 +1,98 @@
+---
+title: "Harness Runtime 概述"
+---
+
+本章描述通过 AgentKit CLI `agentkit harness deploy` 部署的 Harness Runtime，包括智能体调用、会话、制品、记忆和可选定时任务接口
+
+接口基线为 **AgentKit CLI 0.54.0**。默认 KeyAuth 部署固定使用 **VeADK 1.0.8** 和 **AgentKit SDK 0.8.0**；本章继承接口按 **Google ADK 2.2.0** 核验。CLI 未锁定 ADK 的精确版本，实际安装版本可通过 `GET /version` 查询。共享 OAuth 部署使用 SDK 0.8.2，并具有下述认证与覆盖限制
+
+## 选择调用接口
+
+| 接口 | 响应 | 适用场景 |
+| --- | --- | --- |
+| `POST /harness/invoke` | 调用完成后返回 JSON | KeyAuth 部署，支持本次请求的模型、工具、技能、提示词和 MCP 覆盖 |
+| `POST /run_sse` | SSE 事件流 | ADK 消息结构，支持 MCP 覆盖；KeyAuth 普通覆盖会在完成后仅返回一个事件 |
+| `POST /run` | 调用完成后返回 JSON 事件数组 | 标准 ADK 调用，支持 MCP 覆盖 |
+| `POST /invoke` | SSE 事件流 | 简化兼容调用，以 `prompt` 提供文本，以请求头提供用户与会话 |
+
+会话使用应用名称 `harness_agent`。部署时的 Harness 名称用于发现 Runtime，不能直接替换会话路径中的应用名。调用前可通过 `GET /list-apps` 确认当前应用
+
+`/get_agent_config` 不属于 CLI 部署版接口。`harness_merge`、`harness_enhance`、`harness.mcp` 与 `selected_skills` 也不属于本章部署版支持的请求字段
+
+## 连接服务
+
+已部署 Runtime 的地址使用部署结果中的访问地址；本地运行时通常为 `http://localhost:8000`
+
+下例适用于配置了 Runtime API Key 的 KeyAuth 部署。环境变量 `HARNESS_URL` 为 Runtime 地址，`HARNESS_API_KEY` 为 Runtime 访问凭证；它不是模型 API Key，也不是 MCP 服务凭证
+
+```bash
+curl "$HARNESS_URL/list-apps" \
+  -H "Authorization: Bearer $HARNESS_API_KEY"
+
+curl -X POST "$HARNESS_URL/apps/harness_agent/users/user-001/sessions" \
+  -H "Authorization: Bearer $HARNESS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"session-001","state":{}}'
+
+curl -N "$HARNESS_URL/run_sse" \
+  -H "Authorization: Bearer $HARNESS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"app_name":"harness_agent","user_id":"user-001","session_id":"session-001","new_message":{"role":"user","parts":[{"text":"Hello"}]},"streaming":true}'
+```
+
+本地未配置网关认证时可省略 Authorization。共享 OAuth 部署应使用该部署要求的用户池 JWT，并使用与已验证身份一致的用户 ID。`/run` 和未使用普通覆盖的 `/run_sse` 需要已有会话；`/invoke` 会检查并创建会话
+
+## 请求覆盖
+
+`harness` 中只应用本次请求明确提供的字段，未提供的字段继承部署配置。字段表中的模型默认值不表示省略时重置部署配置
+
+| 字段 | 行为 |
+| --- | --- |
+| `model_name`、`system_prompt`、`runtime` | 替换本次请求对应配置 |
+| `tools` | 逗号分隔的[内置工具名称](/productions/api-reference/preview/zh/harness-runtime/tools)，追加并去重；空字符串不清空已有工具 |
+| `skills` | 逗号分隔的 Skill Hub slug、技能空间 ID 或空间:技能引用，追加到本次请求 |
+| `mcp_servers` | 整个列表替换；省略时继承，空数组禁用本次请求的远程 MCP |
+| `registry_space_id`、`registry_endpoint`、`registry_region`、`registry_top_k` | 覆盖本次请求的智能体注册中心配置 |
+| `max_llm_calls` | 模型调用次数上限，至少为 1；`run_agent_request` 中的值优先于 `harness`，再其次为部署配置 |
+
+MCP 服务使用以下结构，`protocol` 默认 `streamable-http`，也可选择 `sse`。`endpoint` 必须是 HTTP(S) 地址，不能包含用户名密码或片段标识；`api_key` 可省略，不允许换行
+
+```json
+{
+  "harness": {
+    "mcp_servers": [
+      {
+        "protocol": "streamable-http",
+        "endpoint": "https://mcp.example.com/mcp",
+        "api_key": "<mcp-service-token>"
+      }
+    ]
+  }
+}
+```
+
+`/run_sse` 使用普通覆盖时，顶层字段必须采用本章示例中的 `app_name`、`user_id`、`session_id` 和 `new_message`。其他继承接口以各自页面展示的字段名称为准，不应全局替换字段命名
+
+定时任务的启用方式、调度行为与接口见[定时任务概览](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)
+
+## 部署模式限制
+
+| 项目 | KeyAuth | 共享 OAuth |
+| --- | --- | --- |
+| `/harness/invoke` | 可用 | 不提供 |
+| 普通模型、工具、技能与提示词覆盖 | 可用 | 不支持 |
+| `mcp_servers` 覆盖 | 可用 | 可用，仅支持 MCP 覆盖 |
+| 定时任务 | 显式启用后可用，需服务凭证与 TOS | 不支持 |
+| 请求体限制 | 由部署网关及服务配置决定 | POST、PUT、PATCH 必须提供 Content-Length，且不超过 128 KiB |
+
+共享 OAuth 请求缺少有效 Content-Length 时返回 411，超过大小限制时返回 413。Runtime 身份尚未完成绑定时业务请求返回 503；健康探针成功并不代表已能执行智能体调用
+
+## 响应与可用范围
+
+SSE 接口的 HTTP 200 只说明响应流已开始，流内仍可能返回 `error` 事件。`/harness/invoke` 也可能以 HTTP 200 返回包含错误的结果，应检查响应的 `error` 字段
+
+制品、记忆以及开发评测和调试路由继承自对应 SDK/ADK 版本。评测依赖和后端配置未满足时，接口可能无法执行；开发接口不应作为公共业务入口。WebSocket `/run_live` 与 A2A 使用独立协议，不包含在本章 HTTP 操作清单中
+
+<Warning>
+调用会使用部署的模型、工具和云资源，可能产生费用；会话、制品、记忆和追踪可能包含用户数据。交互式请求面板发送真实请求，删除或替换操作会修改实际数据，请在发送前确认地址、权限和目标资源
+</Warning>

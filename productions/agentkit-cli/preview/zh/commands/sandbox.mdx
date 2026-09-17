@@ -32,6 +32,7 @@ title: "使用沙箱"
 | `codex-login` | 将本地 Codex 或 Claude 订阅凭据注入沙箱会话。 |
 | `model-login` | `codex-login` 的等价命令。 |
 | `scp` | 在本地与已有沙箱会话之间传输文件或目录。 |
+| `sandbox snapshot` | 创建、查询、恢复和删除会话快照 |
 
 ## sandbox build
 
@@ -53,6 +54,8 @@ title: "使用沙箱"
 ```bash
 agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name custom-sandbox
 ```
+
+构建期间显示当前状态和已用时间，构建失败时保留日志与错误原因，便于定位云端构建问题
 
 ## sandbox init
 
@@ -143,6 +146,15 @@ agentkit sandbox config --list
 | `self-host-runtime-timeout-seconds` | integer | `1200` | 等待 Runtime 就绪的最长时间，单位为秒。 |
 | `self-host-runtime-api-key-name` | string | `Authorization` | Runtime 网关 API Key 的请求头名称。 |
 
+### 工具鉴权与技能配置
+
+| 配置键 | 说明 |
+| --- | --- |
+| `skill-space-id` | 工具的技能空间 ID；创建时用 --skill-space-id 显式启用 |
+| `auth-type` | 工具鉴权方式，apikey 或 jwt |
+| `jwt-discovery-url` | JWT 的 OIDC 发现地址 |
+| `allowed-clients` | 允许的 JWT 客户端 ID 列表 |
+
 ## 模型环境变量
 
 `sandbox create` 和 `sandbox exec` 的模型参数会转换为多组环境变量，供 Codex、OpenCode 和读取 `MODEL_AGENT_*` 的运行时或工具共用。
@@ -179,7 +191,7 @@ agentkit sandbox config --list
 | `--model-api-key <key>` | 注入沙箱的模型 API Key。 | 配置值或 — |
 | `--model-provider <provider>` | 模型提供方。 | 配置值或云环境默认值 |
 | `--model-base-url <url>` | 模型 API Base URL。 | 配置值或模型提供方默认值 |
-| `--skill-role-name [roleName]` | 为沙箱技能配置 IAM 角色；省略值时自动生成角色名。 | 配置的 `role-name` 或 — |
+| `--skill-role-name [roleName]` | 沙箱角色选项，与 `--role-name` 二选一；不带值时交互选择 | — |
 | `--websearch-apikey <key>` | WebSearch API Key；不能与 `--skill-role-name` 同时使用。 | 配置值或 — |
 | `--image-url <url>` | 自定义镜像地址；`Private` 工具必填。 | 配置值或 — |
 | `--enable-snapshot` | 启用会话快照。 | 配置值或 `false` |
@@ -194,6 +206,11 @@ agentkit sandbox config --list
 | `--llm-shield-app-id <app-id>` | 为 `Skill` 沙箱工具启用 LLM Shield，并注入指定应用 ID。 | — |
 | `--envs <KEY=VALUE>` | 注入沙箱工具的环境变量；可重复传入。与内置变量同名时，本标志传入的值覆盖内置值。 | — |
 | `--json` | 输出 JSON。 | `false` |
+| `--role-name [roleName]` | 沙箱 IAM 角色；不带值时交互选择；与 `--skill-role-name` 二选一 | Skill 工具必须显式提供角色选项 |
+| `--skill-space-id [id]` | 注入 `SKILL_SPACE_ID`；不带值时确认配置值或交互选择空间 | 不注入 |
+| `--auth-type <type>` | 工具鉴权方式：`apikey` 或 `jwt` | `apikey` |
+| `--jwt-discovery-url <url>` | JWT 的 OIDC 发现地址，JWT 鉴权必填 | — |
+| `--allowed-clients <ids>` | JWT 允许的客户端 ID，逗号分隔，JWT 鉴权必填 | — |
 
 ```bash
 agentkit sandbox create --tool-type CodeEnv --tool-name dev-code --cpu 4
@@ -217,6 +234,7 @@ agentkit sandbox create --tool-type CodeEnv --network-private
 agentkit sandbox create \
   --tool-type Skill \
   --tool-name guarded-skill \
+  --role-name my-sandbox-role \
   --llm-shield-app-id <app-id>
 ```
 
@@ -450,6 +468,8 @@ agentkit sandbox shell --session-id dev --command "python --version"
 agentkit sandbox web --session-id dev --no-open
 ```
 
+打开沙箱主页前会等待浏览器就绪，避免会话刚启动时打开失败
+
 ## sandbox codex-login
 
 将本地 Codex 或 Claude 订阅凭据注入沙箱会话。`model-login` 与此命令等价。
@@ -515,4 +535,137 @@ agentkit sandbox model-login --session-id dev --provider codex
 agentkit sandbox scp ./local.txt sandbox:/home/gem/local.txt --session-id dev
 
 agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id dev
+```
+
+## 技能空间、角色与 JWT
+
+创建 `Skill` 工具时，必须传入 `--role-name` 或 `--skill-role-name`，两者不能同时使用或重复传入。交互选择会列出角色并标明缺少的策略，不满足要求的角色不可选；可在提示中确认创建默认角色。非交互环境需传入明确的角色名称
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `Skill` + `apikey` | 技能与 TOS 挂载权限 | `AgentKitDefaultSkillsSandboxAccess` + `AgentKitTOSMountAccess` |
+| `Skill` + `jwt` | 技能、用户授权与 TOS 挂载权限 | 上述两项 + `AgentKitOauthDefaultSandboxAccess` |
+| 非 Skill + `apikey` | 通用沙箱权限 | `AgentKitDefaultSandboxAccess` |
+| 非 Skill + `jwt` | 用户授权沙箱权限 | `AgentKitOauthDefaultSandboxAccess` |
+
+非 Skill 工具挂载 TOS 时还需 `AgentKitTOSMountAccess`。角色选项不能与 `--websearch-apikey` 同时使用；缺少权限时 CLI 不会直接给已有角色追加策略
+
+<Warning>
+创建工具可能产生云资源费用。显式指定的角色名称不存在时，CLI 会自动创建 IAM 角色并绑定所需策略；交互选择也可在确认后创建默认角色。创建角色需要相应的 IAM 权限。JWT 只允许配置的客户端访问，请核对发现地址和客户端 ID
+</Warning>
+
+```bash
+agentkit sandbox create --tool-type Skill --role-name my-sandbox-role --skill-space-id ss-example --auth-type jwt --jwt-discovery-url "https://identity.example.com/.well-known/openid-configuration" --allowed-clients client-example
+```
+
+`--skill-space-id ss-example` 直接选择空间；单独传 `--skill-space-id` 会在交互终端确认 `.agentkit/sandbox.yaml` 中的值或从 `default` 项目的空间中选择。成功创建后保存 `skill-space-id`；未传此选项时不会自动注入空间 ID。`--json` 与 CI 不支持交互选择
+
+`apikey` 不接受 JWT 专用参数。可通过 `sandbox config --set auth-type=jwt`、`jwt-discovery-url`、`allowed-clients` 和 `skill-space-id` 保存对应配置，创建时显式参数优先
+
+## 会话快照
+
+工具需支持快照，可在创建工具时传入 `--enable-snapshot`。创建后通过 `get` 确认状态，再执行恢复；快照可用性取决于工具类型和区域能力。所有快照子命令均要求显式 `--tool-id`，不会从普通会话命令推断该必填值
+
+## sandbox snapshot create
+
+为指定会话创建快照，结果包含快照 ID 与状态
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tool-id <id>` | 沙箱工具 ID，必填 | 必填 |
+| `--instance-id <id>` | 沙箱实例的 SessionId；create 时优先于用户会话 ID | — |
+| `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
+| `-s, --session-id <id>, --sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
+| `--sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
+| `--session <id>` | --session-id 的别名 | — |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit sandbox snapshot create --tool-id "$TOOL_ID" --session-id report-session
+```
+
+`--session-id` 在工具内定位用户会话；匹配多个实例时改用 `--instance-id`，该参数直接指定实例 ID 并优先使用。结果中的 `session_id` 是用户会话，`instance_id` 是实例 ID，两者不可混淆
+
+## sandbox snapshot get
+
+查看快照的状态、所属工具和会话
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tool-id <id>` | 沙箱工具 ID，必填 | 必填 |
+| `--snapshot-id <id>` | 快照 ID，必填 | 必填 |
+| `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit sandbox snapshot get --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
+```
+
+## sandbox snapshot list
+
+按会话、实例、创建时间和分页条件查询快照
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tool-id <id>` | 沙箱工具 ID，必填 | 必填 |
+| `--instance-id <id>` | 沙箱实例的 SessionId；create 时优先于用户会话 ID | — |
+| `--create-time-after <time>` | 创建时间下界 | — |
+| `--create-time-before <time>` | 创建时间上界 | — |
+| `--max-results <count>` | 令牌分页每页数量，正整数 | — |
+| `--next-token <token>` | 上一页返回的 next_token | — |
+| `--page-number <number>` | 页码，正整数 | — |
+| `--page-size <count>` | 页大小，正整数 | — |
+| `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
+| `-s, --session-id <id>, --sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
+| `--sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
+| `--session <id>` | --session-id 的别名 | — |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit sandbox snapshot list --tool-id "$TOOL_ID" --max-results 20
+```
+
+## sandbox snapshot resume
+
+从快照恢复会话
+
+<Warning>
+恢复可能创建新的计费实例，或改变原实例的会话状态。先确认快照 ID 与目标工具
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tool-id <id>` | 沙箱工具 ID，必填 | 必填 |
+| `--snapshot-id <id>` | 快照 ID，必填 | 必填 |
+| `--ttl <value>` | 恢复后会话的存活时间，正整数 | — |
+| `--ttl-unit <unit>` | 时间单位 second 或 minute；兼容 s/sec/seconds、m/min/minutes | 提供 ttl 时为 `second` |
+| `--create-new-instance` | 恢复到新实例，与 --reuse-instance 互斥 | 未指定时由服务端决定 |
+| `--reuse-instance` | 请求复用原实例，与 --create-new-instance 互斥 | 未指定时由服务端决定 |
+| `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
+| `-s, --session-id <id>, --sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
+| `--sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
+| `--session <id>` | --session-id 的别名 | — |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit sandbox snapshot resume --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID" --session-id restored-report --ttl 600 --create-new-instance
+```
+
+## sandbox snapshot delete
+
+删除指定快照
+
+<Warning>
+此命令立即删除快照，不提供确认提示或 `--yes`，删除后无法再用该快照恢复会话
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--tool-id <id>` | 沙箱工具 ID，必填 | 必填 |
+| `--snapshot-id <id>` | 快照 ID，必填 | 必填 |
+| `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
+| `-h, --help` | 显示帮助 | — |
+
+```bash
+agentkit sandbox snapshot delete --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
 ```

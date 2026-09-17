@@ -168,3 +168,9 @@ Query a remote job. After a job succeeds, partially succeeds, or fails, this com
 agentkit migrate ./dify-export --framework dify status <job-id>
 agentkit migrate ./source-agent --framework any status --job-id <job-id> --json
 ```
+
+## Migration entry point and delivery validation
+
+The startup entry follows `common.entry_point` in the delivered `agentkit.yaml`, including entry files in subdirectories. It is not fixed to `main.py`. A lifecycle project that already passed delivery validation is not rejected again because it uses a different template layout
+
+If configuration is invalid or the configured entry is missing, a recoverable legacy entry can be packaged as a partial delivery with warnings, rather than deployable success. Fix the reported entry issues before building and deploying. Generated projects require `agentkit-sdk-python>=0.8.6` for runtime compatibility

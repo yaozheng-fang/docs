@@ -28,9 +28,9 @@
       {
         "language": "zh",
         "default": true,
-        "products": [
+        "tabs": [
           {
-            "product": "VeADK",
+            "tab": "VeADK",
             "versions": [
               {
                 "version": "Preview",
@@ -3385,7 +3385,7 @@
             ]
           },
           {
-            "product": "AgentKit CLI",
+            "tab": "AgentKit CLI",
             "versions": [
               {
                 "version": "Preview",
@@ -3399,17 +3399,6 @@
                       "productions/agentkit-cli/preview/zh/agentkit-yaml",
                       "productions/agentkit-cli/preview/zh/commands/upgrade",
                       "productions/agentkit-cli/preview/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/preview/zh/workflows/harness",
-                      "productions/agentkit-cli/preview/zh/workflows/high-code",
-                      "productions/agentkit-cli/preview/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/preview/zh/workflows/feishu",
-                      "productions/agentkit-cli/preview/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/preview/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -3441,8 +3430,7 @@
                           "productions/agentkit-cli/preview/zh/commands/eval/evaluator",
                           "productions/agentkit-cli/preview/zh/commands/eval/target",
                           "productions/agentkit-cli/preview/zh/commands/eval/run",
-                          "productions/agentkit-cli/preview/zh/commands/eval/experiment",
-                          "productions/agentkit-cli/preview/zh/commands/eval/target"
+                          "productions/agentkit-cli/preview/zh/commands/eval/experiment"
                         ]
                       },
                       "productions/agentkit-cli/preview/zh/commands/runtime",
@@ -3450,14 +3438,16 @@
                       "productions/agentkit-cli/preview/zh/commands/memory",
                       "productions/agentkit-cli/preview/zh/commands/model-gateway",
                       "productions/agentkit-cli/preview/zh/commands/mcp",
-                      "productions/agentkit-cli/preview/zh/commands/model-gateway",
                       "productions/agentkit-cli/preview/zh/commands/sandbox",
                       "productions/agentkit-cli/preview/zh/commands/env",
                       "productions/agentkit-cli/preview/zh/commands/skill",
                       "productions/agentkit-cli/preview/zh/commands/harness",
-                      "productions/agentkit-cli/preview/zh/commands/chat",
                       "productions/agentkit-cli/preview/zh/commands/auth",
-                      "productions/agentkit-cli/preview/zh/commands/docs"
+                      "productions/agentkit-cli/preview/zh/commands/docs",
+                      "productions/agentkit-cli/preview/zh/commands/user",
+                      "productions/agentkit-cli/preview/zh/commands/department",
+                      "productions/agentkit-cli/preview/zh/commands/group",
+                      "productions/agentkit-cli/preview/zh/commands/harness-cronjob"
                     ]
                   }
                 ],
@@ -3475,17 +3465,6 @@
                       "productions/agentkit-cli/archives/0.52.8/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.8/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.8/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.8/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -3550,17 +3529,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.7/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.7/zh/commands/onboard"
@@ -3619,17 +3587,6 @@
                       "productions/agentkit-cli/archives/0.52.6/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.6/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.6/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.6/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -3693,17 +3650,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.5/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.5/zh/commands/onboard"
@@ -3761,17 +3707,6 @@
                       "productions/agentkit-cli/archives/0.52.4/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.4/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.4/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.4/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -3835,17 +3770,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.3/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.3/zh/commands/onboard"
@@ -3903,17 +3827,6 @@
                       "productions/agentkit-cli/archives/0.52.2/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.2/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.2/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.2/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -3977,17 +3890,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.1/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.1/zh/commands/onboard"
@@ -4042,17 +3944,6 @@
                       "productions/agentkit-cli/archives/0.52.0/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.0/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.0/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.0/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -4113,17 +4004,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.51.2/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.51.2/zh/commands/onboard"
@@ -4178,17 +4058,6 @@
                       "productions/agentkit-cli/archives/0.51.1/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.51.1/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.51.1/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.51.1/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.51.1/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.51.1/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.51.1/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.51.1/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.51.1/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -4248,17 +4117,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.51.0/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.51.0/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.51.0/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.51.0/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.51.0/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.51.0/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.51.0/zh/commands/onboard"
@@ -4315,17 +4173,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.9/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.9/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.9/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.9/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.9/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.9/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.9/zh/commands/onboard"
@@ -4375,17 +4222,6 @@
                       "productions/agentkit-cli/archives/0.50.8/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.8/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.8/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.8/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.8/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.8/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.8/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.8/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.8/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -4440,17 +4276,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.7/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.7/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.7/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.7/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.7/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.7/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.7/zh/commands/onboard"
@@ -4499,17 +4324,6 @@
                       "productions/agentkit-cli/archives/0.50.6/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.6/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.6/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.6/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.6/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.6/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.6/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.6/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.6/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -4564,17 +4378,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.5/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.5/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.5/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.5/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.5/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.5/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.5/zh/commands/onboard"
@@ -4623,17 +4426,6 @@
                       "productions/agentkit-cli/archives/0.50.4/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.4/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.4/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.4/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.4/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.4/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.4/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.4/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.4/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -4688,17 +4480,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.3/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.3/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.3/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.3/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.3/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.3/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.3/zh/commands/onboard"
@@ -4747,17 +4528,6 @@
                       "productions/agentkit-cli/archives/0.50.2/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.2/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.2/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.2/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.2/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.2/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.2/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.2/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.2/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -4812,17 +4582,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.1/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.1/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.1/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.1/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.1/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.1/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.1/zh/commands/onboard"
@@ -4871,17 +4630,6 @@
                       "productions/agentkit-cli/archives/0.50.0/zh/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.0/zh/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.0/zh/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.0/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.0/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.0/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.0/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.0/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.0/zh/workflows/evaluation"
                     ]
                   },
                   {
@@ -4936,17 +4684,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.46.7/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.46.7/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.46.7/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.46.7/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.46.7/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.46.7/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.46.7/zh/commands/onboard"
@@ -4998,17 +4735,6 @@
                     ]
                   },
                   {
-                    "group": "最佳实践",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.46.6/zh/workflows/harness",
-                      "productions/agentkit-cli/archives/0.46.6/zh/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.46.6/zh/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.46.6/zh/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.46.6/zh/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.46.6/zh/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.46.6/zh/commands/onboard"
@@ -5048,18 +4774,206 @@
             ]
           },
           {
-            "product": "API 参考",
+            "tab": "API 参考",
             "groups": [
               {
-                "group": "ADK API Server",
+                "group": "Agent API Server 接口",
                 "pages": [
-                  "productions/api-reference/preview/zh/index",
-                  "productions/api-reference/preview/zh/sessions",
-                  "productions/api-reference/preview/zh/run",
-                  "productions/api-reference/preview/zh/artifacts",
-                  "productions/api-reference/preview/zh/memory",
-                  "productions/api-reference/preview/zh/evaluation",
-                  "productions/api-reference/preview/zh/debug"
+                  "productions/api-reference/preview/zh/agent-api-server/overview",
+                  {
+                    "group": "服务与应用",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/health",
+                      "productions/api-reference/preview/zh/agent-api-server/version",
+                      "productions/api-reference/preview/zh/agent-api-server/list-apps",
+                      "productions/api-reference/preview/zh/agent-api-server/get-app-info"
+                    ]
+                  },
+                  {
+                    "group": "会话",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/create-session",
+                      "productions/api-reference/preview/zh/agent-api-server/list-sessions",
+                      "productions/api-reference/preview/zh/agent-api-server/get-session",
+                      "productions/api-reference/preview/zh/agent-api-server/update-session",
+                      "productions/api-reference/preview/zh/agent-api-server/delete-session"
+                    ]
+                  },
+                  {
+                    "group": "智能体运行",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/run",
+                      "productions/api-reference/preview/zh/agent-api-server/run-sse"
+                    ]
+                  },
+                  {
+                    "group": "制品",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/save-artifact",
+                      "productions/api-reference/preview/zh/agent-api-server/list-artifacts",
+                      "productions/api-reference/preview/zh/agent-api-server/get-artifact",
+                      "productions/api-reference/preview/zh/agent-api-server/list-artifact-versions",
+                      "productions/api-reference/preview/zh/agent-api-server/get-artifact-version",
+                      "productions/api-reference/preview/zh/agent-api-server/list-artifact-metadata",
+                      "productions/api-reference/preview/zh/agent-api-server/get-artifact-metadata",
+                      "productions/api-reference/preview/zh/agent-api-server/delete-artifact"
+                    ]
+                  },
+                  {
+                    "group": "记忆",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/update-memory"
+                    ]
+                  },
+                  {
+                    "group": "评测 · 开发服务",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/create-eval-set",
+                      "productions/api-reference/preview/zh/agent-api-server/list-eval-sets",
+                      "productions/api-reference/preview/zh/agent-api-server/add-session-to-eval-set",
+                      "productions/api-reference/preview/zh/agent-api-server/list-eval-cases",
+                      "productions/api-reference/preview/zh/agent-api-server/get-eval-case",
+                      "productions/api-reference/preview/zh/agent-api-server/update-eval-case",
+                      "productions/api-reference/preview/zh/agent-api-server/delete-eval-case",
+                      "productions/api-reference/preview/zh/agent-api-server/run-evaluation",
+                      "productions/api-reference/preview/zh/agent-api-server/list-eval-results",
+                      "productions/api-reference/preview/zh/agent-api-server/get-eval-result",
+                      "productions/api-reference/preview/zh/agent-api-server/list-eval-metrics"
+                    ]
+                  },
+                  {
+                    "group": "调试 · 开发服务",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/get-event-trace",
+                      "productions/api-reference/preview/zh/agent-api-server/get-session-trace",
+                      "productions/api-reference/preview/zh/agent-api-server/get-agent-graph",
+                      "productions/api-reference/preview/zh/agent-api-server/get-event-graph"
+                    ]
+                  },
+                  {
+                    "group": "兼容接口",
+                    "pages": [
+                      "productions/api-reference/preview/zh/agent-api-server/create-session-with-id",
+                      "productions/api-reference/preview/zh/agent-api-server/create-eval-set-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/list-eval-sets-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/run-evaluation-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/list-eval-results-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/get-eval-result-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/add-session-to-eval-set-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/get-eval-case-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/update-eval-case-legacy",
+                      "productions/api-reference/preview/zh/agent-api-server/delete-eval-case-legacy"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Harness Runtime 接口",
+                "pages": [
+                  "productions/api-reference/preview/zh/harness-runtime/overview",
+                  "productions/api-reference/preview/zh/harness-runtime/tools",
+                  {
+                    "group": "Harness 调用",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/invoke",
+                      "productions/api-reference/preview/zh/harness-runtime/invoke-compatible",
+                      "productions/api-reference/preview/zh/harness-runtime/run",
+                      "productions/api-reference/preview/zh/harness-runtime/run-sse"
+                    ]
+                  },
+                  {
+                    "group": "定时任务",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/overview",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/status",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/create",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/list",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/get",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/pause",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/resume",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/runs",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/result",
+                      "productions/api-reference/preview/zh/harness-runtime/cronjobs/cancel"
+                    ]
+                  },
+                  {
+                    "group": "服务与应用",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/health",
+                      "productions/api-reference/preview/zh/harness-runtime/version",
+                      "productions/api-reference/preview/zh/harness-runtime/list-apps",
+                      "productions/api-reference/preview/zh/harness-runtime/get-app-info"
+                    ]
+                  },
+                  {
+                    "group": "会话",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/create-session",
+                      "productions/api-reference/preview/zh/harness-runtime/list-sessions",
+                      "productions/api-reference/preview/zh/harness-runtime/get-session",
+                      "productions/api-reference/preview/zh/harness-runtime/update-session",
+                      "productions/api-reference/preview/zh/harness-runtime/delete-session"
+                    ]
+                  },
+                  {
+                    "group": "制品",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/save-artifact",
+                      "productions/api-reference/preview/zh/harness-runtime/list-artifacts",
+                      "productions/api-reference/preview/zh/harness-runtime/get-artifact",
+                      "productions/api-reference/preview/zh/harness-runtime/list-artifact-versions",
+                      "productions/api-reference/preview/zh/harness-runtime/get-artifact-version",
+                      "productions/api-reference/preview/zh/harness-runtime/list-artifact-metadata",
+                      "productions/api-reference/preview/zh/harness-runtime/get-artifact-metadata",
+                      "productions/api-reference/preview/zh/harness-runtime/delete-artifact"
+                    ]
+                  },
+                  {
+                    "group": "记忆",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/update-memory"
+                    ]
+                  },
+                  {
+                    "group": "开发评测",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/create-eval-set",
+                      "productions/api-reference/preview/zh/harness-runtime/list-eval-sets",
+                      "productions/api-reference/preview/zh/harness-runtime/add-session-to-eval-set",
+                      "productions/api-reference/preview/zh/harness-runtime/list-eval-cases",
+                      "productions/api-reference/preview/zh/harness-runtime/get-eval-case",
+                      "productions/api-reference/preview/zh/harness-runtime/update-eval-case",
+                      "productions/api-reference/preview/zh/harness-runtime/delete-eval-case",
+                      "productions/api-reference/preview/zh/harness-runtime/run-evaluation",
+                      "productions/api-reference/preview/zh/harness-runtime/list-eval-results",
+                      "productions/api-reference/preview/zh/harness-runtime/get-eval-result",
+                      "productions/api-reference/preview/zh/harness-runtime/list-eval-metrics"
+                    ]
+                  },
+                  {
+                    "group": "开发调试",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/get-event-trace",
+                      "productions/api-reference/preview/zh/harness-runtime/get-session-trace",
+                      "productions/api-reference/preview/zh/harness-runtime/get-agent-graph",
+                      "productions/api-reference/preview/zh/harness-runtime/get-event-graph"
+                    ]
+                  },
+                  {
+                    "group": "兼容接口",
+                    "pages": [
+                      "productions/api-reference/preview/zh/harness-runtime/create-session-with-id",
+                      "productions/api-reference/preview/zh/harness-runtime/create-eval-set-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/list-eval-sets-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/run-evaluation-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/list-eval-results-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/get-eval-result-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/add-session-to-eval-set-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/get-eval-case-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/update-eval-case-legacy",
+                      "productions/api-reference/preview/zh/harness-runtime/delete-eval-case-legacy"
+                    ]
+                  }
                 ]
               }
             ]
@@ -5068,9 +4982,9 @@
       },
       {
         "language": "en",
-        "products": [
+        "tabs": [
           {
-            "product": "VeADK",
+            "tab": "VeADK",
             "versions": [
               {
                 "version": "Preview",
@@ -8425,7 +8339,7 @@
             ]
           },
           {
-            "product": "AgentKit CLI",
+            "tab": "AgentKit CLI",
             "versions": [
               {
                 "version": "Preview",
@@ -8439,17 +8353,6 @@
                       "productions/agentkit-cli/preview/en/agentkit-yaml",
                       "productions/agentkit-cli/preview/en/commands/upgrade",
                       "productions/agentkit-cli/preview/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/preview/en/workflows/harness",
-                      "productions/agentkit-cli/preview/en/workflows/high-code",
-                      "productions/agentkit-cli/preview/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/preview/en/workflows/feishu",
-                      "productions/agentkit-cli/preview/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/preview/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -8481,8 +8384,7 @@
                           "productions/agentkit-cli/preview/en/commands/eval/evaluator",
                           "productions/agentkit-cli/preview/en/commands/eval/target",
                           "productions/agentkit-cli/preview/en/commands/eval/run",
-                          "productions/agentkit-cli/preview/en/commands/eval/experiment",
-                          "productions/agentkit-cli/preview/en/commands/eval/target"
+                          "productions/agentkit-cli/preview/en/commands/eval/experiment"
                         ]
                       },
                       "productions/agentkit-cli/preview/en/commands/runtime",
@@ -8490,14 +8392,16 @@
                       "productions/agentkit-cli/preview/en/commands/memory",
                       "productions/agentkit-cli/preview/en/commands/model-gateway",
                       "productions/agentkit-cli/preview/en/commands/mcp",
-                      "productions/agentkit-cli/preview/en/commands/model-gateway",
                       "productions/agentkit-cli/preview/en/commands/sandbox",
                       "productions/agentkit-cli/preview/en/commands/env",
                       "productions/agentkit-cli/preview/en/commands/skill",
                       "productions/agentkit-cli/preview/en/commands/harness",
-                      "productions/agentkit-cli/preview/en/commands/chat",
                       "productions/agentkit-cli/preview/en/commands/auth",
-                      "productions/agentkit-cli/preview/en/commands/docs"
+                      "productions/agentkit-cli/preview/en/commands/docs",
+                      "productions/agentkit-cli/preview/en/commands/user",
+                      "productions/agentkit-cli/preview/en/commands/department",
+                      "productions/agentkit-cli/preview/en/commands/group",
+                      "productions/agentkit-cli/preview/en/commands/harness-cronjob"
                     ]
                   }
                 ],
@@ -8515,17 +8419,6 @@
                       "productions/agentkit-cli/archives/0.52.8/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.8/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.8/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.8/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.8/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.8/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.8/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.8/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.8/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -8590,17 +8483,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.7/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.7/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.7/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.7/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.7/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.7/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.7/en/commands/onboard"
@@ -8659,17 +8541,6 @@
                       "productions/agentkit-cli/archives/0.52.6/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.6/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.6/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.6/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.6/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.6/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.6/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.6/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.6/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -8733,17 +8604,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.5/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.5/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.5/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.5/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.5/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.5/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.5/en/commands/onboard"
@@ -8801,17 +8661,6 @@
                       "productions/agentkit-cli/archives/0.52.4/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.4/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.4/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.4/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.4/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.4/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.4/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.4/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.4/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -8875,17 +8724,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.3/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.3/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.3/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.3/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.3/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.3/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.3/en/commands/onboard"
@@ -8943,17 +8781,6 @@
                       "productions/agentkit-cli/archives/0.52.2/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.2/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.2/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.2/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.2/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.2/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.2/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.2/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.2/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9017,17 +8844,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.1/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.1/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.1/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.1/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.1/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.1/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.52.1/en/commands/onboard"
@@ -9082,17 +8898,6 @@
                       "productions/agentkit-cli/archives/0.52.0/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.52.0/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.52.0/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.52.0/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.52.0/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.52.0/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.52.0/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.52.0/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.52.0/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9153,17 +8958,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.51.2/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.51.2/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.51.2/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.51.2/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.51.2/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.51.2/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.51.2/en/commands/onboard"
@@ -9218,17 +9012,6 @@
                       "productions/agentkit-cli/archives/0.51.1/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.51.1/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.51.1/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.51.1/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.51.1/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.51.1/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.51.1/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.51.1/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.51.1/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9288,17 +9071,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.51.0/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.51.0/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.51.0/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.51.0/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.51.0/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.51.0/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.51.0/en/commands/onboard"
@@ -9355,17 +9127,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.9/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.9/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.9/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.9/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.9/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.9/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.9/en/commands/onboard"
@@ -9415,17 +9176,6 @@
                       "productions/agentkit-cli/archives/0.50.8/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.8/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.8/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.8/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.8/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.8/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.8/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.8/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.8/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9480,17 +9230,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.7/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.7/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.7/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.7/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.7/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.7/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.7/en/commands/onboard"
@@ -9539,17 +9278,6 @@
                       "productions/agentkit-cli/archives/0.50.6/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.6/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.6/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.6/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.6/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.6/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.6/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.6/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.6/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9604,17 +9332,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.5/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.5/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.5/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.5/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.5/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.5/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.5/en/commands/onboard"
@@ -9663,17 +9380,6 @@
                       "productions/agentkit-cli/archives/0.50.4/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.4/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.4/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.4/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.4/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.4/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.4/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.4/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.4/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9728,17 +9434,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.3/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.3/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.3/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.3/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.3/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.3/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.3/en/commands/onboard"
@@ -9787,17 +9482,6 @@
                       "productions/agentkit-cli/archives/0.50.2/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.2/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.2/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.2/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.2/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.2/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.2/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.2/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.2/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9852,17 +9536,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.1/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.1/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.1/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.1/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.1/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.1/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.50.1/en/commands/onboard"
@@ -9911,17 +9584,6 @@
                       "productions/agentkit-cli/archives/0.50.0/en/agentkit-yaml",
                       "productions/agentkit-cli/archives/0.50.0/en/commands/upgrade",
                       "productions/agentkit-cli/archives/0.50.0/en/commands/tree"
-                    ]
-                  },
-                  {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.50.0/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.50.0/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.50.0/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.50.0/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.50.0/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.50.0/en/workflows/evaluation"
                     ]
                   },
                   {
@@ -9976,17 +9638,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.46.7/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.46.7/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.46.7/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.46.7/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.46.7/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.46.7/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.46.7/en/commands/onboard"
@@ -10038,17 +9689,6 @@
                     ]
                   },
                   {
-                    "group": "Best practices",
-                    "pages": [
-                      "productions/agentkit-cli/archives/0.46.6/en/workflows/harness",
-                      "productions/agentkit-cli/archives/0.46.6/en/workflows/high-code",
-                      "productions/agentkit-cli/archives/0.46.6/en/workflows/frontend-sso",
-                      "productions/agentkit-cli/archives/0.46.6/en/workflows/feishu",
-                      "productions/agentkit-cli/archives/0.46.6/en/workflows/codex-sandbox",
-                      "productions/agentkit-cli/archives/0.46.6/en/workflows/evaluation"
-                    ]
-                  },
-                  {
                     "group": "AI-Friendly",
                     "pages": [
                       "productions/agentkit-cli/archives/0.46.6/en/commands/onboard"
@@ -10088,18 +9728,206 @@
             ]
           },
           {
-            "product": "API Reference",
+            "tab": "API Reference",
             "groups": [
               {
-                "group": "ADK API Server",
+                "group": "Agent API Server API",
                 "pages": [
-                  "productions/api-reference/preview/en/index",
-                  "productions/api-reference/preview/en/sessions",
-                  "productions/api-reference/preview/en/run",
-                  "productions/api-reference/preview/en/artifacts",
-                  "productions/api-reference/preview/en/memory",
-                  "productions/api-reference/preview/en/evaluation",
-                  "productions/api-reference/preview/en/debug"
+                  "productions/api-reference/preview/en/agent-api-server/overview",
+                  {
+                    "group": "Service and applications",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/health",
+                      "productions/api-reference/preview/en/agent-api-server/version",
+                      "productions/api-reference/preview/en/agent-api-server/list-apps",
+                      "productions/api-reference/preview/en/agent-api-server/get-app-info"
+                    ]
+                  },
+                  {
+                    "group": "Sessions",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/create-session",
+                      "productions/api-reference/preview/en/agent-api-server/list-sessions",
+                      "productions/api-reference/preview/en/agent-api-server/get-session",
+                      "productions/api-reference/preview/en/agent-api-server/update-session",
+                      "productions/api-reference/preview/en/agent-api-server/delete-session"
+                    ]
+                  },
+                  {
+                    "group": "Agent execution",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/run",
+                      "productions/api-reference/preview/en/agent-api-server/run-sse"
+                    ]
+                  },
+                  {
+                    "group": "Artifacts",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/save-artifact",
+                      "productions/api-reference/preview/en/agent-api-server/list-artifacts",
+                      "productions/api-reference/preview/en/agent-api-server/get-artifact",
+                      "productions/api-reference/preview/en/agent-api-server/list-artifact-versions",
+                      "productions/api-reference/preview/en/agent-api-server/get-artifact-version",
+                      "productions/api-reference/preview/en/agent-api-server/list-artifact-metadata",
+                      "productions/api-reference/preview/en/agent-api-server/get-artifact-metadata",
+                      "productions/api-reference/preview/en/agent-api-server/delete-artifact"
+                    ]
+                  },
+                  {
+                    "group": "Memory",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/update-memory"
+                    ]
+                  },
+                  {
+                    "group": "Evaluation · development server",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/create-eval-set",
+                      "productions/api-reference/preview/en/agent-api-server/list-eval-sets",
+                      "productions/api-reference/preview/en/agent-api-server/add-session-to-eval-set",
+                      "productions/api-reference/preview/en/agent-api-server/list-eval-cases",
+                      "productions/api-reference/preview/en/agent-api-server/get-eval-case",
+                      "productions/api-reference/preview/en/agent-api-server/update-eval-case",
+                      "productions/api-reference/preview/en/agent-api-server/delete-eval-case",
+                      "productions/api-reference/preview/en/agent-api-server/run-evaluation",
+                      "productions/api-reference/preview/en/agent-api-server/list-eval-results",
+                      "productions/api-reference/preview/en/agent-api-server/get-eval-result",
+                      "productions/api-reference/preview/en/agent-api-server/list-eval-metrics"
+                    ]
+                  },
+                  {
+                    "group": "Debugging · development server",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/get-event-trace",
+                      "productions/api-reference/preview/en/agent-api-server/get-session-trace",
+                      "productions/api-reference/preview/en/agent-api-server/get-agent-graph",
+                      "productions/api-reference/preview/en/agent-api-server/get-event-graph"
+                    ]
+                  },
+                  {
+                    "group": "Compatibility endpoints",
+                    "pages": [
+                      "productions/api-reference/preview/en/agent-api-server/create-session-with-id",
+                      "productions/api-reference/preview/en/agent-api-server/create-eval-set-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/list-eval-sets-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/run-evaluation-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/list-eval-results-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/get-eval-result-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/add-session-to-eval-set-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/get-eval-case-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/update-eval-case-legacy",
+                      "productions/api-reference/preview/en/agent-api-server/delete-eval-case-legacy"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Harness Runtime API",
+                "pages": [
+                  "productions/api-reference/preview/en/harness-runtime/overview",
+                  "productions/api-reference/preview/en/harness-runtime/tools",
+                  {
+                    "group": "Harness invocation",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/invoke",
+                      "productions/api-reference/preview/en/harness-runtime/invoke-compatible",
+                      "productions/api-reference/preview/en/harness-runtime/run",
+                      "productions/api-reference/preview/en/harness-runtime/run-sse"
+                    ]
+                  },
+                  {
+                    "group": "Scheduled jobs",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/overview",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/status",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/create",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/list",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/get",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/pause",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/resume",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/runs",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/result",
+                      "productions/api-reference/preview/en/harness-runtime/cronjobs/cancel"
+                    ]
+                  },
+                  {
+                    "group": "Service and applications",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/health",
+                      "productions/api-reference/preview/en/harness-runtime/version",
+                      "productions/api-reference/preview/en/harness-runtime/list-apps",
+                      "productions/api-reference/preview/en/harness-runtime/get-app-info"
+                    ]
+                  },
+                  {
+                    "group": "Sessions",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/create-session",
+                      "productions/api-reference/preview/en/harness-runtime/list-sessions",
+                      "productions/api-reference/preview/en/harness-runtime/get-session",
+                      "productions/api-reference/preview/en/harness-runtime/update-session",
+                      "productions/api-reference/preview/en/harness-runtime/delete-session"
+                    ]
+                  },
+                  {
+                    "group": "Artifacts",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/save-artifact",
+                      "productions/api-reference/preview/en/harness-runtime/list-artifacts",
+                      "productions/api-reference/preview/en/harness-runtime/get-artifact",
+                      "productions/api-reference/preview/en/harness-runtime/list-artifact-versions",
+                      "productions/api-reference/preview/en/harness-runtime/get-artifact-version",
+                      "productions/api-reference/preview/en/harness-runtime/list-artifact-metadata",
+                      "productions/api-reference/preview/en/harness-runtime/get-artifact-metadata",
+                      "productions/api-reference/preview/en/harness-runtime/delete-artifact"
+                    ]
+                  },
+                  {
+                    "group": "Memory",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/update-memory"
+                    ]
+                  },
+                  {
+                    "group": "Development evaluation",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/create-eval-set",
+                      "productions/api-reference/preview/en/harness-runtime/list-eval-sets",
+                      "productions/api-reference/preview/en/harness-runtime/add-session-to-eval-set",
+                      "productions/api-reference/preview/en/harness-runtime/list-eval-cases",
+                      "productions/api-reference/preview/en/harness-runtime/get-eval-case",
+                      "productions/api-reference/preview/en/harness-runtime/update-eval-case",
+                      "productions/api-reference/preview/en/harness-runtime/delete-eval-case",
+                      "productions/api-reference/preview/en/harness-runtime/run-evaluation",
+                      "productions/api-reference/preview/en/harness-runtime/list-eval-results",
+                      "productions/api-reference/preview/en/harness-runtime/get-eval-result",
+                      "productions/api-reference/preview/en/harness-runtime/list-eval-metrics"
+                    ]
+                  },
+                  {
+                    "group": "Development debugging",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/get-event-trace",
+                      "productions/api-reference/preview/en/harness-runtime/get-session-trace",
+                      "productions/api-reference/preview/en/harness-runtime/get-agent-graph",
+                      "productions/api-reference/preview/en/harness-runtime/get-event-graph"
+                    ]
+                  },
+                  {
+                    "group": "Compatibility endpoints",
+                    "pages": [
+                      "productions/api-reference/preview/en/harness-runtime/create-session-with-id",
+                      "productions/api-reference/preview/en/harness-runtime/create-eval-set-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/list-eval-sets-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/run-evaluation-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/list-eval-results-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/get-eval-result-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/add-session-to-eval-set-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/get-eval-case-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/update-eval-case-legacy",
+                      "productions/api-reference/preview/en/harness-runtime/delete-eval-case-legacy"
+                    ]
+                  }
                 ]
               }
             ]
@@ -10236,6 +10064,35 @@
     {
       "source": "/en/api-reference/:slug*",
       "destination": "/productions/api-reference/preview/en/:slug*"
+    },
+    {
+      "source": "/productions/api-reference/preview/zh/harness-runtime/get-config",
+      "destination": "/productions/api-reference/preview/zh/harness-runtime/overview"
+    },
+    {
+      "source": "/productions/api-reference/preview/zh/harness-runtime/post-config",
+      "destination": "/productions/api-reference/preview/zh/harness-runtime/overview"
+    },
+    {
+      "source": "/productions/api-reference/preview/en/harness-runtime/get-config",
+      "destination": "/productions/api-reference/preview/en/harness-runtime/overview"
+    },
+    {
+      "source": "/productions/api-reference/preview/en/harness-runtime/post-config",
+      "destination": "/productions/api-reference/preview/en/harness-runtime/overview"
     }
-  ]
+  ],
+  "api": {
+    "playground": {
+      "display": "interactive"
+    },
+    "examples": {
+      "languages": [
+        "curl",
+        "python",
+        "javascript"
+      ],
+      "defaults": "required"
+    }
+  }
 }

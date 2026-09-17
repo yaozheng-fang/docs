@@ -120,6 +120,8 @@ docker_build:
 | `runtime_bindings.memory_id` | Bound memory collection id. | — |
 | `runtime_bindings.tool_id` | Bound tool id. | — |
 | `runtime_bindings.mcp_toolset_id` | Bound MCP toolset id. | — |
+| `runtime_gateway_mode` | Runtime gateway mode: `Shared` or `Exclusive` | `Shared` |
+| `runtime_gateway_instance_id` | Exclusive gateway instance ID, required in Exclusive mode | — |
 | `runtime_network.mode` | Network mode: `public`, `private`, or `hybrid`. `private` disables public access and enables private networking; `hybrid` keeps public access and enables private networking. | Platform default |
 | `runtime_network.vpc_id` | VPC id for private networking; required when `mode` is `private` or `hybrid`. | — |
 | `runtime_network.subnet_ids` | Subnet ids for private networking; provide at least one and at most 5 when `mode` is `private` or `hybrid`. | `[]` |
@@ -270,7 +272,7 @@ frontend:
 # apmplus: true                # enable APMPlus monitoring
 
 # ── Advanced (optional) ──────────────────────────────────
-# role_name: ""                # IAM role; auto-created when omitted
+# role_name: ""                # IAM role; reuse a qualified role or create one when omitted
 
 # ── Infrastructure ───────────────────────────────────────
 # Where the image is built and stored. "Auto" = created & managed for you.
@@ -502,7 +504,7 @@ Set `apmplus` to `true` to enable APMPlus monitoring.
 
 | Field | Description |
 | --- | --- |
-| `role_name` | IAM role name; auto-created when omitted. |
+| `role_name` | IAM role name; explicitly configured roles are validated. Otherwise creation reuses a qualified role or creates one; updates retain the current role. |
 
 ## Infrastructure
 
@@ -527,3 +529,28 @@ Set `apmplus` to `true` to enable APMPlus monitoring.
 ## Build
 
 The `dockerfile` field sets the path to the Dockerfile used for the build, defaulting to `.agentkit/Dockerfile` (or `./Dockerfile` if one exists at the project root). The process inside the container must listen on `0.0.0.0:8000`; the runtime probes that port to decide whether an instance is ready.
+
+## Exclusive runtime gateways
+
+Lifecycle configuration uses `runtime_gateway_mode` and `runtime_gateway_instance_id` under `launch_types.cloud` or `launch_types.hybrid`. Release configuration uses `gateway_mode` and `gateway_instance_id` under `runtime`
+
+```yaml title=".agentkit/agentkit.yaml"
+runtime:
+  gateway_mode: Exclusive
+  gateway_instance_id: gateway-example
+```
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `runtime.gateway_mode` | Gateway mode: `Shared` or `Exclusive` | `Shared` |
+| `runtime.gateway_instance_id` | Existing exclusive gateway instance ID | Required in Exclusive mode |
+
+Exclusive mode cannot include runtime network configuration because the gateway supplies the network. Shared mode cannot specify an instance ID. Gateway bindings cannot change after creation; deployment stops when desired settings conflict with an existing binding
+
+```bash
+agentkit config --runtime_gateway_mode Exclusive --runtime_gateway_instance_id gateway-example
+```
+
+## Frontend login sessions
+
+With frontend BFF and Identity authentication enabled, the frontend proxy preserves login callbacks, session cookies, and return paths so requests continue in the signed-in session. Keep the issuer, client ID, and registered callback URL consistent. This fix requires no additional configuration fields

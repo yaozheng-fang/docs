@@ -1,0 +1,125 @@
+---
+title: "用户管理"
+---
+
+管理已有用户池中的用户，支持批量创建、精确查询、更新和删除
+
+<Note>
+请先创建用户池并登录具有相应用户池管理权限的账号，所有操作均需指定 `--user-pool-id`。火山引擎与 BytePlus 使用各自的账号和区域，可通过全局 `--provider` 选择云厂商
+</Note>
+
+## 命令总览
+
+| 命令 | 说明 |
+| --- | --- |
+| `user create` | 一次创建 1–1000 个用户，逐项返回成功或失败结果 |
+| `user update` | 更新指定用户；省略的字段保持原值，`--name`、`--email`、`--phone` 可用空字符串清空，用户名不能为空 |
+| `user delete` | 永久删除指定用户 |
+| `user list` | 按邮箱、用户名或显示名称精确筛选，使用返回的分页令牌读取下一页 |
+
+## 字段限制
+
+用户名长度为 2–64 个字符，仅可包含英文字母、数字、点、下划线和连字符，不能以数字开头或包含连续的点。名称、邮箱和外部身份提供方 ID 最长为 255 个字符；邮箱必须为有效地址，电话必须符合 E.164 格式。创建时每批可提交 1–1000 个用户；更新时可用空字符串清空名称、邮箱和电话，但不能清空用户名
+
+## user create
+
+一次创建 1–1000 个用户，逐项返回成功或失败结果
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--file <path>` | JSON 用户文件，不能与逐用户参数同时使用 | — |
+| `--preferred-username <username>` | 用户名；创建时可重复传入，更新时不能为空 | — |
+| `--name <name>` | 名称 | — |
+| `--email <email>` | 邮箱地址 | — |
+| `--phone <phone>` | E.164 格式的电话号码 | — |
+| `--external-provider-id <id>` | 外部身份提供方 ID，创建时按用户顺序重复传入 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit user create --user-pool-id pool-example --preferred-username alice --name Alice --email alice@example.com
+```
+
+## user update
+
+更新指定用户；省略的字段保持原值，`--name`、`--email`、`--phone` 可用空字符串清空，用户名不能为空
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--user-id <uid>` | 用户 ID，必填 | 必填 |
+| `--preferred-username <username>` | 用户名；创建时可重复传入，更新时不能为空 | — |
+| `--name <name>` | 名称 | — |
+| `--email <email>` | 邮箱地址 | — |
+| `--phone <phone>` | E.164 格式的电话号码 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit user update --user-pool-id pool-example --user-id user-example --name "Alice Chen"
+```
+
+## user delete
+
+永久删除指定用户
+
+<Warning>
+删除不可撤销，请确认用户池与资源 ID。交互终端会要求确认；脚本中需显式传入 `--yes`
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--user-id <uid>` | 用户 ID，必填 | 必填 |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `-y, --yes` | 跳过确认；非交互删除时必须指定 | `false` |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit user delete --user-pool-id pool-example --user-id user-example --yes
+```
+
+## user list
+
+按邮箱、用户名或显示名称精确筛选，使用返回的分页令牌读取下一页
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--email <email>` | 邮箱地址 | — |
+| `--preferred-username <username>` | 用户名；创建时可重复传入，更新时不能为空 | — |
+| `--name <name>` | 名称 | — |
+| `--max-results <count>` | 每页数量，范围 `0`–`100`；`0` 使用服务端默认值 | 服务端默认值 |
+| `--next-token <token>` | 上一页返回的分页令牌 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit user list --user-pool-id pool-example --max-results 20 --json
+```
+
+将返回的 `nextToken` 传给 `--next-token`，逐页读取结果；CLI 不会自动读取所有页
+
+## 批量创建文件
+
+创建 `users.json`，可使用数组或包含 `users` 数组的对象。每个用户必须有 `preferredUsername`，其余字段可省略
+
+```json title="users.json"
+{
+  "users": [
+    {"preferredUsername": "alice", "name": "Alice", "email": "alice@example.com"},
+    {"preferredUsername": "bob", "name": "Bob"}
+  ]
+}
+```
+
+```bash
+agentkit user create --user-pool-id pool-example --file users.json --json
+```
+
+使用参数批量创建时，每个用户取各参数中相同序号的值；可选参数数量不能超过用户名数量。批次可能部分成功，有失败项时命令返回非零退出码，请只重试失败项

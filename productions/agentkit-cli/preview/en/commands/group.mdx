@@ -1,0 +1,94 @@
+---
+title: "Manage groups"
+---
+
+Create, list, update descriptions for, and delete groups in an existing user pool
+
+<Note>
+Create the user pool first and sign in with permission to manage it. Every operation requires `--user-pool-id`. Use global `--provider` to select Volcengine or BytePlus and the matching account and region
+</Note>
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `group create` | Create a group in a user pool |
+| `group update` | Update a group's description in a user pool (the group name is immutable; description is required and cannot be empty) |
+| `group list` | List groups in a user pool (exact-match filters; token-based pagination) |
+| `group delete` | Delete a group from a user pool (irreversible) |
+
+## group create
+
+Create a group in a user pool
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--name <name>` | group name | Required |
+| `--description <text>` | group description | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON result instead of a human-readable summary | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit group create --user-pool-id pool-example --name reviewers --description "Review team"
+```
+
+## group update
+
+Update a group's description in a user pool (the group name is immutable; description is required and cannot be empty)
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--group-id <uid>` | group UID to update | Required |
+| `--description <text>` | new group description (required; cannot be empty) | Required |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output a JSON summary instead of a human-readable line | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit group update --user-pool-id pool-example --group-id group-example --description "Release reviewers"
+```
+
+## group list
+
+List groups in a user pool (exact-match filters; token-based pagination)
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID to list groups from | Required |
+| `--group-id <uid>` | filter by exact group UID | — |
+| `--name <name>` | filter by exact group name | — |
+| `--max-results <count>` | maximum groups to return in this page (0-100; 0 uses the server default) | Server default |
+| `--next-token <token>` | pagination token from the previous response | — |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `--json` | output JSON results instead of a table | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit group list --user-pool-id pool-example --max-results 20 --json
+```
+
+Pass the returned `nextToken` to `--next-token` to read subsequent pages; the CLI does not fetch every page automatically
+
+## group delete
+
+Delete a group from a user pool (irreversible)
+
+<Warning>
+Deletion is irreversible. Check the user pool and resource IDs. Interactive terminals prompt for confirmation; scripts must pass `--yes`
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | user pool UID | Required |
+| `--group-id <uid>` | group UID to delete | Required |
+| `-r, --region <region>` | cloud region (default: from provider/env) | Provider / environment |
+| `-y, --yes` | skip the confirmation prompt | `false` |
+| `--json` | output a JSON summary instead of a human-readable line | `false` |
+| `-h, --help` | Show command help | — |
+
+```bash
+agentkit group delete --user-pool-id pool-example --group-id group-example --yes
+```

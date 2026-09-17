@@ -52,6 +52,8 @@ Without `--global`, the command reads or updates the current project's lifecycle
 | `--no-runtime_enable_shared_internet_access` | Disable shared internet access for private networking. | — |
 | `--runtime-enable-shared-internet-access` | Kebab-case form of `--runtime_enable_shared_internet_access`. | Current config value |
 | `--no-runtime-enable-shared-internet-access` | Kebab-case form of `--no-runtime_enable_shared_internet_access`. | — |
+| `--runtime_gateway_mode <mode>` / `--runtime-gateway-mode <mode>` | Gateway mode for new runtimes: `Shared` or `Exclusive` | Current configuration; otherwise `Shared` |
+| `--runtime_gateway_instance_id <id>` / `--runtime-gateway-instance-id <id>` | Gateway instance ID, required in Exclusive mode | — |
 
 ```bash
 agentkit config --init \
@@ -99,3 +101,11 @@ agentkit config --global --set defaults.cloud_provider=byteplus
 <Note>
 Commands resolve environment variables first, then project config and user-wide config. Every product command also accepts global `--provider volcengine|byteplus` to override the cloud provider for that command. Region values must be lowercase, hyphen-separated region codes such as `cn-beijing` or `ap-southeast-1`; values containing paths, query strings, uppercase letters, or non-region hostnames are rejected.
 </Note>
+
+## Configure an exclusive gateway
+
+Select an existing exclusive gateway before creating the runtime, and remove independent runtime network configuration from that strategy. Bindings cannot change after creation; see [exclusive runtime gateways](/productions/agentkit-cli/preview/en/agentkit-yaml#exclusive-runtime-gateways)
+
+```bash
+agentkit config --runtime_gateway_mode Exclusive --runtime_gateway_instance_id gateway-example
+```

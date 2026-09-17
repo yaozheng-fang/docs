@@ -1,0 +1,155 @@
+---
+title: "部门管理"
+---
+
+管理用户池的部门层级，以及用户与部门的归属关系
+
+<Note>
+请先创建用户池并登录具有相应用户池管理权限的账号，所有操作均需指定 `--user-pool-id`。火山引擎与 BytePlus 使用各自的账号和区域，可通过全局 `--provider` 选择云厂商
+</Note>
+
+## 命令总览
+
+| 命令 | 说明 |
+| --- | --- |
+| `department create` | 创建部门，必须指定父部门；顶级部门使用 `root` |
+| `department update` | 修改部门名称、描述或父部门；省略的字段保持原值，描述可用空字符串清空 |
+| `department list` | 查询指定父部门的直接子部门，可按部门 ID 或名称筛选 |
+| `department add-users` | 向部门添加 1–100 个用户，重复传入 `--user-id` |
+| `department remove-users` | 从部门移除 1–100 个用户，不删除用户池中的用户 |
+| `department change-users` | 将 1–100 个用户从原部门转移到目标部门 |
+| `department delete` | 删除指定部门 |
+
+## department create
+
+创建部门，必须指定父部门；顶级部门使用 `root`
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--name <name>` | 名称，必填 | 必填 |
+| `--parent-department-id <uid>` | 父部门 ID；顶级部门使用 `root`，必填 | 必填 |
+| `--description <text>` | 描述 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit department create --user-pool-id pool-example --name Engineering --parent-department-id root
+```
+
+## department update
+
+修改部门名称、描述或父部门；省略的字段保持原值，描述可用空字符串清空
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--department-id <uid>` | 部门 ID，必填 | 必填 |
+| `--parent-department-id <uid>` | 父部门 ID；顶级部门使用 `root` | — |
+| `--name <name>` | 名称 | — |
+| `--description <text>` | 描述 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit department update --user-pool-id pool-example --department-id dept-example --description "Product engineering"
+```
+
+## department list
+
+查询指定父部门的直接子部门，可按部门 ID 或名称筛选
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--parent-department-id <uid>` | 父部门 ID；顶级部门使用 `root`，必填 | 必填 |
+| `--department-id <uid>` | 部门 ID | — |
+| `--name <name>` | 名称 | — |
+| `--max-results <count>` | 每页数量，范围 `0`–`100`；`0` 使用服务端默认值 | 服务端默认值 |
+| `--next-token <token>` | 上一页返回的分页令牌 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit department list --user-pool-id pool-example --parent-department-id root --max-results 20 --json
+```
+
+将返回的 `nextToken` 传给 `--next-token`，逐页读取结果；CLI 不会自动读取所有页
+
+## department add-users
+
+向部门添加 1–100 个用户，重复传入 `--user-id`
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--department-id <uid>` | 部门 ID，必填 | 必填 |
+| `--user-id <uid>` | 用户 ID，重复传入 1–100 个 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit department add-users --user-pool-id pool-example --department-id dept-example --user-id user-alice --user-id user-bob
+```
+
+## department remove-users
+
+从部门移除 1–100 个用户，不删除用户池中的用户
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--department-id <uid>` | 部门 ID，必填 | 必填 |
+| `--user-id <uid>` | 用户 ID，重复传入 1–100 个 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit department remove-users --user-pool-id pool-example --department-id dept-example --user-id user-alice
+```
+
+## department change-users
+
+将 1–100 个用户从原部门转移到目标部门
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--origin-department-id <uid>` | 原部门 ID，必填 | 必填 |
+| `--target-department-id <uid>` | 目标部门 ID，必填 | 必填 |
+| `--user-id <uid>` | 用户 ID，重复传入 1–100 个 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit department change-users --user-pool-id pool-example --origin-department-id dept-source --target-department-id dept-target --user-id user-alice
+```
+
+## department delete
+
+删除指定部门
+
+<Warning>
+删除不可撤销，请确认用户池与资源 ID。交互终端会要求确认；脚本中需显式传入 `--yes`
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--department-id <uid>` | 部门 ID，必填 | 必填 |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `-y, --yes` | 跳过确认；非交互删除时必须指定 | `false` |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit department delete --user-pool-id pool-example --department-id dept-example --yes
+```
+
+成员变更逐项返回结果，部分失败时返回非零退出码，已成功的用户变更不会自动回滚

@@ -1,0 +1,81 @@
+---
+title: "Scheduled task overview"
+---
+
+Harness scheduled tasks execute prompts periodically or at a specified time, persisting task definitions, execution state, and results in TOS. Their HTTP interfaces share the `/harness/cronjobs` prefix and are verified against the Harness Runtime packaged and deployed by AgentKit CLI **0.54.0**
+
+## Enable scheduled tasks
+
+These routes exist only when `cronjob` is enabled for a Harness deployed by AgentKit CLI. A standalone VeADK base service does not expose them, and a Harness deployment without scheduled tasks does not mount these paths
+
+This version supports service-authenticated Harnesses, such as Runtime API key authentication, with direct access to model credentials. Shared OAuth deployments depend on an interactive user’s delegated identity and do not support background scheduled tasks
+
+<Warning>
+Enabling scheduled tasks keeps at least one instance running and incurs Runtime capacity and TOS charges. Prompts and resolved MCP credentials are persisted in TOS, so restrict bucket access. API responses hide the original MCP credential values
+</Warning>
+
+Prepare an existing TOS bucket and enable the feature from the directory containing `harness.yaml`
+
+```bash
+agentkit harness deploy --cronjob \
+  --cronjob-tos-bucket my-harness-jobs --region cn-beijing
+```
+
+```yaml title="harness.yaml"
+cronjob:
+  enabled: true
+  tos_bucket: my-harness-jobs
+  tos_region: cn-beijing
+  concurrency: 8
+  lease_seconds: 60
+  poll_seconds: 5
+```
+
+The Runtime role needs TOS permissions for the task storage prefix, and the deploying identity needs permission to create or attach that policy. BytePlus uses the same configuration structure with the corresponding provider, region, and bucket. See [Harness scheduled tasks](/productions/agentkit-cli/preview/en/commands/harness-cronjob#enable-scheduled-tasks) for all settings, defaults, and permission requirements
+
+## Send requests
+
+Set `HARNESS_URL` to the deployment’s Runtime base URL and `HARNESS_TOKEN` to its access credential. Do not use the model API key for Runtime API authentication
+
+```bash
+export HARNESS_URL="https://<runtime-endpoint>"
+export HARNESS_TOKEN="<runtime-api-key>"
+
+curl "${HARNESS_URL}/harness/cronjobs/status" \
+  -H "Authorization: Bearer ${HARNESS_TOKEN}"
+```
+
+Save the `cronjob_id` returned by creation and use it as the `job_id` path parameter. Once an execution exists, obtain `run_id` from the task’s `active.run_id`, `last_run.run_id`, or execution history
+
+```bash
+export CRONJOB_ID="<cronjob_id>"
+export RUN_ID="<run_id>"
+```
+
+## Scheduling and execution behavior
+
+| Setting or state | Behavior |
+| --- | --- |
+| `schedule.cron` | A five-field cron expression evaluated in an IANA timezone |
+| `schedule.at` | A one-time timestamp including a timezone offset; must be in the future when creating an enabled task |
+| `misfire_policy: latest` | After downtime, run the most recent missed occurrence without replaying every missed occurrence |
+| `misfire_policy: skip` | Run the latest occurrence only within `misfire_grace_seconds`; otherwise record it as `skipped` |
+| Previous execution still active | Record the overlapping occurrence as `skipped`; a task does not deliberately execute concurrently with itself |
+| Timeout or failure | Record `failed` without automatically retrying that occurrence; later scheduled occurrences can still run |
+| Uncertain execution outcome | Record `interrupted` and pause the task; inspect external effects before resuming |
+
+Each execution uses a separate session. Task overrides use the `harness` structure documented by this section’s create endpoint; omitted fields inherit the deployed agent. Final output is persisted in TOS, so history remains readable even if a local session is lost
+
+External effects are not guaranteed to happen exactly once. Cancellation and interruption cannot undo actions already completed by tools; inspect results before resuming
+
+## Results and pagination
+
+`GET /harness/cronjobs` lists tasks with a default page size of `100`. `GET /harness/cronjobs/{job_id}/runs` lists execution history with a default page size of `20`. Both accept `limit` from `1–1000`. Pass `next_cursor` unchanged to the next request; an empty string indicates the final page
+
+Execution states are `queued`, `running`, `succeeded`, `failed`, `cancelled`, `skipped`, and `interrupted`. History is ordered by scheduled occurrence, newest first. For newly completed results not yet persisted in history, read the task’s `active` field or the individual execution result
+
+Pausing prevents future starts and cancels queued execution without stopping a running execution. Cancellation requests can stop a particular running occurrence and are normally checked within about 20 seconds with default settings. Scheduler status describes the replica serving the request rather than aggregate cluster status
+
+## Idempotent creation
+
+Creation accepts `idempotency_key`. An identical request with the same key returns the original task and HTTP `201`; different input with that key returns `422`. Without a key, every request creates a new task. Reuse the original key when retrying creation

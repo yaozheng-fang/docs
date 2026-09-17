@@ -32,6 +32,7 @@ Tool selection usually resolves explicit CLI options first, then `.agentkit/sand
 | `codex-login` | Inject local Codex or Claude subscription credentials into a sandbox session. |
 | `model-login` | Equivalent to `codex-login`. |
 | `scp` | Transfer files or directories between local storage and an existing sandbox session. |
+| `sandbox snapshot` | Create, query, resume, and delete session snapshots |
 
 ## sandbox build
 
@@ -53,6 +54,8 @@ Build a custom sandbox image in cloud Code Pipeline. After a successful build, t
 ```bash
 agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name custom-sandbox
 ```
+
+Build output shows current status and elapsed time. Failures retain logs and error details for diagnosis
 
 ## sandbox init
 
@@ -143,6 +146,15 @@ Supported config keys are listed below.
 | `self-host-runtime-timeout-seconds` | integer | `1200` | Maximum seconds to wait for the Runtime to become ready. |
 | `self-host-runtime-api-key-name` | string | `Authorization` | Request header name for the Runtime gateway API key. |
 
+### Tool authentication and skill configuration
+
+| Configuration key | Description |
+| --- | --- |
+| `skill-space-id` | Tool skill space ID; explicitly opt in with --skill-space-id when creating |
+| `auth-type` | Tool authentication: apikey or jwt |
+| `jwt-discovery-url` | OIDC discovery URL for JWT |
+| `allowed-clients` | Allowed JWT client ID list |
+
 ## Model Environment Variables
 
 Model options for `sandbox create` and `sandbox exec` are translated into multiple environment variable names so Codex, OpenCode, and runtimes or tools that read `MODEL_AGENT_*` can share the same settings.
@@ -179,7 +191,7 @@ Create a sandbox tool. After creation, the CLI waits until the tool reaches `Rea
 | `--model-api-key <key>` | Model API key injected into the sandbox. | Config value or — |
 | `--model-provider <provider>` | Model provider. | Config value or cloud-environment default |
 | `--model-base-url <url>` | Model API base URL. | Config value or model-provider default |
-| `--skill-role-name [roleName]` | Configure an IAM role for sandbox skills; omit the value to generate a role name. | Configured `role-name` or — |
+| `--skill-role-name [roleName]` | Alternative role option; mutually exclusive with `--role-name`; omit the value to select interactively | — |
 | `--websearch-apikey <key>` | WebSearch API key; mutually exclusive with `--skill-role-name`. | Config value or — |
 | `--image-url <url>` | Custom image URL; required for `Private` tools. | Config value or — |
 | `--enable-snapshot` | Enable session snapshots. | Config value or `false` |
@@ -194,6 +206,11 @@ Create a sandbox tool. After creation, the CLI waits until the tool reaches `Rea
 | `--llm-shield-app-id <app-id>` | Enable LLM Shield for a `Skill` sandbox tool and inject the given app ID. | — |
 | `--envs <KEY=VALUE>` | Environment variable to inject into the sandbox tool; repeatable. When it has the same key as a built-in variable, this value overrides the built-in value. | — |
 | `--json` | Output JSON. | `false` |
+| `--role-name [roleName]` | Sandbox IAM role; omit the value to select interactively; mutually exclusive with `--skill-role-name` | A role option is required for Skill tools |
+| `--skill-space-id [id]` | Inject `SKILL_SPACE_ID`; omit the value to confirm the configured space or select one interactively | Not injected |
+| `--auth-type <type>` | Tool authentication: `apikey` or `jwt` | `apikey` |
+| `--jwt-discovery-url <url>` | OIDC discovery URL, required for JWT authentication | — |
+| `--allowed-clients <ids>` | Comma-separated allowed client IDs, required for JWT authentication | — |
 
 ```bash
 agentkit sandbox create --tool-type CodeEnv --tool-name dev-code --cpu 4
@@ -217,6 +234,7 @@ To enable LLM Shield for a `Skill` tool, pass the app ID explicitly. This option
 agentkit sandbox create \
   --tool-type Skill \
   --tool-name guarded-skill \
+  --role-name my-sandbox-role \
   --llm-shield-app-id <app-id>
 ```
 
@@ -450,6 +468,8 @@ Open the sandbox web preview and print JSON containing the URL, tool id, session
 agentkit sandbox web --session-id dev --no-open
 ```
 
+The command waits for the sandbox browser to become ready before opening its home page
+
 ## sandbox codex-login
 
 Inject local Codex or Claude subscription credentials into a sandbox session. `model-login` is equivalent to this command.
@@ -515,4 +535,137 @@ Transfer files or directories between local storage and an existing sandbox sess
 agentkit sandbox scp ./local.txt sandbox:/home/gem/local.txt --session-id dev
 
 agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id dev
+```
+
+## Skill spaces, roles, and JWT
+
+Creating a `Skill` tool requires either `--role-name` or `--skill-role-name`; they cannot be combined or repeated. Interactive selection lists roles and missing policies, disables roles that do not qualify, and can offer to create a default role. Non-interactive environments must provide a role name
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `Skill` + `apikey` | Skill execution and TOS mount access | `AgentKitDefaultSkillsSandboxAccess` + `AgentKitTOSMountAccess` |
+| `Skill` + `jwt` | Skill execution, delegated authorization, and TOS access | Both above + `AgentKitOauthDefaultSandboxAccess` |
+| Other tools + `apikey` | General sandbox access | `AgentKitDefaultSandboxAccess` |
+| Other tools + `jwt` | Delegated sandbox access | `AgentKitOauthDefaultSandboxAccess` |
+
+Other tools also require `AgentKitTOSMountAccess` when mounting TOS. Role options cannot be combined with `--websearch-apikey`. The CLI does not silently add missing policies to an existing role
+
+<Warning>
+Creating tools can incur cloud charges. If an explicitly supplied role name does not exist, the CLI automatically creates an IAM role and attaches the required policies. Interactive selection can also create a default role after confirmation. Creating roles requires the corresponding IAM permissions. Check the JWT discovery URL and allowed client IDs before granting access
+</Warning>
+
+```bash
+agentkit sandbox create --tool-type Skill --role-name my-sandbox-role --skill-space-id ss-example --auth-type jwt --jwt-discovery-url "https://identity.example.com/.well-known/openid-configuration" --allowed-clients client-example
+```
+
+`--skill-space-id ss-example` selects a space directly. Bare `--skill-space-id` confirms the value in `.agentkit/sandbox.yaml` or selects a space from the `default` project in an interactive terminal. Successful creation saves `skill-space-id`. Omitting this option does not inject a space ID automatically. JSON output and CI do not support interactive selection
+
+`apikey` rejects JWT-only options. Save settings through `sandbox config --set auth-type=jwt` and the `jwt-discovery-url`, `allowed-clients`, and `skill-space-id` keys. Explicit create options take precedence
+
+## Session snapshots
+
+The tool must support snapshots; use `--enable-snapshot` when creating it. Check the snapshot status with `get` before resuming. Availability depends on the tool type and region. All snapshot subcommands require explicit `--tool-id` rather than inferring this mandatory option from ordinary session commands
+
+## sandbox snapshot create
+
+Create a snapshot for a sandbox session
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--instance-id <id>` | sandbox instance SessionId; bypasses UserSessionId lookup | — |
+| `--json` | output JSON | `false` |
+| `-s, --session-id <id>, --sid <id>` | sandbox user session ID to snapshot | — |
+| `--sid <id>` | sandbox user session ID to snapshot | — |
+| `--session <id>` | alias for --session-id | — |
+| `-h, --help` | Show help | — |
+
+```bash
+agentkit sandbox snapshot create --tool-id "$TOOL_ID" --session-id report-session
+```
+
+`--session-id` resolves a user session within the tool. Use `--instance-id` when multiple instances match; it directly selects an instance and takes precedence. In results, `session_id` identifies the user session and `instance_id` identifies the instance
+
+## sandbox snapshot get
+
+Get a sandbox session snapshot
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--snapshot-id <id>` | snapshot ID | Required |
+| `--json` | output JSON | `false` |
+| `-h, --help` | Show help | — |
+
+```bash
+agentkit sandbox snapshot get --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
+```
+
+## sandbox snapshot list
+
+List sandbox session snapshots
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--instance-id <id>` | filter by sandbox instance SessionId | — |
+| `--create-time-after <time>` | filter snapshots created after this time | — |
+| `--create-time-before <time>` | filter snapshots created before this time | — |
+| `--max-results <count>` | maximum results for NextToken pagination | — |
+| `--next-token <token>` | pagination token | — |
+| `--page-number <number>` | page number pagination | — |
+| `--page-size <count>` | page size pagination | — |
+| `--json` | output JSON | `false` |
+| `-s, --session-id <id>, --sid <id>` | sandbox user session ID filter | — |
+| `--sid <id>` | sandbox user session ID filter | — |
+| `--session <id>` | alias for --session-id | — |
+| `-h, --help` | Show help | — |
+
+```bash
+agentkit sandbox snapshot list --tool-id "$TOOL_ID" --max-results 20
+```
+
+## sandbox snapshot resume
+
+Resume a sandbox session from a snapshot
+
+<Warning>
+Resuming can create a billable instance or change session state on the original instance. Verify the snapshot and target tool first
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--snapshot-id <id>` | snapshot ID | Required |
+| `--ttl <value>` | session TTL value | — |
+| `--ttl-unit <unit>` | TTL unit: second\|minute (aliases: s/sec/seconds, m/min/minutes) | `second` when ttl is supplied |
+| `--create-new-instance` | create a new sandbox instance | Server decides when both are omitted |
+| `--reuse-instance` | reuse the original sandbox instance when supported | Server decides when both are omitted |
+| `--json` | output JSON | `false` |
+| `-s, --session-id <id>, --sid <id>` | user session ID to request for the resumed session | — |
+| `--sid <id>` | user session ID to request for the resumed session | — |
+| `--session <id>` | alias for --session-id | — |
+| `-h, --help` | Show help | — |
+
+```bash
+agentkit sandbox snapshot resume --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID" --session-id restored-report --ttl 600 --create-new-instance
+```
+
+## sandbox snapshot delete
+
+Delete a sandbox session snapshot
+
+<Warning>
+This command deletes the snapshot immediately, without a confirmation prompt or `--yes`. The deleted snapshot can no longer restore a session
+</Warning>
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--snapshot-id <id>` | snapshot ID | Required |
+| `--json` | output JSON | `false` |
+| `-h, --help` | Show help | — |
+
+```bash
+agentkit sandbox snapshot delete --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
 ```

@@ -1,0 +1,8 @@
+---
+title: "Pause a scheduled task"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /harness/cronjobs/{job_id}/pause"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+Pausing prevents future starts and cancels queued execution. It does not stop a running execution; use [Cancel an execution](/productions/api-reference/preview/en/harness-runtime/cronjobs/cancel) to request cancellation separately

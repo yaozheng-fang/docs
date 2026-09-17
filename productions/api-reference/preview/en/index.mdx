@@ -1,28 +1,22 @@
 ---
-title: "Overview"
+title: "API overview"
 ---
 
-Google ADK ships with a built-in FastAPI-based API server that hosts your loaded agents and exposes session management, agent execution, artifact read/write, memory ingestion, and evaluation over HTTP. This reference describes each route by feature area, including its method, path, request parameters, and response structure, as a guide for building clients or integrations on top of ADK.
+The HTTP API reference is organized by service: Agent API Server and Harness Runtime. Select the service you deployed to find its request parameters, responses, and examples
 
-## Base path
-
-Every route uses `/apps/{app_name}` as the namespace for an agent application. Session routes further scope to a specific user and session through `/users/{user_id}/sessions/{session_id}`.
-
-## Common path parameters
-
-| Parameter | Type | Description |
+| Service | Use cases | Reference |
 | --- | --- | --- |
-| `app_name` | string | Name of the agent application; the namespace for most routes. |
-| `user_id` | string | User ID used to scope sessions and memory for a user within an application. |
-| `session_id` | string | Session ID used to scope a specific session and its artifacts. |
+| Agent API Server | Run loaded agents and manage applications, sessions, artifacts, and memory; the development service also exposes evaluation and debugging endpoints | [Agent API Server API](/productions/api-reference/preview/en/agent-api-server/overview) |
+| Harness Runtime | Invoke Harness with request-level model, tool, and skill settings, manage sessions, and manage scheduled jobs when enabled | [Harness Runtime API](/productions/api-reference/preview/en/harness-runtime/overview) |
+
+The services can expose the same path with different request fields, defaults, or authentication requirements. Follow the reference for the service you are calling. Each endpoint page displays path, query, header, and body parameters alongside response schemas and examples
+
+## Call an endpoint
+
+Local addresses in examples refer to development services. For a deployed service, use its actual address and required credentials. Endpoint pages provide cURL, Python, and JavaScript examples and an interactive request panel
+
+Streaming endpoints return `text/event-stream`. Use the streaming examples on the endpoint page to read events as they arrive. The cURL `-N` option disables output buffering
 
 <Note>
-Request body field names follow the source definitions and use `snake_case`. Some response models, such as artifact version metadata (`ArtifactVersion`), are serialized with `camelCase` aliases; the field meanings match the descriptions here.
+Create, update, delete, agent execution, and evaluation requests act on the selected service. Check the service address and resource identifiers before sending a request. Agent execution and cloud resources can incur charges
 </Note>
-
-## Service information
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | `/health` | Health check; returns `{"status": "ok"}`. |
-| GET | `/version` | Returns the ADK version, language, and runtime language version. |

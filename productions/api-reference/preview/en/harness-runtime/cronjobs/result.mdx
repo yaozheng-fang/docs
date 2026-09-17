@@ -1,0 +1,8 @@
+---
+title: "Get an execution result"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json GET /harness/cronjobs/{job_id}/runs/{run_id}"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+The response may describe a queued, running, or terminal execution; it is available before completion. `output` contains the final text; inspect `error` on failure. Timeouts and failures do not automatically retry that occurrence

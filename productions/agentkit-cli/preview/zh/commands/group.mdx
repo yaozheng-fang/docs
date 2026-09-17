@@ -1,0 +1,94 @@
+---
+title: "用户组管理"
+---
+
+管理已有用户池中的用户组，支持创建、查询、修改描述和删除
+
+<Note>
+请先创建用户池并登录具有相应用户池管理权限的账号，所有操作均需指定 `--user-pool-id`。火山引擎与 BytePlus 使用各自的账号和区域，可通过全局 `--provider` 选择云厂商
+</Note>
+
+## 命令总览
+
+| 命令 | 说明 |
+| --- | --- |
+| `group create` | 创建用户组并设置可选描述 |
+| `group update` | 更新用户组描述，必须提供非空描述；用户组名称不能修改 |
+| `group list` | 按用户组 ID 或名称精确筛选，使用分页令牌读取下一页 |
+| `group delete` | 永久删除指定用户组 |
+
+## group create
+
+创建用户组并设置可选描述
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--name <name>` | 名称，必填 | 必填 |
+| `--description <text>` | 描述 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit group create --user-pool-id pool-example --name reviewers --description "Review team"
+```
+
+## group update
+
+更新用户组描述，必须提供非空描述；用户组名称不能修改
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--group-id <uid>` | 用户组 ID，必填 | 必填 |
+| `--description <text>` | 描述，必填 | 必填 |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit group update --user-pool-id pool-example --group-id group-example --description "Release reviewers"
+```
+
+## group list
+
+按用户组 ID 或名称精确筛选，使用分页令牌读取下一页
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--group-id <uid>` | 用户组 ID | — |
+| `--name <name>` | 名称 | — |
+| `--max-results <count>` | 每页数量，范围 `0`–`100`；`0` 使用服务端默认值 | 服务端默认值 |
+| `--next-token <token>` | 上一页返回的分页令牌 | — |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit group list --user-pool-id pool-example --max-results 20 --json
+```
+
+将返回的 `nextToken` 传给 `--next-token`，逐页读取结果；CLI 不会自动读取所有页
+
+## group delete
+
+永久删除指定用户组
+
+<Warning>
+删除不可撤销，请确认用户池与资源 ID。交互终端会要求确认；脚本中需显式传入 `--yes`
+</Warning>
+
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
+| `--group-id <uid>` | 用户组 ID，必填 | 必填 |
+| `-r, --region <region>` | 云区域，按云厂商与环境配置解析 | 云厂商与环境配置 |
+| `-y, --yes` | 跳过确认；非交互删除时必须指定 | `false` |
+| `--json` | 输出 JSON 结果 | `false` |
+| `-h, --help` | 显示命令帮助 | — |
+
+```bash
+agentkit group delete --user-pool-id pool-example --group-id group-example --yes
+```

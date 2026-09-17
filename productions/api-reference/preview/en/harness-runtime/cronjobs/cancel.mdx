@@ -1,0 +1,10 @@
+---
+title: "Cancel an execution"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /harness/cronjobs/{job_id}/runs/{run_id}/cancel"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+A queued execution can immediately become `cancelled`. For a running execution, the response may still show `running` with `cancel_requested: true`; cancellation is processed during a subsequent check, normally within about 20 seconds with default settings
+
+Repeated cancellation of a completed execution returns its existing result. Cancellation cannot undo external actions already performed by tools; continue reading the result to confirm the terminal state

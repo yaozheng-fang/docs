@@ -2,16 +2,8 @@
 title: "记忆"
 ---
 
-记忆相关路由用于将指定会话中的事件写入记忆服务，供后续检索使用。
+将会话内容写入记忆
 
-## 写入会话到记忆
-
-`PATCH /apps/{app_name}/users/{user_id}/memory`
-
-将指定会话中的全部事件加入记忆服务。请求体 `UpdateMemoryRequest` 字段如下。
-
-| 字段 | 类型 | 说明 |
+| 方法 | 路径 | 接口 |
 | --- | --- | --- |
-| `session_id` | string | 要写入记忆的会话 ID。 |
-
-若记忆服务未配置返回 400，会话不存在返回 404。
+| PATCH | `/apps/{app_name}/users/{user_id}/memory` | [将会话写入记忆](/productions/api-reference/preview/zh/agent-api-server/update-memory) |

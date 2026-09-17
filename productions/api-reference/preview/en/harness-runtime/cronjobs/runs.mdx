@@ -1,0 +1,10 @@
+---
+title: "List execution history"
+openapi: "/productions/api-reference/openapi/en/harness-runtime.json GET /harness/cronjobs/{job_id}/runs"
+---
+
+Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
+
+Returns persisted execution history, newest scheduled occurrence first. Use [Get a scheduled task](/productions/api-reference/preview/en/harness-runtime/cronjobs/get) or [Get an execution result](/productions/api-reference/preview/en/harness-runtime/cronjobs/result) for running or newly completed executions not yet saved to history
+
+Pass `next_cursor` unchanged to request the next page; an empty string indicates the final page

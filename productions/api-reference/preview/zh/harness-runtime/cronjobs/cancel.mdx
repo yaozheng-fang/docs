@@ -1,0 +1,10 @@
+---
+title: "取消一次执行"
+openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /harness/cronjobs/{job_id}/runs/{run_id}/cancel"
+---
+
+需要使用 AgentKit CLI 0.54.0 部署并[启用定时任务](/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview)的 Harness Runtime
+
+排队中的执行可直接变为 `cancelled`。正在运行时，响应可能仍为 `running` 且 `cancel_requested: true`，执行方将在后续检查中处理取消；默认配置下通常约 20 秒内检查
+
+对已完成执行重复请求会返回原结果。取消无法撤销工具已经完成的外部操作，应继续读取执行结果确认最终状态
