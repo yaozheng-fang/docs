@@ -56,6 +56,22 @@ kb = KnowledgeBase(
 )
 ```
 
+Search an existing collection using an API key:
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="viking",
+    index="company_faq",
+    backend_config={
+        "index": "company_faq",
+        "api_key": "your-vikingdb-api-key",
+        "volcengine_project": "default",
+    },
+)
+```
+
 ## Parameters
 
 ### Constructor parameters
@@ -65,6 +81,7 @@ kb = KnowledgeBase(
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `index` | `str` | No default; provided by `KnowledgeBase` | VikingDB collection name; must start with a letter, contain only letters/digits/underscores, length 1-128. |
+| `api_key` | `str \| None` | Read from env var `DATABASE_VIKING_API_KEY`, defaults to `None` | VikingDB knowledge base API key for searching existing collections. When set, knowledge search uses API key auth; collection management still requires AK/SK or IAM credentials. |
 | `volcengine_access_key` | `str \| None` | See below | Access key (AK). Reads `BYTEPLUS_ACCESS_KEY` in `byteplus` mode, otherwise `VOLCENGINE_ACCESS_KEY`. Falls back to VeFaaS IAM temporary credentials when absent. |
 | `volcengine_secret_key` | `str \| None` | See below | Secret key (SK). Reads `BYTEPLUS_SECRET_KEY` in `byteplus` mode, otherwise `VOLCENGINE_SECRET_KEY`. |
 | `session_token` | `str` | See below | STS temporary-credential token. Reads `BYTEPLUS_SESSION_TOKEN` in `byteplus` mode, otherwise `VOLCENGINE_SESSION_TOKEN`. |
@@ -80,6 +97,10 @@ kb = KnowledgeBase(
 
 <Note>
 Credential resolution checks `AGENTKIT_CLOUD_PROVIDER` and then `CLOUD_PROVIDER` to determine the cloud provider. When set to `byteplus`, credentials are read from `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and `BYTEPLUS_SESSION_TOKEN`; otherwise from `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and `VOLCENGINE_SESSION_TOKEN`.
+</Note>
+
+<Note>
+When `api_key` is set, knowledge search uses API key auth. If `volcengine_access_key` and `volcengine_secret_key` are not configured, the backend skips collection management precheck (existence check and auto-creation). Creating, deleting, listing collections, and operations such as `add_from_text` / `add_from_files` that upload through TOS still require valid AK/SK or IAM credentials. When both API key and AK/SK are configured, search uses the API key and management uses AK/SK or IAM.
 </Note>
 
 ### TOS config
@@ -116,6 +137,9 @@ export VOLCENGINE_SECRET_KEY="your-sk"
 export DATABASE_VIKING_PROJECT="default"
 export DATABASE_VIKING_VERSION="2"
 export DATABASE_VIKING_REGION="cn-beijing"
+
+# Optional: use API key to search existing collections
+export DATABASE_VIKING_API_KEY="your-vikingdb-api-key"
 
 # TOS bucket used for file uploads
 export DATABASE_TOS_BUCKET="your_bucket_name"

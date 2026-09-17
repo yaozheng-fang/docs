@@ -56,6 +56,22 @@ kb = KnowledgeBase(
 )
 ```
 
+使用 API Key 检索已有集合：
+
+```python
+from veadk.knowledgebase import KnowledgeBase
+
+kb = KnowledgeBase(
+    backend="viking",
+    index="company_faq",
+    backend_config={
+        "index": "company_faq",
+        "api_key": "your-vikingdb-api-key",
+        "volcengine_project": "default",
+    },
+)
+```
+
 ## 参数
 
 ### 构造参数
@@ -65,6 +81,7 @@ kb = KnowledgeBase(
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `index` | `str` | 无默认，由 `KnowledgeBase` 传入 | VikingDB 集合名，须以英文字母开头，仅含字母、数字、下划线，长度 1-128。 |
+| `api_key` | `str \| None` | 读取环境变量 `DATABASE_VIKING_API_KEY`，缺省 `None` | VikingDB 知识库 API Key，用于检索已有集合。设置后知识检索使用 API Key 鉴权；集合管理等操作仍需 AK/SK 或 IAM 凭证。 |
 | `volcengine_access_key` | `str \| None` | 见下方说明 | 访问密钥 AK。`byteplus` 模式下读取 `BYTEPLUS_ACCESS_KEY`，其余读取 `VOLCENGINE_ACCESS_KEY`。缺省时尝试从 VeFaaS IAM 获取临时凭证。 |
 | `volcengine_secret_key` | `str \| None` | 见下方说明 | 访问密钥 SK。`byteplus` 模式下读取 `BYTEPLUS_SECRET_KEY`，其余读取 `VOLCENGINE_SECRET_KEY`。 |
 | `session_token` | `str` | 见下方说明 | STS 临时凭证令牌。`byteplus` 模式下读取 `BYTEPLUS_SESSION_TOKEN`，其余读取 `VOLCENGINE_SESSION_TOKEN`。 |
@@ -80,6 +97,10 @@ kb = KnowledgeBase(
 
 <Note>
 凭证解析时依次检查 `AGENTKIT_CLOUD_PROVIDER` 与 `CLOUD_PROVIDER` 环境变量判断云服务商。设为 `byteplus` 时，凭证从 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 和 `BYTEPLUS_SESSION_TOKEN` 读取；否则从 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 和 `VOLCENGINE_SESSION_TOKEN` 读取。
+</Note>
+
+<Note>
+设置了 `api_key` 后，知识检索优先使用 API Key 鉴权。此时若未配置 `volcengine_access_key` 与 `volcengine_secret_key`，后端跳过集合管理预检（集合存在性检查与自动创建）；创建、删除、列举集合以及 `add_from_text` / `add_from_files` 等需要上传 TOS 的操作仍需可用的 AK/SK 或 IAM 凭证。同时配置 API Key 与 AK/SK 时，检索使用 API Key，管理操作使用 AK/SK 或 IAM。
 </Note>
 
 ### TOS 配置
@@ -116,6 +137,9 @@ export VOLCENGINE_SECRET_KEY="your-sk"
 export DATABASE_VIKING_PROJECT="default"
 export DATABASE_VIKING_VERSION="2"
 export DATABASE_VIKING_REGION="cn-beijing"
+
+# 可选：使用 API Key 检索已有集合
+export DATABASE_VIKING_API_KEY="your-vikingdb-api-key"
 
 # 上传文件所用 TOS 桶
 export DATABASE_TOS_BUCKET="your_bucket_name"

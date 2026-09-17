@@ -15,6 +15,8 @@ title: "更新日志"
 | Studio 对话历史 | 修复包含多个用户与助手轮次的会话历史中助手回复错位的问题：此前查看多轮对话历史时，助手回复可能与对应的用户消息错位显示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能体对话与内置智能体) |
 | 入站认证 | `OAuth2Config.from_veidentity()` 新增 `client_secret` 参数：与 `client_uid` 同时提供时跳过启动时的客户端查询，减少启动开销。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound) |
 | Studio MCP 凭证 | 简化 MCP 工具凭证编辑流程：移除更改服务地址后的凭证复用确认步骤，Token 输入框始终可编辑并支持显示与隐藏切换；调试测试中提交的 MCP 凭证会同样应用到部署运行时环境。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
+| 知识库 | VikingDB 知识库后端新增 `api_key` 参数与环境变量 `DATABASE_VIKING_API_KEY`：设置后知识检索使用 API Key 鉴权，无需 AK/SK 或 IAM 凭证即可检索已有集合；未配置 AK/SK 时跳过集合管理预检，创建、删除、列举集合与上传文件等管理操作仍需 AK/SK 或 IAM 凭证。 | [使用 VikingDB 知识库存储](/productions/veadk/preview/zh/components/knowledge/viking) |
+| 长期记忆 | VikingDB 记忆库后端新增 `api_key` 参数与环境变量 `DATABASE_VIKINGMEM_API_KEY`：设置后记忆读写操作使用 API Key 鉴权，无需 AK/SK 或 IAM 凭证即可访问已有集合；未配置 AK/SK 时跳过集合管理预检，创建、列举、删除集合等管理操作仍需 AK/SK 或 IAM 凭证。 | [使用 VikingDB 存储](/productions/veadk/preview/zh/components/memory/vikingdb) |
 
 ## 1.1.13
 
