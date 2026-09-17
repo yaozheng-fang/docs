@@ -215,6 +215,14 @@ downstream endpoint explicitly returns `401 Unauthorized`. Other status codes
 and call failures do not trigger M2M fallback, which prevents application or
 service failures from being treated as an expired identity token.
 
+### Managed API Key credential authentication
+
+When the downstream AgentCard declares a credential provider in `capabilities.extensions` (containing `credentialProviderName` and `poolName`), and `security` / `securitySchemes` did not produce a usable authentication header, VeADK queries the identity service for the API Key managed by that credential provider and constructs the authentication header according to the credential metadata returned (header name, prefix, etc.). This mechanism uses Agent Identity to centrally manage and rotate API Keys, requiring no manual API Key configuration on the VeADK side.
+
+<Note>
+VeADK supports parsing A2A 1.0 AgentCards: when the AgentCard does not provide a top-level `url` field, VeADK resolves the endpoint from `supportedInterfaces` by protocol binding type and version, preferring JSONRPC bindings with protocol version 1.0.
+</Note>
+
 ### Identity propagation to the skills sandbox
 
 When `execute_skills` calls the skills sandbox, it likewise forwards the

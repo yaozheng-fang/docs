@@ -209,6 +209,14 @@ curl --location "https://userpool-${USER_POOL_ID}.userpool.auth.id.${REGION}.vol
 
 对于声明 OAuth2 的下游智能体，VeADK 先使用透传的 Bearer JWT 发起请求。只有下游明确返回 `401 Unauthorized` 时，才会改用 OAuth2 M2M 令牌重试一次。其他状态码或调用错误不会触发 M2M 回退，避免把业务错误或服务故障误判为身份令牌失效。
 
+### 托管 API Key 凭据鉴权
+
+当下游 AgentCard 在 `capabilities.extensions` 中声明了凭据提供方（包含 `credentialProviderName` 与 `poolName`），且 `security` / `securitySchemes` 未产生有效的认证头时，VeADK 会向身份服务查询该凭据提供方托管的 API Key，并按照返回的凭据元信息中指定的请求头名称与前缀构造认证头。此机制由 Agent Identity 统一托管 API Key，无需在 VeADK 侧手动配置。
+
+<Note>
+VeADK 支持解析 A2A 1.0 AgentCard：当 AgentCard 未提供顶层 `url` 字段时，会从 `supportedInterfaces` 中按协议绑定类型和版本解析调用地址，优先选择 JSONRPC 绑定与 1.0 协议版本。
+</Note>
+
 ### 技能沙箱中的身份透传
 
 `execute_skills` 在调用技能沙箱时同样会将入站身份凭证转发给沙箱。VeADK 从凭证服务中读取凭证键为 `inbound_auth` 的入站凭证，并以 `inbound_auth` 请求头发送到沙箱的 A2A 端点，使沙箱中的工作流能够以原始用户身份执行。若当前请求未携带入站凭证，则不附加该请求头。详见[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)中的技能沙箱执行部分。
