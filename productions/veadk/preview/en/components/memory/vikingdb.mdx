@@ -53,6 +53,23 @@ ltm = LongTermMemory(
 )
 ```
 
+Access an existing collection using an API key:
+
+```python
+from veadk.memory.long_term_memory import LongTermMemory
+
+ltm = LongTermMemory(
+    backend="viking",
+    index="ltm_demo",
+    backend_config={
+        "index": "ltm_demo",
+        "api_key": "your-vikingdb-api-key",
+        "volcengine_project": "default",
+        "memory_type": ["sys_event_v1", "sys_profile_v1"],
+    },
+)
+```
+
 ### Get a user profile
 
 ```python
@@ -69,6 +86,7 @@ print(profile)
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `index` | `str` | No default; provided by `LongTermMemory` | Memory collection name; must follow VikingDB naming rules. |
+| `api_key` | `str \| None` | Read from env var `DATABASE_VIKINGMEM_API_KEY`, defaults to `None` | VikingDB memory API key for memory operations on an existing collection. When set, memory operations use API key auth; collection management still requires AK/SK or IAM credentials. |
 | `volcengine_access_key` | `str \| None` | See below | Access key (AK). Reads `BYTEPLUS_ACCESS_KEY` in `byteplus` mode, otherwise `VOLCENGINE_ACCESS_KEY`. Falls back to VeFaaS IAM when absent. |
 | `volcengine_secret_key` | `str \| None` | See below | Secret key (SK). Reads `BYTEPLUS_SECRET_KEY` in `byteplus` mode, otherwise `VOLCENGINE_SECRET_KEY`. Falls back to VeFaaS IAM when absent. |
 | `session_token` | `str` | See below | STS temporary-credential token. Reads `BYTEPLUS_SESSION_TOKEN` in `byteplus` mode, otherwise `VOLCENGINE_SESSION_TOKEN`. |
@@ -80,6 +98,10 @@ print(profile)
 ### Credential resolution order
 
 The backend prefers `volcengine_access_key` and `volcengine_secret_key` from explicit arguments or environment variables. When both are missing, it reads credentials from the VeFaaS IAM file, suitable for Volcengine cloud deployments.
+
+<Note>
+When `api_key` is set, memory read and write operations use API key auth. If `volcengine_access_key` and `volcengine_secret_key` are not configured, the backend skips collection management precheck (existence check and auto-creation). Creating, listing, and deleting collections still require AK/SK or IAM credentials. When both API key and AK/SK are configured, memory operations use the API key and management uses AK/SK or IAM.
+</Note>
 
 ### Defaults for region and memory_type
 
@@ -96,6 +118,8 @@ The backend prefers `volcengine_access_key` and `volcengine_secret_key` from exp
 | `DATABASE_VIKING_REGION` | `cn-beijing` (ignored in `byteplus` mode, which is fixed to `cn-hongkong`) | Memory region. Falls back to the `REGION` env var when not set. |
 | `DATABASE_VIKINGMEM_PROJECT` | `default` | Memory project name. |
 | `DATABASE_VIKINGMEM_MEMORY_TYPE` | `sys_event_v1,sys_profile_v1` | Memory types, comma-separated. |
+| `DATABASE_VIKINGMEM_API_KEY` | None | VikingDB memory API key for memory operations on an existing collection. |
+| `DATABASE_VIKINGMEM_BASE_URL` | None | Custom memory service URL; must start with `http://` or `https://`. Affects the scheme and host for both the memory SDK client and the management client. |
 
 ```bash
 export VOLCENGINE_ACCESS_KEY="your-ak"
@@ -104,6 +128,8 @@ export CLOUD_PROVIDER="volces"
 export DATABASE_VIKING_REGION="cn-beijing"
 export DATABASE_VIKINGMEM_PROJECT="default"
 export DATABASE_VIKINGMEM_MEMORY_TYPE="sys_event_v1,sys_profile_v1"
+# Optional: use API key to access an existing collection
+export DATABASE_VIKINGMEM_API_KEY="your-vikingdb-api-key"
 ```
 
 <Note>
