@@ -1231,7 +1231,7 @@ During custom creation, Studio saves unpublished agent drafts in the current bro
 </Warning>
 
 <Note>
-  MCP tool auth tokens are converted to environment-variable references: generated source retains only the `${ENV_NAME}` reference, with the token value written to deployment environment variables; YAML exports and browser drafts preserve the corresponding environment value. Updating a deployed Runtime reloads existing environment values, and entering a replacement Token overrides the previous value. When an MCP tool’s service URL is changed, Studio prompts you to choose whether to reuse the original credential, enter a new Token, or mark the new URL as requiring no authentication, preventing a stored credential from being silently replayed after the address changes.
+  MCP tool auth tokens are converted to environment-variable references: generated source retains only the `${ENV_NAME}` reference, with the token value written to deployment environment variables; YAML exports and browser drafts preserve the corresponding environment value. Updating a deployed Runtime reloads existing environment values, and entering a replacement Token overrides the previous value. When an MCP tool’s service URL is changed, the stored credential is not silently replayed; the Token input is always editable and supports a show/hide toggle.
 </Note>
 
 Drafts use the browser's local storage. When storage is full or writes are rejected, Studio shows the corresponding reason; remove unneeded drafts or clear site storage and retry.
@@ -1313,7 +1313,7 @@ An agent deployed to AgentKit can be edited again in Studio and updated on the s
 Updates are still governed by Studio role permissions: `admin` can update all Studio-managed Runtimes, `developer` can update only their own, and regular users cannot update.
 
 <Note>
-  When updating a Runtime, Studio loads the existing environment variables from the Runtime and preserves them; values entered explicitly in the deployment form override the existing ones. When a Runtime target is selected for a debug test run, the Runtime environment variables are injected into the test process. MCP tool auth credentials are recovered from the published Runtime's environment variables and injected into the debug environment for MCP endpoint discovery; if the edited MCP service URL does not match the published configuration, credentials are not recovered. The user's MCP credential reuse decisions are also preserved consistently across debug testing and deployment: credentials reused during debugging are applied to the deployment runtime environment as well, and credential reuse no longer requires Harness Sidecar MCP resilience governance to be enabled. Recovered credentials remain server-side and never appear in debug output.
+  When updating a Runtime, Studio loads the existing environment variables from the Runtime and preserves them; values entered explicitly in the deployment form override the existing ones. When a Runtime target is selected for a debug test run, the Runtime environment variables are injected into the test process. MCP tool auth credentials are recovered from the published Runtime's environment variables and injected into the debug environment for MCP endpoint discovery; if the edited MCP service URL does not match the published configuration, credentials are not recovered. MCP credentials submitted during debug testing are also applied to the deployment runtime environment. Recovered credentials remain server-side and never appear in debug output.
 </Note>
 
 <Note>
@@ -1344,7 +1344,7 @@ Source-preserving updates do not rebuild the image, making publication faster, a
 </Note>
 
 <Note>
-  In source-preserving mode, MCP credential updates rely on authentication references in the published draft. If MCP configuration has changed since publication, Studio prompts you to reopen the agent detail and confirm the latest configuration before updating. When an MCP tool’s service URL is changed, you must confirm whether to reuse the original credential, enter a new Token, or mark the new URL as requiring no authentication before proceeding with the update.
+  In source-preserving mode, MCP credential updates rely on authentication references in the published draft. If MCP configuration has changed since publication, Studio prompts you to reopen the agent detail and confirm the latest configuration before updating. When an MCP tool’s service URL is changed, the stored credential is not silently replayed; the Token input is always editable and supports a show/hide toggle.
 </Note>
 
 ### Legacy Runtime recovery

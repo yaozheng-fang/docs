@@ -97,6 +97,21 @@ setup_oauth2(
 )
 ```
 
+To reuse an existing user pool and client by UID, provide both `client_uid` and `client_secret` to skip the client lookup during startup:
+
+```python
+setup_oauth2(
+    app,
+    OAuth2Config.from_veidentity(
+        user_pool_uid="pool-xxxx",
+        client_uid="client-xxxx",
+        client_secret="your-existing-client-secret",
+        redirect_uri="https://myapp.com/oauth2/callback",
+        auto_create=False,
+    ),
+)
+```
+
 To use an OAuth2 provider other than VeIdentity, construct `OAuth2Config` directly:
 
 ```python
@@ -128,8 +143,11 @@ Key `OAuth2Config.from_veidentity()` parameters:
 
 | Parameter | Default | Description |
 | --- | --- | --- |
-| `user_pool_name` | required | VeIdentity user pool name |
-| `client_name` | required | User pool client name |
+| `user_pool_name` | required | VeIdentity user pool name (used if `user_pool_uid` is not set) |
+| `user_pool_uid` | `None` | User pool UID, takes precedence over `user_pool_name` |
+| `client_name` | required | User pool client name (used if `client_uid` is not set) |
+| `client_uid` | `None` | Client UID, takes precedence over `client_name` |
+| `client_secret` | `None` | Existing client secret; when paired with `client_uid`, skips the client lookup during startup |
 | `redirect_uri` | required | OAuth2 callback URL |
 | `auto_create` | `True` | Create resources if missing |
 | `auto_register_callback` | `True` | Register the callback URL automatically |
