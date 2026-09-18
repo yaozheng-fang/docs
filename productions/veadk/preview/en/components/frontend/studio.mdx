@@ -640,6 +640,10 @@ Code-package deployment is an independent creation flow: on Add Agent, select �
 
 Existing-project migration is an independent creation flow: on Add Agent, select “Migrate an existing project” and upload an archive of an existing agent project. Studio automatically analyzes the project framework and entry point in a Dev Sandbox and generates a deployable VeADK project.
 
+<Note>
+  The migration workspace uses a single-column layout without a side navigation. The home page shows the project upload entry at the top, followed by recent migrations displayed in a table (five entries by default, expandable in place to show all); expired migration environments are offered as view-only. The “Migrated projects” entry in the top navigation bar opens the saved-project library. Returning home or opening the project library never stops a running migration. Capability and session-list load failures are reported separately so the upload entry stays usable, and each failure offers its own retry.
+</Note>
+
 The following frameworks are supported:
 
 | Framework | Migration method |
