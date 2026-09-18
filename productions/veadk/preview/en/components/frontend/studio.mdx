@@ -569,6 +569,10 @@ Intelligent-development sessions run in the current browser session and do not a
   During quiet periods, the intelligent-development stream sends a heartbeat every 15 seconds to keep the connection alive without resetting Codex's inactivity timeout. Request deadlines and process restarts still apply; the heartbeat does not provide background delivery or stream replay. When a Codex turn is interrupted — including interruptions Studio discovers after reconnecting — Studio reports the interrupted status explicitly; it does not publish a new version or wait for the inactivity timeout. Active turns resume on the same Thread after a connection drops. New task progress resets the recovery allowance; reconnecting and reading unchanged state do not extend the inactivity deadline or restart the task.
 </Note>
 
+<Note>
+  Re-entering intelligent development from the create entry returns to the home page and clears the previous deployment page's navigation state; saved project versions can still be selected from the version library for redeployment.
+</Note>
+
 #### Project version library
 
 Each completed build or optimization is saved as an immutable project version in the private Studio TOS bucket. Saved versions do not depend on the original Sandbox environment — viewing, downloading, and deploying remain available even after the Sandbox session expires. Versions are grouped by project and listed by creation time.
