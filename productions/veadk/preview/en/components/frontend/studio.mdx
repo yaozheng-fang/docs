@@ -139,7 +139,7 @@ Your language choice is persisted in browser local storage, so subsequent visits
 
 ### Model selection
 
-When configuring an LLM agent, you can browse the Ark models activated under the current account in the model selector and choose a target model. The model list is fetched by the Studio server from Ark and includes only LLM and VLM models that support agent calls, showing the model name, display name, vendor, and activation status. Deactivated models are excluded. The list is cached server-side; use the refresh button to retrieve the latest status.
+When configuring an LLM agent, you can browse the Ark models activated under the current account in the model selector and choose a target model. The model list is fetched by the Studio server from Ark and includes only LLM and VLM models that support agent calls, showing the model name, display name, vendor, and activation status. The list is cached server-side; use the refresh button to retrieve the latest status.
 
 The model source falls into one of the following categories, determined automatically by whether the model API base URL is the official Ark endpoint for the current cloud provider:
 
@@ -152,7 +152,15 @@ The model source falls into one of the following categories, determined automati
   Debug runs do not support custom model endpoints. Agents using a non-official Ark endpoint will fail at debug time. Use the official Ark endpoint for the current cloud, or deploy first and test through the Runtime.
 </Warning>
 
-When using Ark models, the Studio server selects an Ark API Key from the current account's key list for debug runs and deployment. The default selection matches `MODEL_AGENT_API_KEY_NAME`; if no match is found, the first key in the list is used. You can also manually select a specific Ark API Key in the deployment configuration area: the selected key's raw value is resolved by the Studio server and injected into the runtime environment without ever being sent to the browser. When the list is empty, create an API Key in the Ark console first.
+When using Ark models, the Studio server selects an Ark API Key from the current account's key list for debug runs and deployment. The default selection matches `MODEL_AGENT_API_KEY_NAME`; if no match is found, the first enabled key in the list is used. You can also manually select a specific Ark API Key in the deployment configuration area: the selected key's raw value is resolved by the Studio server and injected into the runtime environment without ever being sent to the browser. When the list is empty, create an API Key in the Ark console first.
+
+The API Key list is read live from the cloud provider on each page load and is not cached server-side. Each API Key in the selector shows its name, status, and permission scope: the status distinguishes "Enabled" and "Disabled", and the permission scope distinguishes "All permissions" and "Custom permissions". Disabled API Keys remain visible in the list but cannot be selected. The search matches names, statuses, and permission scopes, and supports multiple keywords.
+
+When the selected API Key has "Custom permissions", the model list is annotated according to that key's model permissions: models outside the permitted scope still appear in the list but are disabled and annotated with the reason (such as "Not permitted by this API Key", "Shut down", "Video generation model", "Not a chat model", or "Not activated"). Video generation and shut-down models explicitly granted by the API Key also appear in the searchable model dropdown but remain disabled. When switching API Keys, previously selected models and fallback models that are no longer permitted by the new key are automatically cleared.
+
+<Note>
+  Overlapping identical model-option requests share a single in-flight cloud query, avoiding redundant concurrent overhead; subsequent reads still fetch the latest cloud data. When model metadata is cached, permission information is recomputed and re-applied for the currently selected API Key.
+</Note>
 
 When using a custom model endpoint, the publish page displays a "Custom model credentials" group in the environment-variables area, providing a required API Key input for each agent that uses a custom endpoint; model provider and model API base URL are also available as optional inputs. The credentials are used only for that publish and are not saved in the draft. Generated project code reads the configuration from the following environment variables, and `.env.example` lists them as placeholders:
 
