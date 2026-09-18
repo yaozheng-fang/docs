@@ -16,6 +16,7 @@ title: "更新日志"
 | Studio 更新 | `veadk studio update` 新增 `--skip-cronjob-scheduler` 标志，跳过定时任务调度器的更新，仅更新主 Studio Application。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新已部署的-studio) |
 | Studio 项目生成 | 快速创建模式生成的 `requirements.txt` 中 `veadk-python` 固定版本从 1.1.11 更新为 1.1.13。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | Studio 对话历史 | 修复包含多个用户与助手轮次的会话历史中助手回复错位的问题：此前查看多轮对话历史时，助手回复可能与对应的用户消息错位显示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#智能体对话与内置智能体) |
+| Studio 智能模式 | 修复从创建入口重新进入智能模式时上一次部署页导航状态未清除的问题：此前重新进入时会停留在上一次部署页，现在返回首页并清除部署导航状态；仍可从项目版本库选择已保存版本再次部署。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#会话管理) |
 | 入站认证 | `OAuth2Config.from_veidentity()` 新增 `client_secret` 参数：与 `client_uid` 同时提供时跳过启动时的客户端查询，减少启动开销。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound) |
 | Studio MCP 凭证 | 简化 MCP 工具凭证编辑流程：移除更改服务地址后的凭证复用确认步骤，Token 输入框始终可编辑并支持显示与隐藏切换；调试测试中提交的 MCP 凭证会同样应用到部署运行时环境。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio) |
 | 知识库 | VikingDB 知识库后端新增 `api_key` 参数与环境变量 `DATABASE_VIKING_API_KEY`：设置后知识检索使用 API Key 鉴权，无需 AK/SK 或 IAM 凭证即可检索已有集合；未配置 AK/SK 时跳过集合管理预检，创建、删除、列举集合与上传文件等管理操作仍需 AK/SK 或 IAM 凭证。 | [使用 VikingDB 知识库存储](/productions/veadk/preview/zh/components/knowledge/viking) |
