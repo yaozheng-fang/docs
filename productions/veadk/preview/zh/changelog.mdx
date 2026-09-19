@@ -26,6 +26,9 @@ en_link: "/productions/veadk/preview/en/changelog"
 | 长期记忆 | VikingDB 记忆库后端新增 `api_key` 参数与环境变量 `DATABASE_VIKINGMEM_API_KEY`：设置后记忆读写操作使用 API Key 鉴权，无需 AK/SK 或 IAM 凭证即可访问已有集合；未配置 AK/SK 时跳过集合管理预检，创建、列举、删除集合等管理操作仍需 AK/SK 或 IAM 凭证。 | [使用 VikingDB 存储](/productions/veadk/preview/zh/components/memory/vikingdb) |
 | A2A | 调用 AgentKit A2A Registry 中的下游智能体时，支持解析 A2A 1.0 AgentCard：当 AgentCard 未提供顶层 `url` 字段时，从 `supportedInterfaces` 中按协议绑定类型和版本解析调用地址，优先选择 JSONRPC 绑定与 1.0 协议版本。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound#a2a-调用中的身份透传) |
 | A2A | 下游 AgentCard 在 `capabilities.extensions` 中声明凭据提供方时，VeADK 自动从身份服务获取托管 API Key 并构造认证头，无需在 VeADK 侧手动配置 API Key。 | [入站认证](/productions/veadk/preview/zh/components/security/inbound#托管-api-key-凭据鉴权) |
+| 前端组件预览 | 组件预览页按 Foundation、Base、Block、AI App、Node、Layout 分组重新组织，组内按组件名称排序；Foundation 下新增前端开发规范页面；每个组件页面提供本页目录，支持通过 `#组件/小节` 链接跳转到变种子节和参数区。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend#组件预览) |
+| 前端对话 | 长时任务进度组件（LongRunningState）重新设计为左对齐的单栏布局，依次展示当前进度名称、循环加载条和内容区；进度名称切换时向上渐隐再滑入，完成后停止动画并保留结果，支持减少动态效果偏好。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
+| 前端对话 | 对话流组件（ConversationFlow）新追加的步骤先展开所需空间再渐显内容，状态更新和展开历史详情时不重复进场；减少动态效果模式下直接显示。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
 
 ## 1.1.13
 
