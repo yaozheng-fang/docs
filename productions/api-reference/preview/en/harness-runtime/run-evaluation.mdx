@@ -3,3 +3,13 @@ title: "Run an evaluation"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /dev/apps/{app_name}/eval-sets/{eval_set_id}/run"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/run-evaluation"
 ---
+
+The server must expose development evaluation endpoints and have evaluation dependencies installed. Prepare a set and cases, then select `evalMetrics`; query [List evaluation metrics](/productions/api-reference/preview/en/harness-runtime/list-eval-metrics) for available metrics
+
+Use `evalCaseIds` to select cases. When omitted or empty, it falls back to the deprecated `evalIds`; if neither selects cases, the entire set is evaluated
+
+<Warning>
+Evaluation runs the agent and selected metrics again. It can call models and tools, incur charges, and perform external actions. Check samples, tool permissions, and metric settings before running it
+</Warning>
+
+HTTP `200` means evaluation results were returned, not that all cases passed. Inspect `finalEvalStatus` and metric results for each item in `runEvalResults`

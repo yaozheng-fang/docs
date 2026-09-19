@@ -16,6 +16,7 @@ pip install "veadk-python[extensions]"
 本地验证时，可以把 `DATABASE_MILVUS_URI` 指向 Milvus Lite 数据文件，并配置 embedding 模型：
 
 ```bash lines
+mkdir -p data
 export DATABASE_MILVUS_URI="./data/product_docs.db"
 export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 ```
@@ -24,7 +25,13 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 
 ## 使用示例
 
+运行前配置 `MODEL_EMBEDDING_NAME`、`MODEL_EMBEDDING_DIM`、`MODEL_EMBEDDING_API_BASE` 与 `MODEL_EMBEDDING_API_KEY`。`extensions` 包含 llama-index、embedding 适配器及向量存储连接器；模型文本会发送到配置的 embedding 服务。使用 BytePlus 或其他模型服务时应显式设置匹配的地址、模型与凭证，火山方舟默认地址不会自动切换
+
+远端使用时先准备可达的 Milvus 服务、已有数据库及凭证；本地 Milvus Lite 需要对应平台支持与可写目录
+
 ```python lines
+import os
+
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -35,37 +42,66 @@ kb = KnowledgeBase(
         "index": "product_docs",
         "milvus_config": {
             "uri": "https://milvus.example.com",
-            "token": "填入 Milvus Token",
+            "token": os.environ["DATABASE_MILVUS_TOKEN"],
             "db_name": "default",
         },
     },
 )
-kb.add_from_directory("./docs")
+assert kb.add_from_text("Annual leave is 15 days per year")
+for entry in kb.search("annual leave"):
+    print(entry.content)
 
 agent = Agent(knowledgebase=kb)
 ```
 
 ## 参数
 
+### KnowledgeBase 参数
+
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `index` | `str` | 无 | Milvus collection 名称。必须以字母或下划线开头，只能包含字母、数字和下划线，最长 255 个字符。 |
-| `milvus_config` | `MilvusConfig` | 从 `DATABASE_MILVUS_*` 读取 | Milvus 连接与 collection 配置。 |
-| `embedding_config` | `EmbeddingModelConfig` | 从 `MODEL_EMBEDDING_*` 读取 | 用于生成知识片段向量的 embedding 模型配置。 |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | 本页设为 `milvus`；也可传后端实例 |
+| `backend_config` | `dict` | `{}` | 非空时必须包含 index；不会自动合并外层 index |
+| `index` | `str` | `""` | 索引名称；无配置字典时回退到 app_name |
+| `app_name` | `str` | `""` | index 的回退值，不是检索时的用户权限过滤器 |
+| `top_k` | `int` | `10` | 默认检索数量；search(top_k=0) 使用此值 |
+| `name` | `str` | `"user_knowledgebase"` | 向智能体描述的知识库名称 |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | 向智能体说明用途 |
+| `enable_profile` | `bool` | `False` | 启用资料画像；需先生成画像文件，普通检索保持关闭 |
+| `query_with_user_profile` | `bool` | `False` | 借助智能体绑定的 Viking 长期记忆画像生成查询；不要求知识库本身使用 Viking |
+
+### 后端配置
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `index` | `str` | 无 | Milvus collection 名称。必须以字母或下划线开头，只能包含字母、数字和下划线，最长 255 个字符 |
+| `milvus_config` | `MilvusConfig` | 从 `DATABASE_MILVUS_*` 读取 | Milvus 连接与 collection 配置 |
+| `embedding_config` | `EmbeddingModelConfig` | 从 `MODEL_EMBEDDING_*` 读取 | 用于生成知识片段向量的 embedding 模型配置 |
 
 ### Milvus 配置
 
 | 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
-| `uri` | `DATABASE_MILVUS_URI` | `str` | `""` | 远程 Milvus URI 或 Milvus Lite 本地文件路径，必填。 |
-| `token` | `DATABASE_MILVUS_TOKEN` | `str` | `""` | Milvus Token；优先于用户名和密码。 |
-| `user` | `DATABASE_MILVUS_USER` | `str` | `""` | 用户名，与 `password` 配合使用。 |
-| `password` | `DATABASE_MILVUS_PASSWORD` | `str` | `""` | 密码。 |
-| `db_name` | `DATABASE_MILVUS_DB_NAME` | `str` | `default` | 数据库名称。 |
-| `overwrite` | `DATABASE_MILVUS_OVERWRITE` | `bool` | `false` | 初始化时是否覆盖同名 collection。 |
-| `timeout` | `DATABASE_MILVUS_TIMEOUT` | `float \| None` | `None` | 请求超时秒数。 |
-| `output_fields` | `DATABASE_MILVUS_OUTPUT_FIELDS` | `list[str] \| str` | 空 | 需要随检索结果返回的字段；环境变量可使用逗号分隔或 JSON 数组。 |
+| `uri` | `DATABASE_MILVUS_URI` | `str` | `""` | 远程 Milvus URI 或 Milvus Lite 本地文件路径，必填 |
+| `token` | `DATABASE_MILVUS_TOKEN` | `str` | `""` | Milvus Token；优先于用户名和密码 |
+| `user` | `DATABASE_MILVUS_USER` | `str` | `""` | 用户名，与 `password` 配合使用 |
+| `password` | `DATABASE_MILVUS_PASSWORD` | `str` | `""` | 密码 |
+| `db_name` | `DATABASE_MILVUS_DB_NAME` | `str` | `default` | 数据库名称 |
+| `overwrite` | `DATABASE_MILVUS_OVERWRITE` | `bool` | `false` | 初始化时是否覆盖同名 collection |
+| `timeout` | `DATABASE_MILVUS_TIMEOUT` | `float \| None` | `None` | 请求超时秒数 |
+| `output_fields` | `DATABASE_MILVUS_OUTPUT_FIELDS` | `list[str] \| str` | 空 | 需要随检索结果返回的字段；环境变量可使用逗号分隔或 JSON 数组 |
 
 <Warning>
   启用 `overwrite` 可能清除同名 collection 中的现有数据。仅在确认可以重建知识库时使用。
 </Warning>
+
+### embedding 配置
+
+| 参数 | 环境变量 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- | --- |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | 模型名称 |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | 维度，必须与 collection 一致 |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | 服务地址 |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | `MODEL_AGENT_API_KEY / Ark token` | 优先读取 MODEL_EMBEDDING_API_KEY；再回退到智能体密钥或 Ark 凭证 |
+
+示例检索结果应包含年假规则。若返回为空，先确认写入返回成功、模型维度一致及服务端处理完成，再检查网络与权限；托管后端不保证导入后立即可检索。绑定 Agent 后仍需完成模型配置才能运行问答

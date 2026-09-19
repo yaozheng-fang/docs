@@ -17,6 +17,9 @@ en_link: "/productions/agentkit-cli/preview/en/commands/destroy"
 | `--force` | 跳过确认提示并立即删除。 | `false` |
 
 ```bash lines
-agentkit destroy
-agentkit destroy --config-file ./agentkit.yaml --force
+agentkit destroy --config-file ./agentkit.yaml
 ```
+
+自动化中只有在已核对目标配置后才加 `--force`。命令完成后使用 `agentkit status --config-file ./agentkit.yaml` 检查部署记录；云端目标也可用 `agentkit runtime list` 核对
+
+该命令用于销毁运行时，不是整个项目的资源清理器。镜像仓库、构建产物、知识库、记忆库和发布流程创建的消息代理应分别检查与管理

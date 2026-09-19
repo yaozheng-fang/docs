@@ -4,4 +4,19 @@ openapi: "/productions/api-reference/openapi/en/agent-api-server.json POST /run_
 zh_link: "/productions/api-reference/preview/zh/agent-api-server/run-sse"
 ---
 
-Each SSE message contains a JSON event in its `data` field, using the same event structure as the response array from [non-streaming execution](/productions/api-reference/preview/en/agent-api-server/run). The HTTP response always uses SSE; `streaming` controls incremental model output
+[Create a session](/productions/api-reference/preview/en/agent-api-server/create-session) before submitting a message by default. `streaming` defaults to `false`, which still delivers complete events over SSE; set it to `true` to request incremental model output
+
+<Warning>
+Execution writes session events and can call models, tools, and external resources. Retrying the request can repeat external actions
+</Warning>
+
+Each SSE message starts with `data:`, contains JSON, and ends with a blank line. Read continuously with `curl -N`. Events can contain only state or artifact changes rather than text; `partial: true` marks incremental content
+
+```text
+data: {"content":{"role":"model","parts":[{"text":"Hello"}]},"partial":false,"author":"travel_assistant","invocationId":"invocation-001","id":"event-001","timestamp":1789603200}
+
+data: {"error":"Example execution error"}
+
+```
+
+These examples illustrate message and error event formats; a successful call does not necessarily emit an error. HTTP `200` only indicates that the stream has started. Check for `error` in the stream and continue reading until it closes. The interactive request panel may not display events individually

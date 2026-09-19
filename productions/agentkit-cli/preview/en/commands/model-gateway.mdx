@@ -9,6 +9,10 @@ The `model-gateway` command group activates AgentKit Model Gateway and manages m
   Model Gateway creates or uses cloud gateway resources and stores model provider API keys. Confirm the account, region, gateway mode, and key source before running these commands. Do not save real API keys in repositories, scripts, or shell history.
 </Warning>
 
+Configure cloud management credentials and a region before activating the gateway and creating a provider and consumer. Provider API keys authorize upstream model calls; consumer API keys authorize application access to the gateway. They are not interchangeable
+
+The examples use Ark. Export `MODEL_PROVIDER_API_KEY` in the same terminal and verify model access in your account. For BytePlus, select `--provider byteplus` and use that region's gateway, ModelArk address, and model permissions
+
 ## model-gateway activate
 
 Activate Model Gateway. If a Model Gateway already exists in the current region, the command returns the existing resource. If the resource is in a failed state, the command reports an error. After creating a gateway, the CLI waits until it becomes available.
@@ -41,7 +45,7 @@ Create a model provider. A provider contains the upstream base URL, protocol, on
 ```bash lines
 agentkit model-gateway provider create ark \
   --base-url https://ark.cn-beijing.volces.com/api/v3 \
-  --api-key ${MODEL_PROVIDER_API_KEY} \
+  --api-key "$MODEL_PROVIDER_API_KEY" \
   --model deepseek-v4-flash-ga-260731
 ```
 
@@ -193,6 +197,10 @@ Delete a consumer.
 agentkit model-gateway consumer delete app-server --yes
 ```
 
+<Warning>
+`consumer show` and `show-example` output includes the consumer API key. Keep full output out of public logs, tickets, and repositories; replace credentials before sharing examples
+</Warning>
+
 ## model-gateway show-example
 
 Generate a calling example from a provider and consumer. The command reads the provider access URL, protocol, accessible model, and consumer API key, then prints the selected example type.
@@ -217,3 +225,5 @@ agentkit mgw show-example \
 ```
 
 The `agentkit` example prints model environment variables that can be applied to the current project, such as `MODEL_AGENT_NAME`, `MODEL_AGENT_API_BASE`, and `MODEL_AGENT_API_KEY`.
+
+`show-example` prints an example without sending a model request. A successful answer after running it verifies gateway authentication, model permissions, and upstream credentials; the test incurs model usage

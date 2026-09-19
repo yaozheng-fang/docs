@@ -154,3 +154,13 @@ agentkit department delete --user-pool-id pool-example --department-id dept-exam
 ```
 
 成员变更逐项返回结果，部分失败时返回非零退出码，已成功的用户变更不会自动回滚
+
+## 核对层级和成员变更
+
+创建后记录返回的部门 ID，查询父部门的直接子部门以确认层级：
+
+```bash lines
+agentkit department list --user-pool-id pool-example --parent-department-id root --name Engineering --json
+```
+
+该查询不递归返回整棵组织树，也不列出部门成员。成员操作应使用同一用户池中已存在的用户 ID；检查逐项结果，只重试失败项。`remove-users` 只移除部门关系，不删除用户账号

@@ -41,10 +41,15 @@ model:
     api_key: your-api-key-here
 ```
 
+使用 BytePlus 时应按已开通服务显式设置对应的媒体模型名称、API 地址和 API Key；不要假定 `CLOUD_PROVIDER` 会覆盖这些媒体配置。图像或视频的能力与参数限制以所选模型服务为准。编辑模型使用独立的 `MODEL_EDIT_*` 配置
+
+运行示例前设置 `SOURCE_IMAGE_URL` 为编辑服务可访问的真实图片 URL。原图会发送到模型服务处理
+
 ## 使用方法
 
 ```python title="examples/tools/image_edit/agent.py" lines
 import asyncio
+import os
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
@@ -63,7 +68,7 @@ runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
 
 async def main():
     response = await runner.run(
-        "把这张图 https://example.com/cat.png 里的猫换成一只小狗"
+        f"把这张图 {os.environ['SOURCE_IMAGE_URL']} 里的猫换成一只小狗"
     )
     print(response)
 
@@ -71,3 +76,19 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 参数与结果
+
+`image_edit(params, tool_context)` 为异步函数，`params: list[dict]` 为必填请求列表，`tool_context: ToolContext` 由运行时注入。每个请求支持：
+
+| 字段 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `origin_image` | `str` | 必填 | 原图 URL 或 `data:image/...;base64,...` |
+| `prompt` | `str` | 必填 | 编辑要求 |
+| `image_name` | `str` | `generated_image_{idx}` | 结果名称；批量请求应使用不同名称 |
+| `response_format` | `str` | `"url"` | `url` 或 `b64_json` |
+| `guidance_scale` | `float` | `2.5` | 提示词影响程度，SeedEdit 3.0 支持 1.0–10.0 |
+| `watermark` | `bool` | `True` | 是否添加水印 |
+| `seed` | `int` | `-1` | 随机种子，SeedEdit 3.0 支持 -1 至 2147483647；-1 表示随机 |
+
+返回 `status`、`success_list`、`error_list`，成功项为结果名称到图像 URL 的映射。存在成功项时状态也可能为 `success`，因此还要检查失败项。`b64_json` 结果会先尝试上传到 TOS，需配置可写入的对象存储；默认 `url` 不需要此上传步骤。相同种子不应视为跨模型版本完全相同图像的保证

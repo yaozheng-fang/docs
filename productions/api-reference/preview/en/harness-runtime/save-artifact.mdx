@@ -3,3 +3,9 @@ title: "Save an artifact"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/save-artifact"
 ---
+
+<Warning>
+This operation writes a new version to the configured artifact store. Repeating the same request can create another version. Confirm the content and target application, user, and session before saving
+</Warning>
+
+Use `artifact.text` for text. For binary content, use `artifact.inlineData` with `mimeType` and Base64-encoded `data`. Read the exact saved version using the returned `version`; direct access to `canonicalUri` depends on the storage backend and permissions

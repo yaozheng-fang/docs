@@ -3,62 +3,94 @@ title: "快速开始"
 en_link: "/productions/veadk/preview/en/get-started/quickstart"
 ---
 
-本教程介绍如何配置模型并运行一个最小可用的智能体，最终在终端获得模型的回答。
+本教程介绍如何配置模型、创建智能体并通过 `Runner` 执行一次对话，最终在终端看到模型回答
 
-<Note>
-  开始前请先完成[安装](/productions/veadk/preview/zh/get-started/installation)，并准备好火山方舟 API Key。本章仅覆盖首次运行的最小路径；工具、记忆、知识库与前端能力请参见对应组件文档。
-</Note>
+## 前置条件
+
+- 已完成[安装](/productions/veadk/preview/zh/get-started/installation)，并激活安装 VeADK 的 Python 环境
+- 已准备火山方舟或 BytePlus ModelArk 的 API Key，并拥有所选模型的调用权限
+- 以下环境变量命令使用 Bash 或 zsh；配置与运行命令应在同一终端执行
 
 ## 配置模型
 
-配置调用模型所需的凭证，以下两种方式二选一。最简单的方式是设置环境变量，仅需提供 API Key。
+按模型所在的平台选择配置。API Key 应来自对应平台，不能混用；模型名称应替换为当前账号可调用的名称
 
 <Tabs>
-  <Tab title="环境变量">
-    设置 API Key 后，VeADK 默认使用火山方舟上的豆包模型：
+  <Tab title="火山引擎">
+    在[火山方舟控制台](https://console.volcengine.com/ark)准备 API Key 和可调用的模型，再设置：
 
     ```bash lines
-    export MODEL_AGENT_API_KEY="填入火山方舟 API Key"
+    export CLOUD_PROVIDER="volcengine"
+    export MODEL_AGENT_PROVIDER="openai"
+    export MODEL_AGENT_NAME="doubao-seed-2-1-pro-260628"
+    export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+    export MODEL_AGENT_API_KEY="your-ark-api-key"
     ```
-
-    如需指定其它模型，可另外设置 `MODEL_AGENT_NAME`、`MODEL_AGENT_PROVIDER`、`MODEL_AGENT_API_BASE`。
   </Tab>
-  <Tab title="配置文件">
-    在项目根目录创建 `config.yaml`，VeADK 会自动读取：
+  <Tab title="BytePlus">
+    在 BytePlus ModelArk 控制台准备 API Key 和可调用的模型，再设置：
 
-    ```yaml config.yaml lines
-    model:
-      agent:
-        provider: openai
-        name: doubao-seed-2-1-pro-260628
-        api_base: https://ark.cn-beijing.volces.com/api/v3/
-        api_key: # 填入火山方舟 API Key
+    ```bash lines
+    export CLOUD_PROVIDER="byteplus"
+    export MODEL_AGENT_PROVIDER="openai"
+    export MODEL_AGENT_NAME="seed-2-0-lite-260228"
+    export MODEL_AGENT_API_BASE="https://ark.ap-southeast.bytepluses.com/api/v3"
+    export MODEL_AGENT_API_KEY="your-modelark-api-key"
     ```
-
-    `provider: openai` 表示采用 OpenAI 兼容协议，`api_base` 指向火山方舟的兼容接口，因此可直接使用豆包等方舟模型。
   </Tab>
 </Tabs>
 
-## 编写第一个智能体
+`MODEL_AGENT_PROVIDER=openai` 表示使用 OpenAI 兼容协议，实际请求发往 `MODEL_AGENT_API_BASE` 指定的平台地址。本例显式设置模型、地址和凭证，避免依赖不同版本的默认值
 
-创建 `main.py`：
+<Warning>
+  运行示例会将提示词发送到所选模型服务，并可能产生模型调用费用。使用测试内容，不在示例文件或版本库中保存真实 API Key
+</Warning>
+
+## 编写并运行智能体
+
+在项目目录中创建 `main.py`：
 
 ```python main.py lines
-from veadk import Agent
 import asyncio
 
-agent = Agent()
+from veadk import Agent, Runner
 
-res = asyncio.run(agent.run("用一句话介绍火山引擎。"))
+agent = Agent()
+runner = Runner(agent=agent)
+
+res = asyncio.run(runner.run(messages="用一句话介绍火山引擎。"))
 print(res)
 ```
 
-`Agent` 持有模型与指令，不传参数时使用 `config.yaml` 中的默认模型；`agent.run(...)` 为异步方法，返回最终的文本回答。
+`Agent` 定义模型、指令与工具；`Runner` 执行对话。这里的 `Agent()` 使用前面设置的模型配置，`runner.run(...)` 返回回答文本
 
-## 运行
+在 `main.py` 所在目录运行：
 
 ```bash lines
 python main.py
 ```
 
-终端将打印模型返回的回答。至此，一个最小 VeADK 智能体已完成运行。
+终端会显示运行日志和模型回答。看到非空回答表示此次调用完成；回答内容由模型生成，不要求与固定文本完全一致
+
+## 可选：使用配置文件
+
+需要复用非敏感模型配置时，在 `main.py` 所在目录创建 `config.yaml`。以下示例用于火山方舟；API Key 仍通过环境变量提供：
+
+```yaml config.yaml lines
+model:
+  agent:
+    provider: openai
+    name: doubao-seed-2-1-pro-260628
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+```
+
+VeADK 从当前工作目录向上查找 `config.yaml`。同名配置同时存在时，已设置的环境变量优先于配置文件；仅修改文件不会覆盖先前导出的模型设置。配置更多模型选项见[模型](/productions/veadk/preview/zh/components/agent/model)
+
+## 排查首次运行问题
+
+| 现象 | 检查与处理 |
+| --- | --- |
+| 找不到 `veadk` 模块 | 激活安装时使用的虚拟环境，并用安装页的版本检查命令确认当前 Python 环境 |
+| 模型认证或权限失败 | 确认 API Key 已在当前终端导出，并与服务地址、模型权限匹配 |
+| 模型不存在或不可用 | 在对应平台确认模型名称及可用范围，再修改 `MODEL_AGENT_NAME` |
+| 修改 `config.yaml` 后仍使用原模型 | 检查同名环境变量；清除旧值或更新环境变量后重新运行 |

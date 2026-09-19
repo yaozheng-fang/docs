@@ -7,10 +7,10 @@ en_link: "/productions/agentkit-cli/preview/en"
 
 <CardGroup cols={2}>
   <Card title="快速开始" icon="rocket" href="/productions/agentkit-cli/preview/zh/quickstart">
-    安装、登录，三步部署你的第一个智能体。
+    安装、配置凭证、部署并验证第一个智能体
   </Card>
   <Card title="命令参考" icon="terminal" href="/productions/agentkit-cli/preview/zh/commands">
-    每个命令一句话说明加一个示例。
+    查询命令用途、参数、默认值和示例
   </Card>
 </CardGroup>
 
@@ -55,6 +55,6 @@ en_link: "/productions/agentkit-cli/preview/en"
 - `login`、`logout`、`whoami` 可直接作为顶层命令使用，也可以写成 `auth login`、`auth logout`、`auth whoami`。
 - `knowledge` 的别名为 `kb` 和 `knowledgebase`，`memory` 的别名为 `mem`，
   `model-gateway` 的别名为 `mgw`，`env` 的别名为 `environment`，`skills secure` 用于本地技能包转换，`eval` 前缀可省略（`agentkit dataset …` 等价于 `agentkit eval dataset …`）。
-- 大多数读命令支持 `--json`；region 默认自动探测，可用 `-r, --region` 指定。
+- 多数查询命令支持 `--json`；地域默认按云厂商和配置解析。需要覆盖时查看该命令的参数表，短选项并不统一，例如 `invoke run -r` 表示 Runtime ID
 - 所有产品命令都支持全局 `--provider volcengine|byteplus`，用于临时覆盖本次命令的云厂商。
 - 删除行为以对应命令为准：多数删除命令需确认，但 `sandbox snapshot delete` 会立即删除快照，不提供 `--yes`

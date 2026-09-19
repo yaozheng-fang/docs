@@ -5,6 +5,12 @@ en_link: "/productions/agentkit-cli/preview/en/commands/build"
 
 `build` 根据生命周期配置构建运行时镜像。构建策略由 `agentkit.yaml` 中的 `common.launch_type` 决定：`local` 使用本地 Docker 构建，`cloud` 使用云端构建，`hybrid` 本地构建后推送到云端镜像仓库。
 
+在已初始化的项目目录执行，或用 `--config-file` 指定已有生命周期配置。`local` 和 `hybrid` 需要本机 Docker 可用；`cloud` 需要所选平台的云端构建、镜像仓库和对象存储权限
+
+<Warning>
+云端构建和推送镜像可能创建或使用收费资源。`--regenerate-dockerfile` 会覆盖已有 Dockerfile，执行前保存自定义修改
+</Warning>
+
 ## build
 
 | 标志/参数 | 说明 | 默认值 |
@@ -18,3 +24,5 @@ agentkit build --config-file agentkit.yaml --platform linux/amd64
 ```
 
 构建成功后，CLI 会把镜像 ID、镜像地址、构建时间或云端构建产物写回 `agentkit.yaml`。若 Dockerfile 不存在，CLI 会根据语言、入口文件、依赖文件和云厂商生成默认 Dockerfile。
+
+构建成功表示镜像可供部署，不表示运行时已更新。继续使用同一配置执行 `agentkit deploy`；构建失败时先处理依赖安装、Dockerfile 或镜像仓库权限问题，再重新构建

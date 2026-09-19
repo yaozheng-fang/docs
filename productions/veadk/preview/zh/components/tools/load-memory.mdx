@@ -11,22 +11,42 @@ en_link: "/productions/veadk/preview/en/components/tools/load-memory"
 
 长期记忆的后端类型与配置，详见[长期记忆文档](/productions/veadk/preview/zh/components/memory)。
 
+## 前提条件
+
+安装 `python -m pip install "veadk-python[extensions]"`，完成[模型配置](/productions/veadk/preview/zh/components/agent/model)与[本地后端配置](/productions/veadk/preview/zh/components/memory/local)。本地存储仍会将文本发送到配置的 embedding 服务；首次检索前必须先写入数据
+
 ## 使用方法
 
 ```python lines
+import asyncio
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
 from veadk import Agent, Runner
 from veadk.memory.long_term_memory import LongTermMemory
 
-long_term_memory = LongTermMemory(backend="local", app_name="ltm_demo")
-
+memory = LongTermMemory(backend="local", index="ltm_demo")
 agent = Agent(
     name="memory_agent",
-    model_name="doubao-seed-2-1-pro-260628",
-    instruction="在需要时检索长期记忆，提供个性化、连续的回答。",
-    long_term_memory=long_term_memory,  # 传入后自动挂载 load_memory
+    instruction="Call load_memory to find the user's saved language preference before answering.",
+    long_term_memory=memory,
 )
+runner = Runner(agent=agent, app_name="ltm_demo")
 
-runner = Runner(agent=agent)
+async def main():
+    previous = Session(
+        id="previous_chat", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(previous)
+    result = await runner.run(
+        "What is my preferred language?", user_id="user_42", session_id="new_chat"
+    )
+    print(result)
+
+asyncio.run(main())
 ```
 
 ## 额外说明
@@ -34,3 +54,14 @@ runner = Runner(agent=agent)
 <Note>
 系统工具由框架自动管理：只需提供 `long_term_memory`，无需把 `load_memory` 显式加入 `tools` 列表。智能体会根据指令与用户输入自主决定何时调用它。
 </Note>
+
+## 检索输入与验证
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | 必填 | 智能体生成的检索关键词或问题 |
+| `tool_context` | `ToolContext` | 自动注入 | 当前调用上下文，不由模型填写 |
+
+结果中的 `memories` 列表包含召回的长期记忆。示例先写入语言偏好，再从另一个会话检索，预期回答包含中文。`local` 实例不按用户或应用过滤，不能混存不同用户的私有记忆；生产环境应选择合适的隔离与持久化后端
+
+工具是否实际调用仍由模型决定。若回答未体现数据，先检查工具调用事件与检索结果；直接检索失败时，应先排查写入状态、embedding 配置与后端权限

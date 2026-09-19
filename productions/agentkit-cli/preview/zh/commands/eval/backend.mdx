@@ -23,7 +23,7 @@ agentkit eval backend --json
 
 ## 评测网关配置
 
-默认评测网关使用 `agentkit.cn-beijing.volcengineapi.com`、签名服务 `agentkit` 与区域 `cn-beijing`。如需在测试环境中覆盖网关，可设置以下环境变量。
+默认评测网关使用 `agentkit.cn-beijing.volcengineapi.com`、签名服务 `agentkit` 与区域 `cn-beijing`。仅在服务提供方给出相应接入信息时覆盖以下环境变量；云厂商全局选项不能代替评测网关接入配置。
 
 | 环境变量 | 说明 | 默认值 |
 | --- | --- | --- |
@@ -34,9 +34,7 @@ agentkit eval backend --json
 | `EXTRA_HEADER` | 额外请求头，多个请求头以分号分隔，格式为 `Name: Value`。 | — |
 
 ```bash lines
-AGENTKIT_EVAL_HOST=agentkit-ppe.cn-beijing.volcengineapi.com \
-AGENTKIT_EVAL_SERVICE=agentkit_ppe \
-agentkit eval backend --json
+agentkit eval --cache-refresh backend --json
 ```
 
 ## 调试选项
@@ -52,3 +50,7 @@ agentkit eval backend --json
 agentkit eval --cache-refresh backend
 agentkit eval --verbose dataset list
 ```
+
+先完成云端管理鉴权，再运行此命令确认账号实际分配到的后端。解析成功不代表所有评测功能都可用：`target`、草稿更新和显式版本管理需要 TEA；Coze 与 TEA 的资源 ID、项目和字段映射不可混用
+
+`--verbose` 的完整请求可能包含用例、提示词或其他业务数据，即使会话 cookie 已脱敏，也应在分享诊断日志前检查内容。切换账号、网关或后端配置后，使用 `--cache-refresh` 重新解析

@@ -31,6 +31,8 @@ export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ## Example
 
 ```python lines
+import os
+
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -40,12 +42,14 @@ kb = KnowledgeBase(
     backend_config={
         "index": "product_docs",
         "url": "https://openviking.example.com",
-        "api_key": "your-openviking-api-key",
+        "api_key": os.environ["DATABASE_OPENVIKING_API_KEY"],
         # Optional; defaults to default when omitted
         "openviking_user_id": "product_app",
     },
 )
-kb.add_from_directory("./docs")
+kb.add_from_text("Annual leave is 15 days per year")
+for entry in kb.search("annual leave"):
+    print(entry.content)
 
 agent = Agent(knowledgebase=kb)
 ```
@@ -68,9 +72,25 @@ kb.close()
 
 ## Parameters
 
+### KnowledgeBase parameters
+
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `index` | `str` | None | Knowledge-base name used to build the default resource URI. It cannot be empty. |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | Set to `openviking` or pass a backend instance |
+| `backend_config` | `dict` | `{}` | Must include index when nonempty; does not merge the outer index |
+| `index` | `str` | `""` | Index name; falls back to app_name when no configuration dictionary is supplied |
+| `app_name` | `str` | `""` | Fallback for index; not a user authorization filter |
+| `top_k` | `int` | `10` | Default result count; search(top_k=0) uses this value |
+| `name` | `str` | `"user_knowledgebase"` | Knowledge-base name shown to the agent |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | Explains the knowledge base to the agent |
+| `enable_profile` | `bool` | `False` | Enables document profiles; generate profile files first, or leave disabled for ordinary retrieval |
+| `query_with_user_profile` | `bool` | `False` | Uses the agent’s Viking long-term memory profile to guide queries; the knowledge backend itself need not be Viking |
+
+### Backend configuration
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `index` | `str` | None | Knowledge-base name for the default resource URI; nonempty, containing only letters, digits, periods, underscores, @, and hyphens, and not . or .. |
 | `openviking_user_id` | `str \| None` | `DATABASE_OPENVIKING_USER_ID` or `default` | OpenViking owner/context used to build the default resource URI. Allowed characters: letters, digits, `.`, `_`, `@`, `-`; cannot be `.` or `..`. |
 | `url` | `str \| None` | Environment | OpenViking service URL. |
 | `api_key` | `str \| None` | Environment | OpenViking API key. |
@@ -107,3 +127,7 @@ Constructor parameters define the defaults. These keyword arguments can override
 | `search` | `filter`, `context_type`, `tags` | `None` | Pass retrieval filters to OpenViking. |
 | `search` | `session`, `session_id` | `None` | Supply session information for context search. |
 | `search` | `telemetry` | `false` | Enable OpenViking telemetry for this search. |
+
+`wait=False` confirms submission only, not search readiness. `hydrate_results=True` adds content reads for matched resources, limited by `read_limit`; it does not guarantee the complete document is returned. `Runner.user_id` does not automatically change the resource directory; configure explicit directories and service permissions for separate tenants
+
+The example search should return the annual-leave policy. For empty results, check successful ingestion, matching embedding dimensions, completed server processing, network access, and permissions. Managed ingestion may not be immediately searchable. Running the configured Agent also requires model credentials

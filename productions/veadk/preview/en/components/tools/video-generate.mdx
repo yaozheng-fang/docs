@@ -43,6 +43,8 @@ model:
     api_key: your-api-key-here
 ```
 
+For BytePlus, explicitly configure the media model name, API base URL, and key for your enabled service. Do not assume `CLOUD_PROVIDER` overrides media configuration. Capabilities and parameter limits depend on the selected model service. The video API base and default model name are resolved at import time; configure them before starting the process.
+
 ## Usage
 
 ```python title="examples/tools/video_generate/agent.py" lines
@@ -51,7 +53,7 @@ import asyncio
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 from veadk.tools.builtin_tools.image_generate import image_generate
-from veadk.tools.builtin_tools.video_generate import video_generate
+from veadk.tools.builtin_tools.video_generate import video_generate, video_task_query
 
 agent = Agent(
     name="video_generate_agent",
@@ -59,10 +61,10 @@ agent = Agent(
     description="An expert in creating images and videos.",
     instruction=(
         "First use image_generate to create a first frame and a last frame, then use "
-        "video_generate to compose a video. Finally return the absolute path of the "
-        "video and briefly summarize its content."
+        "video_generate to compose a video. Query pending tasks with video_task_query, "
+        "then return the completed video URL and summarize its content."
     ),
-    tools=[image_generate, video_generate],
+    tools=[image_generate, video_generate, video_task_query],
 )
 
 runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
@@ -78,3 +80,33 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Parameters and task states
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `params` | `list[dict]` | Required | Video generation requests |
+| `tool_context` | `ToolContext` | Injected | Invocation context |
+| `batch_size` | `int` | `10` | Requests submitted per batch; use a positive integer |
+| `max_wait_seconds` | `int` | `1200` | Per-batch polling budget used to determine poll rounds, not a strict end-to-end timeout |
+| `model_name` | `str` | Configured or built-in model | Generation model; its default is read at import time |
+
+Each request requires `video_name: str` and `prompt: str`. Other fields use service defaults when omitted:
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `first_frame`, `last_frame` | `str \| None` | `None` | First and last frame image URLs |
+| `reference_images` | `list[str]` | `[]` | Reference images |
+| `reference_videos` | `list[str]` | `[]` | Reference videos |
+| `reference_audios` | `list[str]` | `[]` | Reference audio |
+| `ratio`, `resolution` | `str \| None` | `None` | Aspect ratio and resolution supported by the selected model |
+| `duration`, `frames` | `int \| None` | `None` | Duration in seconds or frame count, subject to model constraints |
+| `camera_fixed` | `bool \| None` | `None` | Fixed camera |
+| `seed` | `int \| None` | `None` | Random seed |
+| `watermark` | `bool \| None` | `None` | Add a watermark |
+| `generate_audio` | `bool \| None` | `None` | Generate audio where supported |
+| `tools` | `list[dict] \| None` | `None` | For example web search; text-only generation supports it, while reference inputs cause it to be ignored |
+
+Results contain `status`, `success_list`, `error_list`, `error_details`, and `pending_list`. Success items map video names to URLs. Pending items include a `task_id`. Ending local waiting does not cancel remote generation; query the existing task instead of resubmitting it.
+
+`video_task_query(task_id: str, tool_context: ToolContext)` requires the task ID and injected context, with no optional arguments. It returns fields including `status`, `video_url`, and `error`. `queued` and `running` are still in progress; deliver a video only after `succeeded` with a URL. Inspect errors for `failed` tasks. Query using the same service endpoint and authorized credentials as generation.

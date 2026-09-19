@@ -3,11 +3,11 @@ title: "概述"
 en_link: "/productions/veadk/preview/en/components/observability"
 ---
 
-可观测通过对智能体执行过程的全链路记录，帮助你理解智能体的内部行为、定位问题、分析性能并持续优化。VeADK 内置的追踪能力会把每一次请求——从接收用户输入，到模型推理、工具调用、记忆与知识库读写，再到生成响应——记录为结构化的 span 数据，并通过导出器上报至火山引擎或第三方平台进行观测与分析。
+VeADK 通过运行日志和调用链追踪帮助定位模型、工具及执行流程的问题。日志记录离散事件；追踪将一次请求中的多个操作关联起来，便于查看耗时和调用关系
 
-VeADK 的追踪能力遵循 [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) 生成式 AI 语义规范，字段命名与标准 span 属性对齐，因此追踪数据可直接导入任意兼容 OpenTelemetry 的系统进行分析和可视化。
+追踪使用 [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) 的 span 与生成式 AI 属性。实际采集范围取决于运行时和工具的埋点；接入外部平台还需要匹配其协议、端点与凭证
 
-运行日志使用 Python 标准库 `logging`，级别、格式与追踪关联方式见[应用日志](/productions/veadk/preview/zh/components/observability/logging)。
+运行日志的级别与格式见[应用日志](/productions/veadk/preview/zh/components/observability/logging)
 
 ## 核心概念
 
@@ -30,30 +30,35 @@ span 是一次可被追踪的执行单元，记录名称、起止时间、属性
 | TLS | `TLSExporter` | 火山引擎日志服务 TLS | [TLS 日志服务](/productions/veadk/preview/zh/components/observability/tls) |
 | 内存 | `InMemoryExporter` | 进程内存，本地调试与落盘 | [内存导出器](/productions/veadk/preview/zh/components/observability/inmemory) |
 
+
+<Warning>
+追踪数据可能包含用户输入、模型回答和工具数据。启用外部导出器前，确认数据发送目标、访问权限与保留周期；调用 `force_export()` 只会触发刷新，不代表远端已成功接收
+</Warning>
+
 ## 给智能体挂载追踪器
 
-追踪能力通过 `Agent` 的 `tracers` 字段接入。构造对应后端的导出器，交给 `OpentelemetryTracer`，再把追踪器挂到智能体上即可：
+先完成[模型配置](/productions/veadk/preview/zh/components/agent/model)。下面的示例只保存在内存中，不需要外部观测平台；运行后会输出模型回复和本地 JSON 文件路径
 
-```python lines
+```python title="app.py" lines
 import asyncio
+from pathlib import Path
 
 from veadk import Agent, Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-from veadk.tools.demo_tools import get_city_weather
-from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
-exporters = [APMPlusExporter()]
-tracer = OpentelemetryTracer(exporters=exporters)
-
-agent = Agent(tools=[get_city_weather], tracers=[tracer])
-
-runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
-
-asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_id_demo"))
+tracer = OpentelemetryTracer()
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("用一句话解释智能体的用途", session_id="demo-session")
+)
+print(response)
+Path("traces").mkdir(exist_ok=True)
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(path)
 ```
 
-一个追踪器可以同时挂多个导出器，将同一份 span 数据上报到多个平台：
+配置好每个平台的端点、凭证和目标资源后，一个追踪器可以同时挂多个导出器。下例是替换上方追踪器的配置片段：
 
 ```python lines
 from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
@@ -74,30 +79,19 @@ tracer = OpentelemetryTracer(
 | :--- | :--- | :--- | :--- |
 | `name` | `str` | `veadk_opentelemetry_tracer` | 追踪器标识，用于日志与落盘文件命名。 |
 | `exporters` | `list[BaseExporter]` | `[]` | 导出器列表。不允许显式加入 `InMemoryExporter`，否则会校验报错；内存导出器由追踪器自动附加。 |
-| `apmplus_managed_externally` | `bool` | — | 只读属性。初始化时是否检测到已存在的全局 `TracerProvider`。为 `True` 时表示 VeADK 复用外部 provider 而不再覆盖，并自动移除 `APMPlusExporter`。 |
+| `apmplus_managed_externally` | `bool` | — | 只读属性。初始化时是否检测到已存在的全局 `TracerProvider`。为 `True` 时表示 VeADK 复用外部 provider 而不再覆盖，并跳过该追踪器中 `APMPlusExporter` 的链路注册；这不表示外部 provider 已配置 APMPlus。 |
 
 <Note>
-`InMemoryExporter` 由 `OpentelemetryTracer` 自动管理，用于记录全部 span。请勿手动加入 `exporters` 列表，否则初始化会报错。
+`InMemoryExporter` 由 `OpentelemetryTracer` 自动管理，用于留存已完成且被采样的 span。请勿手动加入 `exporters` 列表，否则初始化会报错。
 </Note>
 
 ### 复用全局 TracerProvider
 
 默认情况下，`OpentelemetryTracer` 初始化时会创建并设置全局 `TracerProvider`。如果在初始化之前已存在一个全局 `TracerProvider`（例如由其他库或应用主程序设置），VeADK 将复用该 provider 而不再覆盖它。
 
-此时，VeADK 会自动从导出器列表中移除 `APMPlusExporter`，因为已存在的 provider 被视为已负责 APMPlus 的链路数据上报。其他导出器（如 `CozeloopExporter`、`TLSExporter`）仍会被正常注册到该 provider。VeADK 的内存导出器也会正常附加。
+已有全局 provider 时，`APMPlusExporter` 对象仍保留在导出器列表中，但该追踪器跳过它的链路注册。Cozeloop、TLS 和内存导出器仍会附加。通过 `ENABLE_APMPLUS=true` 自动创建的导出器也遵循这一行为
 
-<Note>
-此行为同样适用于通过 `ENABLE_APMPLUS=true` 自动创建导出器的场景：如果全局 `TracerProvider` 已存在，自动创建的 `APMPlusExporter` 也会被移除。
-</Note>
-
-可通过 `apmplus_managed_externally` 属性判断当前追踪器是否检测到了外部 provider：
-
-```python lines
-tracer = OpentelemetryTracer(exporters=[APMPlusExporter()])
-if tracer.apmplus_managed_externally:
-    # VeADK 复用了已存在的全局 TracerProvider，APMPlusExporter 已被自动移除
-    pass
-```
+`apmplus_managed_externally` 仅表示初始化时检测到了已有 provider。它不检查该 provider 的目标平台，也不保证 APMPlus 收到数据。应用已配置 OpenTelemetry 时，应在同一处配置 APMPlus 的上报目标，并在平台上确认 Trace ID
 
 ## 通过环境变量启用导出器
 
@@ -115,11 +109,11 @@ if tracer.apmplus_managed_externally:
 
 ## 内容追踪
 
-默认情况下，span 会记录智能体、模型与工具的输入输出内容。在涉及敏感数据的场景中，可关闭内容采集，仅保留非内容的 span 结构与耗时信息。该行为由 `OpenTelemetryConfig.trace_content` 控制。
+默认情况下，span 会记录智能体、模型与工具的输入输出内容。在涉及敏感数据的场景中，可关闭内容采集，减少 VeADK 采集的内容数据。该行为由 `OpenTelemetryConfig.trace_content` 控制。
 
 | 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | 是否将提示词、补全与工具输入输出内容写入 span。设为 `false` 时仅保留非内容追踪信息。 |
+| `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | 是否将提示词、补全与工具输入输出内容写入 span。设为 `false` 时关闭对应内容字段的采集；第三方埋点和应用日志需单独配置。 |
 
 ```bash lines
 # 关闭内容采集
@@ -131,7 +125,7 @@ export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
 `OpentelemetryTracer` 内置的内存导出器会按 `session_id` 留存 span，可调用 `dump` 将当前会话的 span 导出为本地 JSON 文件，用于离线分析：
 
 ```python lines
-path = tracer.dump(user_id="user-1", session_id="session_id_demo")
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
 print(f"trace 已写入 {path}")
 ```
 

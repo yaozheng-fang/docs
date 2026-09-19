@@ -63,5 +63,28 @@ Security & limits:
 
 - **SSRF protection**: after DNS resolution it blocks private / loopback / link-local / reserved addresses, and re-validates every redirect hop (including `<meta refresh>`), following at most 3 hops.
 - **Limits**: 2 MB download cap for HTML (10 MB for PDFs); 30 s request timeout; results cached in-process for 15 minutes.
-- No JavaScript rendering; no socket-level DNS pinning (resolve-then-revalidate only).
+- No JavaScript rendering; hostname checks do not replace network access restrictions in the deployment environment.
 </Note>
+
+## Direct calls and parameter limits
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `url` | `str` | Required | Public HTTP or HTTPS URL |
+| `extract_mode` | `str` | `"markdown"` | `markdown` or `text`; other values use `markdown` |
+| `max_chars` | `int` | `50000` | Output character limit, clamped to 1–200000; unconvertible values use the default |
+| `tool_context` | `ToolContext \| None` | `None` | Injected for agent calls; optional for direct calls |
+
+Direct calls need no model API key. PDF extraction requires `pypdf` and does not perform OCR on scanned pages. `truncated` only indicates that extracted text exceeded the character limit; it does not guarantee a complete download or full content coverage.
+
+```python lines
+from veadk.tools.builtin_tools.web_fetch import web_fetch
+
+result = web_fetch("https://example.com", extract_mode="text", max_chars=2000)
+if "error" in result:
+    print("Fetch failed:", result["error"])
+else:
+    print(result["url"], result["title"])
+    print(result["content"])
+    print("Truncated:", result["truncated"])
+```

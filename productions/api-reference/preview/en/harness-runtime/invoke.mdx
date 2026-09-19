@@ -4,4 +4,12 @@ openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /harne
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/invoke"
 ---
 
-See [Built-in tools](/productions/api-reference/preview/en/harness-runtime/tools) for supported `harness.tools` names, uses, and prerequisites
+Use this endpoint on KeyAuth deployments, with text in `prompt` and user/session identifiers in `run_agent_request`. `harness_name` is echoed in the request and response; sessions still use the `harness_agent` application. Shared OAuth deployments do not expose this endpoint
+
+`harness` applies only to this invocation; omitted fields inherit deployment settings. `tools` appends registered [built-in tools](/productions/api-reference/preview/en/harness-runtime/tools), while `mcp_servers` replaces the remote MCP list
+
+<Warning>
+This endpoint runs the agent and saves session events. It can call models, tools, and cloud resources; retries can repeat external actions
+</Warning>
+
+The response arrives after completion. Check that `error` is `null`; HTTP `200` or `overwrite` alone does not establish success. On failure, `output` is an empty string

@@ -3,78 +3,165 @@ title: "Skills"
 zh_link: "/productions/veadk/preview/zh/components/agent/skills"
 ---
 
-A skill is a reusable prompt package that injects specific domain knowledge,
-procedures, and scripts into an agent. Skills are Google ADK–compatible: load
-local skills through ADK's `SkillToolset`, and connect cloud skill spaces
-through VeADK's `VeSkillRegistry`.
+Skills package task instructions, reference material, and optional scripts in reusable directories. Agents can discover skills before loading their full instructions. Code execution is involved only when a skill uses scripts and an executor is configured
+
+| Use case | Integration |
+| :--- | :--- |
+| Local skills maintained with the application | `load_skill_from_dir` and `SkillToolset` |
+| On-demand access to cloud skill spaces | `VeSkillRegistry` and `SkillToolset` |
+| Shared skills in a deployed Harness | Harness `skills` configuration |
+| Remote skill workflows | `skills_sandbox` mode or a [remote sandbox agent](/productions/veadk/preview/en/components/agent/remote-sandbox-agent) |
+
+The `SkillToolset` examples use the Google ADK 2.2 API. Complete [installation and model configuration](/productions/veadk/preview/en/get-started/quickstart) first
 
 ## Local skills
 
-Load a local skill directory with ADK's `load_skill_from_dir` and pass it as a
-standard toolset to the agent:
+Create `skills/incident-summary/SKILL.md` in your project:
 
-```python lines
-from google.adk.skills import load_skill_from_dir
-from google.adk.tools.skill_toolset import SkillToolset
-from veadk import Agent
+```markdown skills/incident-summary/SKILL.md lines
+---
+name: incident-summary
+description: Summarize incident notes into impact, timeline, and follow-up actions
+---
 
-skill = load_skill_from_dir("/abs/path/to/skills/kb-skill")
-agent = Agent(tools=[SkillToolset(skills=[skill])])
+# Incident summary
+
+Read the notes provided by the user and return three sections:
+
+- Impact: describe affected users and services
+- Timeline: list only times explicitly present in the notes
+- Follow-up actions: distinguish completed work from proposed work
+
+Mark missing information as unknown. Do not invent causes or timestamps.
 ```
 
-Skill loading, prompt injection, and tool exposure are all handled by ADK; the
-tools visible to the model include `list_skills`, `load_skill`,
-`load_skill_resource`, and `run_skill_script`. If a skill runs scripts from
-`scripts/`, configure a suitable `code_executor` on the `SkillToolset` or the
-agent when constructing `SkillToolset` directly through the ADK API.
+Create and run `main.py` from the project root:
 
-<Note>
-When skills are loaded through Harness, CLI-generated agent code, or the
-AgentKit session capability service, VeADK automatically configures a local
-code executor for `SkillToolset`, so skill scripts run without additional
-configuration.
-</Note>
+```python main.py lines
+import asyncio
+from pathlib import Path
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent, Runner
+
+skill_dir = Path(__file__).parent / "skills" / "incident-summary"
+skill = load_skill_from_dir(skill_dir)
+agent = Agent(
+    name="incident_assistant",
+    instruction="Use the incident-summary skill to summarize incident notes.",
+    tools=[SkillToolset(skills=[skill])],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="At 09:10 invoice downloads failed. At 09:25 a rollback restored service. The cause is unknown.",
+        session_id="skills-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+The response should contain impact, timeline, and follow-up sections, marking missing information as unknown. This skill only processes supplied text and needs no code executor
+
+Default tools are `list_skills`, `load_skill`, `load_skill_resource`, and `run_skill_script`. Configuring a registry also adds `search_skills`
+
+### SkillToolset parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `skills` | `list[Skill] \| None` | `None` | Loaded local skills; names must be unique |
+| `registry` | `SkillRegistry \| None` | `None` | Source for on-demand discovery and loading |
+| `code_executor` | `BaseCodeExecutor \| None` | `None` | Script executor; falls back to the agent's executor when omitted |
+| `script_timeout` | `int` | `300` | Shell script timeout in seconds; does not limit Python scripts executed directly by the executor |
+| `additional_tools` | `list[ToolUnion] \| None` | `None` | Tools activated through skill `metadata.adk_additional_tools` |
+| `tool_name_prefix` | `str \| None` | `None` | Prefix for skill tool names |
+| `tool_filter` | `ToolPredicate \| list[str] \| None` | `None` | Restricts tools by predicate or name |
+
+### Run skill scripts
+
+<Warning>
+`UnsafeLocalCodeExecutor` runs skill code in the current process environment without sandbox isolation. Enable it only for reviewed, trusted skills: code can access the process's files, network, and credentials. Use a restricted container or remote sandbox when isolation is required
+</Warning>
+
+For a skill with executable `scripts/`, replace the toolset and agent configuration after loading `skill` above:
+
+```python  lines
+from google.adk.code_executors import UnsafeLocalCodeExecutor
+
+toolset = SkillToolset(
+    skills=[skill],
+    code_executor=UnsafeLocalCodeExecutor(),
+    script_timeout=300,
+)
+agent = Agent(name="skills_assistant", tools=[toolset])
+```
+
+Creating `SkillToolset` directly does not install script dependencies. Relevant loaders in Harness, CLI-generated code, and AgentKit session capability services configure a local executor. Review skill sources before using those entry points as well
 
 ## Cloud skill spaces
 
-Connect a cloud skill space through `VeSkillRegistry`, then hand it to
-`SkillToolset`:
+Prepare a readable source ID and account credentials permitted to list skills and download their files. `SKILL_SOURCE_ID` is an environment variable defined by this example. Each `VeSkillRegistry` accepts exactly one source ID, not a comma-separated list
 
-```python lines
-from google.adk.tools.skill_toolset import SkillToolset
-from veadk import Agent
-from veadk.skills import VeSkillRegistry
+| Setting | Volcengine | BytePlus |
+| :--- | :--- | :--- |
+| `CLOUD_PROVIDER` | `volcengine`, default | `byteplus` |
+| AccessKey | `VOLCENGINE_ACCESS_KEY` | `BYTEPLUS_ACCESS_KEY` |
+| SecretKey | `VOLCENGINE_SECRET_KEY` | `BYTEPLUS_SECRET_KEY` |
+| Temporary credential Token | `VOLCENGINE_SESSION_TOKEN` | `BYTEPLUS_SESSION_TOKEN` |
+| Default AgentKit skill-space region | `cn-beijing` | `ap-southeast-1` |
 
-registry = VeSkillRegistry(skill_source_id=skill_space_id)
-agent = Agent(tools=[SkillToolset(registry=registry)])
+If the complete AK/SK pair is absent, the loader tries the environment's IAM Role credentials. Set `AGENTKIT_TOOL_REGION` to select an AgentKit skill-space region. Credentials, resources, region, and platform must match. SkillHub and AgentKit skill-space availability depend on the services enabled for the account
+
+```bash lines
+export SKILL_SOURCE_ID="<skill-space-id>"
 ```
 
-This does not download every skill up front: `search_skills` fetches the remote
-skill list in real time, and `get_skill` downloads and loads a specific skill on
-demand; when the remote version changes, the new version is re-downloaded.
+```python cloud_skills.py lines
+import asyncio
+import os
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent, Runner
+from veadk.skills import VeSkillRegistry
 
-<Note>
-When loading skills, `VeSkillRegistry` tolerates non-standard frontmatter fields
-(community extensions) in `SKILL.md`, such as `allowed-tools`, `triggers`, and
-`requires`. These fields do not cause loading failures; they are preserved in
-the skill frontmatter's `metadata`.
-</Note>
+registry = VeSkillRegistry(skill_source_id=os.environ["SKILL_SOURCE_ID"])
+agent = Agent(
+    name="skills_assistant",
+    instruction="Search available skills and load the relevant instructions before answering.",
+    tools=[SkillToolset(registry=registry)],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="List the available skills and explain what they help with.",
+        session_id="registry-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python cloud_skills.py` to inspect discoverable skills
+
+| VeSkillRegistry parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `skill_source_id` | `str` | Required | One source ID; `sp-` identifies a SkillHub space, while other IDs use AgentKit skill-space behavior |
+| `cache_dir` | `Path \| None` | `None` | Download cache; defaults to `VEADK_SKILLS_CACHE_DIR`, then `veadk/skills` under the system temporary directory |
+
+Creating a registry does not download every skill. `search_skills` fetches all source metadata and currently does not filter by the query. `get_skill` refreshes metadata and downloads the named skill on demand. Cached versions are reused; changed versions are downloaded again. The cache directory must be writable
+
+Nonstandard cloud frontmatter fields such as `allowed-tools`, `triggers`, and `requires` are retained in `metadata`. Retention does not automatically enforce their permission or dependency declarations
 
 ## Harness skills center
 
-Harness can load both Skill Hub skills and AgentKit skills-center spaces. A plain name or slug in `skills` identifies a Skill Hub skill; the `space:` prefix identifies a skills-center space ID.
+Create a project and configure deployment credentials using [Harness deployment](/productions/veadk/preview/en/deploy/harness). Replace the example names and IDs with accessible skills. Plain names or slugs identify Skill Hub skills; the `space:` prefix identifies an AgentKit skill space
 
-For creating, configuring, and deploying the Harness server, see [Harness server deployment](/productions/veadk/preview/en/deploy/harness).
-
-The skills center requires Volcengine credentials that can read the space and its object-storage content. For local runs, set `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`, plus `VOLCENGINE_SESSION_TOKEN` for temporary credentials. On VeFaaS, the bound IAM role can provide temporary credentials instead.
-
-```bash lines
+```bash  lines
 cd my-harness
-veadk harness add \
-  --skills "data-visualization-cloud,space:ss-example"
+veadk harness add --skills "data-visualization-cloud,space:ss-example"
 ```
 
-The resulting `harness.yaml` stores the sources as a list:
+The generated `harness.yaml` stores sources as a list:
 
 ```yaml lines
 skills:
@@ -82,72 +169,72 @@ skills:
   - space:ss-example
 ```
 
-Harness downloads and loads the base skills during startup. `space:ss-example` loads every skill in that space and combines them with Skill Hub skills in one `SkillToolset`. You can also add a space for one invocation:
+Harness loads configured skills on startup; a `space:` source loads every skill in that space. An invocation can add skills for that request:
 
-```bash lines
-veadk harness invoke \
-  --name research-agent \
-  --message "Prepare a research report" \
-  --skills "space:ss-example"
+```bash  lines
+veadk harness invoke   --name research-agent   --message "Summarize the supplied incident notes"   --skills "space:ss-example"
 ```
 
-Invocation-level `--skills` adds skills on top of the base Harness configuration without changing `harness.yaml`. If any skill cannot be downloaded, lacks a valid `SKILL.md`, or violates the ADK skill format, Harness stops that load instead of continuing with a partial skill set.
+| Example option | Purpose |
+| :--- | :--- |
+| `add --skills` | Saves base Harness skill sources |
+| `invoke --name` | Selects the Harness agent |
+| `invoke --message` | Supplies task text |
+| `invoke --skills` | Adds skills for this request without changing `harness.yaml` |
+
+If any skill cannot be downloaded, lacks a valid `SKILL.md`, or has an invalid format, loading fails instead of continuing with an incomplete set. Skills-center access requires permission to read the space and its object-storage contents
 
 ## Skill directory layout
 
-A local skill is a directory containing a `SKILL.md` file, and may include
-`references/`, `assets/`, and `scripts/` subdirectories:
+Each skill has its own directory containing at least `SKILL.md`. Its `name` should match the directory name, and its `description` should explain its purpose
 
 ```text lines
 skills/
-└── kb-skill/
+└── incident-summary/
     ├── SKILL.md
     ├── references/
     ├── assets/
     └── scripts/
 ```
 
-`SKILL.md` must declare `name` and `description` in frontmatter, and the
-directory name must match `name`:
-
-```markdown SKILL.md lines
----
-name: kb-skill
-description: A skill that queries the knowledge base and composes an answer.
----
-
-Body...
-```
+Use `references/` for material read on demand, `assets/` for templates or media, and `scripts/` for executable scripts. Create these optional directories only as needed and explain when to use their files in the skill instructions
 
 ## Legacy local entry (deprecated)
 
-VeADK's old `Agent(skills=..., skills_mode="local")` local entry still works but
-is deprecated; migrate to `SkillToolset` above. The `skills_sandbox` and
-`aio_sandbox` modes are unaffected and used as before:
+`Agent(skills=..., skills_mode="local")` remains compatible but is deprecated. Migrate local skills to `SkillToolset`
 
-| Mode | Description |
-| --- | --- |
-| `local` | Deprecated. Loads local skills via VeADK's old path; migrate to ADK `SkillToolset`. |
-| `skills_sandbox` | Skill hosted in a cloud skill space, executed in a sandbox via the `execute_skills` tool. |
-| `aio_sandbox` | All-in-one sandbox mode, for AgentKit-hosted tool runtimes. |
+| `skills_mode` | Behavior |
+| :--- | :--- |
+| `local` | Legacy local entry; migration recommended |
+| `skills_sandbox` | Executes through `execute_skills` in a remote skill sandbox |
+| `aio_sandbox` | Uses an AgentKit All-in-one tool sandbox |
 
-Sandbox mode example:
+Sandbox modes remain available. Before running this example, configure `SKILL_SOURCE_ID`, the model, and the credentials and Tool ID required by [code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox). Confirm that the sandbox has the required skills and network permissions:
 
-```python lines
-from veadk import Agent
+```python sandbox_skills.py lines
+import asyncio
+import os
+from veadk import Agent, Runner
 from veadk.tools.builtin_tools.execute_skills import execute_skills
 
 agent = Agent(
-    skills=[skill_space_id],
+    name="sandbox_assistant",
+    skills=[os.environ["SKILL_SOURCE_ID"]],
     skills_mode="skills_sandbox",
     tools=[execute_skills],
 )
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="List your available skills.", session_id="sandbox-skills"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ### Dynamic skill loading
 
-When `enable_dynamic_load_skills=True` is set, the agent reloads skills from their configured sources (local directories or cloud skill spaces) before each turn. When new, modified, or deleted skills are detected, the skill list, instruction, and tools are updated automatically without restarting.
+`enable_dynamic_load_skills=True` applies to the legacy `Agent.skills` entry. It rereads sources before each turn and updates skill lists, instructions, and tools. The toolset is initialized even if `skills` starts empty. Applications sharing a mutable agent across concurrent calls must manage refresh and invocation concurrency
 
-<Note>
-`enable_dynamic_load_skills` can now be used independently of `skills`: even without an initial skill list, enabling it initializes the skills toolset and registers the refresh callback.
-</Note>
+The flag does not hot-reload local objects passed directly to `SkillToolset(skills=[...])`. Registry-based loading does not require this flag. See [runtime compatibility](/productions/veadk/preview/en/components/agent/runtime#runtime-compatibility) for external-runtime restrictions on legacy skill modes

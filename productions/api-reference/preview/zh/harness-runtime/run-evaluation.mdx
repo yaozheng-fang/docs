@@ -3,3 +3,13 @@ title: "运行评测"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /dev/apps/{app_name}/eval-sets/{eval_set_id}/run"
 en_link: "/productions/api-reference/preview/en/harness-runtime/run-evaluation"
 ---
+
+需要当前服务提供开发评测接口并安装评测依赖。先准备评测集与用例，再用 `evalMetrics` 选择指标；具体指标可通过[列出评测指标](/productions/api-reference/preview/zh/harness-runtime/list-eval-metrics)查询
+
+优先使用 `evalCaseIds` 选择用例。该字段省略或为空时会回退到已废弃的 `evalIds`；两者均未选择用例时评测整个集合
+
+<Warning>
+评测会重新运行智能体和所选指标，可能调用模型与工具并产生费用或外部操作。执行前检查样本、工具权限和指标配置
+</Warning>
+
+HTTP `200` 表示返回了评测结果，不表示所有用例通过。应逐项检查 `runEvalResults` 中的 `finalEvalStatus` 与指标结果

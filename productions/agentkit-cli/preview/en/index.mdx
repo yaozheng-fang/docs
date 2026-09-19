@@ -10,10 +10,10 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/productions/agentkit-cli/preview/en/quickstart">
-    Install, log in, and deploy your first agent in three steps.
+    Install, configure credentials, deploy, and verify your first agent
   </Card>
   <Card title="Command reference" icon="terminal" href="/productions/agentkit-cli/preview/en/commands">
-    Every command with a one-line description and an example.
+    Find command purposes, parameters, defaults, and examples
   </Card>
 </CardGroup>
 
@@ -38,7 +38,7 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
 | `harness` | Configure, deploy, invoke Harness, and manage scheduled tasks |
 | `chat` | chat with shared OAuth Harnesses through tenant aliases |
 | `invoke` | call a deployed runtime |
-| `auth` | SSO login, identity, login profiles, and organization SSO setup |
+| `auth` | Console and SSO login, identity, login profiles, and organization SSO setup |
 | `onboard` | install bundled skills into local coding agents |
 | `eval` | evaluation backend, datasets, evaluators, targets, and experiments |
 | `migrate` | migrate an existing agent application to AgentKit |
@@ -60,9 +60,7 @@ sandboxes, skills, and evaluation it relies on — all from your terminal.
 - `knowledge` has aliases `kb` and `knowledgebase`, `memory` has alias `mem`,
   `model-gateway` has alias `mgw`, `env` has alias `environment`, `skills secure` converts local skill packages, and the `eval` prefix is optional (`agentkit dataset …` is equivalent to
   `agentkit eval dataset …`).
-- Most read commands accept `--json`; the region is auto-detected unless you
-  pass `-r, --region`.
+- Most read commands accept `--json`. Regions resolve from the provider and configuration. Check each command before overriding them: short options vary, and `invoke run -r` selects a Runtime ID
 - Every product command accepts global `--provider volcengine|byteplus` to
   override the cloud provider for that command.
 - Deletion behavior is command-specific. Most delete commands require confirmation; `sandbox snapshot delete` deletes immediately and has no `--yes` option
-  pass `-y` to skip.

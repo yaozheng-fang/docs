@@ -55,3 +55,20 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Parameters and result checks
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | Required | Query text for the online Q&A service |
+
+`TOOL_VESEARCH_ENDPOINT` is an existing agent ID, not an HTTP URL. The call returns a text summary, but failures may also return error text, so a string result alone does not establish success. The request timeout is 30 seconds. `CLOUD_PROVIDER=byteplus` does not switch this service.
+
+```python lines
+from veadk.tools.builtin_tools.vesearch import vesearch
+
+answer = vesearch("What is AgentKit?")
+print(answer)
+```
+
+This direct call uses only the Q&A service configuration. An outer reasoning model is additionally required when using the tool through `Runner`.

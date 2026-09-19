@@ -3,3 +3,9 @@ title: "更新会话状态"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json PATCH /apps/{app_name}/users/{user_id}/sessions/{session_id}"
 en_link: "/productions/api-reference/preview/en/harness-runtime/update-session"
 ---
+
+使用 `stateDelta` 写入需要修改的状态键；未指定的状态键保留。服务会记录这次状态变更并返回更新后的会话，不会运行智能体
+
+<Warning>
+此操作会修改已有会话，后续智能体调用会使用更新后的状态。提交前确认应用、用户和会话标识，以及需要覆盖的键值
+</Warning>

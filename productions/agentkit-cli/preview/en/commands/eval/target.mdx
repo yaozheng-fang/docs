@@ -38,3 +38,12 @@ List versions of a source evaluation target. When `eval run` omits `--target-ver
 ```bash lines
 agentkit eval target version-list --source-target-id <source-target-id>
 ```
+
+Run `agentkit eval backend` to confirm TEA and ensure the target is visible in that workspace. The source target ID for `version-list` comes from `target list`, not an experiment
+
+```bash lines
+agentkit eval target list --name my-agent --json
+agentkit eval target version-list --source-target-id <source-target-id> --json
+```
+
+Record the returned target version and pin it with `--target-version` when submitting an experiment, so later deployments do not change what “latest” means. For no matches, check the backend, workspace, and target name instead of using an unrelated resource ID

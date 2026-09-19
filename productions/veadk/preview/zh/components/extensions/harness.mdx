@@ -6,7 +6,7 @@ en_link: "/productions/veadk/preview/en/components/extensions/harness"
 Harness 是 VeADK 的执行增强扩展，提供两种互斥的接入模式：进程内插件模式和受管 Sidecar 模式。进程内模式在应用进程中加载 Harness 插件，为每轮调用准备上下文、压缩工具结果并校验回答；受管 Sidecar 模式在独立的受控运行时中执行全部增强行为，应用进程不加载相关插件。
 
 <Warning>
-  两种模式不得混用。受管 Sidecar 模式启用时，`HarnessExtension.plugins()` 始终返回空列表，应用进程不会加载 `veadk.extensions.harness.plugins` 的实现。
+  两种模式不得混用。受管 Sidecar 模式启用时，`HarnessExtension.plugins()` 始终返回空列表，应用进程不挂载进程内增强插件。
 </Warning>
 
 ## 何时使用
@@ -28,20 +28,22 @@ pip install "veadk-python[harness]"
 
 进程内模式通过 `build_harness_plugins()` 构建插件列表，挂载到 `Runner`：
 
-```python lines
+```python title="app.py" lines
+import asyncio
 from veadk.extensions.harness.plugins import build_harness_plugins
 from veadk import Agent, Runner
 
 agent = Agent(name="research_agent")
-runner = Runner(
-    agent=agent,
-    app_name="research",
-    plugins=build_harness_plugins(
-        components=["invocation_context", "compactor", "response_verification"],
-        profile="research",
-    ),
+plugins = build_harness_plugins(
+    components=["invocation_context", "compactor", "response_verification"],
+    profile="research",
 )
+runner = Runner(agent=agent, app_name="research", plugins=plugins)
+print("Plugins:", [plugin.name for plugin in plugins])
+print(asyncio.run(runner.run("Explain what evidence a research report needs")))
 ```
+先完成[模型配置](/productions/veadk/preview/zh/components/agent/model)。保存为 `app.py` 后执行 `python app.py`，应先输出插件名称，再输出智能体回复。回答校验是规则检查，不保证回答事实正确；压缩可能丢失细节，应按任务评估效果
+
 
 ### 插件能力
 
@@ -74,7 +76,7 @@ plugins = build_harness_plugins_from_env()
 | `HARNESS_STORE_PATH` | — | Harness 存储路径，未设置时使用内存存储 |
 | `HARNESS_VERIFIER_MODE` | `observe` | 回答校验模式，可选 `observe` 或 `block` |
 
-`HARNESS_ENHANCE_*` 与 `HARNESS_*` 前缀的环境变量均被读取；带 `ENHANCE` 前缀的优先。
+组件与场景分别优先读取 `HARNESS_ENHANCE_COMPONENTS`、`HARNESS_ENHANCE_PROFILE`，再回退到不带 `ENHANCE` 的同名变量。字符上限、存储路径、压缩提供方和校验模式则优先读取不带 `ENHANCE` 的变量；不要对所有变量套用同一种优先级
 
 ## 受管 Sidecar 模式
 
@@ -93,10 +95,12 @@ plugins = extension.plugins()  # 受管 Sidecar 模式下返回空列表
 
 <Note>
   `HarnessExtension` 支持上下文管理器协议，退出时自动关闭 Sidecar：
-  ```python lines
-  with HarnessExtension.from_env() as extension:
-      ...
-  ```
+```python lines
+from veadk.extensions.harness import HarnessExtension
+
+with HarnessExtension.from_env() as extension:
+    print(extension.sidecar_status_payload())
+```
 </Note>
 
 ### 通过构造参数启用
@@ -203,7 +207,7 @@ extension = HarnessExtension(sidecar=config)
 | `env` | `Mapping[str, str] \| None` | `None` | 环境变量映射 |
 
 <Note>
-  `profile` 为 `ops` 时，进程内模式的默认组件会增加 `long_run_control`。
+  通过 `HarnessExtension(profile="ops")` 使用默认组件时，会增加 `long_run_control`；显式提供组件列表或直接调用 `build_harness_plugins()` 时，应自行包含该组件。
 </Note>
 
 <Warning>
@@ -221,3 +225,9 @@ context = HarnessInvocationRef(session_id="session-1", invocation_id="run-1")
 builder = HarnessInvocationContextBuilder()
 bundle = builder.prepare_context(context, user_input="Summarize these tool results.")
 ```
+
+## 确认 Sidecar 状态
+
+设置环境变量后，在构造智能体前创建 `HarnessExtension`，结束时调用 `close()` 或退出上下文管理器。检查 `sidecar_status_payload()`：`ok` 表示启动成功，`degraded` 表示降级，不能据此认定优化已生效。`HARNESS_SIDECAR_FAIL_OPEN=true` 默认允许失败后继续运行；业务要求必须启用 Sidecar 时应设为 `false`
+
+独立 Harness 服务的 HTTP 接口、会话和部署步骤见[Harness 服务部署](/productions/veadk/preview/zh/deploy/harness)。Sidecar 绑定会影响模型和 MCP 请求的去向，接入前确认上游端点和凭据来源

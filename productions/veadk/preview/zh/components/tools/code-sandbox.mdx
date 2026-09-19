@@ -76,6 +76,10 @@ agentkit:
 
 </Steps>
 
+使用 BytePlus 时设置 `CLOUD_PROVIDER=byteplus` 与 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY`，STS 场景同时配置 `BYTEPLUS_SESSION_TOKEN`；火山引擎 STS 使用 `VOLCENGINE_SESSION_TOKEN`。Tool ID、区域和服务端点必须属于同一环境。创建普通 AIO 沙箱只能提供基础执行环境，`execute_skills` 还要求技能 A2A 服务可用，`coding` 与 `run_sandbox_agent` 要求目标目录存在可执行的 `agent.py` 工作流及其依赖
+
+首次验证可先运行下文的 Python 版本检查，确认沙箱可达后再添加技能或业务数据
+
 ## 使用方法
 
 ```python title="examples/tools/run_code/agent.py" lines
@@ -266,7 +270,7 @@ if __name__ == "__main__":
 
 `execute_skills` 通过 A2A 协议在技能沙箱中执行工作流。调用时发送非阻塞的 `message/send` 请求，随后按指数递增的间隔轮询任务状态，直到任务达到终态或超时。支持的最长执行时间为 1800 秒（30 分钟）。
 
-调用 `execute_skills` 时，VeADK 会从凭证服务中读取当前请求的入站身份凭证（凭证键为 `inbound_auth`），并以 `inbound_auth` 请求头转发给技能沙箱，使沙箱中的工作流能够以原始用户身份执行。若当前请求未携带入站凭证，则不附加该请求头，沙箱以匿名方式执行。
+调用 `execute_skills` 时，VeADK 会从凭证服务中读取当前请求的入站身份凭证（凭证键为 `inbound_auth`），并以 `inbound_auth` 请求头转发给技能沙箱，使沙箱中的工作流能够以原始用户身份执行。若当前请求未携带入站凭证，则不附加该请求头，不转发该用户身份；访问沙箱仍需有效的云服务凭证与权限。
 
 <Note>
 入站身份凭证的来源与配置方式参见[入站认证](/productions/veadk/preview/zh/components/security/inbound)。
@@ -349,3 +353,21 @@ if __name__ == "__main__":
 | 环境变量 | 默认值 | 说明 |
 | :--- | :--- | :--- |
 | `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` | `true` | 是否在并行调用时为每个 `run_code` 分配独立的沙箱会话标识。设为 `false` 时所有并行调用共享同一会话标识。接受 `1`、`true`、`yes`、`on`（不区分大小写）为开启，`0`、`false`、`no`、`off` 为关闭。 |
+
+## 指定沙箱工作流的完整参数
+
+`run_sandbox_agent` 不会为用户创建或部署 `agent.py`；目标沙箱需预先包含该文件和依赖
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `workflow_prompt` | `str` | 必填 | 传给远端工作流的任务说明 |
+| `tool_id` | `str` | 必填 | 明确指定的沙箱 Tool ID |
+| `tool_context` | `ToolContext \| None` | `None` | 调用时必需，由工具运行时注入 |
+| `skills` | `list[str] \| None` | `None` | 传给远端工作流的技能选择 |
+| `timeout` | `int` | `900` | 远端工作流等待秒数，需在服务允许范围内 |
+| `working_dir` | `str` | `/home/gem/veadk_skills` | 沙箱内工作目录，需包含 `agent.py` |
+| `extra_env_vars` | `dict[str, str] \| None` | `None` | 本次执行的环境变量，按前文规则校验 |
+
+`coding` 接收必填 `workflow_prompt: str`、运行时注入的 `tool_context=None` 与 `timeout: int = 900`，使用 `AGENTKIT_TOOL_ID_OPENCODE` 或默认 Tool ID 调用预配置工作流，不接受任意代码字符串作为程序直接执行
+
+这些工具返回执行输出，不保证每次都返回单纯的成功文本；远端错误也可能以输出或响应对象返回。检查退出结果、标准错误与预期产物后再确认完成。技能等待在需要输入、需要授权或超时时可能结束，不能据此断言远端任务已取消

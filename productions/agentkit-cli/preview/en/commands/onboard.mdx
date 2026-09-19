@@ -19,3 +19,15 @@ Install the bundled agent skills into coding agents.
 ```bash lines
 agentkit onboard --agent claude-code --scope project
 ```
+
+## Scope and result
+
+`project` is relative to the working directory; `global` is relative to your home directory. Omitting `--scope` opens a prompt, while `--yes` defaults to `project`. Specify both the target and scope in automation:
+
+```bash lines
+agentkit onboard --agent claude-code --scope project --yes
+```
+
+The command lists the skill directories it writes. Reinstalling overwrites matching skill files, so preserve local changes first. Without `--agent` or `--all`, `--yes` selects only detected clients; if none are detected, it fails instead of installing for every client
+
+The command copies bundled skills. It does not install a client or sign in to a cloud platform

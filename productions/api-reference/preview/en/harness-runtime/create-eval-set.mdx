@@ -3,3 +3,7 @@ title: "Create an evaluation set"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /dev/apps/{app_name}/eval-sets"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/create-eval-set"
 ---
+
+The server must expose development evaluation endpoints. Create an empty set with `evalSet.eval_set_id`; this endpoint does not import `eval_cases` supplied in the request. To add an existing session, use [Add a session as an evaluation case](/productions/api-reference/preview/en/harness-runtime/add-session-to-eval-set)
+
+The returned set has the requested ID. A duplicate ID or invalid input can return `400`. This operation does not run the agent

@@ -4,6 +4,11 @@ openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /harne
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/cronjobs/create"
 ---
 
+<Warning>
+Jobs are enabled by default. After creation, the schedule invokes models and tools and saves job data and results to TOS. Check the message, schedule, and access rights before submitting. Set `enabled` to `false` to save a job without starting its schedule
+</Warning>
+
+
 Requires a Harness Runtime deployed with AgentKit CLI 0.54.0 and [scheduled tasks enabled](/productions/api-reference/preview/en/harness-runtime/cronjobs/overview)
 
 Exactly one of `schedule.cron` and `schedule.at` must be non-null. For an enabled one-time task, `at` must include a timezone offset and lie in the future

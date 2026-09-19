@@ -3,26 +3,27 @@ title: "概述"
 en_link: "/productions/veadk/preview/en/components/security"
 ---
 
-VeADK 的安全能力围绕 [Agent Identity](https://console.volcengine.com/identity) 构建——火山引擎的一站式身份与权限管理平台，负责用户身份验证、工作负载身份、第三方凭据托管与权限管控，保障智能体在出、入两个方向上的安全与合规。
-
-## 两个方向
-
-- **[入站认证](/productions/veadk/preview/zh/components/security/inbound)**：验证进入智能体的请求方身份。支持 API Key 与 OAuth2（单点登录与 JWT），可由 API 网关或应用内中间件处理。
-- **[出站认证](/productions/veadk/preview/zh/components/security/outbound)**：智能体访问第三方服务时的凭据托管。Agent Identity 加密保管 API Key 与 OAuth 令牌，支持 OAuth2 M2M 与用户委托，凭据不写入代码，并自动轮换与刷新。
+安全配置需要覆盖请求身份、工具权限和数据处理三个方面。VeADK 提供认证中间件、Agent Identity 集成、内容审查回调和可信 MCP 连接；按应用的访问方式选择需要的能力
 
 ## 核心能力
 
-- **用户身份管理**：用户池管理、企业 IdP（SAML/OIDC）以及第三方身份联合。
-- **工作负载身份管理**：为智能体与工具分配唯一数字身份，并维护其属性标签。
-- **第三方凭据托管**：加密保管 API Key 与 OAuth 令牌，杜绝明文凭据泄露。
-- **权限管控**：基于属性与上下文的动态授权，实现细粒度的权限控制。
+| 能力 | 用途 | 接入位置 |
+| --- | --- | --- |
+| [入站认证](/productions/veadk/preview/zh/components/security/inbound) | 验证访问应用的请求方 | 应用入口或网关 |
+| [出站认证](/productions/veadk/preview/zh/components/security/outbound) | 为工具访问外部服务提供凭据 | 函数工具或 MCP 工具集 |
+| [内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety) | 在模型和工具调用前后审查文本 | 智能体回调 |
+| [可信 MCP](/productions/veadk/preview/zh/components/security/trusted-mcp) | 连接支持远端证明的 MCP 服务 | MCP 连接参数 |
+
+## 两个方向
+
+入站认证确定谁在调用应用；应用仍需判断该用户能访问哪些会话与资源。出站认证提供调用第三方服务所需的凭据；最终权限由第三方服务和凭据范围决定。为 `Runner` 设置 `user_id` 不会自动完成这两项工作
 
 ## 内容安全
 
-除身份与凭据外，[内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety)借助火山大模型应用防火墙，对智能体各阶段的输入与输出做合规审查，拦截不安全内容。
+内容审查依赖已配置策略及审查服务的响应。当前护栏遇到请求超时或 HTTP 错误时可能继续执行，不能作为唯一的强制拦截措施，具体范围见[内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety)
 
 ## 可信运行
 
-当需要端到端可信时，[可信 MCP](/productions/veadk/preview/zh/components/security/trusted-mcp) 在标准 MCP 协议之上增加组件身份证明与加密通信，结合机密计算构建全链路可信的智能体。
+可信 MCP 保护配置为可信连接的工具通信。模型端点、其他工具、应用日志和存储仍需分别配置保护措施；使用可信 MCP 不会自动覆盖整个应用
 
-开通与详细配置见 [Agent Identity 官方文档](https://www.volcengine.com/docs/86848/2080920?lang=zh)。
+Agent Identity 的开通与权限配置见[官方文档](https://www.volcengine.com/docs/86848/2080920?lang=zh)。各指南中的火山引擎示例使用对应区域的资源；BytePlus 环境应使用该环境的身份配置和凭据，不应直接复用火山引擎用户池和回调地址

@@ -3,7 +3,9 @@ title: "Knowledge Base"
 zh_link: "/productions/veadk/preview/zh/components/knowledge"
 ---
 
-A knowledge base (`KnowledgeBase`) is an agent's external source of knowledge — a place to store static material such as product docs, FAQs, and articles. Attach it to an agent and VeADK automatically injects a retrieval tool, so the agent retrieves relevant snippets before answering and produces more accurate, better-grounded responses (RAG).
+A knowledge base (`KnowledgeBase`) is an agent's external source of knowledge — a place to store static material such as product docs, FAQs, and articles. Attach it to an agent and VeADK automatically injects a retrieval tool, so the model can retrieve relevant snippets when needed. The model and instructions determine whether retrieval happens; mounting a knowledge base does not guarantee a search on every turn or replace source verification
+
+Before running the local examples, install `veadk-python[extensions]` and complete [embedding configuration](/productions/veadk/preview/en/components/knowledge/local#environment-variables). Agent and Runner examples also require [model configuration](/productions/veadk/preview/en/components/agent/model)
 
 ## Unified entry point: `KnowledgeBase`
 
@@ -40,7 +42,7 @@ The fields of `KnowledgeBase` are common to all backends:
 | `name` | `str` | `user_knowledgebase` | Knowledge base name, used to describe it to the agent. |
 | `description` | `str` | `This knowledgebase stores some user-related information.` | Knowledge base description, used to explain its purpose to the agent. |
 | `enable_profile` | `bool` | `False` | Whether to enable knowledge base profiling. |
-| `query_with_user_profile` | `bool` | `False` | Whether to incorporate the user profile during retrieval. This requires the Viking backend. |
+| `query_with_user_profile` | `bool` | `False` | Whether to incorporate the user profile during retrieval. Requires Viking long-term memory on the agent, not necessarily a Viking knowledge backend |
 
 <Note>
 Vector backends (`local`, `opensearch`, `redis`, `milvus`, and `tos_vector`) embed knowledge text locally and require the extensions extra plus an embedding model. `viking`, `context_search`, and `openviking` process resources server-side and do not need a local embedding model.
@@ -93,3 +95,52 @@ entries = kb.search(query="annual leave", top_k=3)
 for entry in entries:
     print(entry.content)
 ```
+
+## Ingestion and access boundaries
+
+Ingestion methods return a Boolean; success from a managed backend can mean submission rather than completed parsing. `search()` returns a list of `KnowledgebaseEntry` objects with text in `entry.content`, or an empty list for no match. Repeated ingestion does not guarantee deduplication; track processed documents in production
+
+A knowledge base is generally shared at application scope and does not automatically filter access by session user_id. Establish which documents may be accessed before mounting it on an agent. Directory recursion, media extraction, and filtering options vary by backend. Call `kb.close()` when finished to release backend connections
+
+## Knowledge base profiles
+
+`enable_profile` lets the agent consult knowledge base profiles before forming search queries. It is disabled by default. Generate profiles with `await kb.generate_profiles(files=[...])` before enabling it and retain the output files in the default directory. Profile generation does not replace knowledge ingestion.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `files` | `list[str]` | Required | Existing text-readable files; convert binary documents such as PDFs to text first |
+| `profile_path` | `str` | `""` | Custom output directory; empty uses `./profiles/knowledgebase/profiles_{index}` |
+
+Profile generation currently uses `deepseek-v3-2-251201`. Confirm that your configured model service can access it; changing the main agent model does not replace the profile generation model. If that model is unavailable in BytePlus or another environment, keep profiles disabled; ordinary knowledge retrieval remains available.
+
+The example prepares a file, ingests it, generates profiles, checks that the output is nonempty, and enables the feature. The method writes files without returning a profile list. Retrieval reads the index-specific profile directory under the current working directory; move custom-path output there before using it.
+
+```python lines
+import asyncio
+import json
+from pathlib import Path
+from veadk import Agent
+from veadk.knowledgebase import KnowledgeBase
+
+async def main():
+    source = Path("company_faq.txt")
+    source.write_text("Employees receive 15 days of annual leave after one year of service", encoding="utf-8")
+    kb = KnowledgeBase(backend="local", index="company_faq")
+    try:
+        assert kb.add_from_files([str(source)])
+        await kb.generate_profiles(files=[str(source)])
+        profile_list = Path("profiles/knowledgebase/profiles_company_faq/profile_list.json")
+        names = json.loads(profile_list.read_text(encoding="utf-8"))
+        if not names:
+            raise RuntimeError("No profiles were generated")
+        print(names)
+        kb.enable_profile = True
+        agent = Agent(name="faq_agent", knowledgebase=kb)
+        print(agent.name)
+    finally:
+        kb.close()
+
+asyncio.run(main())
+```
+
+`query_with_user_profile` is a separate setting that adds a Viking long-term-memory user profile to query instructions. The same agent must have long-term memory that can supply a user profile; these profiles are separate from knowledge base profile files.

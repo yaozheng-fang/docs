@@ -3,3 +3,7 @@ title: "读取指定制品版本"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json GET /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}/versions/{version_id}"
 en_link: "/productions/api-reference/preview/en/harness-runtime/get-artifact-version"
 ---
+
+使用保存制品时返回的版本号，或先查询版本列表。成功返回该版本的 `Part` 内容；制品或该版本不存在时返回 `404`
+
+内容可能位于 `text` 或 `inlineData`。版本的 URI、MIME 类型与自定义元数据通过[获取制品版本元数据](/productions/api-reference/preview/zh/harness-runtime/get-artifact-metadata)单独读取

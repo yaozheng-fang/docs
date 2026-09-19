@@ -5,5 +5,7 @@ en_link: "/productions/api-reference/preview/en/agent-api-server/update-eval-cas
 ---
 
 <Warning>
-此操作会删除或替换已有数据，请先确认目标资源并保存需要保留的内容
+此操作替换已有评测用例，不是局部更新。先读取并保存需要保留的用例内容，再提交完整的新用例
 </Warning>
+
+请求体中非空的 `evalId` 必须与路径中的 `eval_case_id` 一致。ID 冲突返回 `400`，目标不存在返回 `404`；成功返回 JSON `null`

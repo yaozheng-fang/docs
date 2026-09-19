@@ -5,27 +5,97 @@ zh_link: "/productions/veadk/preview/zh/components/tools/custom-mcp"
 
 ## Overview
 
-If none of the built-in connectors meet your needs, connect to any MCP Server directly using Google ADK's `MCPToolset`. Once registered, the agent automatically loads the tools exposed by the MCP Server and calls them as needed during reasoning.
+Use Google ADK `McpToolset` to connect to an MCP server and register it with `Agent(tools=[toolset])`. The older `MCPToolset` name remains compatible. Remote servers require a supported MCP URL and credentials; local servers require an executable command and its dependencies.
 
 ## Usage
 
-```python lines
-from veadk import Agent
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import (
-    StreamableHTTPConnectionParams,
-)
+Set `MCP_SERVER_URL` and `MCP_SERVER_TOKEN`, then verify tool discovery below. Discovery requires no reasoning model; complete [model configuration](/productions/veadk/preview/en/components/agent/model) before invoking tools through an agent.
 
-toolset = MCPToolset(
-    connection_params=StreamableHTTPConnectionParams(
-        url="https://your-mcp-endpoint",
-        headers={"Authorization": "Bearer your-api-key-here"},
-    ),
-)
+```python title="mcp_connection.py" lines
+import asyncio
+import os
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 
-agent = Agent(tools=[toolset])
+async def main():
+    toolset = McpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url=os.environ["MCP_SERVER_URL"],
+            headers={"Authorization": f"Bearer {os.environ['MCP_SERVER_TOKEN']}"},
+        ),
+    )
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
 ```
 
-## Automatic reconnection after a dropped session
+### Local standard input/output connection
 
-When an MCP Server restarts, scales down, or expires a session and the connection becomes invalid, VeADK removes the stale cached session, reconnects, and retries the current tool discovery or invocation once. If that retry also fails, the error is returned to the caller. Explicitly cancelled tasks are not retried.
+Save these files in the same directory, install `python -m pip install "mcp[cli]"`, and run `python check_local_mcp.py`. The output should include `add`. The client starts the server and closes it when the example ends.
+
+```python title="local_mcp_server.py" lines
+from mcp.server.fastmcp import FastMCP
+
+server = FastMCP("calculator")
+
+@server.tool()
+def add(a: float, b: float) -> float:
+    """Add two numbers."""
+    return a + b
+
+if __name__ == "__main__":
+    server.run(transport="stdio")
+```
+
+```python title="check_local_mcp.py" lines
+import asyncio
+import sys
+from pathlib import Path
+from mcp import StdioServerParameters
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
+
+async def main():
+    toolset = McpToolset(connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command=sys.executable,
+            args=[str(Path(__file__).with_name("local_mcp_server.py"))],
+        ),
+        timeout=10.0,
+    ))
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
+```
+
+## Parameters
+
+These constructor parameters correspond to Google ADK 2.2.0; other versions may support a different set.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `connection_params` | `StdioConnectionParams \| StdioServerParameters \| SseConnectionParams \| StreamableHTTPConnectionParams` | `Required` | Transport and endpoint or local server command |
+| `tool_filter` | `list[str] \| Callable` | `None` | Limit exposed tools; None exposes all |
+| `tool_name_prefix` | `str \| None` | `None` | Prefix tool names to avoid collisions |
+| `errlog` | `TextIO` | `sys.stderr` | Local server diagnostics |
+| `auth_scheme` | `AuthScheme \| None` | `None` | Authentication scheme |
+| `auth_credential` | `AuthCredential \| None` | `None` | Authentication credential |
+| `require_confirmation` | `bool \| Callable` | `False` | Request confirmation before tool execution |
+| `header_provider` | `Callable \| None` | `None` | Build request headers from the current context |
+| `progress_callback` | `Callable \| None` | `None` | Receive server progress updates |
+| `use_mcp_resources` | `bool` | `False` | Expose MCP resources |
+| `sampling_callback` | `Callable \| None` | `None` | Handle server sampling requests |
+| `sampling_capabilities` | `SamplingCapability \| None` | `None` | Advertised sampling capabilities |
+| `credential_key` | `str \| None` | `None` | Key used to resolve credentials |
+
+Streamable HTTP connections accept required `url`, `headers=None`, `timeout=5.0`, `sse_read_timeout=300.0`, and `terminate_on_close=True`. Timeouts are in seconds. `httpx_client_factory` defaults to the SDK HTTP client factory; override it only for a custom transport. Local connections use `StdioConnectionParams(server_params=..., timeout=5.0)`. Use `SseConnectionParams` for SSE servers; SSE and Streamable HTTP endpoints are not interchangeable.
+
+## Automatic reconnection after session interruption
+
+VeADK re-establishes disconnected MCP sessions and retries eligible tool discovery or calls once. A second failure returns an error, and cancellation does not trigger a retry. Services must still provide idempotency for tools that change external data: a connection retry does not guarantee exactly-once business execution.

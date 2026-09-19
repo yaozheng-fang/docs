@@ -923,6 +923,9 @@
                 }
               }
             }
+          },
+          "499": {
+            "description": "客户端断开连接后调用被取消；连接关闭时客户端可能无法读取此状态"
           }
         },
         "description": "等待调用完成后返回全部事件的 JSON 数组。应先在 harness_agent 应用下创建会话；此接口不提供普通 Harness 覆盖，可使用 harness.mcp_servers 更换本次请求的远程 MCP 服务。streaming 不改变本接口的 JSON 响应格式",
@@ -1389,7 +1392,8 @@
                 }
               ],
               "title": "Version"
-            }
+            },
+            "description": "可选版本号；省略时读取最新版本"
           }
         ],
         "responses": {
@@ -1432,7 +1436,7 @@
             }
           }
         },
-        "description": "返回最新版本的 Part；制品不存在时返回 404",
+        "description": "省略 version 时返回最新版本的 Part，提供 version 查询参数时返回指定版本；制品或版本不存在时返回 404",
         "tags": [
           "制品"
         ]
@@ -2115,7 +2119,7 @@
             }
           }
         },
-        "description": "创建空评测集，使用 evalSet.eval_set_id 指定 ID；添加用例需调用相应接口\n\n此接口由所核验的 SDK/ADK 版本提供，仅用于受信任的开发和调试。路径随安装的 ADK 版本变化，不应作为公共业务入口"
+        "description": "使用 evalSet.eval_set_id 创建空评测集；本接口不会导入请求中的 eval_cases，添加用例需调用相应接口\n\n此接口由所核验的 SDK/ADK 版本提供，仅用于受信任的开发和调试。路径随安装的 ADK 版本变化，不应作为公共业务入口"
       },
       "get": {
         "tags": [
@@ -2285,7 +2289,7 @@
           "评测 · 开发服务"
         ],
         "summary": "列出评测用例",
-        "description": "返回按 ID 排序的用例数组；此接口当前仅提供路径中的下划线写法\n\n此接口由所核验的 SDK/ADK 版本提供，仅用于受信任的开发和调试。路径随安装的 ADK 版本变化，不应作为公共业务入口",
+        "description": "返回按 ID 排序的用例 ID 数组；此接口当前仅提供路径中的下划线写法\n\n此接口由所核验的 SDK/ADK 版本提供，仅用于受信任的开发和调试。路径随安装的 ADK 版本变化，不应作为公共业务入口",
         "operationId": "harnessRuntimeListEvalCases",
         "parameters": [
           {
@@ -2649,7 +2653,7 @@
           "评测 · 开发服务"
         ],
         "summary": "运行评测",
-        "description": "按 evalCaseIds 选择用例；省略或为空时评测全部用例。evalMetrics 必填，响应包含逐用例状态和指标结果\n\n此接口由所核验的 SDK/ADK 版本提供，仅用于受信任的开发和调试。路径随安装的 ADK 版本变化，不应作为公共业务入口",
+        "description": "优先按 evalCaseIds 选择用例；省略或为空时回退到 evalIds，两者均未选择时评测全部用例。evalMetrics 必填，响应包含逐用例状态和指标结果\n\n此接口由所核验的 SDK/ADK 版本提供，仅用于受信任的开发和调试。路径随安装的 ADK 版本变化，不应作为公共业务入口",
         "operationId": "harnessRuntimeRunEvaluation",
         "parameters": [
           {
@@ -13173,7 +13177,7 @@
             },
             "type": "array",
             "title": "Evalcaseids",
-            "description": "要评测的用例 ID；省略或为空时选择全部用例"
+            "description": "要评测的用例 ID；省略或为空时回退到 evalIds，两者均未选择时评测全部用例"
           },
           "evalMetrics": {
             "items": {
@@ -15324,7 +15328,7 @@
               }
             ],
             "title": "Appname",
-            "description": "应用名称；省略时使用 ADK_DEFAULT_APP_NAME，未配置默认应用则返回 400"
+            "description": "应用名称，普通调用应明确提供 harness_agent；本接口不使用 ADK_DEFAULT_APP_NAME 作为缺省应用"
           },
           "user_id": {
             "type": "string",
@@ -15417,7 +15421,7 @@
                 "type": "null"
               }
             ],
-            "description": "模型调用次数上限，至少为 1；优先采用 run_agent_request 中的值，其次为 harness 覆盖，再其次为部署配置"
+            "description": "仅在 KeyAuth 普通 Harness 覆盖中生效；顶层值优先于 harness.max_llm_calls，再其次为部署配置。普通调用与仅 MCP 覆盖不应用此字段"
           }
         },
         "type": "object",
@@ -15480,7 +15484,7 @@
             "type": "boolean",
             "title": "Streaming",
             "default": false,
-            "description": "是否请求模型增量流式输出，默认 false"
+            "description": "本接口仍返回一次性 JSON 事件数组，此字段不启用流式响应"
           },
           "stateDelta": {
             "anyOf": [

@@ -28,15 +28,20 @@ harness 路径适合无需自定义代码的场景：智能体的模型、工具
     ```bash lines
     agentkit harness set \
       --name my-harness \
-      --model-name ep-xxxxxxxx \
-      --system-prompt "你是一个简洁、乐于助人的智能体。" \
-      --tools web_search
+      --model-name "your-model-name" \
+      --system-prompt "你是一个简洁、乐于助人的智能体。"
     ```
 
     <Tip>
       配置知识库、记忆等组件时，先设置其 `--<组件>-type`，再补充连接参数；传入空字符串 `""` 可禁用某个组件。不带任何标志运行 `agentkit harness set` 会列出当前字段。完整字段见[Harness](/productions/agentkit-cli/preview/zh/commands/harness)。
     </Tip>
   </Step>
+<Step title="核对云环境与组件权限">
+    将 `your-model-name` 替换为账号可调用的模型或端点 ID。默认直接模型调用需要 Runtime 角色具备相应模型访问权限；部署成功不代表模型已授权。先以无外部工具的最小配置验证回复，再添加知识库、MCP 和记忆
+
+    本例使用火山引擎北京区域。使用 BytePlus 时，初始化命令改为 `agentkit --provider byteplus harness init my-harness --region ap-southeast-1`，后续部署与查询均使用相同区域。数据库密码和 MCP 凭据可在 `harness.yaml` 中引用 `${VAR}`，实际值放在未提交的 `.env` 中
+  </Step>
+
   <Step title="构建并部署">
     根据 `harness.yaml` 在云端构建镜像，并创建或更新运行时。
 
@@ -48,6 +53,7 @@ harness 路径适合无需自定义代码的场景：智能体的模型、工具
     按名称调用刚部署的运行时，CLI 会自动解析端点与鉴权，并使用已配置的 AK/SK 或当前 SSO 登录 profile 的有效 STS 凭证。
 
     ```bash lines
+    agentkit runtime show my-harness
     agentkit harness invoke my-harness "你好，介绍一下你自己"
     ```
   </Step>

@@ -3,7 +3,9 @@ title: "应用与会话"
 en_link: "/productions/api-reference/preview/en/sessions"
 ---
 
-查询应用并创建、读取、更新或删除会话
+应用是服务已加载的智能体入口，会话保存一个用户与该应用的交互状态和事件。先查询应用名称，再创建会话，使用返回的 `id` 发起调用或管理会话
+
+`user_id` 划分会话命名空间，不代表调用者已经通过身份认证。服务访问控制与启动方式见 [Agent API Server 概述](/productions/api-reference/preview/zh/agent-api-server/overview)；Harness 部署应使用[对应会话接口](/productions/api-reference/preview/zh/harness-runtime/create-session)
 
 | 方法 | 路径 | 接口 |
 | --- | --- | --- |

@@ -3,3 +3,11 @@ title: "运行智能体"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /run"
 en_link: "/productions/api-reference/preview/en/harness-runtime/run"
 ---
+
+先在 `harness_agent` 应用下[创建会话](/productions/api-reference/preview/zh/harness-runtime/create-session)。此接口等待运行完成后返回事件数组，仅支持 `harness.mcp_servers` 覆盖；模型、工具、技能和提示词覆盖使用[调用 Harness](/productions/api-reference/preview/zh/harness-runtime/invoke)
+
+<Warning>
+运行会保存会话事件，并可能调用模型、工具和外部资源。重复发送请求可能再次执行这些操作
+</Warning>
+
+`streaming` 不改变 JSON 响应格式。服务认证与共享 OAuth 限制见[Harness Runtime 概述](/productions/api-reference/preview/zh/harness-runtime/overview)

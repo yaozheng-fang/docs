@@ -3,3 +3,7 @@ title: "Create a session"
 openapi: "/productions/api-reference/openapi/en/agent-api-server.json POST /apps/{app_name}/users/{user_id}/sessions"
 zh_link: "/productions/api-reference/preview/zh/agent-api-server/create-session"
 ---
+
+Keep the response `id` and use the same application, user, and session identifiers for reads, updates, and execution. The server generates an ID when `sessionId` is omitted; creating an existing explicit ID returns `409`
+
+Use `state` for initial session state and `events` to import existing events. Omit `events` when no history needs to be imported. Creating a session does not call the model

@@ -3,6 +3,14 @@ title: "使用 VikingDB 知识库存储"
 en_link: "/productions/veadk/preview/en/components/knowledge/viking"
 ---
 
+<Note>
+本页 API Key 鉴权与相关管理预检行为属于 Preview 未发布能力，已按公开源码 `adcdfdcc6a5a213b249a8caad435b939c01df7f6` 核验；稳定版 VeADK 1.1.13 不包含此能力。使用 API Key 示例前，安装对应源码
+</Note>
+
+```bash
+python -m pip install "veadk-python @ git+https://github.com/volcengine/veadk-python.git@adcdfdcc6a5a213b249a8caad435b939c01df7f6"
+```
+
 `viking` 后端对接 VikingDB 托管知识库服务。文件先上传至 TOS（对象存储），再登记进 VikingDB 集合，切分、向量化与检索均在服务端完成，因此**无需本地 embedding**。它是生产环境的推荐后端。
 
 ## 何时使用
@@ -19,13 +27,17 @@ en_link: "/productions/veadk/preview/en/components/knowledge/viking"
 
 ## 使用示例
 
+先设置下文 AK/SK、项目、区域和 TOS 桶。初始化可能创建集合，导入会上传资料并触发服务端处理；需要相应资源权限并可能产生费用
+
 ```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
 # index 须以英文字母开头，仅含字母、数字、下划线，长度 1-128
 kb = KnowledgeBase(backend="viking", index="company_faq")
-kb.add_from_text("公司的标准年假为每年 15 天，入职满一年起享受。")
+assert kb.add_from_text("公司的标准年假为每年 15 天，入职满一年起享受。")
+for entry in kb.search("年假", top_k=3):
+    print(entry.content)
 
 agent = Agent(
     name="demo",
@@ -37,6 +49,8 @@ agent = Agent(
 也可以通过 `backend_config` 显式传入项目与凭证：
 
 ```python lines
+import os
+
 from veadk.knowledgebase import KnowledgeBase
 from veadk.configs.database_configs import TOSConfig
 
@@ -45,8 +59,8 @@ kb = KnowledgeBase(
     index="company_faq",
     backend_config={
         "index": "company_faq",
-        "volcengine_access_key": "your-ak",
-        "volcengine_secret_key": "your-sk",
+        "volcengine_access_key": os.environ["VOLCENGINE_ACCESS_KEY"],
+        "volcengine_secret_key": os.environ["VOLCENGINE_SECRET_KEY"],
         "volcengine_project": "default",
         "version": "2",
         "tos_config": TOSConfig(
@@ -60,6 +74,8 @@ kb = KnowledgeBase(
 使用 API Key 检索已有集合：
 
 ```python lines
+import os
+
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(
@@ -67,7 +83,7 @@ kb = KnowledgeBase(
     index="company_faq",
     backend_config={
         "index": "company_faq",
-        "api_key": "your-vikingdb-api-key",
+        "api_key": os.environ["DATABASE_VIKING_API_KEY"],
         "volcengine_project": "default",
     },
 )
@@ -75,26 +91,40 @@ kb = KnowledgeBase(
 
 ## 参数
 
+### KnowledgeBase 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | 本页设为 `viking`；也可传后端实例 |
+| `backend_config` | `dict` | `{}` | 非空时必须包含 index；不会自动合并外层 index |
+| `index` | `str` | `""` | 索引名称；无配置字典时回退到 app_name |
+| `app_name` | `str` | `""` | index 的回退值，不是检索时的用户权限过滤器 |
+| `top_k` | `int` | `10` | 默认检索数量；search(top_k=0) 使用此值 |
+| `name` | `str` | `"user_knowledgebase"` | 向智能体描述的知识库名称 |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | 向智能体说明用途 |
+| `enable_profile` | `bool` | `False` | 启用资料画像；需先生成画像文件，普通检索保持关闭 |
+| `query_with_user_profile` | `bool` | `False` | 借助智能体绑定的 Viking 长期记忆画像生成查询；不要求知识库本身使用 Viking |
+
 ### 构造参数
 
 `backend_config` 支持以下配置项：
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `index` | `str` | 无默认，由 `KnowledgeBase` 传入 | VikingDB 集合名，须以英文字母开头，仅含字母、数字、下划线，长度 1-128。 |
-| `api_key` | `str \| None` | 读取环境变量 `DATABASE_VIKING_API_KEY`，缺省 `None` | VikingDB 知识库 API Key，用于检索已有集合。设置后知识检索使用 API Key 鉴权；集合管理等操作仍需 AK/SK 或 IAM 凭证。 |
-| `volcengine_access_key` | `str \| None` | 见下方说明 | 访问密钥 AK。`byteplus` 模式下读取 `BYTEPLUS_ACCESS_KEY`，其余读取 `VOLCENGINE_ACCESS_KEY`。缺省时尝试从 VeFaaS IAM 获取临时凭证。 |
-| `volcengine_secret_key` | `str \| None` | 见下方说明 | 访问密钥 SK。`byteplus` 模式下读取 `BYTEPLUS_SECRET_KEY`，其余读取 `VOLCENGINE_SECRET_KEY`。 |
-| `session_token` | `str` | 见下方说明 | STS 临时凭证令牌。`byteplus` 模式下读取 `BYTEPLUS_SESSION_TOKEN`，其余读取 `VOLCENGINE_SESSION_TOKEN`。 |
-| `volcengine_project` | `str` | 读取环境变量 `DATABASE_VIKING_PROJECT`，缺省 `default` | VikingDB 知识库所属项目。 |
-| `resource_id` | `str` | 读取环境变量 `DATABASE_VIKING_RESOURCE_ID`，缺省 `""` | VikingDB 知识库资源 ID，用于多资源场景下的请求路由。留空时不附加该字段。 |
-| `version` | `str` | 读取环境变量 `DATABASE_VIKING_VERSION`，缺省 `"2"` | 集合版本，取值 `"2"` 或 `"4"`。 |
-| `cloud_provider` | `str` | 读取环境变量 `CLOUD_PROVIDER`，缺省 `volces` | 云服务商，`volces` 或 `byteplus`，决定接入域名与默认区域。 |
-| `region` | `str` | 由 `cloud_provider` 推导（`volces` 为 `cn-beijing`，`byteplus` 为 `cn-hongkong`），可用 `DATABASE_VIKING_REGION` 覆盖 | 服务区域。`volces` 模式下未显式设置时，依次读取 `DATABASE_VIKING_REGION` 与 `REGION` 环境变量，均未设置时默认为 `cn-beijing`。`byteplus` 模式下，未设置或为中国大陆地域（`cn-beijing`、`cn-shanghai`、`cn-guangzhou`）时自动映射为 `cn-hongkong`，其他地域保持原样。 |
-| `base_url` | `str` | 由 `region` 与 `cloud_provider` 推导 | 知识库 API 地址，可用 `DATABASE_VIKING_BASE_URL` 覆盖。 |
-| `host` | `str` | 由 `region` 与 `cloud_provider` 推导 | 知识库 API 主机名。 |
-| `schema` | `str` | `https` | 请求协议。 |
-| `tos_config` | `TOSConfig` | 自动从 `DATABASE_TOS_*` 环境变量读取 | 上传文件所用的 TOS 配置。 |
+| `index` | `str` | 无默认，由 `KnowledgeBase` 传入 | VikingDB 集合名，须以英文字母开头，仅含字母、数字、下划线，长度 1-128 |
+| `api_key` | `str \| None` | 读取环境变量 `DATABASE_VIKING_API_KEY`，缺省 `None` | VikingDB 知识库 API Key，用于检索已有集合。设置后知识检索使用 API Key 鉴权；集合管理等操作仍需 AK/SK 或 IAM 凭证 |
+| `volcengine_access_key` | `str \| None` | 见下方说明 | 访问密钥 AK。`byteplus` 模式下读取 `BYTEPLUS_ACCESS_KEY`，其余读取 `VOLCENGINE_ACCESS_KEY`。缺省时尝试从 VeFaaS IAM 获取临时凭证 |
+| `volcengine_secret_key` | `str \| None` | 见下方说明 | 访问密钥 SK。`byteplus` 模式下读取 `BYTEPLUS_SECRET_KEY`，其余读取 `VOLCENGINE_SECRET_KEY` |
+| `session_token` | `str` | 见下方说明 | STS 临时凭证令牌。`byteplus` 模式下读取 `BYTEPLUS_SESSION_TOKEN`，其余读取 `VOLCENGINE_SESSION_TOKEN` |
+| `volcengine_project` | `str` | 读取环境变量 `DATABASE_VIKING_PROJECT`，缺省 `default` | VikingDB 知识库所属项目 |
+| `resource_id` | `str` | 读取环境变量 `DATABASE_VIKING_RESOURCE_ID`，缺省 `""` | VikingDB 知识库资源 ID，用于多资源场景下的请求路由。留空时不附加该字段 |
+| `version` | `str` | 读取环境变量 `DATABASE_VIKING_VERSION`，缺省 `"2"` | 集合版本，取值 `"2"` 或 `"4"` |
+| `cloud_provider` | `str` | 读取环境变量 `CLOUD_PROVIDER`，缺省 `volces` | 云服务商，`volces` 或 `byteplus`，决定接入域名与默认区域 |
+| `region` | `str` | 由 `cloud_provider` 推导（`volces` 为 `cn-beijing`，`byteplus` 为 `cn-hongkong`），可用 `DATABASE_VIKING_REGION` 覆盖 | 服务区域。`volces` 模式下未显式设置时，依次读取 `DATABASE_VIKING_REGION` 与 `REGION` 环境变量，均未设置时默认为 `cn-beijing`。`byteplus` 模式下，未设置或为中国大陆地域（`cn-beijing`、`cn-shanghai`、`cn-guangzhou`）时自动映射为 `cn-hongkong`，其他地域保持原样 |
+| `base_url` | `str` | 由 `region` 与 `cloud_provider` 推导 | 知识库 API 地址，可用 `DATABASE_VIKING_BASE_URL` 覆盖 |
+| `host` | `str` | 由 `region` 与 `cloud_provider` 推导 | 知识库 API 主机名 |
+| `schema` | `str` | `https` | 请求协议 |
+| `tos_config` | `TOSConfig` | 自动从 `DATABASE_TOS_*` 环境变量读取 | 上传文件所用的 TOS 配置 |
 
 <Note>
 凭证解析时依次检查 `AGENTKIT_CLOUD_PROVIDER` 与 `CLOUD_PROVIDER` 环境变量判断云服务商。设为 `byteplus` 时，凭证从 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 和 `BYTEPLUS_SESSION_TOKEN` 读取；否则从 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 和 `VOLCENGINE_SESSION_TOKEN` 读取。
@@ -110,9 +140,9 @@ kb = KnowledgeBase(
 
 | 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `endpoint` | `DATABASE_TOS_ENDPOINT` | `str` | `tos-cn-beijing.volces.com` | TOS 接入点。未显式配置时，若 `region` 已显式设置或通过 `REGION` 环境变量解析，则自动推导为 `tos-<region>.volces.com`。`byteplus` 模式下，未显式配置时自动与知识库区域对齐（如知识库区域为 `cn-hongkong` 时，接入点为 `tos-cn-hongkong.bytepluses.com`）。 |
-| `region` | `DATABASE_TOS_REGION` | `str` | `cn-beijing` | TOS 区域。`volces` 模式下未显式设置时，依次回退到 `REGION` 环境变量与默认值 `cn-beijing`。`byteplus` 模式下，未显式配置时自动与知识库区域对齐。 |
-| `bucket` | `DATABASE_TOS_BUCKET` | `str` | `veadk-default-bucket` | TOS 桶名。为空时使用默认桶并自动创建。 |
+| `endpoint` | `DATABASE_TOS_ENDPOINT` | `str` | `tos-cn-beijing.volces.com` | TOS 接入点。未显式配置时，若 `region` 已显式设置或通过 `REGION` 环境变量解析，则自动推导为 `tos-<region>.volces.com`。`byteplus` 模式下，未显式配置时自动与知识库区域对齐（如知识库区域为 `cn-hongkong` 时，接入点为 `tos-cn-hongkong.bytepluses.com`） |
+| `region` | `DATABASE_TOS_REGION` | `str` | `cn-beijing` | TOS 区域。`volces` 模式下未显式设置时，依次回退到 `REGION` 环境变量与默认值 `cn-beijing`。`byteplus` 模式下，未显式配置时自动与知识库区域对齐 |
+| `bucket` | `DATABASE_TOS_BUCKET` | `str` | `veadk-default-bucket` | TOS 桶名。为空时使用默认桶并自动创建 |
 
 <Note>
 `byteplus` 模式下，TOS 区域与接入点的确定优先级如下：显式传入 `tos_config` 时使用其中设置的值；其次读取 `DATABASE_TOS_REGION` 与 `DATABASE_TOS_ENDPOINT` 环境变量；均未设置时自动与知识库区域对齐。TOS 桶的创建也使用对齐后的区域。
@@ -124,8 +154,8 @@ kb = KnowledgeBase(
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `metadata` | `dict \| None` | `None` | 按文档元数据过滤检索，键值需全部命中。 |
-| `rerank` | `bool` | `True` | 是否启用服务端重排。 |
+| `metadata` | `dict \| None` | `None` | 按文档元数据过滤检索，键值需全部命中 |
+| `rerank` | `bool` | `True` | 是否启用服务端重排 |
 
 ## 环境变量配置
 
@@ -149,9 +179,11 @@ export DATABASE_TOS_REGION="cn-beijing"
 ```
 
 <Note>
-向量化、切分与检索均在 VikingDB 服务端完成，因此本后端无需配置 embedding 模型。`enable_profile` 与 `query_with_user_profile` 等画像相关能力也依赖 Viking 系列后端。
+向量化、切分与检索均在 VikingDB 服务端完成，因此本后端无需配置 embedding 模型。`query_with_user_profile` 需要智能体绑定 Viking 长期记忆；知识库后端本身不受这一要求限制
 </Note>
 
 <Warning>
 `index`（集合名）必须以英文字母开头，仅含字母、数字与下划线，长度 1-128，否则会报错。`version` 仅支持 `"2"` 或 `"4"`。
 </Warning>
+
+示例检索结果应包含年假规则。若返回为空，先确认写入返回成功、模型维度一致及服务端处理完成，再检查网络与权限；托管后端不保证导入后立即可检索。绑定 Agent 后仍需完成模型配置才能运行问答

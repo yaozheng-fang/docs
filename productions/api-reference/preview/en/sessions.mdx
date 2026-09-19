@@ -3,7 +3,9 @@ title: "Applications and sessions"
 zh_link: "/productions/api-reference/preview/zh/sessions"
 ---
 
-Discover applications and create, read, update, or delete sessions
+An application is an agent entry point loaded by the server. A session stores one user’s interaction state and events for that application. Discover the application name, create a session, and use the returned `id` for calls and session management
+
+`user_id` separates session namespaces; it does not authenticate the caller. See [Agent API Server overview](/productions/api-reference/preview/en/agent-api-server/overview) for startup and access control. Harness deployments use their [corresponding session endpoint](/productions/api-reference/preview/en/harness-runtime/create-session)
 
 | Method | Path | Endpoint |
 | --- | --- | --- |

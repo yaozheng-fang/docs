@@ -3,3 +3,13 @@ title: "兼容调用"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /invoke"
 en_link: "/productions/api-reference/preview/en/harness-runtime/invoke-compatible"
 ---
+
+用于只发送文本的兼容客户端。请求体通常为 `{"prompt":"Hello"}`，用户和会话通过 `user_id`、`session_id` 请求头提供；它们不是请求体字段
+
+建议每次明确提供两个请求头，避免缺省值使不同调用落到同一用户或会话命名空间。服务会检查并创建会话，应用名称取自已加载的智能体
+
+<Warning>
+调用会保存会话并执行模型和工具，可能产生费用或外部操作。重新发送相同消息可能再次执行这些操作
+</Warning>
+
+响应为 SSE，使用 `curl -N` 持续读取并处理流内 `error`。如需结构化 ADK 消息，使用[流式运行 Harness](/productions/api-reference/preview/zh/harness-runtime/run-sse)

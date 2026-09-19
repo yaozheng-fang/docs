@@ -5,5 +5,7 @@ zh_link: "/productions/api-reference/preview/zh/harness-runtime/update-eval-case
 ---
 
 <Warning>
-This operation deletes or replaces existing data. Confirm the target and preserve any content you need before sending the request
+This operation replaces an existing evaluation case; it is not a partial update. Retrieve and preserve any content you need before submitting the complete replacement
 </Warning>
+
+A nonempty request `evalId` must match the path `eval_case_id`. Conflicting IDs return `400`, a missing target returns `404`, and success returns JSON `null`

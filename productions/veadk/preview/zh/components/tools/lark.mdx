@@ -17,15 +17,17 @@ en_link: "/productions/veadk/preview/en/components/tools/lark"
 应用获取方式见 [Lark 创建应用](https://open.larkoffice.com/document/develop-an-echo-bot/introduction)。
 
 1. 配置用于智能体推理模型的 API Key；
-2. 配置 Lark 服务的 Application ID、API Key 与 OAuthToken。
+2. 配置 Lark 服务的 App ID、App Secret 与 user access token。
 </Warning>
 
-环境变量（**必须配置在环境变量中**）：
+环境变量：
 
 - `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
 - `TOOL_LARK_ENDPOINT`：Lark 服务的 Application ID
-- `TOOL_LARK_API_KEY`：Lark 服务的 API Key
-- `TOOL_LARK_TOKEN`：Lark 服务的 OAuthToken
+- `TOOL_LARK_API_KEY`：飞书应用的 App Secret（变量名仍为 API_KEY）
+- `TOOL_LARK_TOKEN`：已授权且未过期的 user access token
+
+先安装 Node.js 与 npm，再安装 `npm install -g @larksuiteoapi/lark-mcp`。确认 `npx --version` 和 `lark-mcp -V` 均可执行；工具导入时即检查这两个命令。应用需开通所用 API 的权限，并完成对应用户授权；App Secret 与用户令牌不能互相替代
 
 ## 使用方法
 
@@ -40,7 +42,7 @@ agent = Agent(
     name="lark_agent",
     model_name="doubao-seed-2-1-pro-260628",
     description="一个飞书机器人。",
-    instruction="你是一个飞书机器人，通过 lark_tools 给用户发消息。",
+    instruction="按用户要求读取飞书数据；没有明确指令时不发送消息或修改数据。",
     tools=[lark_tools],
 )
 
@@ -48,8 +50,30 @@ runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
 
 
 async def main():
-    response = await runner.run("给 developer@example.com 发送“你好，我是 lark agent”")
+    response = await runner.run("查询我能访问的日历，列出名称，不创建或修改日程")
     print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 验证工具发现
+
+内置实例在导入时读取凭证并创建本地 MCP 连接。先用以下代码列出当前可用工具，工具名与参数由所安装的 Lark MCP 版本决定。该内置实例没有云区域切换参数，`CLOUD_PROVIDER` 不会自动配置飞书与 Lark 的平台差异；需要自定义服务地址或启动参数时使用[自定义 MCP](/productions/veadk/preview/zh/components/tools/custom-mcp)
+
+```python lines
+import asyncio
+
+from veadk.tools.builtin_tools.lark import lark_tools
+
+
+async def main():
+    try:
+        tools = await lark_tools.get_tools()
+        print([tool.name for tool in tools])
+    finally:
+        await lark_tools.close()
 
 
 if __name__ == "__main__":

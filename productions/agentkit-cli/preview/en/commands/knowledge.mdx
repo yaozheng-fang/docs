@@ -5,13 +5,15 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/knowledge"
 
 The `knowledge` command group manages AgentKit knowledge bases, covering listing, inspection, creation, update, and deletion. The command is also available under the `kb` and `knowledgebase` aliases.
 
+A knowledge base stores documents for retrieval. Configure management credentials and the target provider and region, with permissions for AgentKit, the knowledge provider, and TOS uploads. The AgentKit knowledge ID differs from the provider-side ID: register with the provider ID, then use the returned AgentKit ID for subsequent operations
+
 ## knowledge list
 
 List all knowledge bases.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `-p, --project <name>` | Project name. | default |
 | `--json` | Output raw JSON. | `false` |
 
@@ -26,12 +28,16 @@ Show details of a knowledge base.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash lines
 agentkit knowledge show kb-12345678
 ```
+
+<Warning>
+Automatic provisioning and document uploads use cloud storage and indexing resources and may incur charges. Directory uploads recurse; exclude credentials and data that must not enter the knowledge base first
+</Warning>
 
 ## knowledge create
 
@@ -46,7 +52,7 @@ Create a knowledge base.
 | `--viking-version <n>` | Viking collection version: `2` \| `4`. | `2` |
 | `-d, --description <text>` | Knowledge base description. | — |
 | `-p, --project <name>` | Project name. | default |
-| `-r, --region <region>` | Volcengine region. | from env/default |
+| `-r, --region <region>` | Region for the selected cloud provider. | from env/default |
 | `--json <jsonString>` | Advanced: a JSON object merged into the request body (overrides options). | — |
 
 ```bash lines
@@ -65,7 +71,7 @@ Add documents to a knowledge base — upload local files or directories (directo
 | `--doc-type <type>` | Document type hint for `--url` (e.g. `md`, `pdf`). | — |
 | `--tos-bucket <name>` | TOS bucket for uploads. | `agentkit-platform-<account-id>` |
 | `-p, --project <name>` | Project name. | default |
-| `-r, --region <region>` | Volcengine region. | from env/default |
+| `-r, --region <region>` | Region for the selected cloud provider. | from env/default |
 
 ```bash lines
 agentkit knowledge add docs-kb ./docs ./README.md
@@ -82,12 +88,16 @@ Update a knowledge base.
 | `-d, --description <text>` | New description. | — |
 | `--vpc-id <id>` | VPC id to attach. | — |
 | `--subnet-ids <ids>` | Comma-separated subnet ids (requires `--vpc-id`). | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `--json <jsonString>` | Advanced: a JSON object merged into the request body (overrides options). | — |
 
 ```bash lines
 agentkit knowledge update kb-12345678 --description "Updated docs"
 ```
+
+<Warning>
+Before deletion, check agents that still reference the knowledge base and retain required document copies. `--yes` skips confirmation; associated calls may fail afterward
+</Warning>
 
 ## knowledge delete
 
@@ -96,9 +106,11 @@ Delete a knowledge base.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<id>` | Knowledge id, e.g. `kb-xxxxxxxx`. Required. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
 ```bash lines
 agentkit knowledge delete kb-12345678 --yes
 ```
+
+A successful add completes the upload or registration request; parsing and indexing may still be in progress. Check document processing in the provider before verifying retrieval with a connected agent. For an empty list, check provider, region, and `--project` before creating another resource

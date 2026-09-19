@@ -5,6 +5,12 @@ en_link: "/productions/agentkit-cli/preview/en/commands/launch"
 
 `launch` 一次性执行构建与部署。它读取生命周期配置，先运行 `build`，成功后运行 `deploy`，适合从新项目或已修改代码直接发布运行时。
 
+在包含生命周期配置 `agentkit.yaml` 的项目目录执行。先按[快速开始](/productions/agentkit-cli/preview/zh/quickstart)配置云厂商、区域和运行时环境变量；`local` 与 `hybrid` 模式还需要本机 Docker
+
+<Warning>
+云端发布会构建镜像并创建或更新运行时，可能产生构建、存储与运行费用。更新已有运行时前确认目标项目和当前服务的发布安排
+</Warning>
+
 ## launch
 
 | 标志/参数 | 说明 | 默认值 |
@@ -18,3 +24,12 @@ agentkit launch --config-file agentkit.yaml --preflight-mode fail
 ```
 
 `prompt` 会在交互终端询问是否继续；`fail` 在预检不通过时直接失败；`warn` 打印警告后继续；`skip` 不执行预检。
+
+发布后仍需确认应用可用：
+
+```bash lines
+agentkit status
+agentkit invoke run "hello"
+```
+
+无人值守发布建议使用 `--preflight-mode fail`；`warn` 和 `skip` 不会补齐缺失的服务授权，后续构建或部署仍可能失败

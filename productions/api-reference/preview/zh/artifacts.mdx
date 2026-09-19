@@ -3,7 +3,9 @@ title: "制品"
 en_link: "/productions/api-reference/preview/en/artifacts"
 ---
 
-管理会话中的制品及其版本和元数据
+制品是智能体生成或应用保存的文本、图片和其他文件内容，同一名称可以有多个版本。本页索引 Agent API Server 的制品接口；Harness 部署请使用其独立的[制品接口](/productions/api-reference/preview/zh/harness-runtime/list-artifacts)
+
+保存响应返回版本号，读取内容返回 `Part` 对象；元数据接口返回 URI、MIME 类型与自定义信息。删除制品会删除全部版本，操作前保存需要保留的内容
 
 | 方法 | 路径 | 接口 |
 | --- | --- | --- |

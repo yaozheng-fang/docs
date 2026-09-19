@@ -42,7 +42,9 @@ Show a built-in evaluator template, including its prompt and input fields.
 agentkit eval evaluator template show relevance
 ```
 
-## evaluator template list
+<span id="evaluator-template-list-2" />
+
+## evaluator list
 
 List evaluators in the current project or workspace.
 
@@ -94,6 +96,16 @@ agentkit eval evaluator create \
   --name relevance \
   --from-template relevance \
   --model "Doubao 2.0 Pro"
+```
+
+Create `rubric.txt` before running the custom evaluator example:
+
+```text title="rubric.txt" lines
+Question: {{input}}
+Reference answer: {{reference_output}}
+Actual answer: {{output}}
+Check whether the actual answer correctly answers the question and matches the reference
+Score 1 for a correct and complete answer, otherwise 0, and briefly explain the score
 ```
 
 ```bash lines
@@ -180,3 +192,13 @@ This command deletes the evaluator. Check the target first; the CLI prompts for 
 ```bash lines
 agentkit eval evaluator delete relevance -y
 ```
+
+After creation, use `evaluator show` to inspect the model, rubric, and input fields. Submit a TEA draft before using an explicit version in an experiment. Submit a new version after further draft edits; editing a draft does not update an existing version
+
+```bash lines
+agentkit eval evaluator show relevance
+agentkit eval evaluator version submit 0.0.1 --evaluator relevance
+agentkit eval evaluator version list --evaluator relevance
+```
+
+Template keys and models must be available on the selected backend. Coze model arguments use an Ark endpoint ID available to your account, not a TEA numeric model ID

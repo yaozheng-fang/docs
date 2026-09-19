@@ -21,13 +21,13 @@ Use standard Python logging levels, including `DEBUG`, `INFO`, `WARNING`, `ERROR
 Each record contains the time, level, call location, and message:
 
 ```text lines
-2026-07-14 10:30:00 | INFO | runner.py:180 - Event output: request completed
+2026-07-14 10:30:00 | INFO | app.py:20 - Request completed
 ```
 
 When code runs inside a recording OpenTelemetry span, VeADK adds `trace_id` so you can correlate a request between logs and traces:
 
 ```text lines
-2026-07-14 10:30:00 | INFO | runner.py:180 | trace_id=0123456789abcdef - Event output: request completed
+2026-07-14 10:30:00 | INFO | app.py:20 | trace_id=0123456789abcdef0123456789abcdef - Request completed
 ```
 
 Interactive terminals use colors for the time, level, and location. Redirected or collected standard output does not contain ANSI color escape sequences.
@@ -36,11 +36,14 @@ Interactive terminals use colors for the time, level, and location. Redirected o
 
 Your application can use standard-library loggers and control the `veadk` namespace independently:
 
+`LOGGING_LEVEL` controls VeADK logs. Configure your application logger with its own handler, or call `logging.basicConfig()` before importing VeADK. By default, `basicConfig()` does not reconfigure an existing root handler. This example should print `Agent initialized`
+
 ```python lines
 import logging
 
-from veadk import Agent
+logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
 
+from veadk import Agent
 logging.getLogger("veadk").setLevel(logging.INFO)
 app_logger = logging.getLogger("company_assistant")
 

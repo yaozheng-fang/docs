@@ -3,3 +3,7 @@ title: "创建会话"
 openapi: "/productions/api-reference/openapi/zh/agent-api-server.json POST /apps/{app_name}/users/{user_id}/sessions"
 en_link: "/productions/api-reference/preview/en/agent-api-server/create-session"
 ---
+
+创建会话后，保存响应中的 `id`，后续读取、更新和运行均使用同一应用、用户和会话标识。未提供 `sessionId` 时由服务生成 ID；重复创建已存在的指定 ID 返回 `409`
+
+请求中的 `state` 用于初始化会话状态，`events` 用于导入已有事件。无需导入历史时省略 `events`，创建会话本身不会调用模型

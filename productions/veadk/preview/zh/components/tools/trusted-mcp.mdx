@@ -5,23 +5,42 @@ en_link: "/productions/veadk/preview/en/components/tools/trusted-mcp"
 
 ## 功能说明
 
-连接受访问控制保护的 MCP Server 时，使用 `TrustedMcpToolset`（`from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset`）。它在标准 `McpToolset` 的基础上为出站请求注入鉴权信息，从而安全地访问受信任的 MCP 服务。它复用 Google ADK 的连接参数，下面用 `StreamableHTTPConnectionParams` 演示：
+`TrustedMcpToolset` 连接支持 Trusted MCP 协议的服务，需同时使用 Streamable HTTP 连接与 `x-trusted-mcp: true` 请求头。仅提供 `Authorization` 不会启用可信传输。服务端必须支持该协议，普通 MCP 服务使用[自定义 MCP Server](/productions/veadk/preview/zh/components/tools/custom-mcp)中的接入方式
+
+## 前提条件
+
+安装 `python -m pip install veadk-python`，由服务提供方获取 MCP URL、访问凭证和可信连接要求。设置 `MCP_SERVER_URL`、`MCP_SERVER_TOKEN` 后，先验证工具发现，再注册到智能体
 
 ## 使用方法
 
-```python lines
-from veadk import Agent
+```python title="mcp_connection.py" lines
+import asyncio
+import os
 from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import (
-    StreamableHTTPConnectionParams,
-)
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 
-toolset = TrustedMcpToolset(
-    connection_params=StreamableHTTPConnectionParams(
-        url="https://your-trusted-mcp-endpoint",
-        headers={"Authorization": "Bearer your-api-key-here"},
-    ),
-)
+async def main():
+    toolset = TrustedMcpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url=os.environ["MCP_SERVER_URL"],
+            headers={
+                "Authorization": f"Bearer {os.environ['MCP_SERVER_TOKEN']}",
+                "x-trusted-mcp": "true",
+            },
+        ),
+    )
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
 
-agent = Agent(tools=[toolset])
+asyncio.run(main())
 ```
+
+预期输出为当前凭证可访问的工具名。通过 `Agent(tools=[toolset])` 注册时，完成业务调用后同样需要关闭连接
+
+## 参数
+
+`connection_params` 为必填，启用可信连接时使用 `StreamableHTTPConnectionParams`。其他关键字参数沿用已安装 Google ADK `McpToolset` 的参数与默认值，完整表见[自定义 MCP 参数](/productions/veadk/preview/zh/components/tools/custom-mcp#参数)。常用 `tool_filter` 限定工具范围，`header_provider` 按请求提供身份相关请求头；不要在多个用户之间复用固定用户令牌
+
+可信传输不代替服务端授权，工具发现成功也不代表所有业务操作均已授权。部署要求和服务端配合方式见[可信 MCP 安全说明](/productions/veadk/preview/zh/components/security/trusted-mcp)

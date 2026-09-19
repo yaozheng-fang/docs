@@ -9,6 +9,12 @@ en_link: "/productions/agentkit-cli/preview/en/commands/invoke"
   `agentkit invoke "hello"` 会按兼容规则转换为 `agentkit invoke run "hello"`；文档中使用 `invoke run` 作为明确写法。`-ak` 也会转换为 `--apikey`，用于兼容 Python SDK 风格参数。
 </Note>
 
+调用前确认运行时已就绪，并准备目标所需的 API Key 或用户 token。`--runtime-id` 还需要管理凭证；已知端点并持有调用凭证时，可用 `--endpoint` 直接访问
+
+<Warning>
+消息和请求体会发送到目标运行时及其模型、工具，可能产生用量费用。不要在测试请求中包含不应外发的数据；默认固定会话标识适合示例，独立会话应显式提供不同的 `session_id`
+</Warning>
+
 ## invoke run
 
 向 Runtime 发送消息或自定义 JSON payload。传入普通消息时，CLI 会发送 `{ "prompt": "<message>" }`；传入 `--payload` 时，会原样发送解析后的 JSON 对象。
@@ -97,3 +103,14 @@ agentkit invoke run "hello" \
 ```
 
 身份仅登录会保存 OIDC 会话，不会生成 AgentKit 管理凭据。若还需要通过 `--runtime-id` 查询 Runtime，请另外配置 AK/SK，或使用普通 `agentkit login` 获取 STS 凭据。
+
+## 常见检查
+
+| 现象 | 检查方法 |
+| --- | --- |
+| 找不到运行时或列表为空 | 核对 `--provider`、`--region`、Runtime ID 与管理凭证所属账号 |
+| 返回鉴权失败 | 检查目标的 `key_auth` 或 `custom_jwt`，以及 API Key 或 token 是否有效 |
+| 请求成功但没有预期回答 | 使用 `--raw` 查看响应，并检查运行时日志和模型配置 |
+| 帮助选项报错 | 使用 `agentkit invoke run --help`；此命令的 `-h` 表示 `--headers` |
+
+`--show-reasoning` 只展示响应中实际返回的推理字段，不会要求模型生成或暴露额外信息

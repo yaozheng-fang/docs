@@ -29,7 +29,7 @@ en_link: "/productions/veadk/preview/en/components/tools/web-search"
 | `VOLCENGINE_ACCESS_KEY` | 火山引擎 | — | 火山引擎 AccessKey。 |
 | `VOLCENGINE_SECRET_KEY` | 火山引擎 | — | 火山引擎 SecretKey。 |
 | `BYTEPLUS_WEB_SEARCH_API_KEY` | BytePlus | — | BytePlus SearchInfinity API 的 API Key，BytePlus 模式下必填。 |
-| `BYTEPLUS_WEB_SEARCH_URL` | BytePlus | 内置地址 | 覆盖 BytePlus SearchInfinity 搜索端点。 |
+| `BYTEPLUS_WEB_SEARCH_URL` | BytePlus | `https://torchlight.byteintlapi.com/search_api/web_search` | 覆盖 BytePlus SearchInfinity 搜索端点。 |
 
 或在 `config.yaml` 中配置：
 
@@ -81,4 +81,30 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+## 参数与返回值
+
+| 工具 | 参数 | 类型 | 默认值 | 返回值 |
+| :--- | :--- | :--- | :--- | :--- |
+| `web_search` | `query` | `str` | 必填 | 单次查询的摘要列表 |
+| `parallel_web_search` | `queries` | `list[str]` | 必填 | 查询字符串到摘要列表的映射 |
+| 两者 | `tool_context` | `ToolContext \| None` | `None` | 智能体调用时自动注入，可提供火山引擎凭证 |
+
+火山引擎模式下，凭证优先级为：成对设置的 `TOOL_WEB_SEARCH_ACCESS_KEY` / `TOOL_WEB_SEARCH_SECRET_KEY`、当前工具上下文中的 AK/SK、`VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`、托管运行环境提供的 IAM 临时凭证。临时令牌来自最后一种 IAM 凭证方式，直接设置 AK/SK 不会自动附加任意 STS 令牌
+
+每个查询最多请求 5 条结果。并行结果以查询文本作为字典键，重复查询会合并到同一个键；调用前应去重。错误响应可能作为列表元素返回，应检查内容后再用于回答
+
+以下示例只调用搜索服务，不调用推理模型：
+
+```python lines
+import asyncio
+from veadk.tools.builtin_tools.parallel_web_search import parallel_web_search
+
+async def main():
+    results = await parallel_web_search(["AgentKit documentation", "VeADK documentation"])
+    for query, summaries in results.items():
+        print(query, summaries)
+
+asyncio.run(main())
 ```

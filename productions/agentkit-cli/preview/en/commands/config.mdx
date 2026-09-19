@@ -56,6 +56,12 @@ Without `--global`, the command reads or updates the current project's lifecycle
 | `--runtime_gateway_mode <mode>` / `--runtime-gateway-mode <mode>` | Gateway mode for new runtimes: `Shared` or `Exclusive` | Current configuration; otherwise `Shared` |
 | `--runtime_gateway_instance_id <id>` / `--runtime-gateway-instance-id <id>` | Gateway instance ID, required in Exclusive mode | — |
 
+Export `MODEL_AGENT_API_KEY` in the current terminal before running this example. Double quotes let the shell expand the variable; lifecycle config does not automatically resolve a literal `${MODEL_AGENT_API_KEY}` passed in single quotes
+
+<Warning>
+The configuration command writes the expanded model API key to `agentkit.yaml`. Add that file and `.env` to `.gitignore` and `.dockerignore` before running it to keep credentials out of version control and the image
+</Warning>
+
 ```bash lines
 agentkit config --init \
   --agent_name support-agent \
@@ -63,7 +69,7 @@ agentkit config --init \
   --cloud_provider volcengine \
   --region cn-beijing \
   --project_name default \
-  --runtime_envs 'MODEL_AGENT_API_KEY=${MODEL_AGENT_API_KEY}'
+  --runtime_envs "MODEL_AGENT_API_KEY=$MODEL_AGENT_API_KEY"
 
 agentkit config \
   --launch_type cloud \

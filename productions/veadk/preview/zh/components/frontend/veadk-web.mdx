@@ -3,83 +3,99 @@ title: "VeADK Web"
 en_link: "/productions/veadk/preview/en/components/frontend/veadk-web"
 ---
 
-`veadk web` 在 Google ADK 的 `adk web` 之上封装了一层，启动一个可视化的调试界面：无需编写任何前端代码，即可在浏览器中与智能体对话并观察其执行过程。相比直接使用 `adk web`，它额外提供了 VeADK 记忆能力的自动集成、工作流智能体的记忆告警、可选的 VeIdentity SSO 登录，并默认关闭 OpenAPI 文档路由与冗余日志。它适合本地开发与排查。
-
-`veadk web` 会透传 `adk web` 的选项，因此 `adk web` 的用法在此同样适用，本页仅在其基础上说明 VeADK 增加的行为与选项。
+`veadk web` 启动基于 Google ADK 的浏览器调试界面，用于选择本地智能体、发送消息和查看事件。它接入 VeADK 根智能体的记忆配置，提供可选的 OAuth2 登录，默认关闭 OpenAPI 展示页
 
 ## 启动
 
-在智能体目录的上层目录中执行命令。每个包含 `agent.py` 并暴露 `root_agent` 的子目录都会成为界面中可选择的一个应用。
+先完成[安装](/productions/veadk/preview/zh/get-started/installation)和[模型配置](/productions/veadk/preview/zh/components/agent/model)。在 `agents/assistant/` 中创建以下两个文件
 
-```bash lines
-# 智能体目录作为位置参数，缺省为当前目录
-veadk web examples
-
-# 指定监听地址与端口
-veadk web examples --host 0.0.0.0 --port 8080
+```python title="agents/assistant/__init__.py"
+from . import agent
 ```
 
-打开命令输出中的地址即可使用。
+```python title="agents/assistant/agent.py"
+from veadk import Agent
+
+root_agent = Agent(name="assistant", instruction="Answer clearly and concisely.")
+```
+
+在 `agents` 的父目录运行：
+
+```bash
+veadk web ./agents --host 127.0.0.1 --port 8000
+```
+
+打开 `http://127.0.0.1:8000`，选择 `assistant` 并发送文本。成功时应看到回复和对应执行事件；智能体未出现在列表中时，先检查目录、`root_agent` 和导入错误
+
+<Warning>
+默认入口用于本地调试。绑定 `0.0.0.0` 会允许其他设备连接，关闭 OpenAPI 展示页不等于启用认证。需要多人访问时，应配置认证和网络访问控制
+</Warning>
 
 ## 常用透传选项
 
-以下选项由底层的 `adk web` 提供，`veadk web` 原样透传。
+以下完整列表按 Google ADK 2.2.0 的 `adk web --help` 核对。VeADK 透传这些选项；升级 ADK 后用本地帮助确认差异。默认值为 `None` 表示未指定，不代表对应服务已配置
 
 | 选项 | 默认值 | 说明 |
-| :-- | :-- | :-- |
-| `AGENTS_DIR` | 当前目录 | 位置参数：智能体应用所在目录，每个子目录暴露一个 `root_agent`。 |
-| `--host` | `127.0.0.1` | 服务监听地址。 |
-| `--port` | `8000` | 服务监听端口。 |
-| `--log_level` | `ERROR` | 日志级别。`veadk web` 将缺省值下调为 `ERROR`，详见下文。 |
-| `--reload` / `--no-reload` | `--reload` | 智能体代码变更时是否自动重载。 |
-| `--session_service_uri` | — | 会话服务的存储地址。未指定时使用本地存储。 |
+| --- | --- | --- |
+| `--enable_features` | `None` | 启用逗号分隔的 ADK 实验特性 |
+| `--disable_features` | `None` | 禁用逗号分隔的 ADK 特性 |
+| `--host` | `127.0.0.1` | 监听地址 |
+| `--port` | `8000` | 监听端口 |
+| `--allow_origins` | `None` | 允许的跨域来源，可使用带 regex: 前缀的表达式 |
+| `-v` / `--verbose` | `False` | ADK 调试日志快捷选项；VeADK 下建议显式使用 --log_level DEBUG |
+| `--log_level` | `ERROR` | 日志级别；VeADK 默认 ERROR |
+| `--trace_to_cloud` | `False` | 将追踪发送到 Google Cloud，需要该平台凭据 |
+| `--otel_to_cloud` | `False` | 将 OpenTelemetry 数据发送到 Google Cloud |
+| `--reload` / `--no-reload` | `True` | 服务代码变化时自动重启 |
+| `--a2a` | `False` | 启用 A2A 端点 |
+| `--reload_agents` | `False` | 智能体变化时实时重载 |
+| `--eval_storage_uri` | `None` | 评测存储地址，支持 gs://bucket |
+| `--extra_plugins` | `None` | 额外插件类或实例的导入路径，逗号分隔 |
+| `--url_prefix` | `None` | 反向代理挂载路径前缀，必须以 / 开头 |
+| `--trigger_sources` | `None` | 启用批处理或事件触发来源，逗号分隔 |
+| `--logo-text` | `None` | Web 界面的标志文字 |
+| `--logo-image-url` | `None` | Web 界面的标志图片地址 |
+| `--session_service_uri` | `None` | ADK 会话存储地址；memory:// 使用内存 |
+| `--artifact_service_uri` | `None` | 制品存储地址；memory://、file:// 或 gs:// |
+| `--use_local_storage` / `--no_use_local_storage` | `True` | 未指定服务地址时使用本地 .adk 存储；目录不可写时可能回退内存 |
+| `--memory_service_uri` | `None` | ADK 长期记忆服务地址；与 VeADK 后端配置不同 |
+| `--default_llm_model` | `None` | 智能体未指定模型时的 ADK 默认模型 |
+| `AGENTS_DIR` | `.` | 包含智能体应用的父目录，也可直接指定单个应用目录 |
+| `--help` | — | 查看 VeADK 自有选项；透传选项使用 `adk web --help` 查看 |
 
-<Note>
-  完整的透传选项以 `adk web --help` 为准。上表列出的是与本界面最常配合使用的几项。
-</Note>
+显式指定服务地址时不要同时传入 `--use_local_storage`。`--session_service_uri` 的 ADK CLI 地址格式与直接构造 VeADK 会话后端的 `db_url` 不应混用
+
+```bash
+veadk web ./agents --log_level DEBUG --session_service_uri memory://
+```
 
 ## 自有 OAuth2 选项
 
-`veadk web` 额外提供三个用于 VeIdentity 单点登录的选项。仅当同时提供用户池与客户端名称时才会启用登录中间件。
+同时提供用户池与客户端名称才会启用 SSO。准备对应云环境的资源访问凭据，并确认回调已登记；自动配置可能创建用户池、客户端或修改回调
 
 | 选项 | 默认值 | 说明 |
-| :-- | :-- | :-- |
-| `--oauth2-user-pool` | — | VeIdentity 用户池名称。与客户端名称同时设置后启用 SSO。 |
-| `--oauth2-user-pool-client` | — | VeIdentity 用户池客户端名称。 |
-| `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | OAuth2 回调地址。未显式设置时，依据透传的 `--host` 与 `--port` 自动拼接。 |
+| --- | --- | --- |
+| `--oauth2-user-pool` | `None` | 用户池名称 |
+| `--oauth2-user-pool-client` | `None` | Web 客户端名称 |
+| `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | 回调地址；建议显式设置 |
 
-```bash lines
-veadk web examples \
---oauth2-user-pool "your-user-pool-name" \
---oauth2-user-pool-client "your-user-pool-client-name"
+```bash
+veadk web ./agents \
+  --oauth2-user-pool my-pool \
+  --oauth2-user-pool-client my-web-client \
+  --oauth2-redirect-uri http://127.0.0.1:8000/oauth2/callback
 ```
 
-<Note>
-  启用 SSO 需要进程能够读取到火山引擎凭证。此模式下的 Cookie 未强制 `Secure` 标志，以便在本地 HTTP 环境下正常工作。
-</Note>
+该命令的 OAuth2 适配面向本地 HTTP 调试，会允许非 HTTPS Cookie。生产或公网入口应使用 [Frontend/Studio 的认证配置](/productions/veadk/preview/zh/components/frontend/veadk-frontend#认证)或自行配置 HTTPS 中间件
 
 ## 记忆能力自动集成
 
-这是 `veadk web` 相较于原生 `adk web` 的核心增强。命令会挂钩 ADK Web 服务的运行器获取过程，在为某个应用创建运行器之前，先加载对应的智能体并检查其记忆配置：
-
-- 若智能体配置了短期记忆，则将其会话服务接入为该应用的会话服务。
-- 若智能体配置了长期记忆，则将其接入为该应用的记忆服务，并在日志中打印所使用的长期记忆后端。
-
-因此，只要在智能体上配置了记忆，界面中的对话即可直接使用，无需在启动命令中另行指定会话或记忆服务。
-
-<Warning>
-  当检测到工作流智能体时,该智能体各个子智能体上单独配置的短期记忆与长期记忆均不会生效，命令会在日志中给出告警。请将记忆配置在工作流智能体本身上。
-</Warning>
+根对象是 VeADK `Agent` 时，其 `short_term_memory` 和 `long_term_memory` 会用于当前应用的运行器。工作流根智能体不会自动采用各子智能体的记忆配置，需在运行器或应用级选择会话和记忆服务。多个应用需要不同数据边界时，应分别部署并配置访问控制
 
 ## 关闭 OpenAPI 与日志默认级别
 
-`veadk web` 在启动时对 ADK Web 服务做了两处调整：
-
-- **关闭 OpenAPI 文档路由。** 从服务中移除 `/openapi.json`、`/docs`、`/redoc` 三个路由，以简化界面并收敛暴露面。
-- **收敛日志默认级别。** 若未显式传入 `--log_level`，则将日志级别默认设为 `ERROR`，以抑制 Google ADK 与 LiteLLM 的冗余输出；显式传入 `--log_level` 时以传入值为准。
+`/openapi.json`、`/docs` 和 `/redoc` 默认不提供，日志默认为 `ERROR`。需要排查时显式设置 `--log_level DEBUG`；调试日志可能包含用户输入和工具数据，排查后恢复所需级别
 
 ## 智能体构建图序列化
 
-`veadk web` 启动时会调整 ADK 开发服务器中智能体构建图的序列化行为。该端点用于在调试界面中展示智能体拓扑与配置，原序列化会将 VeADK 智能体的模型字段输出为包含运行时客户端对象的复杂结构，导致界面无法正确解析。
-
-调整后，构建图 JSON 中的模型字段以「提供方/模型名称」的字符串形式呈现，运行时客户端对象不再出现在输出中，包含嵌套子智能体在内的整棵智能体树均可正常序列化。
+调试界面可以展示 VeADK 智能体拓扑及模型名称。若拓扑加载失败，先确认根智能体能导入，再检查 VeADK 与 Google ADK 的版本组合及浏览器请求错误

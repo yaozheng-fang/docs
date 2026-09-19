@@ -3,7 +3,9 @@ title: "记忆"
 en_link: "/productions/api-reference/preview/en/memory"
 ---
 
-将会话内容写入记忆
+将已有会话的事件写入已配置的记忆后端，供后续检索使用。需要先配置服务的记忆后端，并确认应用、用户与会话标识；此接口不负责创建记忆后端
+
+写入会把会话数据交给该后端处理，成功返回 JSON `null`，不包含提取出的记忆。Harness 部署使用对应的[记忆写入接口](/productions/api-reference/preview/zh/harness-runtime/update-memory)
 
 | 方法 | 路径 | 接口 |
 | --- | --- | --- |

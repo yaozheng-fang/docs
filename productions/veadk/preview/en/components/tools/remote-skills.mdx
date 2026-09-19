@@ -5,7 +5,7 @@ zh_link: "/productions/veadk/preview/zh/components/tools/remote-skills"
 
 ## Overview
 
-Remote skills provide a declarative way to expose skills hosted in the AgentKit Skills Sandbox as individual tools on an agent. You describe each remote skill — its name, description, and input schema — in a JSON manifest, and VeADK generates a corresponding tool function for each one. When the agent calls a tool, the framework forwards the request to the remote sandbox via `execute_skills`; the actual skill code runs only on the remote side and is never loaded or executed locally.
+Remote skills provide a declarative way to expose skills hosted in the AgentKit Skills Sandbox as individual tools on an agent. You describe each remote skill — its name, description, and input schema — in a JSON manifest, and VeADK generates a corresponding tool function for each one. When the agent calls a tool, the framework forwards the request to the remote sandbox through `invoke_skill` and `poll_skill`; the actual skill code runs only on the remote side and is never loaded or executed locally.
 
 Remote skills are useful when you want to:
 
@@ -16,6 +16,12 @@ Remote skills are useful when you want to:
 <Note>
 Remote skills reuse the sandbox infrastructure and credential configuration of `execute_skills`. Environment variables, Tool IDs, and other prerequisites are the same as those described on the [Code sandboxes](/productions/veadk/preview/en/components/tools/code-sandbox) page.
 </Note>
+
+## Prerequisites
+
+Complete [skills sandbox setup](/productions/veadk/preview/en/components/tools/code-sandbox), ensure the target Skill Space contains executable skills, and save the JSON in [Manifest format](#manifest-format) as `remote-skills.json` in the current directory. A manifest only describes capabilities; it does not upload or deploy a skill. Names and inputs must match deployed remote skills.
+
+Loading definitions and building tools do not contact the cloud. Calling the default executor requires a valid tool context, model, and sandbox configuration.
 
 ## Usage
 
@@ -139,7 +145,7 @@ def remote_skill(
 | `arguments` | `dict[str, Any] \| None` | `None` | Skill input arguments, which must conform to the `input_schema` declared in the manifest. |
 | `tool_context` | `ToolContext \| None` | `None` | Tool runtime context, injected automatically by VeADK; required at call time. |
 
-When the tool runs, the framework assembles `skill_name`, `query`, `arguments`, and an auto-generated `request_id` into a query input, sends it to the remote sandbox via `execute_skills`, and enforces the timeout configured on the skill definition.
+When the tool runs, the framework assembles `skill_name`, `query`, `arguments`, and an auto-generated `request_id` into a query input, sends it to the remote sandbox through `invoke_skill` and `poll_skill`, and enforces the timeout configured on the skill definition.
 
 <Note>
 `tool_context` is marked optional in the signature but is required at call time; omitting it raises an error. VeADK injects it automatically during agent execution — you do not need to pass it manually.
@@ -180,7 +186,7 @@ Returns a list of `RemoteSkillDefinition`. When the value starts with `{`, it is
 def build_remote_skill_tools(
     definitions: list[RemoteSkillDefinition],
     *,
-    executor: Callable[..., str] = execute_skills,
+    executor: Callable[..., str] = execute_remote_skill,
 ) -> list[Callable[..., str]]:
     ...
 ```
@@ -188,6 +194,35 @@ def build_remote_skill_tools(
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `definitions` | `list[RemoteSkillDefinition]` | — | Skill definitions. |
-| `executor` | `Callable[..., str]` | `execute_skills` | Executor function, defaulting to `execute_skills`; typically left unchanged. |
+| `executor` | `Callable[..., str]` | `execute_remote_skill` | Executor function, defaulting to `execute_remote_skill`; typically left unchanged. |
 
 Returns a list of tool functions that can be passed directly to the `Agent` `tools` parameter.
+
+## Input validation and custom executors
+
+`input_schema` is included in the tool description for the model; the current proxy does not automatically perform full JSON Schema validation before execution. Enforce required fields, enums, and business constraints in the application or remote skill. The manifest loader checks names, descriptions, object structure, and duplicate names. Direct construction of `RemoteSkillDefinition` does not imply those loader checks ran.
+
+The default `execute_remote_skill` executor calls `invoke_skill`, then polls with `poll_skill`, returning text only after completion. Input-required or authentication-required states end the current wait with an error. A timeout does not guarantee the remote task was canceled.
+
+A custom executor accepts workflow text plus `tool_context` and `timeout` keyword arguments, and returns a string. This example prepares an executor that inspects serialized input without executing a remote skill:
+
+```python lines
+import json
+from veadk.tools.builtin_tools.remote_skills import load_remote_skill_definitions, build_remote_skill_tools
+
+
+def preview_executor(workflow_prompt, *, tool_context, timeout):
+    payload = json.loads(workflow_prompt)
+    return json.dumps({"skill": payload["skill_name"], "arguments": payload["arguments"], "timeout": timeout})
+
+
+definitions = load_remote_skill_definitions('{"remote_skills":[{"name":"report_writer","description":"Write a report","input_schema":{"type":"object"}}]}')
+functions = build_remote_skill_tools(definitions, executor=preview_executor)
+print([function.__name__ for function in functions])
+print(preview_executor(
+    json.dumps({"skill_name": "report_writer", "arguments": {"format": "pdf"}}),
+    tool_context=None, timeout=600,
+))
+```
+
+Register `functions` using `Agent(tools=functions)` to use the custom executor in an agent; the runtime injects context. The example builds tools and directly checks the custom executor input and output, without calling a model or sandbox.

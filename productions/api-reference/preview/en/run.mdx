@@ -3,9 +3,9 @@ title: "Agent execution"
 zh_link: "/productions/api-reference/preview/zh/run"
 ---
 
-Send a message to a session and receive agent events as a complete response or a stream
+Create a session under the target application and user before submitting a message. `/run` returns an event array after completion; `/run_sse` streams events, requiring the client to handle in-stream errors and read until closure
 
-For Harness invocation settings and request models, see [Harness Runtime API](/productions/api-reference/preview/en/harness-runtime/overview)
+Calls save session events, and model or tool execution can incur charges or perform external actions. Harness overrides and streaming behavior differ; see [Harness Runtime API](/productions/api-reference/preview/en/harness-runtime/overview)
 
 | Method | Path | Endpoint |
 | --- | --- | --- |

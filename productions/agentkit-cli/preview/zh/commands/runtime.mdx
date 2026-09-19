@@ -5,13 +5,21 @@ en_link: "/productions/agentkit-cli/preview/en/commands/runtime"
 
 `runtime` 命令组用于管理 AgentKit 运行时，涵盖列表、详情查看、日志获取、版本历史、发布、更新与删除等操作。
 
+先使用具备运行时管理权限的账号登录。运行时按云厂商和区域隔离；示例名称应替换为 `runtime list` 返回的实际名称，自动化中优先保存并使用运行时 ID。BytePlus 查询示例：
+
+```bash lines
+agentkit --provider byteplus runtime list --region ap-southeast-1 --project default
+```
+
+`--json` 在查询命令中表示输出 JSON，在 `runtime update` 中则接受请求体 JSON，二者不可混用
+
 ## runtime list
 
 列出所有运行时。
 
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 | `-p, --project <name>` | 项目名称。 | default |
 | `--json` | 输出原始 JSON。 | `false` |
 | `--gateway-mode <mode>` | 按 `Shared` 或 `Exclusive` 筛选 | — |
@@ -28,7 +36,7 @@ agentkit runtime list --project demo
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 | `--rev <n>` | 查看指定版本而非当前版本。 | 当前版本 |
 | `--json` | 输出原始 JSON。 | `false` |
 
@@ -38,6 +46,10 @@ agentkit runtime show my-agent --rev 3
 
 使用 `--json` 查看当前运行时时，如果该运行时绑定了 Tool，输出会包含 `toolId`。
 
+<Warning>
+删除运行时会停止该服务，现有调用方将无法继续使用它。先检查绑定资源和调用方，确认名称、ID 与区域；`--yes` 会跳过确认
+</Warning>
+
 ## runtime delete
 
 删除运行时。
@@ -45,7 +57,7 @@ agentkit runtime show my-agent --rev 3
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 
 ```bash lines
@@ -61,7 +73,7 @@ agentkit runtime delete my-agent --yes
 | `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
 | `-i, --instance <name>` | 实例名称。 | 自动解析 |
 | `-n, --limit <n>` | 日志行数；`0` 表示全部。 | 服务端默认 |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash lines
@@ -76,7 +88,7 @@ agentkit runtime logs my-agent --limit 200
 | --- | --- | --- |
 | `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
 | `-i, --instance <name>` | 要接入的实例；省略时选用一个就绪实例，存在多个时会提示选择。 | 自动解析 |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 
 ```bash lines
 agentkit runtime attach my-agent
@@ -89,12 +101,16 @@ agentkit runtime attach my-agent
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 | `--json` | 输出原始 JSON。 | `false` |
 
 ```bash lines
 agentkit runtime versions my-agent
 ```
+
+<Warning>
+`runtime release` 与 `runtime update --auto-release` 会改变线上运行版本，调整计算资源也可能改变费用。`--no-wait` 只表示请求已提交，不表示新版本已就绪
+</Warning>
 
 ## runtime release
 
@@ -104,7 +120,7 @@ agentkit runtime versions my-agent
 | --- | --- | --- |
 | `<runtime>` | 运行时 id（`r-...`）或名称。必填。 | — |
 | `--rev <n>` | 要发布的版本号。 | 最新版本 |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 | `--no-wait` | 立即返回，不等待进入 `Ready` 状态。 | `false` |
 
 ```bash lines
@@ -136,7 +152,7 @@ agentkit runtime release my-agent --rev 3
 | `--envs-json <json>` | 以 JSON 数组形式提供的环境变量，例如 `'[{"Key":"K","Value":"V"}]'`。 | — |
 | `--tags-json <json>` | 以 JSON 数组形式提供的标签。 | — |
 | `--json <jsonString>` | 高级：合并进请求体的 JSON 对象。 | — |
-| `-r, --region <region>` | Volcengine 区域。 | 自动检测 |
+| `-r, --region <region>` | 所选云厂商的区域。 | 自动检测 |
 | `--auto-release` | 更新后立即发布新版本。 | `false` |
 | `--no-wait` | 立即返回，不等待运行时稳定。 | `false` |
 
@@ -153,3 +169,15 @@ agentkit runtime list --gateway-mode Exclusive --gateway-instance-id gateway-exa
 ```
 
 网关模式、网关实例与网络配置只能在创建时设置。`runtime update --json` 不允许修改这些字段；需要不同网关时，应使用新的运行时名称创建，并迁移调用方
+
+## 检查发布结果
+
+先用 `runtime versions` 确认版本号，再用 `runtime show` 检查当前状态。实例未就绪时使用 `runtime logs` 排查启动失败；日志可能包含用户请求和业务数据，应按项目的数据要求处理
+
+```bash lines
+agentkit runtime versions my-agent
+agentkit runtime show my-agent
+agentkit runtime logs my-agent --limit 200
+```
+
+`runtime attach` 中的命令直接作用于运行实例，修改不会自动回写本地项目或构建镜像。需要持续生效的修改应从项目重新构建与发布

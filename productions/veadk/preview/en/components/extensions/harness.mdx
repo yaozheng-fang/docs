@@ -28,20 +28,22 @@ pip install "veadk-python[harness]"
 
 The in-process mode builds a plugin list via `build_harness_plugins()` and attaches it to the `Runner`:
 
-```python lines
+```python title="app.py" lines
+import asyncio
 from veadk.extensions.harness.plugins import build_harness_plugins
 from veadk import Agent, Runner
 
 agent = Agent(name="research_agent")
-runner = Runner(
-    agent=agent,
-    app_name="research",
-    plugins=build_harness_plugins(
-        components=["invocation_context", "compactor", "response_verification"],
-        profile="research",
-    ),
+plugins = build_harness_plugins(
+    components=["invocation_context", "compactor", "response_verification"],
+    profile="research",
 )
+runner = Runner(agent=agent, app_name="research", plugins=plugins)
+print("Plugins:", [plugin.name for plugin in plugins])
+print(asyncio.run(runner.run("Explain what evidence a research report needs")))
 ```
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model), save as `app.py`, and run `python app.py`. It should print plugin names followed by an agent response. Response verification uses rules and does not guarantee factual correctness. Compression can remove detail, so evaluate it for your task
+
 
 ### Plugin capabilities
 
@@ -74,7 +76,7 @@ Related environment variables:
 | `HARNESS_STORE_PATH` | — | Harness store path; uses in-memory storage when unset |
 | `HARNESS_VERIFIER_MODE` | `observe` | Answer verification mode, either `observe` or `block` |
 
-Both `HARNESS_ENHANCE_*` and `HARNESS_*` prefixed variables are read; the `ENHANCE` prefix takes precedence.
+Components and profile prefer `HARNESS_ENHANCE_COMPONENTS` and `HARNESS_ENHANCE_PROFILE`, then their counterparts without `ENHANCE`. Character limits, storage path, compression provider, and verifier mode prefer the variables without `ENHANCE`. There is no single prefix-precedence rule for all settings
 
 ## Managed Sidecar mode
 
@@ -93,10 +95,12 @@ plugins = extension.plugins()  # Returns an empty list in managed Sidecar mode
 
 <Note>
   `HarnessExtension` supports the context manager protocol and automatically closes the Sidecar on exit:
-  ```python lines
-  with HarnessExtension.from_env() as extension:
-      ...
-  ```
+```python lines
+from veadk.extensions.harness import HarnessExtension
+
+with HarnessExtension.from_env() as extension:
+    print(extension.sidecar_status_payload())
+```
 </Note>
 
 ### Enable via constructor parameter
@@ -221,3 +225,9 @@ context = HarnessInvocationRef(session_id="session-1", invocation_id="run-1")
 builder = HarnessInvocationContextBuilder()
 bundle = builder.prepare_context(context, user_input="Summarize these tool results.")
 ```
+
+## Checking Sidecar status
+
+After setting the environment, create `HarnessExtension` before constructing the agent. Call `close()` when finished or use a context manager. Inspect `sidecar_status_payload()`: `ok` indicates successful startup; `degraded` indicates fallback and does not prove enhancements are active. `HARNESS_SIDECAR_FAIL_OPEN=true` allows execution to continue after startup failure by default. Set it to `false` if Sidecar is mandatory
+
+See [Harness deployment](/productions/veadk/preview/en/deploy/harness) for the standalone service's HTTP API, sessions, and deployment. Sidecar bindings affect model and MCP request destinations; confirm upstream endpoints and credential sources before use

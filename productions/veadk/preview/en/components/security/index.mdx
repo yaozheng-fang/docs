@@ -3,26 +3,27 @@ title: "Overview"
 zh_link: "/productions/veadk/preview/zh/components/security"
 ---
 
-VeADK's security is built on [Agent Identity](https://console.volcengine.com/identity) — Volcengine's unified identity and permission platform, which handles user authentication, workload identity, third-party credential brokering, and authorization to keep an agent's inbound and outbound operations secure and compliant.
+Security configuration covers caller identity, tool permissions, and data handling. VeADK provides authentication middleware, Agent Identity integration, content moderation callbacks, and Trusted MCP connections. Select the capabilities required by your application
 
-## Two directions
+## Capabilities
 
-- **[Inbound authentication](/productions/veadk/preview/en/components/security/inbound)**: verify the identity of requests coming into the agent. Supports API keys and OAuth2 (single sign-on and JWT), handled by the API gateway or in-app middleware.
-- **[Outbound authentication](/productions/veadk/preview/en/components/security/outbound)**: credential brokering when the agent calls third-party services. Agent Identity encrypts and stores API keys and OAuth tokens, supports OAuth2 M2M and user federation, keeps credentials out of your code, and rotates and refreshes them automatically.
+| Capability | Purpose | Integration point |
+| --- | --- | --- |
+| [Inbound authentication](/productions/veadk/preview/en/components/security/inbound) | Verify callers of the application | Application ingress or gateway |
+| [Outbound authentication](/productions/veadk/preview/en/components/security/outbound) | Provide credentials for tools calling external services | Function tools or MCP toolsets |
+| [Content safety](/productions/veadk/preview/en/components/security/content-safety) | Moderate text around model and tool calls | Agent callbacks |
+| [Trusted MCP](/productions/veadk/preview/en/components/security/trusted-mcp) | Connect to MCP services with remote attestation | MCP connection settings |
 
-## Core capabilities
+## Inbound and outbound authentication
 
-- **User identity management**: user pools, enterprise IdP (SAML/OIDC), and third-party identity federation.
-- **Workload identity management**: assign each agent and tool a unique digital identity with attribute tags.
-- **Third-party credential brokering**: encrypt and store API keys and OAuth tokens, eliminating plaintext credential leaks.
-- **Authorization**: dynamic, attribute- and context-based access control for fine-grained permissions.
+Inbound authentication establishes who calls the application; the application must still authorize access to sessions and resources. Outbound authentication supplies credentials for third-party calls; the service and credential scope determine permission. Setting `Runner.user_id` does not perform either task
 
 ## Content safety
 
-Beyond identity and credentials, the [content-safety guardrail](/productions/veadk/preview/en/components/security/content-safety) uses the Volcengine LLM Application Firewall to review an agent's input and output at each stage and block unsafe content.
+Moderation depends on configured policies and service responses. The current guardrail can continue execution when requests time out or HTTP errors occur. It should not be the only mandatory blocking control; see [Content safety](/productions/veadk/preview/en/components/security/content-safety)
 
 ## Trusted execution
 
-When you need end-to-end trust, [Trusted MCP](/productions/veadk/preview/en/components/security/trusted-mcp) adds component attestation and encrypted communication on top of the standard MCP protocol, combining with confidential computing to build a fully trusted agent.
+Trusted MCP protects tool communication configured to use that connection. Model endpoints, other tools, logs, and storage require separate controls; enabling Trusted MCP does not automatically protect the entire application
 
-For activation and detailed configuration, see the [Agent Identity documentation](https://www.volcengine.com/docs/86848/2080920?lang=zh).
+See the [Agent Identity documentation](https://www.volcengine.com/docs/86848/2080920?lang=zh) for activation and permissions. Volcengine examples use resources in the selected region. BytePlus deployments need their own identity configuration and credentials, not Volcengine user pools or callback addresses

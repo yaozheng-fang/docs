@@ -5,6 +5,12 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/build"
 
 `build` builds the runtime image described by the lifecycle config. The build strategy comes from `common.launch_type` in `agentkit.yaml`: `local` builds with local Docker, `cloud` builds in the cloud, and `hybrid` builds locally before pushing to the cloud container registry.
 
+Run from an initialized project, or select an existing lifecycle configuration with `--config-file`. `local` and `hybrid` require local Docker; `cloud` requires build, registry, and object-storage permissions for the selected provider
+
+<Warning>
+Cloud builds and image pushes can create or use billable resources. `--regenerate-dockerfile` overwrites an existing Dockerfile; preserve custom changes first
+</Warning>
+
 ## build
 
 | Flag / Argument | Description | Default |
@@ -18,3 +24,5 @@ agentkit build --config-file agentkit.yaml --platform linux/amd64
 ```
 
 After a successful build, the CLI writes image id, image URL, build timestamp, or cloud build artifact state back to `agentkit.yaml`. If no Dockerfile exists, the CLI generates a default Dockerfile from the language, entry point, dependency file, and cloud provider.
+
+A successful build makes an image available for deployment; it does not update the runtime. Run `agentkit deploy` with the same configuration. Resolve dependency, Dockerfile, or registry-permission errors before rebuilding

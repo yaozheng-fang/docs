@@ -3,12 +3,11 @@ title: "Overview"
 zh_link: "/productions/veadk/preview/zh/components/extensions"
 ---
 
-Extensions are optional modules separate from the core capabilities, used to
-connect VeADK agents to external channels, add safeguards, and similar. Import
-them as needed.
+Extensions connect agents to messaging channels or adjust context, tool results, and response checks during a run. Choose a guide by task; moderation configuration is covered in Security
 
-| Extension | Purpose |
-| --- | --- |
-| Feishu | Bridges a Feishu bot with a `Runner`, so an agent can send and receive messages directly in Feishu conversations |
-| Safeguards | Reviews content at each stage via callbacks and blocks unsafe input and output |
-| Harness | Prepares context, compacts tool results, and verifies answers for each turn; supports in-process plugins and managed Sidecar modes |
+| Extension | Purpose | Prerequisites |
+| --- | --- | --- |
+| [Feishu messaging](/productions/veadk/preview/en/components/extensions/feishu-channel) | Receive bot messages, run them through Runner, and reply | Bot credentials, message events, read and send permissions |
+| [Harness](/productions/veadk/preview/en/components/extensions/harness) | In-process enhancement plugins or a managed Sidecar | Model configuration; Sidecar also requires a runtime |
+
+[Content safety](/productions/veadk/preview/en/components/security/content-safety) uses callbacks to call an external moderation service. [Harness deployment](/productions/veadk/preview/en/deploy/harness) covers creating and deploying a standalone runtime, which has a different setup from in-process plugins

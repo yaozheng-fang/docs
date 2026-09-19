@@ -17,3 +17,7 @@ agentkit status --config-file agentkit.yaml --verbose
 ```
 
 Output includes available endpoint, container id, runtime id, image, uptime, and health check state. Detailed metadata is printed as JSON for troubleshooting config or runtime state.
+
+Use this command from a project where `deploy` or `launch` has run. It reads that configuration's deployment record rather than listing every runtime in the account. Use [`runtime show`](/productions/agentkit-cli/preview/en/commands/runtime#runtime-show) to inspect another runtime by name or ID
+
+If no deployment record is found, check the directory and `--config-file` before assuming a cloud service was deleted. A healthy runtime still needs an application call to verify its model, tools, and business logic

@@ -3,31 +3,44 @@ title: "Evaluation"
 zh_link: "/productions/api-reference/preview/zh/evaluation"
 ---
 
-Manage evaluation sets and cases, run evaluations, and read results
+Evaluation sets contain cases used to check agent behavior. An evaluation runs those cases again and records metric results. This page indexes the Agent API Server development evaluation endpoints
 
-<Note>
-These endpoints use `/dev/...` paths and require the development server. A regular `adk api_server` does not expose them. See [Agent API Server overview](/productions/api-reference/preview/en/agent-api-server/overview) for startup options
-</Note>
+These `/dev/...` endpoints require the development UI and evaluation dependencies; see [Agent API Server overview](/productions/api-reference/preview/en/agent-api-server/overview). Harness deployments use their [corresponding evaluation endpoints](/productions/api-reference/preview/en/harness-runtime/create-eval-set)
+
+<Warning>
+Evaluation can call models and tools, incur charges, or perform external actions. Review user data, tool permissions, and metric settings when preparing cases
+</Warning>
+
+## Evaluation workflow
+
+Create a set, add cases from existing sessions, and run an evaluation with selected metrics. Read, replace, or delete individual cases as needed. Check per-case status and metric results to determine whether the evaluation passed
+
+| Method | Path | Endpoint |
+| --- | --- | --- |
+| POST | `/dev/apps/{app_name}/eval-sets` | [Create an evaluation set](/productions/api-reference/preview/en/agent-api-server/create-eval-set) |
+| GET | `/dev/apps/{app_name}/eval-sets` | [List evaluation sets](/productions/api-reference/preview/en/agent-api-server/list-eval-sets) |
+| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/add-session` | [Add a session as an evaluation case](/productions/api-reference/preview/en/agent-api-server/add-session-to-eval-set) |
+| GET | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals` | [List evaluation cases](/productions/api-reference/preview/en/agent-api-server/list-eval-cases) |
+| GET | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [Get an evaluation case](/productions/api-reference/preview/en/agent-api-server/get-eval-case) |
+| PUT | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [Update an evaluation case](/productions/api-reference/preview/en/agent-api-server/update-eval-case) |
+| DELETE | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [Delete an evaluation case](/productions/api-reference/preview/en/agent-api-server/delete-eval-case) |
+| GET | `/dev/apps/{app_name}/metrics-info` | [List evaluation metrics](/productions/api-reference/preview/en/agent-api-server/list-eval-metrics) |
+| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/run` | [Run an evaluation](/productions/api-reference/preview/en/agent-api-server/run-evaluation) |
+| GET | `/dev/apps/{app_name}/eval-results` | [List evaluation results](/productions/api-reference/preview/en/agent-api-server/list-eval-results) |
+| GET | `/dev/apps/{app_name}/eval-results/{eval_result_id}` | [Get an evaluation result](/productions/api-reference/preview/en/agent-api-server/get-eval-result) |
+
+## Compatibility endpoints
+
+These endpoints remain available for existing clients. Check each page for request and response differences before migration; changing only the URL can be insufficient. Listing evaluation cases currently uses only the underscore path in the table above
 
 | Method | Path | Endpoint |
 | --- | --- | --- |
 | PUT | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}` | [Update a case using the compatibility path](/productions/api-reference/preview/en/agent-api-server/update-eval-case-legacy) |
-| GET | `/dev/apps/{app_name}/eval-sets` | [List evaluation sets](/productions/api-reference/preview/en/agent-api-server/list-eval-sets) |
-| GET | `/dev/apps/{app_name}/eval-results/{eval_result_id}` | [Get an evaluation result](/productions/api-reference/preview/en/agent-api-server/get-eval-result) |
 | POST | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/run_eval` | [Run an evaluation using the legacy path](/productions/api-reference/preview/en/agent-api-server/run-evaluation-legacy) |
 | GET | `/dev/apps/{app_name}/eval_results` | [List evaluation results as an array](/productions/api-reference/preview/en/agent-api-server/list-eval-results-legacy) |
 | POST | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/add_session` | [Add a session using the compatibility path](/productions/api-reference/preview/en/agent-api-server/add-session-to-eval-set-legacy) |
-| GET | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals` | [List evaluation cases](/productions/api-reference/preview/en/agent-api-server/list-eval-cases) |
-| GET | `/dev/apps/{app_name}/metrics-info` | [List evaluation metrics](/productions/api-reference/preview/en/agent-api-server/list-eval-metrics) |
 | DELETE | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}` | [Delete a case using the compatibility path](/productions/api-reference/preview/en/agent-api-server/delete-eval-case-legacy) |
 | GET | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}` | [Get a case using the compatibility path](/productions/api-reference/preview/en/agent-api-server/get-eval-case-legacy) |
-| DELETE | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [Delete an evaluation case](/productions/api-reference/preview/en/agent-api-server/delete-eval-case) |
-| POST | `/dev/apps/{app_name}/eval-sets` | [Create an evaluation set](/productions/api-reference/preview/en/agent-api-server/create-eval-set) |
 | GET | `/dev/apps/{app_name}/eval_results/{eval_result_id}` | [Get an evaluation result using the legacy path](/productions/api-reference/preview/en/agent-api-server/get-eval-result-legacy) |
-| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/add-session` | [Add a session as an evaluation case](/productions/api-reference/preview/en/agent-api-server/add-session-to-eval-set) |
-| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/run` | [Run an evaluation](/productions/api-reference/preview/en/agent-api-server/run-evaluation) |
 | POST | `/dev/apps/{app_name}/eval_sets/{eval_set_id}` | [Create an evaluation set using a path ID](/productions/api-reference/preview/en/agent-api-server/create-eval-set-legacy) |
-| GET | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [Get an evaluation case](/productions/api-reference/preview/en/agent-api-server/get-eval-case) |
-| PUT | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [Update an evaluation case](/productions/api-reference/preview/en/agent-api-server/update-eval-case) |
-| GET | `/dev/apps/{app_name}/eval-results` | [List evaluation results](/productions/api-reference/preview/en/agent-api-server/list-eval-results) |
 | GET | `/dev/apps/{app_name}/eval_sets` | [List evaluation sets as an array](/productions/api-reference/preview/en/agent-api-server/list-eval-sets-legacy) |

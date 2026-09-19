@@ -5,27 +5,97 @@ en_link: "/productions/veadk/preview/en/components/tools/custom-mcp"
 
 ## 功能说明
 
-如果内置接入方式都无法满足需求，可直接使用 Google ADK 的 `MCPToolset` 连接任意 MCP Server。注册后，智能体会自动加载 MCP Server 暴露的工具，并在推理过程中按需调用。
+使用 Google ADK 的 `McpToolset` 连接 MCP Server，将返回的工具集放入 `Agent(tools=[toolset])`。旧名称 `MCPToolset` 保留兼容。远端服务需提供支持的 MCP 地址与凭证；本地服务需有可执行命令及其依赖
 
 ## 使用方法
 
-```python lines
-from veadk import Agent
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import (
-    StreamableHTTPConnectionParams,
-)
+先设置 `MCP_SERVER_URL` 与 `MCP_SERVER_TOKEN`，再运行以下示例验证工具发现。仅列出工具不需要推理模型，注册到智能体并调用时还需完成[模型配置](/productions/veadk/preview/zh/components/agent/model)
 
-toolset = MCPToolset(
-    connection_params=StreamableHTTPConnectionParams(
-        url="https://your-mcp-endpoint",
-        headers={"Authorization": "Bearer your-api-key-here"},
-    ),
-)
+```python title="mcp_connection.py" lines
+import asyncio
+import os
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 
-agent = Agent(tools=[toolset])
+async def main():
+    toolset = McpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url=os.environ["MCP_SERVER_URL"],
+            headers={"Authorization": f"Bearer {os.environ['MCP_SERVER_TOKEN']}"},
+        ),
+    )
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
 ```
+
+### 本地标准输入输出连接
+
+将以下两个文件保存到同一目录，安装 `python -m pip install "mcp[cli]"`，然后运行 `python check_local_mcp.py`。预期输出包含 `add`；服务器由客户端启动，示例结束后关闭
+
+```python title="local_mcp_server.py" lines
+from mcp.server.fastmcp import FastMCP
+
+server = FastMCP("calculator")
+
+@server.tool()
+def add(a: float, b: float) -> float:
+    """Add two numbers."""
+    return a + b
+
+if __name__ == "__main__":
+    server.run(transport="stdio")
+```
+
+```python title="check_local_mcp.py" lines
+import asyncio
+import sys
+from pathlib import Path
+from mcp import StdioServerParameters
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
+
+async def main():
+    toolset = McpToolset(connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command=sys.executable,
+            args=[str(Path(__file__).with_name("local_mcp_server.py"))],
+        ),
+        timeout=10.0,
+    ))
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
+```
+
+## 参数
+
+以下构造参数对应 Google ADK 2.2.0；使用其他版本时以安装版本支持的参数为准
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `connection_params` | `StdioConnectionParams \| StdioServerParameters \| SseConnectionParams \| StreamableHTTPConnectionParams` | 必填 | 传输方式、服务地址或本地启动命令 |
+| `tool_filter` | `list[str] \| Callable` | `None` | 限制暴露的工具；None 表示全部工具 |
+| `tool_name_prefix` | `str \| None` | `None` | 工具名称前缀，避免重名 |
+| `errlog` | `TextIO` | `sys.stderr` | 本地服务器诊断输出 |
+| `auth_scheme` | `AuthScheme \| None` | `None` | 认证方案 |
+| `auth_credential` | `AuthCredential \| None` | `None` | 认证凭证 |
+| `require_confirmation` | `bool \| Callable` | `False` | 工具执行前请求确认 |
+| `header_provider` | `Callable \| None` | `None` | 从当前上下文构造请求头 |
+| `progress_callback` | `Callable \| None` | `None` | 接收服务进度更新 |
+| `use_mcp_resources` | `bool` | `False` | 暴露 MCP 资源 |
+| `sampling_callback` | `Callable \| None` | `None` | 处理服务端采样请求 |
+| `sampling_capabilities` | `SamplingCapability \| None` | `None` | 声明支持的采样能力 |
+| `credential_key` | `str \| None` | `None` | 查找凭证使用的键名 |
+
+Streamable HTTP 连接使用 `url`（必填）、`headers=None`、`timeout=5.0`、`sse_read_timeout=300.0`、`terminate_on_close=True`，时间单位为秒。`httpx_client_factory` 默认使用 SDK 的 HTTP 客户端工厂，仅需自定义传输时覆盖。本地连接使用 `StdioConnectionParams(server_params=..., timeout=5.0)`；SSE 服务使用 `SseConnectionParams`，不要把 SSE 与 Streamable HTTP 地址混用
 
 ## 会话中断后的自动重连
 
-当 MCP Server 重启、缩容或会话过期导致连接失效时，VeADK 会清理已失效的缓存会话、重新连接，并自动重试当前的工具加载或调用一次。若重连后的重试仍然失败，错误会返回给调用方；主动取消的任务不会触发重试。
+VeADK 在连接失效后重新建立 MCP 会话，并对符合重连条件的工具加载或调用重试一次；再次失败时向调用方返回错误，主动取消不会触发重试。会产生外部变更的工具仍需由服务提供幂等保障，连接重试不等同于业务操作只执行一次

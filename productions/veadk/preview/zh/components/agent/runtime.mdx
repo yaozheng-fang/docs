@@ -3,437 +3,486 @@ title: "运行时"
 en_link: "/productions/veadk/preview/en/components/agent/runtime"
 ---
 
-运行时决定智能体「内层循环」如何执行——即每一轮如何调用模型、解析意图、调用工具。默认运行时基于 Google ADK 的内置执行流程，开箱即用；你也可以切换执行后端，或在执行流程上插入统一的处理逻辑，而无需改动智能体本身。
+运行时负责组织模型调用、工具执行和结果返回。VeADK 默认使用 Google ADK；需要编码类执行后端时，可以选择 `codex` 或 `piagent`。切换前应检查工具、模型配置和回调的兼容性
+
+以下示例均需先完成[模型配置](/productions/veadk/preview/zh/components/agent/model)。火山引擎与 BytePlus 分别使用对应平台的模型端点和 API Key
 
 ## 默认运行时
 
-默认即为 ADK 运行时，无需额外配置：
+不设置 `runtime` 时等同于 `runtime="adk"`，适用于标准模型调用、结构化输出和工具协作
 
-```python lines
-from veadk import Agent
+```python main.py lines
+import asyncio
+from veadk import Agent, Runner
 
-agent = Agent(name="assistant")  # 默认使用 ADK 运行时
+
+agent = Agent(name="assistant", runtime="adk")
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain what an agent runtime does.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+运行 `python main.py` 可看到最终文本回复。需要处理事件和流式输出时使用 `Runner.run_async`
 
 ## 同步工具并行执行
 
-在默认的 ADK 运行时中，当模型在同一轮中发起多个同步工具调用时，这些调用默认串行执行，会阻塞事件循环。通过 `Agent` 的 `tool_thread_pool_config` 参数配置线程池后，同步工具（如 `run_code`）可在独立线程中并行执行，不再阻塞事件循环。
+默认 ADK 运行时中的同步函数可能阻塞其他异步任务。设置 `tool_thread_pool_config` 后，同步工具可在线程池执行；当模型同一轮发出多个调用时，可并行处理
 
-```python title="agent.py" lines
-from veadk import Agent
+```python parallel_tools.py lines
+import asyncio
+from veadk import Agent, Runner
 from google.adk.agents.run_config import ToolThreadPoolConfig
 
+def lookup_stock(product: str) -> dict:
+    """Return the demo stock count for a product."""
+    return {"product": product, "stock": {"notebook": 12, "pen": 40}.get(product, 0)}
+
 agent = Agent(
-    name="assistant",
-    model_name="doubao-seed-2-1-pro-260628",
-    tools=[run_code],
+    name="stock_assistant",
+    tools=[lookup_stock],
     tool_thread_pool_config=ToolThreadPoolConfig(max_workers=4),
 )
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Check stock for notebook and pen.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-也可以在 `RunConfig` 中设置 `tool_thread_pool_config`，优先级高于 `Agent` 上的配置。
-
-`ToolThreadPoolConfig` 参数：
+运行 `python parallel_tools.py` 可获得两个商品的库存。示例展示配置方式，模型是否同一轮发起多个调用由模型决定；线程池不会主动拆分任务。工具若共享可变数据或连接，需保证并发访问安全
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `max_workers` | `int` | `4` | 线程池中的最大工作线程数，取值范围为不小于 1 的正整数。 |
+| `ToolThreadPoolConfig.max_workers` | `int` | `4` | 最大工作线程数，必须大于等于 1 |
 
-<Note>
-  该配置仅影响默认 ADK 运行时中的同步工具执行；`codex` 和 `piagent` 等外部运行时具有各自的工具执行机制，不受此配置影响。
-</Note>
-
-当配置了线程池且同一轮中存在多个 `run_code` 调用时，每个调用的沙箱会话标识会附加各自的函数调用标识，确保各调用在相互隔离的沙箱中执行。可通过环境变量 `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` 控制此行为，详见[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox#并行调用隔离)。
+`RunConfig.tool_thread_pool_config` 优先于 `Agent` 上的配置。该设置只影响 ADK 同步工具，不控制 `codex` 或 `piagent` 的执行机制。并行 `run_code` 的会话隔离及 `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` 见[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox#并行调用隔离)
 
 ## 切换执行后端
 
-通过 `runtime` 选择内层循环的执行后端：
-
-```python lines
-agent = Agent(name="assistant", runtime="codex")
-```
-
-| 取值 | 说明 |
-| --- | --- |
-| `adk`（默认） | 使用 Google ADK 内置的执行流程，适用于绝大多数场景。 |
-| `codex` | 使用 Codex SDK 执行内层循环，并桥接智能体的函数工具、MCP 工具与技能。 |
-| `piagent` | 通过 PiAgent RPC 执行内层循环，并桥接函数工具、MCP 工具与技能。1.0.5 新增。 |
-
-
-<Note>
-  `codex` 和 `piagent` 运行时不构建 LiteLLM 客户端，因此 `model_fallbacks` 参数会被忽略。如需模型回退能力，请使用默认的 ADK 运行时，或在 `model` 参数传入的自定义模型对象上配置回退。详见[模型](/productions/veadk/preview/zh/components/agent/model#配置跨提供商回退模型)。
-</Note>
-
+| `runtime` | 用途 | 额外准备 |
+| :--- | :--- | :--- |
+| `adk` | 标准智能体执行，默认值 | 无额外运行时安装 |
+| `codex` | 通过 Codex SDK 执行编码任务 | 安装 `veadk-python[codex]` |
+| `piagent` | 通过 PiAgent RPC 执行任务 | 提供可执行文件或允许首次下载安装 |
 
 ### 使用 Codex 运行时
 
-Codex 运行时依赖可选依赖组 `codex`，该依赖不会随 VeADK 默认安装。使用前安装所需依赖：
+安装包含 SDK 与 CLI 二进制的可选依赖组：
 
 ```bash lines
 pip install "veadk-python[codex]"
 ```
 
-`codex` 依赖组包含 OpenAI Codex SDK 与 Codex CLI 二进制文件。
+模型仍通过 `model_name`、`model_api_base` 和 `model_api_key` 配置。默认采用隔离工作区、`workspace_write`、关闭网络和拒绝提权；以下示例显式保留这些设置
 
-模型名称、API 地址与 API Key 仍使用智能体的模型配置：
-
-```python lines
-from veadk import Agent
-
-agent = Agent(
-    name="coding_assistant",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-)
-```
-
-工具和技能沿用标准的 `Agent` 配置，无需为 Codex 运行时单独注册：
-
-- `tools` 中的[函数工具](/productions/veadk/preview/zh/components/tools/custom-function)会作为可调用工具提供给模型；
-- `tools` 中的 [MCPToolset](/productions/veadk/preview/zh/components/tools/custom-mcp)会完成工具发现与调用；
-- 通过 `SkillToolset` 或 VeADK 旧入口加载的[技能](/productions/veadk/preview/zh/components/agent/skills)会交由 Codex 的技能机制使用。
-
-### Codex 安全配置
-
-Codex 运行时默认采用面向多租户服务的最小权限配置：每次调用使用会话隔离的工作区、`workspace_write` 沙箱、禁用网络访问，并拒绝需要提权的操作。需要扩大权限时必须显式配置。
-
-通过 `Agent` 的 `codex_runtime_config` 参数传入 `CodexRuntimeConfig`：
-
-```python title="agent.py" lines
-from veadk import Agent
+```python codex_runtime.py lines
+import asyncio
+from veadk import Agent, Runner
 from veadk.runtime.codex import CodexRuntimeConfig
 
 agent = Agent(
-    name="assistant",
+    name="coding_assistant",
     runtime="codex",
     codex_runtime_config=CodexRuntimeConfig(
         sandbox="workspace_write",
-        approval_mode="auto_review",
-        network_access=True,
-        # 若需在已有工程内工作，显式指定目录；默认使用会话隔离目录。
-        workspace_root="/workspace/codex",
+        approval_mode="deny_all",
+        network_access=False,
     ),
 )
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Calculate the sum of integers from 1 to 100.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-`CodexRuntimeConfig` 的全部参数如下：
+运行 `python codex_runtime.py`。函数工具与 MCP 工具可通过 `Agent.tools` 注册，本地 ADK `SkillToolset` 中的技能可交给运行时使用；旧 `skills_mode` 的限制见下方兼容性表
+
+### Codex 安全配置
+
+`Agent.codex_runtime_config` 接受 `CodexRuntimeConfig` 或同字段字典
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `approval_mode` | `"deny_all"` \| `"auto_review"` | `"deny_all"` | 提权操作的审核策略。`deny_all` 拒绝所有提权请求；`auto_review` 由模型自审核决定是否执行。 |
-| `sandbox` | `"read_only"` \| `"workspace_write"` \| `"full_access"` | `"workspace_write"` | 沙箱级别。`read_only` 仅允许读取工作区；`workspace_write` 允许在工作区内读写；`full_access` 允许完整主机访问。 |
-| `network_access` | `bool` | `False` | 是否允许网络访问，仅在 `workspace_write` 沙箱下生效。 |
-| `workspace_root` | `str` \| `None` | `None` | 工作区根目录。未设置时使用会话隔离的临时目录。 |
-| `reuse_workspace` | `bool` | `False` | 是否在多次调用间复用同一工作区目录，仅在显式设置 `workspace_root` 时生效。 |
-| `reasoning_effort` | `"minimal"` \| `"low"` \| `"medium"` \| `"high"` \| `"xhigh"` | `"medium"` | 推理投入程度。 |
-| `personality` | `"none"` \| `"friendly"` \| `"pragmatic"` | `"pragmatic"` | 回复风格。 |
-| `max_tool_iterations` | `int` | `8` | 单轮内工具调用的最大迭代次数，取值范围 1–64。 |
-| `tool_timeout_seconds` | `float` \| `None` | `120.0` | 单次工具调用的超时秒数。 |
-
-以下环境变量可在不修改代码的情况下覆盖 `CodexRuntimeConfig` 的对应字段，优先级高于 `codex_runtime_config`：
-
-| 环境变量 | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `VEADK_CODEX_SANDBOX` | `str` | — | 覆盖 `sandbox`。 |
-| `VEADK_CODEX_APPROVAL_MODE` | `str` | — | 覆盖 `approval_mode`。 |
-| `VEADK_CODEX_WORKSPACE_ROOT` | `str` | — | 覆盖 `workspace_root`。 |
-| `VEADK_CODEX_NETWORK_ACCESS` | `str` | — | 覆盖 `network_access`，接受 `1`、`true`、`yes`、`on`（不区分大小写）为开启。 |
+| `approval_mode` | `"deny_all" \| "auto_review"` | `"deny_all"` | `deny_all` 拒绝提权请求；`auto_review` 自动批准所有此类请求，不经过人工审核 |
+| `sandbox` | `"read_only" \| "workspace_write" \| "full_access"` | `"workspace_write"` | 只读、工作区写入或完整主机访问 |
+| `network_access` | `bool` | `False` | 仅在 `workspace_write` 下控制网络 |
+| `workspace_root` | `str \| None` | `None` | 工作区根路径；未指定时创建隔离临时目录 |
+| `reuse_workspace` | `bool` | `False` | 配合显式 `workspace_root` 在调用间复用工作区 |
+| `reasoning_effort` | `"minimal" \| "low" \| "medium" \| "high" \| "xhigh"` | `"medium"` | 推理投入程度，实际支持取决于模型 |
+| `personality` | `"none" \| "friendly" \| "pragmatic"` | `"pragmatic"` | 回答风格 |
+| `max_tool_iterations` | `int` | `32` | 整轮调用中桥接 ADK 工具的迭代预算，范围 1–256，不是所有原生操作的统一上限 |
+| `tool_timeout_seconds` | `float \| None` | `120.0` | 单次桥接工具超时秒数，数值必须大于 0；`None` 不设置该超时 |
 
 <Warning>
-  `sandbox="full_access"` 与 `reuse_workspace=True` 会放宽不同调用之间的文件系统边界，仅应在受信任的环境中开启。生产环境应使用最小权限的隔离容器，并限制可访问的凭证、文件与网络目标。
+`auto_review` 会自动批准提权和文件修改请求，不是模型审核步骤。`full_access` 放宽主机访问，`reuse_workspace=True` 可能在调用间共享文件；仅在明确需要且可信的环境中设置。`network_access=False` 不能限制 `full_access`，该组合会在配置时被拒绝。`read_only` 也不使用这个网络开关
 </Warning>
+
+以下环境变量优先于构造配置：
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `VEADK_CODEX_SANDBOX` | 未设置 | 覆盖 `sandbox` |
+| `VEADK_CODEX_APPROVAL_MODE` | 未设置 | 覆盖 `approval_mode` |
+| `VEADK_CODEX_WORKSPACE_ROOT` | 未设置 | 覆盖 `workspace_root` |
+| `VEADK_CODEX_NETWORK_ACCESS` | 未设置 | 覆盖 `network_access`；`1`、`true`、`yes`、`on` 为开启，不区分大小写 |
 
 ### Codex 可观测性
 
-Codex 原生生命周期通知与 ADK Function/MCP 工具调用都会转换为标准 ADK Event，因此工具调用、结果、状态变更、确认与鉴权过程均可进入 Session、Trace 与前端展示。运行日志使用稳定的 `codex_*` 事件名，并包含 `invocation_id`、`call_id`、`tool`、`status`、`duration_ms` 等可归因字段。日志不会记录工具参数、工具结果、API Token、凭证或后端地址；Token 用量通过 `codex_event_type=token_usage` 事件及对应日志提供。
+运行时将生命周期通知、函数和 MCP 工具调用转换为 ADK 事件，可供会话、链路和前端消费。运行日志中的 `invocation_id`、`call_id`、`tool`、`status` 与 `duration_ms` 用于关联调用；token 用量通过 `codex_event_type=token_usage` 事件提供
+
+运行时日志不等同于每次模型调用的完整链路。事件、会话或自行配置的导出器可能包含任务与工具内容，接入日志系统时应控制访问和保留范围
 
 ### 配置临时错误重试
 
-Codex 运行时调用模型后端时，会对限流、服务端错误、服务过载和超时等临时错误进行重试。默认最多重试两次，可通过环境变量调整：
-
 | 环境变量 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `CODEX_SHIM_NUM_RETRIES` | `int` | `2` | 临时错误的最大重试次数；设为 `0` 可关闭重试。 |
-| `CODEX_SHIM_TIMEOUT` | `float` | `0` | 单次模型后端调用的超时秒数；`0` 表示使用底层客户端的默认超时。 |
+| :--- | :--- | :--- | :--- |
+| `CODEX_SHIM_NUM_RETRIES` | `int` | `2` | 限流、服务端错误、过载和超时等临时错误的最大重试次数；`0` 关闭 |
+| `CODEX_SHIM_TIMEOUT` | `float` | `0` | 单次模型后端请求超时秒数；`0` 使用客户端默认值 |
 
 ### 使用 PiAgent
 
-```python lines
-from veadk import Agent
+<Warning>
+PiAgent 在本机工作目录执行任务，内置工具可能读写文件和执行命令。配置目录隔离不等于操作系统沙箱；请使用可信项目及受限运行环境，并按需限制工具
+</Warning>
 
-agent = Agent(
-    name="coding_assistant",
-    runtime="piagent",
-    model_name="doubao-seed-2-1-pro-260628",
-)
+```python piagent_runtime.py lines
+import asyncio
+from veadk import Agent, Runner
+
+
+agent = Agent(name="coding_assistant", runtime="piagent")
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain the steps for checking a CSV file without modifying files.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-VeADK 不在 Python 安装包中内置 PiAgent 二进制文件。运行时按以下顺序查找：
-
-1. `PIAGENT_BINARY` 指向的可执行文件；
-2. `PIAGENT_INSTALL_DIR` 下的托管缓存，默认为 `~/.cache/veadk/piagent`；
-3. 若缓存不存在，从 PiAgent Release 下载并校验后安装。
+运行 `python piagent_runtime.py`。VeADK 依次查找 `PIAGENT_BINARY`、托管缓存；未找到时从 Pi Release 下载。下载只有在设置 `PIAGENT_BINARY_SHA256` 时才校验该摘要。离线与生产环境建议预先安装并指定可执行文件
 
 | 环境变量 | 默认值 | 说明 |
-| --- | --- | --- |
-| `PIAGENT_BINARY` | — | 已安装的 PiAgent 可执行文件路径。生产环境建议显式设置。 |
-| `PIAGENT_INSTALL_DIR` | `~/.cache/veadk/piagent` | 自动下载和缓存目录。 |
-| `PIAGENT_AGENT_DIR` | 每次运行创建临时目录 | PiAgent 的隔离配置与会话目录；不能指向用户真实的 `~/.pi/agent`。 |
-| `PIAGENT_WORKDIR` | 当前目录 | PiAgent 的工作目录。 |
-| `PIAGENT_TIMEOUT_SECONDS` | `600` | 单次执行超时秒数。 |
-| `PIAGENT_TOOL_ALLOWLIST` | 空 | 允许使用的内置工具，使用逗号分隔。 |
-| `PIAGENT_EXCLUDE_TOOLS` | 空 | 禁止使用的工具，使用逗号分隔。 |
+| :--- | :--- | :--- |
+| `PIAGENT_BINARY` | 未设置 | 已安装的可执行文件 |
+| `PIAGENT_INSTALL_DIR` | `~/.cache/veadk/piagent` | 下载与缓存目录 |
+| `PIAGENT_BINARY_URL` | Release 地址 | 自定义下载地址 |
+| `PIAGENT_BINARY_SHA256` | 未设置 | 下载归档的预期 SHA-256 |
+| `PIAGENT_BINARY_VERSION` | `latest` | 自动下载的版本 |
+| `PIAGENT_BINARY_REPO` | `earendil-works/pi` | Release 仓库 |
+| `PIAGENT_BINARY_PLATFORM` | 当前系统与架构 | 支持 Linux/macOS 的 amd64、arm64，以及 Windows amd64 |
+| `PIAGENT_AGENT_DIR` | 每次运行的临时目录 | 隔离配置与会话目录，不能指向真实 `~/.pi/agent` 或其子目录 |
+| `PIAGENT_ALLOW_PARENT_PI_CODING_AGENT_DIR` | `false` | 未显式指定目录时，允许使用父进程的 `PI_CODING_AGENT_DIR`，仍需满足隔离约束 |
+| `PIAGENT_WORKDIR` | 当前目录 | 任务工作目录 |
+| `PIAGENT_TIMEOUT_SECONDS` | `600` | 单次执行超时秒数 |
+| `PIAGENT_PROVIDER_ID` | `veadk` | Pi 中注册的提供商标识 |
+| `PIAGENT_MODEL_API` | `openai-completions` | Pi 使用的模型 API 类型 |
+| `PIAGENT_MODEL_API_KEY_ENV` | `VEADK_PI_MODEL_API_KEY` | 子进程接收模型 Key 的变量名称 |
+| `PIAGENT_DISABLE_TOOLS` | `false` | 禁用工具的开关；桥接工具注册时可能重新启用工具，不应作为隔离保证 |
+| `PIAGENT_DISABLE_BUILTIN_TOOLS` | `false` | 禁用 Pi 内置工具 |
+| `PIAGENT_TOOL_ALLOWLIST` | 空 | 逗号分隔的内置工具允许列表 |
+| `PIAGENT_EXCLUDE_TOOLS` | 空 | 逗号分隔的排除工具列表 |
+| `PIAGENT_DISABLE_EXTENSION_DISCOVERY` | `true` | 禁用自动发现扩展 |
+| `PIAGENT_ENABLE_EXTENSION_DISCOVERY` | 未设置 | 启用自动发现；存在对应 `DISABLE` 变量时后者优先 |
+| `PIAGENT_DISABLE_SKILL_DISCOVERY` | `true` | 禁用自动发现技能，不影响显式传入的技能 |
+| `PIAGENT_ENABLE_SKILL_DISCOVERY` | 未设置 | 启用自动发现；存在对应 `DISABLE` 变量时后者优先 |
+| `PIAGENT_PROJECT_TRUST` | `deny` | 项目信任策略：`deny`、`approve` 或 Pi 默认的 `default` |
 
-<Note>
-  自动安装需要运行环境能够访问 PiAgent Release。离线或受限网络环境应预先安装二进制文件，并通过 `PIAGENT_BINARY` 指定路径。
-</Note>
+### 运行时兼容性
+
+以下是切换到 `codex` 或 `piagent` 时需要检查的配置：
+
+| 配置 | 外部运行时行为 |
+| :--- | :--- |
+| 自定义 `model`、`output_schema`、`planner`、智能体级 `code_executor` | 不支持，配置时会报错 |
+| `include_contents="none"`、`enable_supervisor=True` | 不支持，配置时会报错 |
+| `generate_content_config` | 只支持 `system_instruction`；其他显式字段会报错 |
+| `model_name` 列表、`model_fallbacks` | 只使用主模型，忽略回退链 |
+| `model_provider` | 不通过 LiteLLM 选择提供商，需使用兼容的模型端点 |
+| `enable_responses`、`enable_responses_cache` | 不启用 ADK 的方舟 Responses 能力 |
+| `model_extra_config` | Codex 会转发；PiAgent 不使用 |
+| `knowledgebase`、`example_store` | 不自动提供相应内容；需要 ADK 或自行查询后放入指令 |
+| 旧 `skills_mode`、`enable_skills_checklist` | 不提供旧工具集的完整行为；使用 ADK 或适配的原生技能入口 |
+| `after_model_callback`、模型调用链路 | 按整轮结果处理，不能假定逐次模型调用都会产生回调和链路 |
+| `RunConfig.max_llm_calls` | Codex 在调用前检查；PiAgent 在已完成调用后计数，可能超出一次才终止 |
 
 ## 智能体转移
 
-Google ADK 的 `transfer_to_agent` 工具允许一个 LLM 智能体在运行时将控制权移交给智能体树中的另一个智能体，由目标智能体在同一个调用上下文中继续执行并直接输出结果。在默认的 ADK 运行时中，该能力由 ADK 的执行流程内置支持；`codex` 和 `piagent` 运行时现在同样支持该能力。
+`transfer_to_agent` 允许模型将当前任务转交给智能体树中的其他智能体，由目标继续执行并输出结果。ADK、Codex 与 PiAgent 均支持转交
 
-当使用 `codex` 或 `piagent` 运行时的智能体存在可移交的目标智能体时，运行时会自动注册 `transfer_to_agent` 工具，并在系统指令中追加可用目标智能体的名称与描述。模型根据任务需要决定是否调用该工具进行移交；调用后，目标智能体在当前调用上下文中执行，其产生的事件正常输出到会话与链路中。
-
-可移交的目标由智能体树结构决定：
-
-| 关系 | 条件 |
+| 目标 | 条件 |
 | :--- | :--- |
-| 子智能体 | 智能体的 `sub_agents` 中非 `single_turn` 和非 `task` 模式的智能体。 |
-| 父智能体 | 当智能体存在 `parent_agent` 且未设置 `disallow_transfer_to_parent` 时。 |
-| 同级智能体 | 当智能体存在 `parent_agent` 且未设置 `disallow_transfer_to_peers` 时，父智能体下除自身以外的可移交子智能体。 |
+| 子智能体 | 注册在 `sub_agents` 中，且不是 `single_turn` 或 `task` 模式 |
+| 父智能体 | 存在父智能体且未设置 `disallow_transfer_to_parent` |
+| 同级智能体 | 允许向同级转交，且目标可接收转交 |
 
-`mode` 为 `single_turn` 或 `task` 的智能体不会作为移交目标，也不会接收移交指令。
+```python transfer.py lines
+import asyncio
+from veadk import Agent, Runner
 
-以下示例在 `codex` 运行时中使用多智能体树，根智能体可将任务移交给子智能体：
-
-```python title="agent.py" lines
-from veadk import Agent
-
-researcher = Agent(
-    name="researcher",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    description="负责检索和整理资料的研究智能体。",
-    instruction="根据用户问题检索资料并整理为结构化的调研结果。",
-)
 
 writer = Agent(
     name="writer",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    description="负责撰写最终回答的写作智能体。",
-    instruction="根据调研结果撰写面向用户的最终回答。",
+    description="Rewrite supplied text as a concise announcement.",
+    instruction="Rewrite the user's text as an announcement without adding facts.",
+)
+agent = Agent(
+    name="coordinator",
+    instruction="Transfer announcement-writing tasks to writer.",
+    sub_agents=[writer],
 )
 
-coordinator = Agent(
-    name="coordinator",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    description="根据用户问题协调研究和写作的智能体。",
-    instruction="你是协调智能体。根据用户问题的性质，决定自行回答、移交给 researcher 或 writer。",
-    sub_agents=[researcher, writer],
-)
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Write an announcement: the office closes at 17:00 on Friday.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-<Note>
-  智能体转移依赖 `Runner` 驱动的调用链。目标智能体在同一个调用上下文中执行，其 `output_key` 等配置照常生效。
-</Note>
+运行 `python transfer.py` 后可得到公告文本。转交需要由 `Runner` 驱动，目标仍在同一次调用上下文中运行；它的 `output_key` 也会生效。需要固定顺序执行时，使用下节的顺序工作流
 
 ## 输出持久化
 
-`Agent` 继承自 Google ADK 的 `LlmAgent`，支持通过 `output_key` 参数将智能体的最终文本回复写入会话状态（session state）。同一会话中后续执行的其他智能体可以读取该状态，从而在多智能体工作流中传递结果。
+`output_key` 将最终回复保存到会话状态，ADK、Codex 和 PiAgent 均支持。它不是独立的磁盘持久化机制；跨进程保存取决于所选[会话存储](/productions/veadk/preview/zh/components/session/index)
 
-<Note>
-  `output_key` 在所有运行时中均生效，包括默认的 ADK 运行时以及 `codex`、`piagent` 等外部运行时。使用外部运行时时，最终回复同样会写入会话状态。
-</Note>
-
-以下示例使用 `SequentialAgent` 串联两个智能体：规划智能体的输出通过 `output_key="plan"` 写入会话状态，写作智能体在同一会话中读取该状态：
-
-```python title="pipeline.py" lines
-from veadk import Agent
-
+```python pipeline.py lines
+import asyncio
+from google.adk.agents import SequentialAgent
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
 
 planner = Agent(
     name="planner",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    model_api_key="ARK_API_KEY",
-    instruction="根据用户需求生成一份写作大纲。",
+    instruction="Create an outline for the user's requested article.",
     output_key="plan",
 )
-
 writer = Agent(
     name="writer",
-    runtime="piagent",
-    model_name="doubao-seed-2-1-pro-260628",
-    model_api_key="ARK_API_KEY",
-    instruction="根据会话状态中的大纲撰写正文。",
+    instruction="Write the article using this outline: {plan}",
     output_key="draft",
 )
+pipeline = SequentialAgent(name="pipeline", sub_agents=[planner, writer])
 
-pipeline = SequentialAgent(
-    name="pipeline",
-    sub_agents=[planner, writer],
-)
+async def main():
+    runner = Runner(
+        agent=pipeline, short_term_memory=ShortTermMemory(),
+        app_name="writing_pipeline", user_id="demo-user",
+    )
+    print(await runner.run(
+        messages="Write a short introduction to session state.", session_id="writing-demo"
+    ))
+    session = await runner.session_service.get_session(
+        app_name="writing_pipeline", user_id="demo-user", session_id="writing-demo"
+    )
+    print(session.state["plan"])
+    print(session.state["draft"])
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-运行后，会话状态中的 `plan` 和 `draft` 分别保存规划智能体与写作智能体的最终回复。
+运行 `python pipeline.py`。规划结果写入 `plan`，写作智能体通过 `{plan}` 读取，正文写入 `draft`。示例打印回复和两个状态值，以便检查传递结果
 
 ## 模型回调
 
-`Agent` 继承自 Google ADK 的 `LlmAgent`，可通过 `before_model_callback`、`after_model_callback` 与 `on_model_error_callback` 在模型调用的前后及异常时插入自定义逻辑。这些回调与 ADK 插件（继承 `BasePlugin`）的同名方法在所有运行时中均生效，包括默认的 ADK 运行时以及 `codex`、`piagent` 等外部运行时。在外部运行时中，回调按 ADK 顺序执行：先运行插件回调，再运行智能体回调。
+回调可以使用同步或异步函数。ADK 按模型调用执行；外部运行时的前后回调围绕整轮执行，插件回调先于智能体回调。返回 `None` 表示继续默认处理
 
-| 回调 | 说明 |
+| 回调 | 行为 |
 | :--- | :--- |
-| `before_model_callback(callback_context, llm_request)` | 在调用模型前运行。可直接修改 `llm_request`（包括 `contents`、`config.system_instruction`、`output_schema` 与 `tools_dict`），外部运行时会使用修改后的请求构建实际输入。若返回 `LlmResponse`，则跳过本次模型调用，直接以该响应作为本轮结果。 |
-| `after_model_callback(callback_context, llm_response)` | 在模型输出最终文本回复后运行。外部运行时会将本轮的最终文本事件合并为一个 `LlmResponse` 再交由此回调处理；回调返回的 `LlmResponse` 会替换原始回复。仅当配置了 after 回调（智能体回调或插件覆盖）时才会启用最终文本缓冲。 |
-| `on_model_error_callback(callback_context, llm_request, error)` | 在模型调用过程中抛出异常时运行。若返回 `LlmResponse`，则以其作为本轮响应并正常结束；否则异常继续向上抛出。 |
+| `before_model_callback(callback_context, llm_request)` | 可修改输入内容、系统指令和可用工具；返回 `LlmResponse` 可直接提供结果并跳过执行 |
+| `after_model_callback(callback_context, llm_response)` | 返回 `LlmResponse` 替换回复；外部运行时配置此回调后会缓冲并合并本轮最终文本 |
+| `on_model_error_callback(callback_context, llm_request, error)` | 返回 `LlmResponse` 作为失败回复；返回 `None` 时异常继续传播 |
 
-<Note>
-  外部运行时构建的 `LlmRequest` 仅包含回调所需的稳定字段（对话内容、系统指令、输出 schema、工具与生成配置），不会执行 ADK 完整的预处理流水线。依赖 ADK 内部预处理阶段的回调行为在外部运行时中可能不一致。
-</Note>
+修改请求不意味着外部运行时支持全部 ADK 配置，仍需遵循兼容性表。例如不能通过回调假定获得 `output_schema` 支持
 
-回调可以是同步函数，也可以是异步函数（`async def`）。以下示例在 Codex 运行时中用 `before_model_callback` 把 PDF 附件渲染为图片，使视觉模型可以读取文档内容：
-
-```python title="agent.py" lines
-from veadk import Agent
-from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
-
-agent = Agent(
-    name="coding_assistant",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    before_model_callback=pdf_to_images_before_model_callback,
-)
-```
-
-使用 `on_model_error_callback` 在模型调用失败时返回兜底回复，避免异常直接抛给调用方：
-
-```python title="agent.py" lines
-from veadk import Agent
+```python model_callback.py lines
+import asyncio
+from veadk import Agent, Runner
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
 def fallback_on_error(callback_context, llm_request, error):
-    return LlmResponse(
-        content=types.Content(
-            role="model",
-            parts=[types.Part(text="模型暂时不可用，请稍后重试。")],
-        )
-    )
+    return LlmResponse(content=types.Content(
+        role="model",
+        parts=[types.Part(text="The model is temporarily unavailable. Please retry later.")],
+    ))
 
-agent = Agent(
-    name="coding_assistant",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    on_model_error_callback=fallback_on_error,
-)
+agent = Agent(name="assistant", on_model_error_callback=fallback_on_error)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain session state.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+运行 `python model_callback.py`：模型正常时输出回答，模型调用失败时返回预设文本。该回调不处理所有初始化、工具或业务错误
+
+### 将 PDF 转为图片
+
+`pdf_to_images_before_model_callback` 将输入中的 PDF 字节转为图片，适用于支持图片但不能直接读取 PDF 的模型。PDF 渲染依赖已包含在 VeADK 默认安装中
+
+将可发送给模型服务的文件保存为当前目录的 `example.pdf`，选择支持图片输入的模型，然后运行以下脚本：
+
+```python pdf_callback.py lines
+import asyncio
+from pathlib import Path
+from google.genai import types
+from veadk import Agent, Runner
+from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
+
+async def main():
+    agent = Agent(
+        name="document_reader",
+        before_model_callback=pdf_to_images_before_model_callback,
+    )
+    runner = Runner(agent=agent, app_name="pdf_demo", user_id="demo-user")
+    await runner.session_service.create_session(
+        app_name="pdf_demo", user_id="demo-user", session_id="pdf-session"
+    )
+    message = types.Content(role="user", parts=[
+        types.Part(text="Summarize the document."),
+        types.Part(inline_data=types.Blob(
+            mime_type="application/pdf", data=Path("example.pdf").read_bytes()
+        )),
+    ])
+    async for event in runner.run_async(
+        user_id="demo-user", session_id="pdf-session", new_message=message
+    ):
+        if event.is_final_response() and event.content:
+            print("".join(part.text or "" for part in event.content.parts or []))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+默认最多处理每个 PDF 的前 10 页，渲染比例为 `2.0`。需要调整时，从同一模块导入 `make_pdf_to_images_callback`，通过 `max_pages` 和 `scale` 创建回调。更多页面或更高比例会增加图片数量、内存占用和模型输入用量
 
 ## 按工具选择执行位置
 
-运行时决定的是智能体整体的内层循环，而 `RuntimeProvider` 在更细的粒度上决定每一次工具调用在哪里执行，模型推理循环本身不变。它作为 ADK 插件工作：通过拦截 `before_tool_callback`，在 Google ADK 实际调用工具实现之前接管该调用，因此本地实现不会被重复执行。
-
-VeADK 提供以下公开类：
-
-| 类 | 说明 |
-| :--- | :--- |
-| `RuntimeProvider` | 抽象基类，继承自 ADK `BasePlugin`。子类实现 `execute` 方法以决定每次工具调用的执行位置。 |
-| `DispatchRuntimeProvider` | 把指定的非 MCP 工具派发到远端，其余工具回退到本地执行。 |
-| `LocalRuntimeProvider` | 通过工具原本的 ADK 实现执行，是 `DispatchRuntimeProvider` 的默认本地回退。 |
-| `ToolCall` | 传递给 `execute` 的工具调用描述对象，包含工具名、参数、上下文等信息。 |
+`RuntimeProvider` 决定单个工具调用如何执行，通常用于保留 ADK 流程而把部分工具交给自有服务。`DispatchRuntimeProvider` 调用你提供的派发函数；`LocalRuntimeProvider` 执行原有工具。需要自定义完整策略时，继承 `RuntimeProvider` 并实现 `execute(tool_call)`
 
 ### 使用示例
 
-以下示例把所有非 MCP 工具的执行派发到远端 Runtime，MCP 工具保留原本的 ADK 实现：
+以下示例使用本地演示适配函数模拟服务结果，可验证派发后的库存为 `12`，原始工具返回的 `0` 不会再次执行。它不连接实际远端服务
 
-```python title="agent.py" lines
+```python dispatch.py lines
+import asyncio
 from veadk import Agent, Runner
 from veadk.runtime import DispatchRuntimeProvider, ToolCall
 
+def lookup_stock(product: str) -> dict:
+    """Look up stock for a product."""
+    return {"product": product, "stock": 0, "source": "local"}
+
 async def dispatch_task(tool_call: ToolCall):
-    return await remote_client.dispatch(
-        tool_call.name,
-        tool_call.arguments,
-        dispatch_id=tool_call.id,
-    )
+    # Demonstration adapter: replace this body with your service client.
+    return {
+        "product": tool_call.arguments["product"],
+        "stock": 12,
+        "source": "dispatch-demo",
+    }
 
-agent = Agent(name="assistant", tools=[bash, read_file])
-runtime_provider = DispatchRuntimeProvider(
-    dispatch_task,
-    dispatchable_tools=None,  # 派发所有非 MCP 工具
-)
-runner = Runner(agent=agent, plugins=[runtime_provider])
-```
-
-上例中所有非 MCP 工具只会经过 `dispatch_task`，不会再次执行本地函数。传入具体工具名集合时，只派发集合中的非 MCP 工具。派发函数可以是同步或异步函数。
-
-如果直接在 `Agent` 上注册而非通过 `Runner` 的 `plugins`，可以将 `DispatchRuntimeProvider` 的 `before_tool_callback` 传入 `Agent` 的 `before_tool_callback` 参数：
-
-```python title="agent.py" lines
 agent = Agent(
-    name="assistant",
-    tools=[bash, read_file],
-    before_tool_callback=runtime_provider.before_tool_callback,
+    name="stock_assistant",
+    instruction="Use lookup_stock to answer stock questions.",
+    tools=[lookup_stock],
 )
+runtime_provider = DispatchRuntimeProvider(
+    dispatch_task, dispatchable_tools={"lookup_stock"}
+)
+
+async def main():
+    print(await Runner(agent=agent, plugins=[runtime_provider]).run(
+        messages='How many notebooks are in stock?', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+接入真实服务时，将 `dispatch_task` 替换为已配置认证与超时的客户端调用，用 `tool_call.id` 关联请求。派发函数可以同步或异步，并应返回可作为工具结果的数据。服务接口由应用自行约定
+
+也可将 `runtime_provider.before_tool_callback` 传给 `Agent.before_tool_callback`；不要同时注册两个入口，否则会重复拦截。MCP 工具仍使用自身连接执行，不受派发范围影响
 
 ### DispatchRuntimeProvider 参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `dispatch_task` | `Callable[[ToolCall], Any]` | — | 必填。每次派发工具调用时执行的函数，接收 `ToolCall`，返回工具执行结果。可以是同步或异步函数。 |
-| `dispatchable_tools` | `Collection[str] \| None` | `("bash",)` | 需要派发到远端的非 MCP 工具名称集合。设为 `None` 时派发所有非 MCP 工具。 |
-| `local_runtime` | `RuntimeProvider \| None` | `None` | 用于执行未派发工具的本地 Provider。未设置时使用 `LocalRuntimeProvider`。 |
-| `name` | `str` | `"veadk_dispatch_runtime_provider"` | 插件名称。 |
+| `dispatch_task` | `Callable[[ToolCall], Any]` | — | 必填。每次派发工具调用时执行的函数，接收 `ToolCall`，返回工具执行结果。可以是同步或异步函数 |
+| `dispatchable_tools` | `Collection[str] \| None` | `("bash",)` | 需要派发到远端的非 MCP 工具名称集合。设为 `None` 时派发所有非 MCP 工具 |
+| `local_runtime` | `RuntimeProvider \| None` | `None` | 用于执行未派发工具的本地 Provider。未设置时使用 `LocalRuntimeProvider` |
+| `name` | `str` | `"veadk_dispatch_runtime_provider"` | 插件名称 |
 
 ### ToolCall 字段
 
 | 字段/属性 | 类型 | 说明 |
 | :--- | :--- | :--- |
-| `name` | `str` | 工具名称。 |
-| `arguments` | `dict[str, Any]` | 传递给工具的参数。 |
-| `tool` | `BaseTool` | ADK 工具对象，可用于在本地执行该工具。 |
-| `context` | `ToolContext` | ADK 工具上下文。 |
-| `id` | `str` | 属性。ADK 函数调用标识，不可用时为空字符串。 |
-| `session_id` | `str` | 属性。当前 VeADK 会话标识，不可用时为空字符串。 |
-
-<Note>
-  MCP 工具始终保留其原本的 ADK 实现，不受 `dispatchable_tools` 配置影响。这是因为 MCP 工具的调用需要通过其自身的 MCP 会话管理器进行。
-</Note>
+| `name` | `str` | 工具名称 |
+| `arguments` | `dict[str, Any]` | 传递给工具的参数 |
+| `tool` | `BaseTool` | ADK 工具对象，可用于在本地执行该工具 |
+| `context` | `ToolContext` | ADK 工具上下文 |
+| `id` | `str` | 属性。ADK 函数调用标识，不可用时为空字符串 |
+| `session_id` | `str` | 属性。当前 VeADK 会话标识，不可用时为空字符串 |
+`RuntimeProvider(name=...)` 要求提供插件名。`LocalRuntimeProvider` 仅有可选 `name` 参数，默认 `"veadk_local_runtime_provider"`
 
 ## 请求处理
 
-在不侵入业务逻辑的前提下，可为每次执行插入统一的横切处理。将处理器传入 `run_processor` 即可，例如接入身份认证做登录态校验：
+`run_processor` 包裹 `Runner.run` 的整轮事件流，用于鉴权、计时、清理或事件转换。优先级依次为：本次 `Runner.run(run_processor=...)`、`Runner` 构造配置、根智能体配置，最后是默认的透传处理器。直接调用 `run_async` 不会自动使用这一包装
 
-```python lines
-from veadk import Agent
-from veadk.integrations.ve_identity import AuthRequestProcessor
-
-agent = Agent(name="assistant", run_processor=AuthRequestProcessor())
-```
-
-不设置时使用默认处理器，不改变任何行为。VeADK 内置 `AuthRequestProcessor` 作为身份认证的开箱即用实现。
+身份认证可使用 `veadk.integrations.ve_identity.AuthRequestProcessor`，并传给 `Agent(run_processor=...)`；所需身份配置见[入站认证](/productions/veadk/preview/zh/components/security/inbound)
 
 ### 自定义处理器
 
-所有处理器都继承抽象基类 `BaseRunProcessor`，实现其 `process_run(runner, message)` 方法。该方法返回一个包裹本轮「事件流」的装饰器，从而让你：
+继承 `BaseRunProcessor` 并实现 `process_run(runner, message, **kwargs)`。下面的处理器转发事件，并在正常结束、失败或取消时记录耗时和关闭事件流
 
-- 在整轮执行的**前后**插入逻辑（如鉴权、日志、性能监控）；
-- **拦截、改写或注入**执行过程中产生的事件；
-- 在此基础上实现重试等控制逻辑。
-
-```python lines
+```python run_processor.py lines
+import asyncio
+from veadk import Agent, Runner
+import time
+from contextlib import aclosing
 from veadk.processors.base_run_processor import BaseRunProcessor
 
-class LoggingProcessor(BaseRunProcessor):
+class TimingProcessor(BaseRunProcessor):
     def process_run(self, runner, message, **kwargs):
         def decorator(event_generator):
             async def wrapper():
-                # 执行前：记录起始、校验等
-                async for event in event_generator():
-                    yield event  # 可在此拦截或改写事件
-                # 执行后：汇总、上报等
+                started = time.perf_counter()
+                try:
+                    async with aclosing(event_generator()) as events:
+                        async for event in events:
+                            yield event
+                finally:
+                    print(f"Run elapsed: {time.perf_counter() - started:.2f}s")
             return wrapper
         return decorator
+
+agent = Agent(name="assistant", run_processor=TimingProcessor())
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain what a runtime does.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+运行 `python run_processor.py` 可看到回复及执行耗时。处理器若包含重试，应先确认任务是否已产生外部副作用，避免重复执行

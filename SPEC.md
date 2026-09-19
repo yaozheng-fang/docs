@@ -2,6 +2,18 @@
 
 本文件约定 AgentKit 文档站（VeADK、AgentKit CLI 与 API 参考）的写作、组织与发布规范，供所有文档贡献者遵循。目标是提供准确、具体、可验证的对外官方文档，而非随手记下的笔记或源码说明。
 
+## 配套技能与规范
+
+[`AGENTS.md`](./AGENTS.md) 提供协作入口与本规范摘要；仓库内的 [`agentkit-docs-spec`](./.agents/skills/agentkit-docs-spec/SKILL.md) 技能提供写作、页面结构、示例核验、双语与审查方法，并链接到对应参考资料和来源清单
+
+编写、改进或审查文档时，先读取本规范，再读取对应产品规范，按任务使用技能中的参考：
+
+- [VeADK 文档规范](./productions/veadk/veadk_SPEC.md)
+- [AgentKit CLI 文档规范](./productions/agentkit-cli/agentkit-cli_SPEC.md)
+- [API Reference 文档规范](./productions/api-reference/api-reference_SPEC.md)
+
+本文件是文档要求的最高依据，产品规范与技能作补充。技能中的通用建议不能覆盖本规范，也不能扩大当前任务或发布授权；修改任一规范或技能时，应同步核对这些文件的规则与链接
+
 ## 目标读者
 
 文档同时服务以下读者：
@@ -39,6 +51,8 @@
 - 推荐：`title: "使用 SQLite 存储"`
 
 新建页面必须在 YAML frontmatter 中提供 `title`，不要添加 `description`。HTTP API 单接口页面还需提供 `openapi`，绑定对应语言的规范文件、方法和路径，以使用原生接口展示。页面标题下不展示副标题；需要说明页面用途时，应在正文首段中自然说明。
+
+保留并维护站点语言切换使用的 `en_link` / `zh_link`，两侧链接应指向对应语言的同一页面，不因简化 frontmatter 删除已有语言关联
 
 ## 中文文案约定
 

@@ -14,13 +14,11 @@ en_link: "/productions/veadk/preview/en/components/tools/mcp-router"
 - `TOOL_MCP_ROUTER_URL`：MCP Router 的服务地址
 - `TOOL_MCP_ROUTER_API_KEY`：鉴权 API Key，将作为 `Authorization: Bearer <key>` 请求头发送
 
-或在 `config.yaml` 中配置：
+应在导入 `mcp_router` 前设置以下环境变量，修改配置后重新启动进程：
 
-```yaml title="config.yaml" lines
-tool:
-  mcp_router:
-    url: https://your-mcp-router-endpoint
-    api_key: your-api-key-here
+```bash lines
+export TOOL_MCP_ROUTER_URL="https://your-mcp-router-endpoint"
+export TOOL_MCP_ROUTER_API_KEY="your-router-api-key"
 ```
 
 ## 使用方法
@@ -30,4 +28,28 @@ from veadk import Agent
 from veadk.tools.builtin_tools.mcp_router import mcp_router
 
 agent = Agent(tools=[mcp_router])
+```
+
+## 验证连接与释放资源
+
+URL 必须是已启用的 Streamable HTTP MCP 地址，API Key 由 Router 服务颁发。API Key 为空时不会发送 `Authorization` 头，不代表服务允许匿名访问。此预构建工具集在导入时读取环境变量。若使用 `config.yaml`，先导入 `Agent` 以加载配置，再导入 `mcp_router`；下面的独立检查使用启动前设置的环境变量。服务地址不会自动切换为 BytePlus 地址
+
+以下示例列出服务当前开放的工具，不调用具体业务操作。列表为空时检查 Router 是否已挂载 MCP Server，以及当前凭证是否有权限
+
+```python lines
+import asyncio
+
+from veadk.tools.builtin_tools.mcp_router import mcp_router
+
+
+async def main():
+    try:
+        tools = await mcp_router.get_tools()
+        print([tool.name for tool in tools])
+    finally:
+        await mcp_router.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```

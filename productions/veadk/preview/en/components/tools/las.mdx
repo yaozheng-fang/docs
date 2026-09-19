@@ -17,7 +17,7 @@ Requirements:
 3. Configure the LAS service DatasetId and URL ([how to get the URL](https://www.volcengine.com/mcp-marketplace/detail?name=LAS%20MCP)).
 </Warning>
 
-Environment variables (**must be set as environment variables**):
+Environment variables:
 
 - `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
 - `TOOL_LAS_URL`: LAS MCP Server service address
@@ -27,6 +27,7 @@ Environment variables (**must be set as environment variables**):
 
 ```python title="examples/tools/las/agent.py" lines
 import asyncio
+import os
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
@@ -37,7 +38,7 @@ agent = Agent(
     model_name="doubao-seed-2-1-pro-260628",
     description="Answer using data in LAS.",
     instruction=(
-        "You are a poet. First use the las tool to search the ds_public dataset for "
+        f"You are a poet. First search dataset {os.environ['TOOL_LAS_DATASET_ID']} for "
         "relevant content, then write a poem based on the results."
     ),
     tools=[las],
@@ -49,6 +50,30 @@ runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
 async def main():
     response = await runner.run("Write a Chinese-style poem about wood and love")
     print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Dataset and connection checks
+
+Set the service URL before importing `las`. `TOOL_LAS_DATASET_ID` is not automatically applied as a filter to every tool call. Select the dataset explicitly in instructions or tool arguments, and enforce access permissions on the server. Ingest searchable content into the configured dataset before running the example.
+
+This check only lists tools exposed by the service. If discovery succeeds but retrieval is empty, check the selected dataset, ingested content, and permissions. The endpoint comes from `TOOL_LAS_URL` and is not switched automatically by `CLOUD_PROVIDER`.
+
+```python lines
+import asyncio
+
+from veadk.tools.builtin_tools.las import las
+
+
+async def main():
+    try:
+        tools = await las.get_tools()
+        print([tool.name for tool in tools])
+    finally:
+        await las.close()
 
 
 if __name__ == "__main__":

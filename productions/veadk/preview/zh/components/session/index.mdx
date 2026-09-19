@@ -3,9 +3,9 @@ title: "概览"
 en_link: "/productions/veadk/preview/en/components/session"
 ---
 
-短期记忆保存会话级上下文，让智能体在多轮交互中记住之前说过的话。它本质上就是发送给模型的对话上下文——系统提示词加历史消息——VeADK 用 `session_id` 来标识：复用同一个 `session_id`，智能体就能记住之前的轮次。
+短期记忆保存会话中的消息、工具交互和状态，供后续轮次恢复上下文。会话由 `app_name`、`user_id` 和 `session_id` 共同标识；只有存储后端和这三个标识一致，后续运行才会继续已有会话
 
-当用户开启对话时，VeADK 会自动创建一个 `Session` 对象，全程跟踪并管理该会话的所有内容。
+系统提示词由智能体配置提供，发送给模型的历史范围还受上下文压缩、过滤和智能体设置影响。持久化会话不等于每轮都将全部历史原样发送给模型
 
 <Note>
 短期记忆基于 Google ADK 的 Session 机制，更多背景见 [Google ADK Session](https://google.github.io/adk-docs/sessions/session)。
@@ -26,13 +26,13 @@ stm = ShortTermMemory(backend="sqlite", local_database_path="./stm.db")
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `backend` | `"local" \| "sqlite" \| "mysql" \| "postgresql" \| "database"` | `"local"` | 选择后端实现。`database` 已废弃，等价于 `sqlite`。 |
-| `db_url` | `str` | `""` | 直接给出数据库连接串（如 `sqlite:///./test.db`）。一旦设置，将忽略 `backend`，并采用 `db_url` 与 `db_kwargs`。 |
-| `backend_configs` | `dict` | `{}` | 后端专用配置，例如通过 `mysql_config` 或 `postgresql_config` 覆盖数据库连接配置。 |
-| `db_kwargs` | `dict` | `{}` | 数据库连接或连接池的额外参数。 |
-| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 仅 `sqlite` 使用的本地数据库文件路径。 |
-| `after_load_memory_callback` | `Callable \| None` | `None` | 读取会话后触发的回调，入参为加载到的 `Session`。 |
-| `after_create_session_callback` | `Callable \| None` | `None` | 新会话创建成功后触发的同步或异步回调，入参为新建的 `Session`；复用已有会话时不触发。 |
+| `backend` | `"local" \| "sqlite" \| "mysql" \| "postgresql" \| "database"` | `"local"` | 选择后端实现。`database` 已废弃，等价于 `sqlite` |
+| `db_url` | `str` | `""` | 直接给出数据库连接串（如 `sqlite+aiosqlite:///./test.db`）。一旦设置，将忽略 `backend`，并采用 `db_url` 与 `db_kwargs` |
+| `backend_configs` | `dict` | `{}` | 后端专用配置，例如通过 `mysql_config` 或 `postgresql_config` 覆盖数据库连接配置 |
+| `db_kwargs` | `dict` | `{}` | 数据库连接或连接池的额外参数 |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 仅 `sqlite` 使用的本地数据库文件路径 |
+| `after_load_memory_callback` | `Callable \| None` | `None` | 同步读取回调；接收 `Session` 或 `None`，以及查询时的参数，建议使用 `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | 新会话创建成功后触发的同步或异步回调，入参为新建的 `Session`；复用已有会话时不触发 |
 
 <Warning>
 当连接串里的用户名或密码包含 `@`、`:` 等特殊字符时，请先用 `urllib.parse.quote_plus` 编码（例如 `p@ssword` → `p%40ssword`），否则解析会出错。
@@ -57,7 +57,7 @@ stm = ShortTermMemory(backend="sqlite", local_database_path="./stm.db")
 
 ## 与 Runner 协作
 
-短期记忆通常传给 `Runner`，由 `Runner` 自动创建或恢复会话。运行时复用相同的 `session_id` 即可延续上下文。
+短期记忆通常传给 `Runner`，由 `Runner` 自动创建或恢复会话。运行前完成[模型配置](/productions/veadk/preview/zh/components/agent/model)，然后复用相同的应用、用户和会话标识以延续上下文
 
 ```python lines
 import asyncio
@@ -67,12 +67,15 @@ from veadk.memory.short_term_memory import ShortTermMemory
 
 stm = ShortTermMemory(backend="sqlite", local_database_path="./stm.db")
 agent = Agent(name="memory_agent", instruction="记住用户告诉你的信息。")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo", user_id="user_42")
 
 async def main():
     sid = "user-42-chat"
-    print(await runner.run(messages="我叫小明，最喜欢蓝色。", session_id=sid))
-    print(await runner.run(messages="我叫什么？喜欢什么颜色？", session_id=sid))
+    try:
+        print(await runner.run(messages="我叫小明，最喜欢蓝色。", session_id=sid))
+        print(await runner.run(messages="我叫什么？喜欢什么颜色？", session_id=sid))
+    finally:
+        await stm.session_service.close()
 
 asyncio.run(main())
 ```
@@ -96,10 +99,10 @@ asyncio.run(main())
 会话创建回调用于在会话首次创建后执行资源准备、审计记录或外部系统同步。注册 `after_create_session_callback`：
 
 ```python lines
-import asyncio
+from veadk.memory.short_term_memory import ShortTermMemory
 
 async def after_create_session(session):
-    await provision_external_resources(session.id)
+    print(f"Created session: {session.id}")
 
 stm = ShortTermMemory(
     after_create_session_callback=after_create_session,
@@ -109,7 +112,7 @@ stm = ShortTermMemory(
 回调只在真正创建新会话时执行；复用已有会话时不触发。回调可以是同步函数或异步函数（`async def`）。如果回调抛出异常，异常会传递给调用方，智能体不会继续执行。
 
 <Note>
-  数据库后端下，`ShortTermMemory.create_session()` 会先检查并复用同 `session_id` 的已有会话，避免重复创建。回调仅在首次创建时运行。
+  所有后端下，`ShortTermMemory.create_session()` 会先检查并复用同 `app_name`、`user_id` 和 `session_id` 的已有会话，避免重复创建。回调仅在首次创建时运行。
 </Note>
 
 ## 上下文压缩
@@ -118,7 +121,7 @@ stm = ShortTermMemory(
 
 ### 配置上下文压缩
 
-配置后，`Runner` 会在每次达到间隔时自动压缩会话历史。
+将下列 `App` 配置交给支持它的 Google ADK Runner 或应用加载器后，会按调用间隔触发压缩。仅构建 `App` 不会执行压缩
 
 ```python lines
 from google.adk.apps.app import App, EventsCompactionConfig
@@ -135,7 +138,7 @@ app = App(
     root_agent=root_agent,
     events_compaction_config=EventsCompactionConfig(
         compaction_interval=3,  # 每 3 次新调用触发一次压缩
-        overlap_size=1,         # 与上一个窗口的最后一个事件重叠
+        overlap_size=1,         # 保留上一个窗口的 1 次调用作为重叠上下文
     ),
 )
 ```
@@ -169,6 +172,8 @@ summarization_llm = LiteLlm(
 my_compactor = LlmEventSummarizer(
     llm=summarization_llm,
     prompt_template="""请总结这段对话，压缩要求：
+{conversation_history}
+
 1. 保留关键实体、数据点和时间线；
 2. 突出讨论过的核心问题与解决方案；
 3. 保持逻辑连贯与上下文相关；
@@ -185,3 +190,7 @@ app = App(
     ),
 )
 ```
+
+自定义模板必须包含 `{conversation_history}`，否则摘要请求不包含待压缩历史。上述 `app` 是应用配置，需要交给支持 `App` 的 Google ADK Runner 或应用加载器才能生效；仅创建配置不会执行对话或压缩。压缩涉及额外模型请求，摘要可能省略细节，不能作为原始会话的备份
+
+`after_load_memory_callback` 必须是同步函数，可在查询未命中时收到 `None`，并应接受查询关键字参数。`after_create_session_callback` 仅覆盖通过 `ShortTermMemory.create_session()` 创建会话的路径；直接调用 `session_service.create_session()` 不触发此回调。回调失败不会自动删除已经创建的会话

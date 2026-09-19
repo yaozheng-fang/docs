@@ -5,6 +5,12 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/deploy"
 
 `deploy` deploys the runtime described by the current project's lifecycle config. It does not build an image first; use [`launch`](/productions/agentkit-cli/preview/en/commands/launch) when you want build and deploy in one command. Use [`release`](/productions/agentkit-cli/preview/en/commands/release) for the `.agentkit/agentkit.yaml` cloud release pipeline, IM channels, or frontend release flow.
 
+Run `agentkit build` in the project first so the same lifecycle configuration contains a build result. Cloud and hybrid modes require runtime-management permissions in the target provider and region; local mode requires Docker
+
+<Warning>
+Deployment creates or updates the selected runtime, can replace a serving application, and may incur cloud charges. Check the provider, region, and runtime name first
+</Warning>
+
 ## deploy
 
 Read `agentkit.yaml`, select the local, cloud, or hybrid strategy from `common.launch_type`, and write deployment state such as runtime id, endpoint, or local container state back to the config file.
@@ -30,7 +36,11 @@ agentkit deploy --config-file agentkit.yaml
 
 ## Harness Deploy
 
-With `--harness <name>`, the CLI reads `<name>.harness.json` from the current directory, converts it into runtime environment variables, creates a temporary lifecycle config, and deploys a Harness runtime. If you pass `--discovery-url`, also pass at least one allowed client id through `--allowed-id`.
+With `--harness <name>`, the CLI reads `<name>.harness.json` from the current directory, converts it into runtime environment variables, creates a temporary lifecycle config, then builds and deploys in the cloud. If you pass `--discovery-url`, also pass at least one allowed client id through `--allowed-id`.
+
+<Warning>
+Harness deploy creates or updates a cloud runtime and may rewrite `harness.json` in the current directory with endpoint, runtime id, and auth information. Confirm the working directory, Harness name, and target project before running it.
+</Warning>
 
 ```bash lines
 agentkit deploy \
@@ -41,10 +51,10 @@ agentkit deploy \
   --yes
 ```
 
-<Warning>
-Harness deploy creates or updates a cloud runtime and may rewrite `harness.json` in the current directory with endpoint, runtime id, and auth information. Confirm the working directory, Harness name, and target project before running it.
-</Warning>
+
 
 ## Runtime roles
 
 For runtime creation, an explicit IAM role must exist. Otherwise the CLI reuses a role with `AgentKitDefaultRuntimeAccess` or creates a new one. Updates retain the existing role without modifying its policies automatically; scheduled tasks configure their required TOS prefix permissions separately
+
+After deployment, inspect state with `agentkit status` and verify an application response with `agentkit invoke run "hello"`. The first checks runtime state; the second invokes the application and model. For model authentication failures, check runtime environment variables before rebuilding

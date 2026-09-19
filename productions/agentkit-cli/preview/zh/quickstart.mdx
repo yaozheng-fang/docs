@@ -3,29 +3,179 @@ title: "快速开始"
 en_link: "/productions/agentkit-cli/preview/en/quickstart"
 ---
 
-## 安装
+本教程介绍如何安装 AgentKit CLI、配置云端凭证、创建项目并部署一个可调用的智能体。运行时是云端承载智能体应用的服务，部署后可在终端发送消息并查看回答
 
-无需 Node.js，一行命令即可安装独立二进制，并将 `agentkit`（及别名 `ak`）加入 PATH：
+本文按 AgentKit CLI 0.54.0 的公开命令维护，终端示例使用 Bash 或 zsh
+
+## 前置条件
+
+- 可访问 AgentKit 的火山引擎或 BytePlus 账号，并拥有目标区域中创建运行时及相关构建资源的权限
+- 对应平台可调用的模型名称、模型 API 地址和 API Key
+- 使用浏览器登录时，能够访问对应云控制台或组织提供的 SSO 地址
+
+云端管理凭证用于创建和管理资源，模型 API Key 用于智能体调用模型，两者用途不同
+
+<span id="安装" />
+
+## 安装并检查版本
+
+安装脚本下载独立二进制，无需 Node.js。选择本机已有的下载工具：
 
 <Tabs>
-  <Tab title="wget">
-    ```bash lines
-    wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
-    ```
-  </Tab>
   <Tab title="curl">
     ```bash lines
     curl -fsSL https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
     ```
   </Tab>
+  <Tab title="wget">
+    ```bash lines
+    wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
+    ```
+  </Tab>
 </Tabs>
 
-安装完成后验证：
+安装脚本会更新 shell 启动配置，使 `agentkit` 和别名 `ak` 可用。按脚本输出重新加载配置或打开新终端，再检查版本和帮助：
 
 ```bash lines
 agentkit --version
 agentkit --help
 ```
+
+确认终端输出版本号和命令列表后继续；安装目录和已有 Python 命令的处理见本页「安装选项」
+
+<span id="鉴权" />
+
+<span id="使用控制台登录" />
+
+## 配置云端凭证
+
+选择一种与目标云平台匹配的方式。环境变量示例必须在后续执行部署的同一终端中运行，并替换占位符：
+
+<Tabs>
+  <Tab title="火山引擎 AK/SK">
+    ```bash lines
+    export VOLCENGINE_ACCESS_KEY="your-access-key"
+    export VOLCENGINE_SECRET_KEY="your-secret-key"
+    export VOLCENGINE_REGION="cn-beijing"
+    ```
+  </Tab>
+  <Tab title="BytePlus AK/SK">
+    ```bash lines
+    export BYTEPLUS_ACCESS_KEY="your-access-key"
+    export BYTEPLUS_SECRET_KEY="your-secret-key"
+    ```
+
+    在创建项目后，按下方 BytePlus 配置步骤显式设置云厂商与区域
+  </Tab>
+  <Tab title="控制台登录">
+    火山引擎账号执行：
+
+    ```bash lines
+    agentkit --provider volcengine login --console
+    agentkit --provider volcengine whoami
+    ```
+
+    BytePlus 账号执行：
+
+    ```bash lines
+    agentkit --provider byteplus login --console
+    agentkit --provider byteplus whoami
+    ```
+
+    浏览器授权完成后，`whoami` 应显示所选云平台的登录身份。远程服务器使用 `login --remote`，按提示在另一台设备完成授权
+  </Tab>
+  <Tab title="组织 SSO">
+    使用组织提供的 SSO 地址登录：
+
+    ```bash lines
+    agentkit login <sso-address>
+    agentkit whoami
+    ```
+
+    此路径需要换取可管理云资源的短期 STS 凭证。不要为本教程添加 `--identity-only`，该选项仅保存用户身份会话，不能用于后续资源部署
+  </Tab>
+</Tabs>
+
+环境中的有效 AK/SK 优先于登录缓存，登录不会覆盖已有环境凭证。SSO 凭证过期后重新登录；云厂商选择与凭证优先级见[鉴权与登录](/productions/agentkit-cli/preview/zh/commands/auth#控制台登录与凭据优先级)
+
+<span id="三步部署" />
+
+## 创建并配置项目
+
+<Steps>
+  <Step title="创建项目目录">
+    在准备存放项目的父目录执行。`--directory` 指定文件写入位置，项目名称本身不会创建同名子目录：
+
+    ```bash lines
+    agentkit init my-agent --template basic --directory my-agent
+    cd my-agent
+    ```
+
+    当前目录应包含 `my-agent.py`、`requirements.txt`、`agentkit.yaml` 和 `.dockerignore`。后续配置、部署和调用命令均在此目录执行
+  </Step>
+  <Step title="设置云平台与模型">
+    选择与凭证匹配的平台，并将模型名称与 API Key 替换为账号可用的值：
+
+    <Tabs>
+      <Tab title="火山引擎">
+        ```bash lines
+        agentkit config --launch_type cloud --cloud_provider volcengine --region cn-beijing
+        export MODEL_AGENT_NAME="your-ark-model-name"
+        export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+        export MODEL_AGENT_API_KEY="your-ark-api-key"
+        ```
+      </Tab>
+      <Tab title="BytePlus">
+        ```bash lines
+        agentkit config --launch_type cloud --cloud_provider byteplus --region ap-southeast-1
+        export MODEL_AGENT_NAME="your-modelark-model-name"
+        export MODEL_AGENT_API_BASE="https://ark.ap-southeast.bytepluses.com/api/v3"
+        export MODEL_AGENT_API_KEY="your-modelark-api-key"
+        ```
+      </Tab>
+    </Tabs>
+
+    `agentkit config` 更新项目根目录的 `agentkit.yaml`。本教程使用云端构建和部署模式；更多配置见[配置命令](/productions/agentkit-cli/preview/zh/commands/config)
+  </Step>
+  <Step title="将模型配置传入运行时">
+    <Warning>
+      下方命令会把当前环境变量的值写入 `agentkit.yaml`，其中包含真实模型 API Key。执行前，在 `.gitignore` 和 `.dockerignore` 中各添加 `agentkit.yaml` 与 `.env`，避免提交凭证或将其复制进镜像；不存在的忽略文件需自行创建
+    </Warning>
+
+    ```bash lines
+    agentkit config \
+      --runtime_envs "MODEL_AGENT_NAME=$MODEL_AGENT_NAME" \
+      --runtime_envs "MODEL_AGENT_API_BASE=$MODEL_AGENT_API_BASE" \
+      --runtime_envs "MODEL_AGENT_API_KEY=$MODEL_AGENT_API_KEY" \
+      --runtime_envs "MODEL_AGENT_PROVIDER=openai"
+    ```
+
+    双引号让终端在执行命令前展开变量。仅在本地导出模型凭证不会自动把它传给云端运行时；本例通过运行时环境变量配置完成传递
+  </Step>
+</Steps>
+
+## 部署并调用
+
+<Warning>
+  `agentkit launch` 会在选定云平台与区域中构建镜像、创建或更新运行时及所需资源，可能产生费用。先确认账号权限、区域、模型配置和构建资源设置；调用智能体还会产生模型用量
+</Warning>
+
+在项目目录构建并部署：
+
+```bash lines
+agentkit launch
+```
+
+部署成功后，检查运行时状态，再发送一条测试消息：
+
+```bash lines
+agentkit status
+agentkit invoke run "hello"
+```
+
+`status` 用于确认当前项目的运行时状态；收到智能体回答表示部署后的调用链路可用。如果构建或部署失败，先处理命令报告的问题，再继续调用，不应将本地文件生成成功视为云端部署成功
+
+## 安装选项
 
 <Tip>
   二进制安装在 `AGENTKIT_HOME`（默认 `~/.agentkit`），并在 `AGENTKIT_BIN_DIR`（默认 `~/.local/bin`）下创建 `agentkit`、`ak` 两个兼容链接。自定义这两个目录时必须使用绝对路径，且两者不能指向同一目录。安装目录还包含 `templates/`、`lifecycle-templates/`、`harness/`、`skills/`、`im-proxies/` 与 `vendor/` 等运行所需资源；手动移动或解压独立发行包时，请保留这些目录与 `ak` 在同一安装目录。需要安装指定版本时，设置环境变量 `AGENTKIT_VERSION`（默认 `latest`）。若当前终端仍提示命令不存在，请重新打开终端或按安装脚本输出加载 shell 配置。
@@ -36,74 +186,3 @@ agentkit --help
 </Note>
 
 安装脚本默认获取最新独立发行包，也可用 `agentkit upgrade` 更新已有安装。本文按 0.54.0 发布内容维护
-
-## 鉴权
-
-CLI 会对每一次云端 OpenAPI 请求签名。按使用的云厂商或登录方式提供凭证：
-
-<Tabs>
-  <Tab title="AK/SK">
-    在环境变量或本地 `.env`（已被 git 忽略）中设置：
-
-    ```bash lines
-    VOLCENGINE_ACCESS_KEY=...
-    VOLCENGINE_SECRET_KEY=...
-    VOLCENGINE_REGION=cn-beijing   # 可选，默认 cn-beijing
-    ```
-  </Tab>
-  <Tab title="BytePlus">
-    设置 BytePlus 凭证，并把默认云厂商与区域写入用户级配置：
-
-    ```bash lines
-    BYTEPLUS_ACCESS_KEY=...
-    BYTEPLUS_SECRET_KEY=...
-    agentkit --provider byteplus config --global --region ap-southeast-1
-    ```
-  </Tab>
-  <Tab title="SSO">
-    浏览器登录，存储短期 STS 凭证。
-
-    ```bash lines
-    agentkit login <sso-address>
-    agentkit whoami
-    ```
-  </Tab>
-</Tabs>
-
-<Tip>
-  SSO 登录会缓存短期 STS 凭证。未显式提供 AK/SK 时，运行时、知识库、记忆、工具和其他云端命令会使用当前登录 profile 的有效凭证；凭证过期后重新运行 `agentkit login`。
-</Tip>
-
-## 三步部署
-
-<Steps>
-  <Step title="脚手架项目">
-    ```bash lines
-    agentkit init my-agent --template basic
-    cd my-agent
-    ```
-  </Step>
-  <Step title="构建并部署">
-    ```bash lines
-    agentkit launch
-    ```
-  </Step>
-  <Step title="调用运行时">
-    ```bash lines
-    agentkit invoke run "hello"
-    ```
-  </Step>
-</Steps>
-
-完整命令见 [命令参考](/productions/agentkit-cli/preview/zh/commands)，或运行 `agentkit tree` 打印命令树。需要切换云厂商或区域时，运行 `agentkit config --cloud_provider byteplus --region ap-southeast-1` 更新项目配置。
-
-## 使用控制台登录
-
-没有 AK/SK 时，可通过控制台获取临时凭据；已有 SSO profile 时，`--console` 可明确选择控制台方式
-
-```bash lines
-agentkit login --console
-agentkit --provider byteplus login --console
-```
-
-远程服务器使用 `agentkit login --remote`。凭据优先级与自动登录规则见 [鉴权与登录](/productions/agentkit-cli/preview/zh/commands/auth#控制台登录与凭据优先级)

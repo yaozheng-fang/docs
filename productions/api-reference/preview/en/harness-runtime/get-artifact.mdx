@@ -3,3 +3,7 @@ title: "Get the latest artifact"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json GET /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/get-artifact"
 ---
+
+Omit the `version` query parameter to read the latest version, or select a version with a query such as `?version=0`. Use a version number from the save response or version list; it is not part of the filename
+
+The response is a `Part` object. Content can appear in `text` or `inlineData`. For binary content, decode the data and interpret it using `mimeType`; saving the entire JSON response does not produce the original file

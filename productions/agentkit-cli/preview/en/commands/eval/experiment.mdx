@@ -28,8 +28,6 @@ agentkit eval exp list --json
 
 Show an experiment's details: status, dataset, target, evaluators, aggregate scores, and field mappings. `get` is an alias of `show`.
 
-You can also write this command as `eval experiment get`.
-
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<id>` | Experiment ID. | Required |
@@ -83,5 +81,13 @@ agentkit eval experiment results 75901xxxxxxxxxxxxx --json
 | `Draining` / `Processing` | Still running. |
 
 <Tip>
-When a case fails but there is no experiment-level error message, it is usually because the target Runtime did not respond correctly (not deployed, not ready, or authentication failed), rather than an evaluation configuration issue. First confirm that the Runtime pointed to by `--target` is running.
+For failed cases, inspect per-case errors, then check target readiness, authentication, field mappings, and the judge model. An aggregate result without an error message does not establish that the evaluation configuration is correct.
 </Tip>
+
+Obtain the experiment ID from `eval run` or `experiment list`. `show` does not wait continuously for completion; query again later while processing. `results` defaults to the first page, so retrieve subsequent pages for a complete analysis
+
+```bash lines
+agentkit eval experiment results <experiment-id> --page 2 --limit 20 --json
+```
+
+Per-case results can include source cases, target outputs, and scoring reasons. Store and share them within the evaluation data's access scope. `Success` indicates execution completed, not that scores satisfy business requirements

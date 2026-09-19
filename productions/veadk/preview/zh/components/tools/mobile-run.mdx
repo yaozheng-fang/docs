@@ -28,6 +28,14 @@ en_link: "/productions/veadk/preview/en/components/tools/mobile-run"
 
 `tool_id` 格式为 `product_id-pod_id`，在云手机控制台的实例管理界面获取。
 
+在导入模块前设置环境变量。`TOOL_MOBILE_USE_TOOL_ID` 必须是字符串列表的文本表示，即使只有一个设备也应写成：
+
+```bash lines
+export TOOL_MOBILE_USE_TOOL_ID='["product123-pod456"]'
+```
+
+每个元素按控制台的 `product_id-pod_id` 格式填写，多个实例需属于同一产品。该工具读取火山引擎凭证并使用云手机服务端点，不随 `CLOUD_PROVIDER` 自动切换。云手机已登录的账户会执行真实操作，示例将权限限制为打开应用与搜索
+
 ## 使用方法
 
 ```python title="examples/tools/mobile_run/agent.py" lines
@@ -42,7 +50,9 @@ agent = Agent(
     model_name="doubao-seed-2-1-pro-260628",
     description="An agent that operates a cloud phone.",
     instruction="Use the mobile tool to complete tasks on the cloud phone.",
-    tools=[create_mobile_use_tool()],
+    tools=[create_mobile_use_tool(
+        system_prompt="Only open the requested app and search. Do not place orders, send messages, or change account settings.",
+    )],
 )
 
 runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
@@ -56,3 +66,14 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 参数与结果
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `system_prompt` | `str` | 必填 | 云手机操作约束与完成条件 |
+| `timeout_seconds` | `int` | `900` | 设备等待与远端任务配置的超时秒数，不是强制中断整个本地轮询的保证 |
+| `max_step` | `int` | `100` | 远端操作步骤上限 |
+| `step_interval_seconds` | `int` | `1` | 传给远端任务的步骤间隔秒数，本地状态查询另行等待 |
+
+返回的异步工具接收 `user_prompts: list[str]`，没有默认值。同一设备上连续完成的操作应写在一个字符串中；只有可独立执行的工作才拆为多个元素。返回列表与输入顺序对应，各元素是任务成功、失败或异常的说明，应逐项检查，不要仅判断列表非空

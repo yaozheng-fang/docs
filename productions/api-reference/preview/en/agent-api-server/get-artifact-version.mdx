@@ -3,3 +3,7 @@ title: "Get an artifact version"
 openapi: "/productions/api-reference/openapi/en/agent-api-server.json GET /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}/versions/{version_id}"
 zh_link: "/productions/api-reference/preview/zh/agent-api-server/get-artifact-version"
 ---
+
+Use the version number returned when saving the artifact, or retrieve the version list first. Success returns that version as a `Part`; a missing artifact or version returns `404`
+
+Content can appear in `text` or `inlineData`. Retrieve its URI, MIME type, and custom metadata separately with [Get artifact version metadata](/productions/api-reference/preview/en/agent-api-server/get-artifact-metadata)

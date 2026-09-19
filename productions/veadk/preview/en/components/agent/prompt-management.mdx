@@ -3,55 +3,111 @@ title: "Prompt management"
 zh_link: "/productions/veadk/preview/zh/components/agent/prompt-management"
 ---
 
-In production, system prompts often need versioning and dynamic delivery. Prompt
-management lets you template and hot-update the prompt at runtime without
-changing code or restarting the service. Before handling each user request,
-VeADK calls the prompt manager's `get_prompt` method to fetch the latest content
-and uses it as the agent's system prompt.
+A prompt manager supplies system instructions from an external source. Use one to maintain prompt versions separately or select content for each request. Setting `Agent.prompt_manager` replaces `instruction`. Fetch timing follows the runtime's instruction resolution, so do not assume exactly one call per user request
 
-## Using CozeLoop
+Complete [model configuration](/productions/veadk/preview/en/get-started/quickstart) before running these examples
 
-VeADK ships `CozeloopPromptManager`, which connects the system prompt to
-CozeLoop's cloud prompt management.
+## Use Cozeloop
 
-Install the CozeLoop Python SDK:
+Create and publish a prompt in Cozeloop, assign the `production` label to the intended version, and obtain a workspace ID and Token with read access. The manager reads only the first message in the prompt template, so place the complete system instructions in that message
+
+Install the SDK and set credentials in the terminal that will run the script:
 
 ```bash lines
 pip install cozeloop
 ```
 
-Provide credentials via environment variables rather than hardcoding them:
-
-```bash lines
-export COZELOOP_WORKSPACE_ID="<your Workspace ID>"
-export COZELOOP_TOKEN="<your CozeLoop token>"
+```bash  lines
+export COZELOOP_WORKSPACE_ID="<workspace-id>"
+export COZELOOP_TOKEN="<access-token>"
+export COZELOOP_PROMPT_KEY="<published-prompt-key>"
 ```
 
-Create the manager and pass it to the agent:
+The example explicitly reads these environment variables; the manager does not discover them automatically
 
-```python lines
+```python managed_prompt.py lines
+import asyncio
 import os
-from veadk import Agent
+from veadk import Agent, Runner
 from veadk.prompts.prompt_manager import CozeloopPromptManager
 
-prompt_manager = CozeloopPromptManager(
+manager = CozeloopPromptManager(
     cozeloop_workspace_id=os.environ["COZELOOP_WORKSPACE_ID"],
     cozeloop_token=os.environ["COZELOOP_TOKEN"],
-    prompt_key="your_prompt_key",  # the Prompt Key created in CozeLoop
-    label="production",            # the Prompt label created in CozeLoop
+    prompt_key=os.environ["COZELOOP_PROMPT_KEY"],
+    label="production",
 )
+agent = Agent(name="assistant", prompt_manager=manager)
 
-agent = Agent(name="assistant", prompt_manager=prompt_manager)
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain how to check an invoice.", session_id="managed-prompt"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-<Note>
-  CozeLoop caches prompts locally with a one-minute refresh interval. If fetching
-  fails, it falls back to VeADK's default system prompt.
-</Note>
+Run `python managed_prompt.py` to generate a response with the selected prompt. A distinctive response format in the template can help verify that it is being used
 
-## Custom prompt manager
+### Constructor parameters
 
-To load prompts from your own configuration service, database, or files,
-subclass `BasePromptManager` and implement `get_prompt`. It is called before
-handling each user request, and the returned string becomes the agent's system
-prompt.
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `cozeloop_workspace_id` | `str` | Required | Workspace containing the prompt |
+| `cozeloop_token` | `str` | Required | Access Token with permission to read the prompt |
+| `prompt_key` | `str` | Required | Unique identifier of the published prompt |
+| `version` | `str` | `""` | Fixed version for reproducible prompt selection |
+| `label` | `str` | `""` | Version label, such as `production` |
+
+Set `version` to select a fixed release, or `label` to follow a label. Caching and refresh intervals depend on the installed Cozeloop SDK; label changes are not guaranteed to take effect immediately
+
+### Failures and template limitations
+
+- An empty prompt, message list, or first message causes the manager to return VeADK's default prompt and log a warning
+- Network, authentication, and SDK exceptions are not universally converted to a default prompt; the application must handle them
+- The manager neither combines multiple messages nor automatically renders Cozeloop template variables
+- An explicitly supplied `Agent.instruction` is not a fallback for this manager
+
+## Create a custom prompt manager
+
+Subclass `BasePromptManager` and implement `get_prompt(context, **kwargs)`. This example reads `system-prompt.txt` beside the script each time instructions are requested. File changes affect the next read; a missing or empty file fails explicitly
+
+Create the prompt file beside the script:
+
+```text system-prompt.txt lines
+You help users check invoices. Ask for the billing period and explain each step clearly.
+```
+
+```python file_prompt.py lines
+import asyncio
+from pathlib import Path
+from google.adk.agents.readonly_context import ReadonlyContext
+from veadk import Agent, Runner
+from veadk.prompts.prompt_manager import BasePromptManager
+
+class FilePromptManager(BasePromptManager):
+    def __init__(self, path: Path):
+        self.path = path
+
+    def get_prompt(self, context: ReadonlyContext, **kwargs) -> str:
+        text = self.path.read_text(encoding="utf-8").strip()
+        if not text:
+            raise ValueError("The prompt file must not be empty")
+        return text
+
+agent = Agent(
+    name="assistant",
+    prompt_manager=FilePromptManager(Path(__file__).with_name("system-prompt.txt")),
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain how to check an invoice.", session_id="file-prompt"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python file_prompt.py` to generate a response using the file. See [system prompts](/productions/veadk/preview/en/components/agent/system-prompt) for readable context fields. Database and configuration-service integrations must define their own timeouts, caching, version selection, failure behavior, and template rendering

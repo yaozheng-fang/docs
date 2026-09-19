@@ -18,7 +18,10 @@ en_link: "/productions/agentkit-cli/preview/en/commands/harness"
 | `--mcp-server <json>` | 远程 MCP 服务 JSON，可重复；单独传 `[]` 清空列表 | 不覆盖 |
 
 ```bash lines
+# Volcengine
 agentkit harness init my-harness
+
+# BytePlus: choose this command instead
 agentkit --provider byteplus harness init my-harness --region ap-southeast-1
 ```
 
@@ -28,19 +31,11 @@ agentkit --provider byteplus harness init my-harness --region ap-southeast-1
 # =============================================================================
 # AgentKit harness configuration (code-free agent).
 #
-# `agentkit harness deploy` converts this file into the runtime's environment
-# variables: top-level fields and `model` are flattened (model.name -> MODEL_NAME,
-# tools -> TOOLS, ...); each component's `type` selects its backend, and the
-# component's other params map to the env vars that backend reads (e.g. viking
-# `project` -> DATABASE_VIKING_PROJECT). Empty values are skipped, so the server
-# falls back to its own defaults.
-#
 # Configure with `agentkit harness set ...` or by editing this file. For a
 # component, uncomment the params under the backend you set as `type`.
 # =============================================================================
 
 # Harness / runtime name (also the knowledgebase & long-term-memory index name).
-#   env: HARNESS_NAME          flag: --name
 harness_name: "my-harness"
 
 # Deployment cloud selected by `agentkit harness init`.
@@ -62,7 +57,6 @@ cloud:
 # For a shared OAuth Harness, obo_broker sends a short-lived user+Runtime TIP to
 # a fixed APIG model egress; the gateway/Broker replaces it with the hosted
 # downstream credential, so the real provider key never enters this process.
-#   env: MODEL_*               flag: --model-name
 model:
   name: ""
   # provider: openai
@@ -95,28 +89,23 @@ capacity:
   # session_db_pool_timeout_seconds: 10
   # session_db_pool_recycle_seconds: 300
 
-# Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
+# Built-in tool names; configure with --tools (comma-separated)
 tools: []
 mcp_servers: []
 
 # Skill Hub slugs, ss-... spaces, or ss-...:s-... refs.
-#   env: SKILLS  flag: --skills (comma-separated)
 skills: []
 
 # Agent instruction (empty = server default).
-#   env: SYSTEM_PROMPT         flag: --system-prompt
 system_prompt: ""
 
 # Agent description, used by discovery and generated AgentCards.
-#   env: DESCRIPTION           flag: --description
 description: ""
 
 # Agent runtime backend: adk (default) | codex.
-#   env: RUNTIME               flag: --runtime
 runtime: adk
 
 # Per-run defaults. Both can be overridden by `agentkit harness invoke` flags.
-#   env: MAX_LLM_CALLS         flag: --max-llm-calls
 # max_llm_calls: 20
 
 # Tool-call behavior.
@@ -276,7 +265,7 @@ short_term_memory:
 | `capacity.session_db_pool_recycle_seconds` | integer | — | 共享会话数据库连接回收秒数，范围为 `30` 到 `3600`。 |
 
 <Note>
-  展开规则：`harness deploy` 将顶层字段与 `model` 扁平化为环境变量（如 `model.name` → `MODEL_NAME`），组件参数映射为该后端读取的 `DATABASE_<BACKEND>_*` 等变量；空值会被跳过，由服务端回退到默认值。`auth`、`cloud`、`capacity` 与 Sidecar 配置用于部署控制面，不作为普通用户配置传入智能体进程。`harness init` 同时生成的 `.env.example` 只包含可选的云厂商 AK/SK 占位符，智能体配置全部在 `harness.yaml` 中。
+`harness deploy` 与 `harness dev` 会读取项目 `.env` 并解析 `harness.yaml` 中的 `${VAR}`，已有 shell 环境变量优先。数据库密码等敏感值应使用变量引用，并将 `.env` 排除出版本控制。`.env.example` 只包含可选的云凭据占位符；模型、组件、网络和容量在 `harness.yaml` 中配置
 </Note>
 
 ## harness set
@@ -326,6 +315,7 @@ short_term_memory:
 | `--short-term-memory-database <value>` | short_term_memory 数据库 | 无 |
 | `--short-term-memory-charset <value>` | short_term_memory 字符集 | 无 |
 | `--short-term-memory-port <value>` | short_term_memory 端口 | 无 |
+| `--short-term-memory-schema <value>` | PostgreSQL schema 名称 | 无 |
 | `--discovery-url <url>` | OAuth2/JWT OIDC discovery URL（启用 custom_jwt） | 无 |
 | `--allowed-id <ids>` | 逗号分隔的允许客户端 ID | 无 |
 | `--structured-tool-calls` | 使用结构化工具调用。 | 当前配置值 |
@@ -341,7 +331,7 @@ short_term_memory:
 | `--mcp-server <json>` | 远程 MCP 服务 JSON，可重复；单独传 `[]` 清空列表 | 不覆盖 |
 
 ```bash lines
-agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
+agentkit harness set --name my-harness --model-name "your-model-name" --runtime adk
 
 agentkit harness set --registry default --registry-space-name Default --registry-top-k 3
 ```
@@ -361,6 +351,10 @@ agentkit harness set --registry default --registry-space-name Default --registry
 | `--reload` | 服务代码变化时自动重启。 | `false` |
 | `--python <bin>` | 启动服务使用的 Python 解释器。 | `python3` |
 
+先准备 Python 3 与 Harness 服务依赖。命令启动时会输出依赖清单路径；缺少模块时，使用同一个 `--python` 解释器安装该清单后重试。此命令不会自动创建 Python 环境或安装依赖；修改 `harness.yaml` 后需重新启动，`--reload` 只监视服务代码
+
+本地监听不代表离线运行：调用模型、MCP、知识库或远程数据库仍需要相应凭据与网络，并可能产生费用
+
 ```bash lines
 agentkit harness dev --reload --port 8000
 ```
@@ -378,6 +372,10 @@ agentkit harness dev --reload --port 8000
 | `--cronjob` | 启用持久化定时任务 | `false` |
 | `--cronjob-tos-bucket <bucket>` | 保存任务、状态和结果的已有 TOS 桶名 | `cronjob.tos_bucket` |
 | `--cronjob-tos-region <region>` | TOS 桶所在区域 | 运行时区域 |
+
+<Warning>
+部署需要所选云厂商的控制面凭据，将构建镜像并创建或更新云端 Runtime，可能产生费用并改变线上行为。先确认模型可用、组件连接配置完整，以及地域和项目正确。模型名示例中的 `your-model-name` 必须替换为账号可调用的模型或端点 ID
+</Warning>
 
 ```bash lines
 agentkit harness deploy --project default --region cn-beijing
@@ -434,7 +432,7 @@ agentkit harness deploy --project default --region cn-beijing
 agentkit harness invoke my-harness "你好，介绍一下你自己"
 
 agentkit harness invoke my-harness "总结本次会话" \
-  --model-name doubao-pro \
+  --model-name "your-model-name" \
   --max-llm-calls 10 \
   --registry default
 ```
@@ -548,3 +546,9 @@ agentkit harness invoke my-harness "Focus on unresolved issues" --config invoke.
 ## 定时任务
 
 启用 `cronjob` 后，可通过 `harness cronjob` 创建周期或一次性调用，查看结果，并暂停、恢复或取消执行。完整配置、参数与限制见 [Harness 定时任务](/productions/agentkit-cli/preview/zh/commands/harness-cronjob)
+
+## 验证与会话存储
+
+部署后运行 `agentkit runtime show my-harness` 确认当前版本，再用 `agentkit harness invoke my-harness "你好"` 验证模型响应。Runtime 就绪不能保证模型凭据、MCP 或数据库均可用；调用失败时查看 `agentkit runtime logs my-harness --limit 200`
+
+本地内存会话随进程结束而丢失，SQLite 会话依赖单个实例的文件。共享 OAuth Harness 扩容到多个实例前，应配置 MySQL 或 PostgreSQL 短期记忆和可达的私有网络。托管 Sidecar 的地区、容量和鉴权限制见 [Harness Sidecar](/productions/agentkit-cli/preview/zh/agentkit-yaml#harness-sidecar)

@@ -14,10 +14,12 @@ The `mem0` backend uses [Mem0](https://mem0.ai/) as long-term storage. It is a m
 ## Dependencies
 
 ```bash lines
-pip install mem0
+python -m pip install "veadk-python[database]"
 ```
 
 ## Usage
+
+The install command includes the official Mem0 Python package, `mem0ai>=1.0.0,<2`. Set `DATABASE_MEM0_API_KEY` and `DATABASE_MEM0_BASE_URL` first. Use `https://api.mem0.ai` for public Mem0 without a `/v1` suffix. Volcengine credential exchange applies only to its corresponding managed memory service, not arbitrary Mem0 accounts
 
 ```python lines
 from veadk import Agent
@@ -35,6 +37,8 @@ agent = Agent(
 You can also pass config explicitly via `backend_config`:
 
 ```python lines
+import os
+
 from veadk.memory.long_term_memory import LongTermMemory
 from veadk.configs.database_configs import Mem0Config
 
@@ -44,14 +48,25 @@ ltm = LongTermMemory(
     backend_config={
         "index": "ltm_demo",
         "mem0_config": Mem0Config(
-            api_key="your-mem0-api-key",
-            base_url="https://api.mem0.ai/v1",
+            api_key=os.environ["DATABASE_MEM0_API_KEY"],
+            base_url="https://api.mem0.ai",
         ),
     },
 )
 ```
 
 ## Parameters
+
+### LongTermMemory parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseLongTermMemoryBackend` | `"opensearch"` | Set to `mem0` for this page, or pass a configured backend instance |
+| `backend_config` | `dict` | `{}` | Backend settings; a supplied backend instance takes precedence |
+| `index` | `str` | `""` | Without backend_config, resolves from index, app_name, then default_app; supply a nonempty index with a configuration dictionary |
+| `app_name` | `str` | `""` | Fallback for index; the actual user comes from the saved Session or search arguments |
+| `top_k` | `int` | `5` | Number of retrieved chunks; use a positive integer |
+| `user_id` | `str` | `""` | Deprecated; does not select the runtime user |
 
 ### Constructor parameters
 
@@ -71,7 +86,7 @@ ltm = LongTermMemory(
 | `api_key` | `DATABASE_MEM0_API_KEY` | `str` | `""` | Mem0 API key. |
 | `api_key_id` | `DATABASE_MEM0_API_KEY_ID` | `str` | `""` | Used to auto-fetch the API key; provide this or `project_id`. |
 | `project_id` | `DATABASE_MEM0_PROJECT_ID` | `str` | `""` | Used to auto-fetch the API key. |
-| `base_url` | `DATABASE_MEM0_BASE_URL` | `str` | `""` | Mem0 service endpoint, e.g. `https://api.mem0.ai/v1`. |
+| `base_url` | `DATABASE_MEM0_BASE_URL` | `str` | `""` | Mem0 service endpoint, e.g. `https://api.mem0.ai`. |
 
 ### API key resolution order
 
@@ -82,7 +97,7 @@ If `api_key` is provided directly, it is used as is; otherwise VeADK tries to fe
 ```bash lines
 # Option 1: provide the API key directly
 export DATABASE_MEM0_API_KEY="your-mem0-api-key"
-export DATABASE_MEM0_BASE_URL="https://api.mem0.ai/v1"
+export DATABASE_MEM0_BASE_URL="https://api.mem0.ai"
 
 # Option 2: auto-fetch via api_key_id or project_id
 export DATABASE_MEM0_API_KEY_ID="your-api-key-id"
@@ -92,3 +107,37 @@ export DATABASE_MEM0_PROJECT_ID="your-project-id"
 <Note>
 If `api_key` is not provided directly, VeADK tries to obtain it via `api_key_id` or `project_id`; an error is raised if neither is set.
 </Note>
+
+## Verify writes and retrieval
+
+After configuring the dependencies and credentials on this page, run this standalone example. It saves user text and searches for that user directly without calling a conversation model
+
+```python lines
+import asyncio
+
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
+from veadk.memory.long_term_memory import LongTermMemory
+
+async def main():
+    memory = LongTermMemory(backend="mem0", index="ltm_demo")
+    session = Session(
+        id="memory_check", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(session)
+    result = await memory.search_memory(
+        app_name="ltm_demo", user_id="user_42", query="preferred language"
+    )
+    for entry in result.memories:
+        print(entry.content)
+
+asyncio.run(main())
+```
+
+Results should contain the saved language preference. Managed services may extract memories asynchronously, so a completed write does not guarantee immediate retrieval. An empty result can also indicate permission, network, or service failure; check error logs and service records. The save method does not return a success Boolean
+
+`index` is not sent in Mem0 save or search requests and does not create a separate project. Within one service and credential scope, the runtime `user_id` distinguishes memory. Use application-specific credentials or stable application-and-user identifiers when sharing a service. Saving uses asynchronous extraction, so searches can initially return no results

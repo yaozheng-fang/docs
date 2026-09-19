@@ -17,13 +17,18 @@ The `context_search` backend integrates with the managed Volcengine Context Sear
 
 ## Usage
 
+First set the AK/SK, scene, and engine variables below, and replace the example numeric ID with your actual RAG scene ID. Uploads require scene write permissions; searches require the engine API key. The engine must index the same scene. Data is uploaded for remote processing
+
 ```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
 # index is the Context Search scene ID (Scene Id), a numeric string
 kb = KnowledgeBase(backend="context_search", index="123456789")
-kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+kb.precheck_index_naming()
+assert kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+for entry in kb.search("annual leave", top_k=3):
+    print(entry.content)
 
 agent = Agent(
     name="demo",
@@ -35,6 +40,8 @@ agent = Agent(
 You can also pass credentials and engine info explicitly via `backend_config`:
 
 ```python lines
+import os
+
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(
@@ -42,16 +49,30 @@ kb = KnowledgeBase(
     index="123456789",
     backend_config={
         "index": "123456789",
-        "volcengine_access_key": "your-ak",
-        "volcengine_secret_key": "your-sk",
+        "volcengine_access_key": os.environ["VOLCENGINE_ACCESS_KEY"],
+        "volcengine_secret_key": os.environ["VOLCENGINE_SECRET_KEY"],
         "context_search_project": "default",
         "context_search_engine_endpoint": "https://your-engine-endpoint",
-        "context_search_engine_apikey": "your-engine-apikey",
+        "context_search_engine_apikey": os.environ["DATABASE_CONTEXT_SEARCH_ENGINE_APIKEY"],
     },
 )
 ```
 
 ## Parameters
+
+### KnowledgeBase parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | Set to `context_search` or pass a backend instance |
+| `backend_config` | `dict` | `{}` | Must include index when nonempty; does not merge the outer index |
+| `index` | `str` | `""` | Index name; falls back to app_name when no configuration dictionary is supplied |
+| `app_name` | `str` | `""` | Fallback for index; not a user authorization filter |
+| `top_k` | `int` | `10` | Default result count; search(top_k=0) uses this value |
+| `name` | `str` | `"user_knowledgebase"` | Knowledge-base name shown to the agent |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | Explains the knowledge base to the agent |
+| `enable_profile` | `bool` | `False` | Enables document profiles; generate profile files first, or leave disabled for ordinary retrieval |
+| `query_with_user_profile` | `bool` | `False` | Uses the agent’s Viking long-term memory profile to guide queries; the knowledge backend itself need not be Viking |
 
 ### Constructor parameters
 
@@ -83,7 +104,7 @@ export VOLCENGINE_SECRET_KEY="your-sk"
 # Context Search
 export DATABASE_CONTEXT_SEARCH_PROJECT="default"
 export DATABASE_CONTEXT_SEARCH_REGION="cn-beijing"
-export DATABASE_CONTEXT_SEARCH_ENGINE_ID="your-engine-id"
+export DATABASE_CONTEXT_SEARCH_ENGINE_ID="123456789"
 export DATABASE_CONTEXT_SEARCH_ENGINE_ENDPOINT="https://your-engine-endpoint"
 export DATABASE_CONTEXT_SEARCH_ENGINE_APIKEY="your-engine-apikey"
 ```
@@ -93,5 +114,9 @@ Embedding and retrieval both run server-side in Context Search, so this backend 
 </Note>
 
 <Warning>
-`index` (the scene ID) must be a numeric string, otherwise initialization fails; initialization also calls `GetScene` to verify the scene exists. Before retrieval, `context_search_engine_endpoint` and `context_search_engine_apikey` must be set, otherwise `search` fails.
+`index` (the scene ID) must be a numeric string, otherwise initialization fails; successful construction does not verify the scene; call `kb.precheck_index_naming()` to validate its ID and access permissions. Before retrieval, `context_search_engine_endpoint` and `context_search_engine_apikey` must be set, otherwise `search` fails.
 </Warning>
+
+`CLOUD_PROVIDER=byteplus` changes the default region and API host. Global configuration can map BytePlus AK/SK to the fields read by this backend. Explicitly provide STS tokens through `volcengine_session_token` or `VOLCENGINE_SESSION_TOKEN`; the endpoint, credentials, and scene must belong to the same environment. Directory ingestion recursively scans all files; exclude content that should not be uploaded before importing
+
+The example search should return the annual-leave policy. For empty results, check successful ingestion, matching embedding dimensions, completed server processing, network access, and permissions. Managed ingestion may not be immediately searchable. Running the configured Agent also requires model credentials

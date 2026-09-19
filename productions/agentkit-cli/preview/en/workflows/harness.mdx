@@ -28,15 +28,20 @@ The harness path suits cases that need no custom code: the agent's model, tools,
     ```bash lines
     agentkit harness set \
       --name my-harness \
-      --model-name ep-xxxxxxxx \
-      --system-prompt "You are a concise, helpful agent." \
-      --tools web_search
+      --model-name "your-model-name" \
+      --system-prompt "You are a concise, helpful agent."
     ```
 
     <Tip>
       To configure a component such as a knowledge base or memory, set its `--<component>-type` first, then add the connection parameters; pass an empty string `""` to disable one. Running `agentkit harness set` with no flags lists the current fields. See [Harness](/productions/agentkit-cli/preview/en/commands/harness) for the full field list.
     </Tip>
   </Step>
+<Step title="Check cloud settings and component access">
+    Replace `your-model-name` with a model or endpoint ID available to your account. Default direct model calls require suitable model access on the Runtime role; a successful deployment does not grant model access. Verify a minimal reply without external tools before adding knowledge bases, MCP services, or memory
+
+    This example uses Volcengine Beijing. For BytePlus, initialize with `agentkit --provider byteplus harness init my-harness --region ap-southeast-1` and keep deployment and query regions consistent. Reference database passwords and MCP credentials as `${VAR}` in `harness.yaml`, with actual values in an uncommitted `.env`
+  </Step>
+
   <Step title="Build and deploy">
     Build the image in the cloud from `harness.yaml` and create or update the runtime.
 
@@ -48,6 +53,7 @@ The harness path suits cases that need no custom code: the agent's model, tools,
     Call the runtime you just deployed by name. The CLI resolves the endpoint and authentication automatically, using configured AK/SK credentials or valid STS credentials from the active SSO login profile.
 
     ```bash lines
+    agentkit runtime show my-harness
     agentkit harness invoke my-harness "Hello, introduce yourself"
     ```
   </Step>

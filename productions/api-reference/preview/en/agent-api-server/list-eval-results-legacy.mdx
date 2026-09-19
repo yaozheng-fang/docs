@@ -3,3 +3,7 @@ title: "List evaluation results as an array"
 openapi: "/productions/api-reference/openapi/en/agent-api-server.json GET /dev/apps/{app_name}/eval_results"
 zh_link: "/productions/api-reference/preview/zh/agent-api-server/list-eval-results-legacy"
 ---
+
+This deprecated endpoint returns an array of result IDs directly. The replacement returns an object containing `evalResultIds`; update response parsing when migrating
+
+See the [corresponding evaluation endpoint](/productions/api-reference/preview/en/agent-api-server/list-eval-results) for the replacement and its complete requirements

@@ -3,7 +3,9 @@ title: "Memory"
 zh_link: "/productions/api-reference/preview/zh/memory"
 ---
 
-Add session content to memory
+Send events from an existing session to the configured memory backend for later retrieval. Configure the backend first and confirm the application, user, and session identifiers; this endpoint does not provision a memory backend
+
+Ingestion sends conversation data to that backend for processing. Success returns JSON `null`, without extracted memories. Harness deployments use their corresponding [memory ingestion endpoint](/productions/api-reference/preview/en/harness-runtime/update-memory)
 
 | Method | Path | Endpoint |
 | --- | --- | --- |

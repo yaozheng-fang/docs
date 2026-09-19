@@ -5,5 +5,7 @@ en_link: "/productions/api-reference/preview/en/agent-api-server/delete-eval-cas
 ---
 
 <Warning>
-此操作会删除或替换已有数据，请先确认目标资源并保存需要保留的内容
+此操作从指定评测集中删除一个用例，后续对整个评测集的运行将不再包含该用例。删除前保存需要保留的样本，本接口不提供恢复操作
 </Warning>
+
+成功返回 JSON `null`；目标评测集或用例不存在时返回 `404`

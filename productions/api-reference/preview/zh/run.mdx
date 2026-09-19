@@ -3,9 +3,9 @@ title: "运行智能体"
 en_link: "/productions/api-reference/preview/en/run"
 ---
 
-向会话提交消息，一次性或流式获取智能体运行事件
+先在目标应用与用户下创建会话，再提交消息。`/run` 等待完成后返回事件数组；`/run_sse` 持续发送事件，客户端需处理流内错误并读取到连接结束
 
-Harness 调用的配置与请求结构见 [Harness Runtime 接口](/productions/api-reference/preview/zh/harness-runtime/overview)
+调用会保存会话事件，模型与工具执行可能产生费用或外部操作。Harness 的请求覆盖与流式行为有所不同，见 [Harness Runtime 接口](/productions/api-reference/preview/zh/harness-runtime/overview)
 
 | 方法 | 路径 | 接口 |
 | --- | --- | --- |

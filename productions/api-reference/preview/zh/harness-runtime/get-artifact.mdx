@@ -3,3 +3,7 @@ title: "读取最新制品"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json GET /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts/{artifact_name}"
 en_link: "/productions/api-reference/preview/en/harness-runtime/get-artifact"
 ---
+
+省略 `version` 查询参数时读取最新版本，也可通过 `?version=0` 指定版本。版本号来自保存响应或制品版本列表，不是文件名的一部分
+
+响应为 `Part` 对象。内容可能位于 `text` 或 `inlineData`；读取二进制内容时应按 `mimeType` 解释解码后的数据，不要将整个响应直接保存为原文件

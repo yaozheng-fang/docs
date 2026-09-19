@@ -13,7 +13,7 @@ en_link: "/productions/agentkit-cli/preview/en/commands/init"
 | --- | --- | --- |
 | `[project_name]` | 项目名称。 | `simple_agent` |
 | `-t, --template <template>` | 模板 ID、Key 或名称。可用 Key：`basic`、`basic_stream`、`a2a`、`eino_a2a`、`agent_server`、`langchain_basic_stream`、`basic_go`、`a2a_go`。 | 交互选择 |
-| `--directory <path>` | 目标目录。 | `.` |
+| `--directory <path>` | 文件写入目录；相对路径以当前目录为基准，不会再追加项目名称 | `.` |
 | `--agent-name <name>` | 智能体名称。 | `Agent` |
 | `--description <text>` | 智能体描述。 | 模板默认值 |
 | `--system-prompt <text>` | 智能体系统提示词。 | 模板默认值 |
@@ -23,11 +23,15 @@ en_link: "/productions/agentkit-cli/preview/en/commands/init"
 | `--tools <list>` | 要包含的工具列表，多个值用逗号分隔。 | — |
 | `--list-templates` | 列出模板 ID、Key 和名称后退出。 | `false` |
 
-```bash lines
-agentkit init my-agent --template basic
+`--model-api-key` 会将实际密钥写入生成的 `agentkit.yaml`。建议先只生成项目，再按[快速开始](/productions/agentkit-cli/preview/zh/quickstart)配置忽略文件和模型凭据，避免把密钥提交或打包到镜像
 
-agentkit init go-agent --template basic_go --directory ./apps
+```bash lines
+agentkit init my-agent --template basic --directory ./my-agent
+
+agentkit init go-agent --template basic_go --directory ./apps/go-agent
 ```
+
+不传 `--directory` 时，文件直接写入当前目录。上例分别写入 `./my-agent` 和 `./apps/go-agent`；进入对应目录后再配置或部署
 
 ## init --from-agent
 
@@ -40,16 +44,17 @@ agentkit init go-agent --template basic_go --directory ./apps
 | `-f, --from-agent <path>` | 包含 `Agent` 定义的 Python 文件路径。 | 必填 |
 | `--agent-var <name>` | 文件中的 `Agent` 变量名；省略时自动检测。 | 自动检测 |
 | `--wrapper-type <type>` | 包装类型：`basic`、`stream` 或 `agent_server`；与 `--template` 同时使用时必须匹配。 | `basic` |
-| `--directory <path>` | 目标目录。 | `.` |
+| `--directory <path>` | 文件写入目录；相对路径以当前目录为基准，不会再追加项目名称 | `.` |
 
 ```bash lines
-agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent
+agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent --directory ./wrapped-agent
 
-agentkit init wrapped-server --from-agent ./agent.py --template agent_server
+agentkit init wrapped-server --from-agent ./agent.py --template agent_server --directory ./wrapped-server
 ```
 
-初始化后进入项目目录，检查 `agentkit.yaml`，再执行：
+初始化后进入 `--directory` 指定的目录，按[快速开始](/productions/agentkit-cli/preview/zh/quickstart)配置云平台、模型和凭证，再执行部署命令。以上方 `wrapped-agent` 为例：
 
 ```bash lines
+cd wrapped-agent
 agentkit launch
 ```

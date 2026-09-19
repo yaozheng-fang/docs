@@ -12,12 +12,26 @@ The HTTP API reference is organized by service: Agent API Server and Harness Run
 
 The services can expose the same path with different request fields, defaults, or authentication requirements. Follow the reference for the service you are calling. Each endpoint page displays path, query, header, and body parameters alongside response schemas and examples
 
-## Call an endpoint
+## Prepare a call
 
-Local addresses in examples refer to development services. For a deployed service, use its actual address and required credentials. Endpoint pages provide cURL, Python, and JavaScript examples and an interactive request panel
+1. Identify the service. Use the Agent API Server reference for `adk api_server` or `veadk web`, and the Harness Runtime reference for deployments created with `agentkit harness deploy`
+2. Check the service overview for version requirements, the base address, and authentication. Local example addresses point to development services; replace them with the deployment address when calling a cloud service
+3. Confirm the application, user, and session identifiers. If an endpoint requires an existing session, create it before invoking the agent. Follow the sequence in the relevant service overview
 
-Streaming endpoints return `text/event-stream`. Use the streaming examples on the endpoint page to read events as they arrive. The cURL `-N` option disables output buffering
+A model API key authorizes model calls and does not directly authorize access to your application service. Supply gateway credentials, a Runtime API key, or a user login token as required by the deployment
 
-<Note>
-Create, update, delete, agent execution, and evaluation requests act on the selected service. Check the service address and resource identifiers before sending a request. Agent execution and cloud resources can incur charges
-</Note>
+## Send a request
+
+<Warning>
+  The interactive panel sends real requests. Create, update, delete, agent execution, and evaluation requests act on the selected service. Check its address and resource identifiers first. Agent execution and cloud resources may incur charges; deletion or replacement modifies actual data
+</Warning>
+
+Endpoint pages provide cURL, Python, and JavaScript examples, request parameters, and response schemas. Supply the deployment address and required authentication before sending a request. Interactive requests also depend on network connectivity and the service's cross-origin configuration
+
+## Check the result
+
+- Standard HTTP endpoints: check the status code and response body against the endpoint reference, and confirm that the response identifies the expected application or resource
+- Streaming endpoints: read the `text/event-stream` response continuously. The cURL `-N` option disables output buffering; an event stream is not a single JSON response
+- Harness calls: also check for errors in the response or event stream. HTTP 200 alone does not establish that agent execution succeeded. See the [Harness Runtime overview](/productions/api-reference/preview/en/harness-runtime/overview) for endpoint-specific behavior
+
+The interactive panel does not guarantee that it displays each streaming event as it arrives. Use the endpoint's streaming example when you need to observe events in real time

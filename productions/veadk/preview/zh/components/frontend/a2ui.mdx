@@ -9,6 +9,17 @@ A2UI 让智能体不只返回纯文本，还能返回**富交互界面**，包�
   A2UI 依赖可选组件包：`pip install "veadk-python[a2ui]"`。
 </Note>
 
+## 项目准备
+
+先完成[模型配置](/productions/veadk/preview/zh/components/agent/model)，使用支持工具调用的模型与 ADK 运行时。在工作目录创建以下文件；`agent.py` 使用下方示例，`__init__.py` 内容为 `from . import agent`
+
+```text
+agents/
+└── ui_agent/
+    ├── __init__.py
+    └── agent.py
+```
+
 ## 启用
 
 创建智能体时设置 `enable_a2ui=True`，智能体即可在合适的时候返回界面。默认使用内置的基础组件集，包含卡片、文本、按钮、分割线等常用组件：
@@ -16,7 +27,7 @@ A2UI 让智能体不只返回纯文本，还能返回**富交互界面**，包�
 ```python title="agent.py" lines
 from veadk import Agent
 
-agent = Agent(
+root_agent = Agent(
     name="ui_agent",
     instruction="当答案天然适合可视化（状态卡片、摘要、选项、简单表单）时，用富界面回复；其余情况用纯文本。",
     enable_a2ui=True,
@@ -26,6 +37,15 @@ agent = Agent(
 是否返回界面由模型按 `instruction` 判断，在提示词里说明「何时该用界面」，效果最佳。
 
 ## 查看效果
+
+在 `agents` 的父目录运行：
+
+```bash
+veadk frontend --dev --agents-dir ./agents --open
+```
+
+选择 `ui_agent`，发送“请用卡片展示今天的三项待办”。成功时回复中出现结构化卡片。若只有文本，先检查是否发生 A2UI 工具调用，再检查前端是否识别返回的组件；模型不会保证每轮都生成界面
+
 
 A2UI 界面由前端渲染。用 [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) 启动界面，与智能体对话即可看到返回的卡片等组件。
 
@@ -41,3 +61,37 @@ A2UI 界面由前端渲染。用 [VeADK Frontend](/productions/veadk/preview/zh/
 <Note>
   未提供渲染器的组件会回退为可折叠的 JSON 视图，因此不会导致界面出错。
 </Note>
+
+### 组件清单示例
+
+以下脚本基于内置组件清单增加 `RevenueChart`，保存为 `create_catalog.py` 并在 `agents/ui_agent` 目录运行。它会生成 `catalog.json`，启动智能体时自动读取
+
+```python title="create_catalog.py" lines
+import copy
+import json
+from pathlib import Path
+from veadk.a2ui.catalog import get_basic_catalog
+
+catalog, _ = get_basic_catalog()
+schema = copy.deepcopy(catalog.catalog_schema)
+schema["$id"] = "https://example.com/catalogs/finance.json"
+schema["catalogId"] = "https://example.com/catalogs/finance.json"
+schema["components"]["RevenueChart"] = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "component": {"const": "RevenueChart"},
+        "series": {"type": "array", "items": {"type": "number"}},
+    },
+    "required": ["id", "component", "series"],
+    "additionalProperties": False,
+}
+Path("catalog.json").write_text(json.dumps(schema, indent=2), encoding="utf-8")
+```
+
+将示例中的 catalog ID 改为自己的标识，并在 Frontend 中注册同名 `RevenueChart` 渲染器后重新构建。仅提供清单不会安装前端组件；未知组件的 JSON 回退只用于诊断，不等于组件已正常渲染
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `enable_a2ui` | `bool` | `False` | 是否挂载 A2UI 工具集 |
+| `a2ui_catalog` | 路径、`BaseA2UICatalog`、`A2uiCatalog` 或 `(A2uiCatalog, examples)` | `None` | 省略时查找智能体目录的 `catalog.json`，否则使用内置基础清单；相对路径以智能体目录为基准 |

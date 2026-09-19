@@ -16,6 +16,7 @@ pip install "veadk-python[extensions]"
 For local validation, point `DATABASE_MILVUS_URI` to a Milvus Lite data file and configure an embedding model:
 
 ```bash lines
+mkdir -p data
 export DATABASE_MILVUS_URI="./data/product_docs.db"
 export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 ```
@@ -24,7 +25,13 @@ The first run creates the data file. Later runs can retrieve existing content by
 
 ## Example
 
+Before running, configure `MODEL_EMBEDDING_NAME`, `MODEL_EMBEDDING_DIM`, `MODEL_EMBEDDING_API_BASE`, and `MODEL_EMBEDDING_API_KEY`. The `extensions` extra includes llama-index, embedding adapters, and vector-store connectors. Text is sent to the configured embedding service. For BytePlus or another provider, explicitly set the matching endpoint, model, and credentials; the default Ark endpoint does not automatically switch
+
+For remote use, provide reachable Milvus, an existing database, and credentials. Milvus Lite requires a supported platform and writable directory
+
 ```python lines
+import os
+
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -35,17 +42,35 @@ kb = KnowledgeBase(
         "index": "product_docs",
         "milvus_config": {
             "uri": "https://milvus.example.com",
-            "token": "your-milvus-token",
+            "token": os.environ["DATABASE_MILVUS_TOKEN"],
             "db_name": "default",
         },
     },
 )
-kb.add_from_directory("./docs")
+assert kb.add_from_text("Annual leave is 15 days per year")
+for entry in kb.search("annual leave"):
+    print(entry.content)
 
 agent = Agent(knowledgebase=kb)
 ```
 
 ## Parameters
+
+### KnowledgeBase parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | Set to `milvus` or pass a backend instance |
+| `backend_config` | `dict` | `{}` | Must include index when nonempty; does not merge the outer index |
+| `index` | `str` | `""` | Index name; falls back to app_name when no configuration dictionary is supplied |
+| `app_name` | `str` | `""` | Fallback for index; not a user authorization filter |
+| `top_k` | `int` | `10` | Default result count; search(top_k=0) uses this value |
+| `name` | `str` | `"user_knowledgebase"` | Knowledge-base name shown to the agent |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | Explains the knowledge base to the agent |
+| `enable_profile` | `bool` | `False` | Enables document profiles; generate profile files first, or leave disabled for ordinary retrieval |
+| `query_with_user_profile` | `bool` | `False` | Uses the agent’s Viking long-term memory profile to guide queries; the knowledge backend itself need not be Viking |
+
+### Backend configuration
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -69,3 +94,14 @@ agent = Agent(knowledgebase=kb)
 <Warning>
   Enabling `overwrite` can remove existing data from a collection with the same name. Use it only when the knowledge base can be rebuilt.
 </Warning>
+
+### Embedding configuration
+
+| Parameter | Environment variable | Type | Default | Description |
+| --- | --- | --- | --- | --- |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | Model name |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | Dimension; must match the collection |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | Service endpoint |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | `MODEL_AGENT_API_KEY / Ark token` | Reads MODEL_EMBEDDING_API_KEY first, then the agent key or Ark credentials |
+
+The example search should return the annual-leave policy. For empty results, check successful ingestion, matching embedding dimensions, completed server processing, network access, and permissions. Managed ingestion may not be immediately searchable. Running the configured Agent also requires model credentials

@@ -3,503 +3,486 @@ title: "Runtime"
 zh_link: "/productions/veadk/preview/zh/components/agent/runtime"
 ---
 
-The runtime determines how an agent's inner loop runs — how each turn calls the
-model, interprets intent, and invokes tools. The default runtime is built on
-Google ADK's execution flow and works out of the box; you can also switch the
-execution backend or inject shared processing logic into the flow, without
-changing the agent itself.
+A runtime organizes model calls, tool execution, and results. VeADK uses Google ADK by default, with `codex` and `piagent` available for coding-oriented execution. Check model settings, tools, and callbacks before switching
+
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model) first. Volcengine and BytePlus each require their own model endpoint and API Key
 
 ## Default runtime
 
-The ADK runtime is the default and needs no extra configuration:
+Omitting `runtime` is equivalent to `runtime="adk"`, suitable for standard model calls, structured output, and tool workflows
 
-```python lines
-from veadk import Agent
+```python main.py lines
+import asyncio
+from veadk import Agent, Runner
 
-agent = Agent(name="assistant")  # uses the ADK runtime by default
+
+agent = Agent(name="assistant", runtime="adk")
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain what an agent runtime does.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+Run `python main.py` to print the final response. Use `Runner.run_async` for event and streaming handling
 
 ## Parallel synchronous tool execution
 
-In the default ADK runtime, when the model issues multiple synchronous tool calls within the same turn, they execute serially and block the event loop. By configuring a thread pool through the `Agent` `tool_thread_pool_config` parameter, synchronous tools (such as `run_code`) can run in separate threads in parallel without blocking the event loop.
+Synchronous functions in the ADK runtime can block other async tasks. Set `tool_thread_pool_config` to run synchronous tools in worker threads, allowing concurrent execution when the model issues multiple calls in one turn
 
-```python title="agent.py" lines
-from veadk import Agent
+```python parallel_tools.py lines
+import asyncio
+from veadk import Agent, Runner
 from google.adk.agents.run_config import ToolThreadPoolConfig
 
+def lookup_stock(product: str) -> dict:
+    """Return the demo stock count for a product."""
+    return {"product": product, "stock": {"notebook": 12, "pen": 40}.get(product, 0)}
+
 agent = Agent(
-    name="assistant",
-    model_name="doubao-seed-2-1-pro-260628",
-    tools=[run_code],
+    name="stock_assistant",
+    tools=[lookup_stock],
     tool_thread_pool_config=ToolThreadPoolConfig(max_workers=4),
 )
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Check stock for notebook and pen.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-`tool_thread_pool_config` can also be set on `RunConfig`, which takes precedence over the `Agent`-level configuration.
-
-`ToolThreadPoolConfig` parameters:
+Run `python parallel_tools.py` to query both products. The model decides whether to issue calls together; the thread pool does not split tasks itself. Tools sharing mutable data or connections must support concurrent access
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `max_workers` | `int` | `4` | Maximum number of worker threads in the pool; must be a positive integer greater than or equal to 1. |
+| `ToolThreadPoolConfig.max_workers` | `int` | `4` | Maximum workers, at least 1 |
 
-<Note>
-  This configuration only affects synchronous tool execution in the default ADK runtime; external runtimes such as `codex` and `piagent` have their own tool execution mechanisms and are not affected.
-</Note>
-
-When a thread pool is configured and multiple `run_code` calls occur in the same turn, each call's sandbox session ID is appended with its own function-call identifier, ensuring that each call runs in an isolated sandbox. This behavior can be controlled with the `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS` environment variable; see [Code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox#parallel-call-isolation).
+`RunConfig.tool_thread_pool_config` takes precedence over the agent setting. It affects ADK synchronous tools, not Codex or PiAgent execution. See [code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox#parallel-call-isolation) for parallel `run_code` session isolation and `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS`
 
 ## Switch the execution backend
 
-Use `runtime` to select the inner-loop execution backend:
-
-```python lines
-agent = Agent(name="assistant", runtime="codex")
-```
-
-| Value | Description |
-| --- | --- |
-| `adk` (default) | Google ADK's built-in execution flow; suitable for most cases. |
-| `codex` | Runs the inner loop through the Codex SDK and bridges function tools, MCP tools, and skills. |
-| `piagent` | Runs the inner loop through PiAgent RPC and bridges function tools, MCP tools, and skills. Added in 1.0.5. |
-
-
-<Note>
-  The `codex` and `piagent` runtimes do not build a LiteLLM client, so the `model_fallbacks` parameter is ignored. Use the default ADK runtime if you need model fallbacks, or configure fallbacks on a custom model object passed via `model`. See [Model](/productions/veadk/preview/en/components/agent/model#configure-cross-provider-fallback-models).
-</Note>
-
+| `runtime` | Purpose | Preparation |
+| :--- | :--- | :--- |
+| `adk` | Standard agent execution; default | No additional runtime installation |
+| `codex` | Coding tasks through the Codex SDK | Install `veadk-python[codex]` |
+| `piagent` | Execution through PiAgent RPC | Supply a binary or allow installation on first use |
 
 ### Use the Codex runtime
 
-The Codex runtime requires the optional `codex` dependency group, which is not
-installed with VeADK by default. Install the required dependencies before using
-it:
+Install the optional SDK and CLI binary dependencies:
 
 ```bash lines
 pip install "veadk-python[codex]"
 ```
 
-The `codex` extra includes the OpenAI Codex SDK and the Codex CLI binary.
+Model settings remain `model_name`, `model_api_base`, and `model_api_key`. Defaults use an isolated workspace, `workspace_write`, disabled network, and denied escalation. This example keeps those settings explicit
 
-The model name, API endpoint, and API key still come from the agent's model
-configuration:
-
-```python lines
-from veadk import Agent
-
-agent = Agent(
-    name="coding_assistant",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-)
-```
-
-Tools and skills use the standard `Agent` configuration; the Codex runtime does
-not require a separate registration path:
-
-- [function tools](/productions/veadk/preview/en/components/tools/custom-function) in `tools` are exposed as callable tools to the model;
-- an [MCPToolset](/productions/veadk/preview/en/components/tools/custom-mcp) in `tools` supports tool discovery and invocation;
-- [skills](/productions/veadk/preview/en/components/agent/skills) loaded through `SkillToolset` or VeADK's legacy entry are made available through the Codex skill mechanism.
-
-### Codex security configuration
-
-The Codex runtime defaults to least-privilege settings suited to a
-multi-tenant service: each invocation uses a session-isolated workspace, the
-`workspace_write` sandbox, no network access, and denial of escalated
-operations. Broader access must be enabled explicitly.
-
-Pass a `CodexRuntimeConfig` through the `Agent` `codex_runtime_config`
-parameter:
-
-```python title="agent.py" lines
-from veadk import Agent
+```python codex_runtime.py lines
+import asyncio
+from veadk import Agent, Runner
 from veadk.runtime.codex import CodexRuntimeConfig
 
 agent = Agent(
-    name="assistant",
+    name="coding_assistant",
     runtime="codex",
     codex_runtime_config=CodexRuntimeConfig(
         sandbox="workspace_write",
-        approval_mode="auto_review",
-        network_access=True,
-        # Set this explicitly to work inside an existing project.
-        workspace_root="/workspace/codex",
+        approval_mode="deny_all",
+        network_access=False,
     ),
 )
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Calculate the sum of integers from 1 to 100.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-The full set of `CodexRuntimeConfig` parameters:
+Run `python codex_runtime.py`. Register function and MCP tools through `Agent.tools`. Local skills in ADK `SkillToolset` can be passed to the runtime; see the compatibility table for legacy `skills_mode` restrictions
+
+### Codex security configuration
+
+`Agent.codex_runtime_config` accepts `CodexRuntimeConfig` or a matching dictionary
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `approval_mode` | `"deny_all"` \| `"auto_review"` | `"deny_all"` | Review policy for escalated operations. `deny_all` rejects every escalation request; `auto_review` lets the model's self-review decide whether to run. |
-| `sandbox` | `"read_only"` \| `"workspace_write"` \| `"full_access"` | `"workspace_write"` | Sandbox level. `read_only` only reads the workspace; `workspace_write` reads and writes inside the workspace; `full_access` grants full host access. |
-| `network_access` | `bool` | `False` | Whether network access is allowed, effective only under the `workspace_write` sandbox. |
-| `workspace_root` | `str` \| `None` | `None` | Workspace root directory. When unset, a session-isolated temporary directory is used. |
-| `reuse_workspace` | `bool` | `False` | Whether to reuse the same workspace directory across invocations, effective only when `workspace_root` is set. |
-| `reasoning_effort` | `"minimal"` \| `"low"` \| `"medium"` \| `"high"` \| `"xhigh"` | `"medium"` | Reasoning effort level. |
-| `personality` | `"none"` \| `"friendly"` \| `"pragmatic"` | `"pragmatic"` | Reply personality. |
-| `max_tool_iterations` | `int` | `8` | Maximum tool-call iterations per turn, range 1–64. |
-| `tool_timeout_seconds` | `float` \| `None` | `120.0` | Timeout in seconds for a single tool call. |
-
-The following environment variables override the corresponding `CodexRuntimeConfig` field without changing code, and take precedence over `codex_runtime_config`:
-
-| Environment variable | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `VEADK_CODEX_SANDBOX` | `str` | — | Overrides `sandbox`. |
-| `VEADK_CODEX_APPROVAL_MODE` | `str` | — | Overrides `approval_mode`. |
-| `VEADK_CODEX_WORKSPACE_ROOT` | `str` | — | Overrides `workspace_root`. |
-| `VEADK_CODEX_NETWORK_ACCESS` | `str` | — | Overrides `network_access`; accepts `1`, `true`, `yes`, `on` (case-insensitive) as enabled. |
+| `approval_mode` | `"deny_all" \| "auto_review"` | `"deny_all"` | `deny_all` rejects escalation; `auto_review` automatically accepts all such requests without human review |
+| `sandbox` | `"read_only" \| "workspace_write" \| "full_access"` | `"workspace_write"` | Read-only, workspace writes, or full host access |
+| `network_access` | `bool` | `False` | Controls network only under `workspace_write` |
+| `workspace_root` | `str \| None` | `None` | Workspace root; otherwise an isolated temporary directory is created |
+| `reuse_workspace` | `bool` | `False` | Reuses an explicitly configured workspace across invocations |
+| `reasoning_effort` | `"minimal" \| "low" \| "medium" \| "high" \| "xhigh"` | `"medium"` | Reasoning effort; actual support depends on the model |
+| `personality` | `"none" \| "friendly" \| "pragmatic"` | `"pragmatic"` | Response style |
+| `max_tool_iterations` | `int` | `32` | Bridged ADK tool iteration budget for the whole turn, from 1 to 256; not a universal limit on native operations |
+| `tool_timeout_seconds` | `float \| None` | `120.0` | Bridged tool timeout in seconds; must be positive, or `None` to omit this timeout |
 
 <Warning>
-  `sandbox="full_access"` and `reuse_workspace=True` relax filesystem isolation between invocations and should only be enabled in trusted environments. In production, use a least-privilege isolated container and restrict the credentials, files, and network destinations it can access.
+`auto_review` automatically approves escalation and file changes; it is not model-based review. `full_access` broadens host access, and `reuse_workspace=True` can share files across invocations. Use them only when explicitly needed in trusted environments. `network_access=False` cannot restrict `full_access`, so that combination is rejected. `read_only` also ignores this network switch
 </Warning>
+
+These environment variables override constructor settings:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `VEADK_CODEX_SANDBOX` | Unset | Overrides `sandbox` |
+| `VEADK_CODEX_APPROVAL_MODE` | Unset | Overrides `approval_mode` |
+| `VEADK_CODEX_WORKSPACE_ROOT` | Unset | Overrides `workspace_root` |
+| `VEADK_CODEX_NETWORK_ACCESS` | Unset | Overrides `network_access`; `1`, `true`, `yes`, and `on` enable it, case-insensitively |
 
 ### Codex observability
 
-Codex-native lifecycle notifications and ADK Function/MCP tool calls are converted into standard ADK Events, so tool calls, results, state changes, confirmations, and authentication surface in Session, Trace, and the UI. Runtime logs use stable `codex_*` event names and attribution fields such as `invocation_id`, `call_id`, `tool`, `status`, and `duration_ms`. Tool arguments, tool results, API tokens, credentials, and backend addresses are not logged. Token usage is exposed through `codex_event_type=token_usage` events and the corresponding log entry.
+Lifecycle notifications, function calls, and MCP calls become ADK events for sessions, traces, and frontends. Log fields such as `invocation_id`, `call_id`, `tool`, `status`, and `duration_ms` correlate operations. Token usage is exposed through `codex_event_type=token_usage` events
+
+Runtime logs are not complete traces of every model call. Events, sessions, and configured exporters may contain task and tool content; control access and retention when exporting them
 
 ### Configure transient-error retries
 
-When the Codex runtime calls the model backend, it retries transient failures
-such as rate limits, server errors, overloads, and timeouts. It retries at most
-twice by default. Use these environment variables to change the behavior:
-
-| Environment variable | Type | Default | Description |
-| --- | --- | --- | --- |
-| `CODEX_SHIM_NUM_RETRIES` | `int` | `2` | Maximum retries for transient failures. Set to `0` to disable retries. |
-| `CODEX_SHIM_TIMEOUT` | `float` | `0` | Timeout in seconds for one model-backend call. `0` uses the underlying client's default timeout. |
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `CODEX_SHIM_NUM_RETRIES` | `int` | `2` | Maximum retries for rate limits, server errors, overload, and timeouts; `0` disables retries |
+| `CODEX_SHIM_TIMEOUT` | `float` | `0` | Backend model request timeout in seconds; `0` uses the client default |
 
 ### Use PiAgent
 
-```python lines
-from veadk import Agent
+<Warning>
+PiAgent executes in a local working directory. Built-in tools may modify files or run commands. An isolated configuration directory is not an operating-system sandbox. Use trusted projects, a restricted environment, and appropriate tool limits
+</Warning>
 
-agent = Agent(
-    name="coding_assistant",
-    runtime="piagent",
-    model_name="doubao-seed-2-1-pro-260628",
-)
+```python piagent_runtime.py lines
+import asyncio
+from veadk import Agent, Runner
+
+
+agent = Agent(name="coding_assistant", runtime="piagent")
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain the steps for checking a CSV file without modifying files.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-The VeADK Python package does not vendor the PiAgent binary. The runtime checks
-the following locations in order:
+Run `python piagent_runtime.py`. VeADK checks `PIAGENT_BINARY`, then its managed cache, and downloads a Pi Release if neither is available. Download checksums are verified only when `PIAGENT_BINARY_SHA256` is set. Preinstall the binary and specify its path for offline and production environments
 
-1. the executable referenced by `PIAGENT_BINARY`;
-2. the managed cache under `PIAGENT_INSTALL_DIR`, which defaults to `~/.cache/veadk/piagent`;
-3. if the cache is missing, a downloaded and verified PiAgent release.
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PIAGENT_BINARY` | Unset | Installed executable |
+| `PIAGENT_INSTALL_DIR` | `~/.cache/veadk/piagent` | Download and cache directory |
+| `PIAGENT_BINARY_URL` | Release URL | Custom archive URL |
+| `PIAGENT_BINARY_SHA256` | Unset | Expected archive SHA-256 |
+| `PIAGENT_BINARY_VERSION` | `latest` | Version to download |
+| `PIAGENT_BINARY_REPO` | `earendil-works/pi` | Release repository |
+| `PIAGENT_BINARY_PLATFORM` | Current OS and architecture | Linux/macOS amd64 and arm64, plus Windows amd64 |
+| `PIAGENT_AGENT_DIR` | Temporary directory per invocation | Isolated configuration and sessions; cannot be the real `~/.pi/agent` or its descendants |
+| `PIAGENT_ALLOW_PARENT_PI_CODING_AGENT_DIR` | `false` | Allows the parent's `PI_CODING_AGENT_DIR` when no explicit directory is set; isolation checks still apply |
+| `PIAGENT_WORKDIR` | Current directory | Task working directory |
+| `PIAGENT_TIMEOUT_SECONDS` | `600` | Invocation timeout in seconds |
+| `PIAGENT_PROVIDER_ID` | `veadk` | Provider identifier registered in Pi |
+| `PIAGENT_MODEL_API` | `openai-completions` | Pi model API type |
+| `PIAGENT_MODEL_API_KEY_ENV` | `VEADK_PI_MODEL_API_KEY` | Variable name used to pass the model Key to the subprocess |
+| `PIAGENT_DISABLE_TOOLS` | `false` | Disables tools; bridge registration may re-enable them, so this is not an isolation guarantee |
+| `PIAGENT_DISABLE_BUILTIN_TOOLS` | `false` | Disables Pi built-in tools |
+| `PIAGENT_TOOL_ALLOWLIST` | Empty | Comma-separated built-in tool allowlist |
+| `PIAGENT_EXCLUDE_TOOLS` | Empty | Comma-separated excluded tools |
+| `PIAGENT_DISABLE_EXTENSION_DISCOVERY` | `true` | Disables automatic extension discovery |
+| `PIAGENT_ENABLE_EXTENSION_DISCOVERY` | Unset | Enables discovery unless the matching `DISABLE` variable is set |
+| `PIAGENT_DISABLE_SKILL_DISCOVERY` | `true` | Disables automatic skill discovery, not explicitly supplied skills |
+| `PIAGENT_ENABLE_SKILL_DISCOVERY` | Unset | Enables discovery unless the matching `DISABLE` variable is set |
+| `PIAGENT_PROJECT_TRUST` | `deny` | Project trust policy: `deny`, `approve`, or Pi's `default` |
 
-| Environment variable | Default | Description |
-| --- | --- | --- |
-| `PIAGENT_BINARY` | — | Path to an installed PiAgent executable. Recommended for production. |
-| `PIAGENT_INSTALL_DIR` | `~/.cache/veadk/piagent` | Managed download and cache directory. |
-| `PIAGENT_AGENT_DIR` | A temporary directory per run | Isolated PiAgent configuration and session directory; it cannot point to the user's real `~/.pi/agent`. |
-| `PIAGENT_WORKDIR` | Current directory | PiAgent working directory. |
-| `PIAGENT_TIMEOUT_SECONDS` | `600` | Per-run timeout in seconds. |
-| `PIAGENT_TOOL_ALLOWLIST` | Empty | Comma-separated built-in tools that may run. |
-| `PIAGENT_EXCLUDE_TOOLS` | Empty | Comma-separated tools that may not run. |
+### Runtime compatibility
 
-<Note>
-  Automatic installation requires access to the PiAgent release host. In offline or restricted networks, install the binary in advance and set `PIAGENT_BINARY`.
-</Note>
+Check these settings when switching to `codex` or `piagent`:
+
+| Setting | External-runtime behavior |
+| :--- | :--- |
+| Custom `model`, `output_schema`, `planner`, agent-level `code_executor` | Unsupported; configuration fails |
+| `include_contents="none"`, `enable_supervisor=True` | Unsupported; configuration fails |
+| `generate_content_config` | Only `system_instruction` is supported; other explicit fields fail |
+| `model_name` list, `model_fallbacks` | Uses only the primary model; ignores fallbacks |
+| `model_provider` | Does not select a LiteLLM provider; requires a compatible endpoint |
+| `enable_responses`, `enable_responses_cache` | Do not enable ADK's Ark Responses features |
+| `model_extra_config` | Forwarded by Codex; unused by PiAgent |
+| `knowledgebase`, `example_store` | Do not supply content automatically; use ADK or retrieve content and add it to instructions |
+| Legacy `skills_mode`, `enable_skills_checklist` | Do not provide the full legacy toolset behavior; use ADK or an adapted native skill entry |
+| `after_model_callback`, model traces | Operate on turn results; do not assume per-model-call callbacks and traces |
+| `RunConfig.max_llm_calls` | Codex checks before calls; PiAgent counts completed calls and may stop one call beyond the limit |
 
 ## Agent transfer
 
-Google ADK's `transfer_to_agent` tool lets an LLM agent hand off control at
-runtime to another agent in the agent tree; the target agent then runs in the
-same invocation context and produces its events directly. The default ADK
-runtime has always supported this through ADK's execution flow; the `codex`
-and `piagent` runtimes now support it as well.
+`transfer_to_agent` lets the model delegate to another agent in the tree, which continues execution and returns results. ADK, Codex, and PiAgent support transfers
 
-When an agent using the `codex` or `piagent` runtime has transferable target
-agents, the runtime automatically registers the `transfer_to_agent` tool and
-appends the names and descriptions of the available targets to the system
-instruction. The model decides whether to call the tool to transfer; once it
-does, the target agent executes in the current invocation context and its
-events are emitted to the session and trace as normal.
-
-The set of transferable targets is determined by the agent tree:
-
-| Relationship | Condition |
+| Target | Condition |
 | :--- | :--- |
-| Sub-agents | Agents in the agent's `sub_agents` that are not in `single_turn` or `task` mode. |
-| Parent agent | When the agent has a `parent_agent` and `disallow_transfer_to_parent` is not set. |
-| Sibling agents | When the agent has a `parent_agent` and `disallow_transfer_to_peers` is not set; the transferable sub-agents of the parent other than the agent itself. |
+| Child | Registered in `sub_agents`, excluding `single_turn` and `task` modes |
+| Parent | A parent exists and `disallow_transfer_to_parent` is not set |
+| Peer | Peer transfer is allowed and the target accepts transfers |
 
-Agents whose `mode` is `single_turn` or `task` are neither offered as transfer
-targets nor given transfer instructions.
+```python transfer.py lines
+import asyncio
+from veadk import Agent, Runner
 
-The following example uses a multi-agent tree with the `codex` runtime, where
-the root agent can transfer to its sub-agents:
-
-```python title="agent.py" lines
-from veadk import Agent
-
-researcher = Agent(
-    name="researcher",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    description="A research agent responsible for retrieving and organizing information.",
-    instruction="Retrieve information for the user's question and organize it into structured findings.",
-)
 
 writer = Agent(
     name="writer",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    description="A writing agent responsible for producing the final answer.",
-    instruction="Write the final answer for the user based on the research findings.",
+    description="Rewrite supplied text as a concise announcement.",
+    instruction="Rewrite the user's text as an announcement without adding facts.",
+)
+agent = Agent(
+    name="coordinator",
+    instruction="Transfer announcement-writing tasks to writer.",
+    sub_agents=[writer],
 )
 
-coordinator = Agent(
-    name="coordinator",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    description="An agent that coordinates research and writing based on the user's question.",
-    instruction="You are the coordinator. Based on the user's question, decide whether to answer directly or transfer to the researcher or writer.",
-    sub_agents=[researcher, writer],
-)
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Write an announcement: the office closes at 17:00 on Friday.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-<Note>
-  Agent transfer depends on a `Runner`-driven invocation chain. The target
-  agent runs in the same invocation context; its `output_key` and other
-  configuration take effect as usual.
-</Note>
+Run `python transfer.py` to obtain an announcement. Transfers require `Runner`; the target executes in the same invocation context, including its `output_key` behavior. Use the sequential workflow below when execution order must be fixed
 
 ## Output persistence
 
-`Agent` inherits from Google ADK's `LlmAgent` and supports persisting the
-agent's final text response to session state through the `output_key` parameter.
-Other agents that run later in the same session can read that state, making it
-useful for passing results between agents in a multi-agent workflow.
+`output_key` stores the final response in session state under ADK, Codex, and PiAgent. It does not independently persist data to disk; survival across processes depends on [session storage](/productions/veadk/preview/en/components/session/index)
 
-<Note>
-  `output_key` works across all runtimes, including the default ADK runtime
-  and external runtimes such as `codex` and `piagent`. With an external runtime,
-  the final response is still written to session state.
-</Note>
+```python pipeline.py lines
+import asyncio
+from google.adk.agents import SequentialAgent
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
 
-The following example uses `SequentialAgent` to chain two agents: the planner's
-output is written to session state via `output_key="plan"`, and the writer reads
-that state in the same session:
-
-```python title="pipeline.py" lines
-from veadk import Agent
 planner = Agent(
     name="planner",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    model_api_key="ARK_API_KEY",
-    instruction="Generate a writing outline based on the user's request.",
+    instruction="Create an outline for the user's requested article.",
     output_key="plan",
 )
-
 writer = Agent(
     name="writer",
-    runtime="piagent",
-    model_name="doubao-seed-2-1-pro-260628",
-    model_api_key="ARK_API_KEY",
-    instruction="Write the article based on the outline in session state.",
+    instruction="Write the article using this outline: {plan}",
     output_key="draft",
 )
+pipeline = SequentialAgent(name="pipeline", sub_agents=[planner, writer])
 
-pipeline = SequentialAgent(
-    name="pipeline",
-    sub_agents=[planner, writer],
-)
+async def main():
+    runner = Runner(
+        agent=pipeline, short_term_memory=ShortTermMemory(),
+        app_name="writing_pipeline", user_id="demo-user",
+    )
+    print(await runner.run(
+        messages="Write a short introduction to session state.", session_id="writing-demo"
+    ))
+    session = await runner.session_service.get_session(
+        app_name="writing_pipeline", user_id="demo-user", session_id="writing-demo"
+    )
+    print(session.state["plan"])
+    print(session.state["draft"])
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-After running, the session state keys `plan` and `draft` hold the final
-responses from the planner and the writer respectively.
+Run `python pipeline.py`. The planner writes `plan`, the writer reads it through `{plan}`, and the article is stored in `draft`. The script prints the response and both state values for verification
 
 ## Model callbacks
 
-`Agent` inherits from Google ADK's `LlmAgent`, so you can use
-`before_model_callback`, `after_model_callback`, and
-`on_model_error_callback` to inject custom logic before and after the model
-call and on errors. These callbacks, together with the same-named methods on
-ADK plugins (subclasses of `BasePlugin`), run in every runtime — the default
-ADK runtime and external runtimes such as `codex` and `piagent`. In external
-runtimes, callbacks run in ADK order: plugin callbacks first, then agent
-callbacks.
+Callbacks may be synchronous or asynchronous. ADK runs them around model calls; external runtimes run before/after callbacks around the whole turn, with plugin callbacks before agent callbacks. Returning `None` continues normal handling
 
-| Callback | Description |
+| Callback | Behavior |
 | :--- | :--- |
-| `before_model_callback(callback_context, llm_request)` | Runs before the model is called. It can mutate `llm_request` directly (including `contents`, `config.system_instruction`, `output_schema`, and `tools_dict`); the external runtime builds the actual input from the mutated request. If it returns an `LlmResponse`, the model call is skipped and that response is used as the turn result. |
-| `after_model_callback(callback_context, llm_response)` | Runs after the model emits its final text response. External runtimes merge the turn's final text events into a single `LlmResponse` before passing it to this callback; a returned `LlmResponse` replaces the original reply. Final-text buffering is enabled only when an after callback is configured (an agent callback or a plugin override). |
-| `on_model_error_callback(callback_context, llm_request, error)` | Runs when the model call raises an exception. If it returns an `LlmResponse`, that response is used as the turn result and the run completes normally; otherwise the exception is re-raised. |
+| `before_model_callback(callback_context, llm_request)` | Can change input, system instructions, and available tools; returning `LlmResponse` supplies a result and skips execution |
+| `after_model_callback(callback_context, llm_response)` | Returning `LlmResponse` replaces the reply; external runtimes buffer and merge final text when this callback is configured |
+| `on_model_error_callback(callback_context, llm_request, error)` | Returning `LlmResponse` supplies an error response; returning `None` propagates the exception |
 
-<Note>
-  The `LlmRequest` built by an external runtime exposes only the stable fields
-  callbacks need (conversation contents, system instruction, output schema,
-  tools, and generation config); it does not run ADK's full preprocessing
-  pipeline. Callback behavior that depends on ADK-internal preprocessing stages
-  may therefore differ in external runtimes.
-</Note>
+Mutating a request does not add support for every ADK setting. The compatibility table still applies, including restrictions on `output_schema`
 
-Callbacks may be synchronous or asynchronous (`async def`). The following
-example uses `before_model_callback` in the Codex runtime to render PDF
-attachments into images so a vision-capable model can read the document:
-
-```python title="agent.py" lines
-from veadk import Agent
-from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
-
-agent = Agent(
-    name="coding_assistant",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    before_model_callback=pdf_to_images_before_model_callback,
-)
-```
-
-Use `on_model_error_callback` to return a fallback response when the model call
-fails, instead of letting the exception propagate to the caller:
-
-```python title="agent.py" lines
-from veadk import Agent
+```python model_callback.py lines
+import asyncio
+from veadk import Agent, Runner
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
 def fallback_on_error(callback_context, llm_request, error):
-    return LlmResponse(
-        content=types.Content(
-            role="model",
-            parts=[types.Part(text="The model is temporarily unavailable. Please retry later.")],
-        )
-    )
+    return LlmResponse(content=types.Content(
+        role="model",
+        parts=[types.Part(text="The model is temporarily unavailable. Please retry later.")],
+    ))
 
-agent = Agent(
-    name="coding_assistant",
-    runtime="codex",
-    model_name="doubao-seed-2-1-pro-260628",
-    on_model_error_callback=fallback_on_error,
-)
+agent = Agent(name="assistant", on_model_error_callback=fallback_on_error)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain session state.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+Run `python model_callback.py`. A successful model call returns its normal answer; a model failure returns the configured message. The callback does not handle every initialization, tool, or business error
+
+### Convert PDF attachments to images
+
+`pdf_to_images_before_model_callback` converts inline PDF bytes into images for models that support images but cannot read raw PDFs. PDF rendering dependencies are included in the default VeADK installation
+
+Save a document suitable for sending to the model service as `example.pdf` in the current directory, select a vision-capable model, and run this script:
+
+```python pdf_callback.py lines
+import asyncio
+from pathlib import Path
+from google.genai import types
+from veadk import Agent, Runner
+from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
+
+async def main():
+    agent = Agent(
+        name="document_reader",
+        before_model_callback=pdf_to_images_before_model_callback,
+    )
+    runner = Runner(agent=agent, app_name="pdf_demo", user_id="demo-user")
+    await runner.session_service.create_session(
+        app_name="pdf_demo", user_id="demo-user", session_id="pdf-session"
+    )
+    message = types.Content(role="user", parts=[
+        types.Part(text="Summarize the document."),
+        types.Part(inline_data=types.Blob(
+            mime_type="application/pdf", data=Path("example.pdf").read_bytes()
+        )),
+    ])
+    async for event in runner.run_async(
+        user_id="demo-user", session_id="pdf-session", new_message=message
+    ):
+        if event.is_final_response() and event.content:
+            print("".join(part.text or "" for part in event.content.parts or []))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+The default callback renders at most the first 10 pages of each PDF at scale `2.0`. To change these values, import `make_pdf_to_images_callback` from the same module and set `max_pages` and `scale`. More pages or a larger scale increase image volume, memory use, and model input usage
 
 ## Choose where each tool runs
 
-Whereas a runtime replaces an agent's entire inner loop, a `RuntimeProvider`
-operates at a narrower layer: it decides where each individual tool call
-executes while the model reasoning loop remains unchanged. It works as an ADK
-plugin — by intercepting `before_tool_callback`, it takes over the call before
-Google ADK invokes the tool implementation, so the local implementation is not
-executed a second time.
-
-VeADK exposes the following public classes:
-
-| Class | Description |
-| :--- | :--- |
-| `RuntimeProvider` | Abstract base class, inheriting from ADK `BasePlugin`. Subclasses implement the `execute` method to decide where each tool call runs. |
-| `DispatchRuntimeProvider` | Dispatches selected non-MCP tools to a remote runtime; all other tools fall back to local execution. |
-| `LocalRuntimeProvider` | Executes tools through their original ADK implementation; used as the default local fallback for `DispatchRuntimeProvider`. |
-| `ToolCall` | The tool-call descriptor passed to `execute`, containing the tool name, arguments, context, and more. |
+`RuntimeProvider` controls individual tool calls, typically keeping the ADK flow while sending selected work to an application service. `DispatchRuntimeProvider` invokes your dispatch function, while `LocalRuntimeProvider` uses the original tool. To customize the full policy, subclass `RuntimeProvider` and implement `execute(tool_call)`
 
 ### Usage example
 
-The following example dispatches every non-MCP tool to a remote runtime; MCP
-tools retain their original ADK implementation:
+This runnable example simulates a service adapter locally. Dispatched stock is `12`; the original tool returning `0` is not executed again. It does not connect to a real remote service
 
-```python title="agent.py" lines
+```python dispatch.py lines
+import asyncio
 from veadk import Agent, Runner
 from veadk.runtime import DispatchRuntimeProvider, ToolCall
 
+def lookup_stock(product: str) -> dict:
+    """Look up stock for a product."""
+    return {"product": product, "stock": 0, "source": "local"}
+
 async def dispatch_task(tool_call: ToolCall):
-    return await remote_client.dispatch(
-        tool_call.name,
-        tool_call.arguments,
-        dispatch_id=tool_call.id,
-    )
+    # Demonstration adapter: replace this body with your service client.
+    return {
+        "product": tool_call.arguments["product"],
+        "stock": 12,
+        "source": "dispatch-demo",
+    }
 
-agent = Agent(name="assistant", tools=[bash, read_file])
-runtime_provider = DispatchRuntimeProvider(
-    dispatch_task,
-    dispatchable_tools=None,  # dispatch every non-MCP tool
-)
-runner = Runner(agent=agent, plugins=[runtime_provider])
-```
-
-In the example above, every non-MCP tool only goes through `dispatch_task` and
-its local function is not invoked a second time. Pass a set of tool names to
-dispatch only those non-MCP tools. The dispatch function may be synchronous or
-asynchronous.
-
-To register directly on an `Agent` instead of through the `Runner` `plugins`
-parameter, pass the `DispatchRuntimeProvider`'s `before_tool_callback` to the
-`Agent`'s `before_tool_callback` parameter:
-
-```python title="agent.py" lines
 agent = Agent(
-    name="assistant",
-    tools=[bash, read_file],
-    before_tool_callback=runtime_provider.before_tool_callback,
+    name="stock_assistant",
+    instruction="Use lookup_stock to answer stock questions.",
+    tools=[lookup_stock],
 )
+runtime_provider = DispatchRuntimeProvider(
+    dispatch_task, dispatchable_tools={"lookup_stock"}
+)
+
+async def main():
+    print(await Runner(agent=agent, plugins=[runtime_provider]).run(
+        messages='How many notebooks are in stock?', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+For a real service, replace `dispatch_task` with a client configured with authentication and timeouts, correlating requests with `tool_call.id`. Dispatch functions may be sync or async and should return a tool-compatible result. The application defines the service contract
+
+Alternatively, pass `runtime_provider.before_tool_callback` to `Agent.before_tool_callback`. Do not register both entry points, which would intercept twice. MCP tools retain their own connections regardless of dispatch selection
 
 ### DispatchRuntimeProvider parameters
 
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `dispatch_task` | `Callable[[ToolCall], Any]` | — | Required. The function called for each dispatched tool call; receives a `ToolCall` and returns the tool result. May be synchronous or asynchronous. |
-| `dispatchable_tools` | `Collection[str] \| None` | `("bash",)` | Names of non-MCP tools to dispatch. Set to `None` to dispatch every non-MCP tool. |
-| `local_runtime` | `RuntimeProvider \| None` | `None` | Local provider for non-dispatched tools. Defaults to `LocalRuntimeProvider`. |
-| `name` | `str` | `"veadk_dispatch_runtime_provider"` | Plugin name. |
+| `dispatch_task` | `Callable[[ToolCall], Any]` | — | Required. The function called for each dispatched tool call; receives a `ToolCall` and returns the tool result. May be synchronous or asynchronous |
+| `dispatchable_tools` | `Collection[str] \| None` | `("bash",)` | Names of non-MCP tools to dispatch. Set to `None` to dispatch every non-MCP tool |
+| `local_runtime` | `RuntimeProvider \| None` | `None` | Local provider for non-dispatched tools. Defaults to `LocalRuntimeProvider` |
+| `name` | `str` | `"veadk_dispatch_runtime_provider"` | Plugin name |
 
 ### ToolCall fields
 
 | Field / Property | Type | Description |
 | :--- | :--- | :--- |
-| `name` | `str` | Tool name. |
-| `arguments` | `dict[str, Any]` | Arguments passed to the tool. |
-| `tool` | `BaseTool` | The ADK tool object, usable for local execution. |
-| `context` | `ToolContext` | The ADK tool context. |
-| `id` | `str` | Property. ADK function-call identifier; empty string when unavailable. |
-| `session_id` | `str` | Property. Current VeADK session identifier; empty string when unavailable. |
-
-<Note>
-  MCP tools always retain their original ADK implementation and are not affected
-  by the `dispatchable_tools` configuration, because MCP tool invocation must go
-  through its own MCP session manager.
-</Note>
+| `name` | `str` | Tool name |
+| `arguments` | `dict[str, Any]` | Arguments passed to the tool |
+| `tool` | `BaseTool` | The ADK tool object, usable for local execution |
+| `context` | `ToolContext` | The ADK tool context |
+| `id` | `str` | Property. ADK function-call identifier; empty string when unavailable |
+| `session_id` | `str` | Property. Current VeADK session identifier; empty string when unavailable |
+`RuntimeProvider(name=...)` requires a plugin name. `LocalRuntimeProvider` only has an optional `name`, defaulting to `"veadk_local_runtime_provider"`
 
 ## Request processing
 
-Without touching business logic, you can inject shared cross-cutting processing
-into each run. Pass a processor to `run_processor`, for example to enforce login
-via identity authentication:
+`run_processor` wraps the event stream of `Runner.run` for authentication, timing, cleanup, or event transformation. Precedence is the current `Runner.run(run_processor=...)`, the `Runner` constructor, the root agent, then the default pass-through processor. Calling `run_async` directly does not apply this wrapper
 
-```python lines
-from veadk import Agent
-from veadk.integrations.ve_identity import AuthRequestProcessor
-
-agent = Agent(name="assistant", run_processor=AuthRequestProcessor())
-```
-
-When unset, the default processor is used and behavior is unchanged. VeADK ships
-`AuthRequestProcessor` as a ready-made implementation for identity authentication.
+For authentication, pass `veadk.integrations.ve_identity.AuthRequestProcessor` to `Agent(run_processor=...)`. See [inbound authentication](/productions/veadk/preview/en/components/security/inbound) for identity setup
 
 ### Custom processors
 
-Every processor subclasses the abstract base `BaseRunProcessor` and implements
-its `process_run(runner, message)` method. That method returns a decorator
-wrapping the run's event stream, letting you:
+Subclass `BaseRunProcessor` and implement `process_run(runner, message, **kwargs)`. This processor forwards events, records elapsed time, and closes the event stream on success, failure, or cancellation
 
-- inject logic **before and after** the whole run (auth, logging, monitoring);
-- **intercept, rewrite, or inject** events produced during the run;
-- build control logic such as retries on top of that.
-
-```python lines
+```python run_processor.py lines
+import asyncio
+from veadk import Agent, Runner
+import time
+from contextlib import aclosing
 from veadk.processors.base_run_processor import BaseRunProcessor
 
-class LoggingProcessor(BaseRunProcessor):
+class TimingProcessor(BaseRunProcessor):
     def process_run(self, runner, message, **kwargs):
         def decorator(event_generator):
             async def wrapper():
-                # Before: record start, validate, ...
-                async for event in event_generator():
-                    yield event  # intercept or rewrite events here
-                # After: summarize, report, ...
+                started = time.perf_counter()
+                try:
+                    async with aclosing(event_generator()) as events:
+                        async for event in events:
+                            yield event
+                finally:
+                    print(f"Run elapsed: {time.perf_counter() - started:.2f}s")
             return wrapper
         return decorator
+
+agent = Agent(name="assistant", run_processor=TimingProcessor())
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain what a runtime does.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+Run `python run_processor.py` to see the response and elapsed time. Before adding retries to a processor, determine whether a task has already produced external side effects to avoid repeating them

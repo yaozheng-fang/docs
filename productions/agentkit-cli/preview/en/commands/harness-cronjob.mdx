@@ -39,6 +39,8 @@ For BytePlus, use `cloud.provider: byteplus`, the matching runtime region and TO
 | `cronjob.lease_seconds` | Execution lease in seconds, 30–600 | `60` |
 | `cronjob.poll_seconds` | Polling interval in seconds, 1–60 | `5` |
 
+After deployment, run `agentkit harness cronjob status my-harness` to confirm scheduling and storage are available before creating a task. The response describes the responding replica, not aggregate health across all replicas
+
 ## Commands
 
 | Command | Description |
@@ -46,9 +48,9 @@ For BytePlus, use `cloud.provider: byteplus`, the matching runtime region and TO
 | `harness cronjob create` | Create a recurring or one-time task |
 | `harness cronjob list` | List task definitions and current status |
 | `harness cronjob status` | Show scheduler health for the responding replica |
-| `harness cronjob get` | get a scheduled task |
-| `harness cronjob pause` | pause a scheduled task |
-| `harness cronjob resume` | resume a scheduled task |
+| `harness cronjob get` | Get a scheduled task |
+| `harness cronjob pause` | Pause future scheduling and queued executions without stopping an active execution |
+| `harness cronjob resume` | Resume a paused task |
 | `harness cronjob runs` | List execution history, newest first |
 | `harness cronjob result` | Read an execution result |
 | `harness cronjob cancel` | Request execution cancellation |
@@ -64,11 +66,11 @@ Create a recurring or one-time task
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `--name <name>` | Task name | Required |
-| `--prompt <text>` | Prompt to execute | — |
-| `--cron <expression>` | Five-field cron expression | — |
-| `--at <datetime>` | One-time ISO-8601 timestamp including offset | — |
+| `--prompt <text>` | Prompt to execute; falls back to message or prompt in the config | — |
+| `--cron <expression>` | Five-field cron expression; mutually exclusive with --at | — |
+| `--at <datetime>` | Future ISO-8601 timestamp including offset; mutually exclusive with --cron | — |
 | `--timezone <zone>` | IANA timezone | `Asia/Shanghai` |
 | `-c, --config <path>` | Harness invoke YAML/JSON config for this task | — |
 | `--timeout <seconds>` | Execution deadline in seconds, 1–10800 | `1800` |
@@ -83,6 +85,12 @@ agentkit harness cronjob create my-harness --name morning-report --cron "0 9 * *
 
 The response includes `cronjob_id`. The same idempotency key and input return the same task; changed input is rejected. For one-time work, replace `--cron` with a future timestamp such as `--at "2026-10-01T09:00:00+08:00"`. `--config` uses the message, `harness`, and model call limit from [Harness invocation configuration](/productions/agentkit-cli/preview/en/commands/harness#invocation-configuration-file); omitted fields inherit the deployment
 
+Save the actual `cronjob_id` returned by creation for the detail, pause, and history commands below
+
+```bash lines
+export CRONJOB_ID="<cronjob_id from create>"
+```
+
 ## harness cronjob list
 
 List task definitions and current status
@@ -94,7 +102,7 @@ List task definitions and current status
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `--limit <count>` | Page size | `100` |
 | `--cursor <cursor>` | Next-page cursor | — |
 | `-h, --help` | Show help | — |
@@ -116,7 +124,7 @@ Show scheduler health for the responding replica
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `-h, --help` | Show help | — |
 
 ```bash lines
@@ -125,7 +133,7 @@ agentkit harness cronjob status my-harness
 
 ## harness cronjob get
 
-get a scheduled task
+Get a scheduled task
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
@@ -135,7 +143,7 @@ get a scheduled task
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `-h, --help` | Show help | — |
 
 ```bash lines
@@ -144,7 +152,7 @@ agentkit harness cronjob get my-harness "$CRONJOB_ID"
 
 ## harness cronjob pause
 
-pause a scheduled task
+Pause future scheduling and queued executions without stopping an active execution
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
@@ -154,7 +162,7 @@ pause a scheduled task
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `-h, --help` | Show help | — |
 
 ```bash lines
@@ -163,7 +171,7 @@ agentkit harness cronjob pause my-harness "$CRONJOB_ID"
 
 ## harness cronjob resume
 
-resume a scheduled task
+Resume a paused task
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
@@ -173,7 +181,7 @@ resume a scheduled task
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `-h, --help` | Show help | — |
 
 ```bash lines
@@ -192,7 +200,7 @@ List execution history, newest first
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `--limit <count>` | Page size | `20` |
 | `--cursor <cursor>` | Next-page cursor | — |
 | `-h, --help` | Show help | — |
@@ -202,6 +210,12 @@ agentkit harness cronjob runs my-harness "$CRONJOB_ID"
 ```
 
 Pass the returned `next_cursor` to `--cursor` for the next page
+
+Select a `run_id` from the history returned by `runs`, then read that execution's result. A task ID and execution ID are not interchangeable
+
+```bash lines
+export RUN_ID="<run_id from runs>"
+```
 
 ## harness cronjob result
 
@@ -216,7 +230,7 @@ Read an execution result
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `-h, --help` | Show help | — |
 
 ```bash lines
@@ -236,7 +250,7 @@ Request execution cancellation
 | `--apikey <key>` | Explicit Runtime API key | — |
 | `--token <token>` | Explicit Runtime bearer token | — |
 | `--endpoint <url>` | Direct Harness endpoint, including a local server | — |
-| `--json` | Print structured JSON output | `false` |
+| `--json` | Output JSON; all scheduled-task subcommands currently return JSON | `false` |
 | `-h, --help` | Show help | — |
 
 ```bash lines
@@ -254,3 +268,5 @@ agentkit harness cronjob cancel my-harness "$CRONJOB_ID" "$RUN_ID"
 - `status` describes only the responding replica. History is newest first; during the brief history-save interval, results can appear in `get` or `result` before `runs`
 
 External effects are not guaranteed to occur exactly once: a worker can stop immediately after a tool writes to an external system. Check completed effects before recovery to avoid repeating them. Scheduling scans retained tasks, so adjust polling for task volume and TOS request traffic
+
+Pause a task to stop future scheduling. Cancellation targets one `run_id` and does not change the recurring schedule. Recheck execution status after requesting cancellation; completed external actions are not rolled back. This CLI has no subcommand to delete a task definition; use `pause` to stop future runs

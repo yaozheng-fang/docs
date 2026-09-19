@@ -3,3 +3,7 @@ title: "List evaluation sets as an array"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json GET /dev/apps/{app_name}/eval_sets"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/list-eval-sets-legacy"
 ---
+
+This deprecated endpoint returns an array of evaluation set IDs directly. The replacement returns an object containing `evalSetIds`; update response parsing when migrating
+
+See the [corresponding evaluation endpoint](/productions/api-reference/preview/en/harness-runtime/list-eval-sets) for the replacement and its complete requirements

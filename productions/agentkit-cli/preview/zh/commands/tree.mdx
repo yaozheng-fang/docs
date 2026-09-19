@@ -17,3 +17,13 @@ en_link: "/productions/agentkit-cli/preview/en/commands/tree"
 ```bash lines
 agentkit tree --all
 ```
+
+命令树来自本机已安装版本，不需要云账号或项目配置。排查选项不存在时，先检查 `agentkit --version`，再查看目标命令的 `--help`
+
+需要保存命令清单供脚本读取时：
+
+```bash lines
+agentkit tree --all --json > command-tree.json
+```
+
+输出文件包含命令名称、别名、位置参数、选项与子命令；它描述命令结构，不包含云端资源列表

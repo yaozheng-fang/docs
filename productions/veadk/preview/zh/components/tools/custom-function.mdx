@@ -11,6 +11,10 @@ en_link: "/productions/veadk/preview/en/components/tools/custom-function"
 - 携带运行时上下文的函数在工具函数中加入一个 `tool_context: ToolContext` 参数，就能访问智能体的运行时上下文——共享会话状态等运行时信息。框架会自动注入该参数，模型不会、也不需要为它传值。
 - 长时运行任务适用于耗时或异步的操作（大规模计算、数据分析、批处理等）。用 `LongRunningFunctionTool` 包装函数：工具先返回一个 `pending` 状态与任务 ID，应用在后台推进任务，再把最终结果回填给智能体。
 
+## 前提条件
+
+运行智能体示例前完成[模型配置](/productions/veadk/preview/zh/components/agent/model)。普通函数本身可以直接在本地调用，不需要模型或服务凭证
+
 ## 使用方法
 
 ### 普通入参函数
@@ -37,12 +41,11 @@ en_link: "/productions/veadk/preview/en/components/tools/custom-function"
 import asyncio
 from typing import Any, Dict
 
-from google.adk.tools.tool_context import ToolContext
 from veadk import Agent, Runner
 
 
 def calculator(
-    a: float, b: float, operation: str, tool_context: ToolContext
+    a: float, b: float, operation: str
 ) -> Dict[str, Any]:
     """A simple calculator that performs a basic arithmetic operation.
 
@@ -121,7 +124,7 @@ print(response)
 
 ### 长时运行任务
 
-下面是一个完整可运行的示例：工具返回 `pending`，运行循环捕获 long-running 调用，随后用 `FunctionResponse` 回填 `finish` 状态，让智能体给出最终回复。
+下面的示例模拟任务提交与完成，不会下载数据或启动后台计算。工具返回 `pending`，运行循环捕获 long-running 调用，随后用 `FunctionResponse` 回填 `finish` 状态，让智能体给出最终回复。
 
 ```python title="examples/tools/function_tools/long_running_tool.py" lines
 import asyncio
@@ -147,7 +150,7 @@ def big_data_processing(data_url: str) -> dict[str, Any]:
         dict[str, Any]: The initial task state, with "status" == "pending",
         the "data-url", and a "task-id" to track the job.
     """
-    # Kick off the long-running job and return its handle immediately.
+    # Simulate a submitted job; replace this with a real job service.
     return {
         "status": "pending",
         "data-url": data_url,
@@ -160,7 +163,7 @@ long_running_tool = LongRunningFunctionTool(func=big_data_processing)
 agent = Agent(
     name="long_running_tool_agent",
     model_name="doubao-seed-2-1-pro-260628",
-    instruction="Use long_running_tool to process big data.",
+    instruction="Use big_data_processing to process big data.",
     tools=[long_running_tool],
 )
 runner = Runner(agent=agent, app_name=APP_NAME)
@@ -217,7 +220,7 @@ async def main():
             if text := "".join(part.text or "" for part in event.content.parts):
                 print(f"[{event.author}]: {text}")
 
-    # The task finished in the background; send the final result back to the agent.
+    # Simulate completion and send the final result back to the agent.
     if long_running_response is not None:
         updated = long_running_response.model_copy(deep=True)
         updated.response = {"status": "finish"}
@@ -236,3 +239,9 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 同步、异步与长时任务
+
+普通函数可使用 `def` 或 `async def`；异步函数适合等待网络或存储操作，但这不会自动把一次工具调用变成后台任务。`LongRunningFunctionTool` 标记的是需要后续结果的调用，实际任务提交、持久化、轮询与失败处理仍由应用负责
+
+向智能体回填长时任务结果时，保留原 `FunctionResponse` 的调用 ID 与工具名，并使用相同的应用、用户与会话标识。不要用另一次请求创建的任务结果覆盖当前调用。普通函数也应返回明确的成功或失败字段，避免将错误消息当作有效业务数据

@@ -31,7 +31,7 @@ productions/agentkit-cli/preview/
 
 - `index.mdx`：概述 CLI 能力、命令分组与全局约定。
 - `quickstart.mdx`：安装、登录和最短部署路径。
-- `agentkit-yaml.mdx`：`.agentkit/agentkit.yaml` 配置参考。
+- `agentkit-yaml.mdx`：项目根目录 `agentkit.yaml` 与发布配置 `.agentkit/agentkit.yaml` 的配置参考，说明两者对应的命令和使用范围。
 - `commands/`：命令参考。每个页面覆盖一个顶级命令组或强相关子命令组。
 - `commands/eval/`：评测相关命令参考，按 dataset、evaluator、run、experiment 拆分。
 - `workflows/`：端到端场景和最佳实践，例如飞书机器人、前端 SSO、Harness、Codex 沙箱和评测闭环。
@@ -84,9 +84,9 @@ productions/agentkit-cli/preview/
 
 `agentkit-yaml.mdx` 先给完整示例，再按配置块解释字段。配置参考必须：
 
-- 使用 `yaml` 代码块，示例文件名可写为 `.agentkit/agentkit.yaml`。
+- 使用 `yaml` 代码块，按对应命令标明项目根目录的 `agentkit.yaml` 或发布配置 `.agentkit/agentkit.yaml`，不能混用两种格式。
 - 对每个公开字段给出说明，能确认默认值时给出默认值。
-- 把凭证统一写成 `${VAR}`，不得写明文密钥。
+- 凭证使用环境变量或明确占位符，不得写入真实密钥。仅在字段明确支持环境变量插值时使用 `${VAR}`，并说明实际展开方式；项目根目录 `agentkit.yaml` 不会自动展开文件中的此类引用。
 - 对自动创建、自动推断、幂等更新等行为写清触发条件和影响。
 - 对飞书、企业微信、钉钉、前端、鉴权、基础设施等可选块分别说明，不合并成泛泛描述。
 

@@ -15,30 +15,47 @@ en_link: "/productions/veadk/preview/en/components/observability/apmplus"
 - 需要模型级别的指标分析，如 token 消耗、调用延迟与错误率；
 - 生产环境中需要成本追踪与性能监控。
 
+## 接入前准备
+
+先完成[安装](/productions/veadk/preview/zh/get-started/installation)和[模型配置](/productions/veadk/preview/zh/components/agent/model)，再设置以下环境变量。占位符需要替换为有权限访问的实际资源和凭证；在启动 Python 前完成配置
+
+<Warning>
+APMPlus 会接收链路与指标数据。建议显式设置 App Key；省略时会使用云凭证调用平台接口获取令牌。当前 gRPC 上报连接未加密，应在符合部署要求的网络中使用
+</Warning>
+
+```bash lines
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT="http://apmplus-cn-beijing.volces.com:4317"
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY="your-apmplus-app-key"
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME="apmplus_veadk_demo"
+```
+
 ## 使用示例
 
-```python lines
+保存为 `app.py`，运行 `python app.py`。示例复用已有资源，完成一次模型调用后刷新待导出的链路数据
+
+```python title="app.py" lines
 import asyncio
 
 from veadk import Agent, Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-from veadk.tools.demo_tools import get_city_weather
 from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
-exporters = [APMPlusExporter()]
-tracer = OpentelemetryTracer(exporters=exporters)
-
-agent = Agent(tools=[get_city_weather], tracers=[tracer])
-
-runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
-
-asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_id_demo"))
+tracer = OpentelemetryTracer(exporters=[APMPlusExporter()])
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("用一句话解释智能体的用途", session_id="demo-session")
+)
+print(response)
+tracer.force_export()
+print("Trace ID:", tracer.trace_id)
 ```
 
 也可以通过 `APMPlusExporterConfig` 显式传入连接参数：
 
 ```python lines
+import os
+
 from veadk.tracing.telemetry.exporters.apmplus_exporter import (
     APMPlusExporter,
     APMPlusExporterConfig,
@@ -47,11 +64,12 @@ from veadk.tracing.telemetry.exporters.apmplus_exporter import (
 exporter = APMPlusExporter(
     config=APMPlusExporterConfig(
         endpoint="http://apmplus-cn-beijing.volces.com:4317",
-        app_key="your-apmplus-app-key",
+        app_key=os.environ["OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY"],
         service_name="apmplus_veadk_demo",
     )
 )
 ```
+
 
 ## 参数
 
@@ -83,13 +101,7 @@ exporter = APMPlusExporter(
 `endpoint` 的默认值根据云服务商与地域动态生成。火山引擎模式下，地域依次取自 `REGION` 环境变量与默认值 `cn-beijing`；BytePlus 模式下，地域依次取自 `BYTEPLUS_REGION` 环境变量与默认值 `ap-southeast-1`。云服务商由 `AGENTKIT_CLOUD_PROVIDER` 或 `CLOUD_PROVIDER` 环境变量决定，默认为火山引擎。
 </Note>
 
-## 环境变量配置
 
-```bash lines
-export OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT="http://apmplus-cn-beijing.volces.com:4317"
-export OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY="your-apmplus-app-key"
-export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME="apmplus_veadk_demo"
-```
 
 也可以让 `Agent` 依据环境变量自动挂载 APMPlus 导出器，无需显式构造：
 
@@ -102,5 +114,13 @@ export ENABLE_APMPLUS=true
 </Tip>
 
 <Note>
-如果初始化 `OpentelemetryTracer` 时已存在全局 `TracerProvider`，VeADK 将复用该 provider 并自动移除 `APMPlusExporter`，因为已存在的 provider 被视为已负责 APMPlus 的链路数据上报。可通过 `apmplus_managed_externally` 属性确认此状态，详见[可观测概述](/productions/veadk/preview/zh/components/observability)。
+如果初始化 `OpentelemetryTracer` 时已存在全局 `TracerProvider`，VeADK 将复用该 provider，并跳过 `APMPlusExporter` 的链路注册。导出器对象仍在列表中；已有 provider 不一定配置了 APMPlus，需要自行确认上报目标。可通过 `apmplus_managed_externally` 属性确认此状态，详见[可观测概述](/productions/veadk/preview/zh/components/observability)。
 </Note>
+
+<Note>
+全局 `MeterProvider` 已由应用配置时，VeADK 会直接复用，不会将其指标导出目标自动改为 APMPlus。需在已有 provider 中配置指标上报；链路与指标使用各自的 provider，两者应分别核对
+</Note>
+
+## 验证与排查
+
+运行后在目标平台按本次 Trace ID 查询。模型回复成功只说明智能体完成了调用，不代表链路上传成功；找不到数据时依次检查端点和地域、凭证权限、目标资源以及进程退出前是否调用 `tracer.force_export()`

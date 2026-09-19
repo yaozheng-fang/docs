@@ -56,7 +56,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
       --command "cd /home/gem/my-app && codex"
     ```
 
-    按 Ctrl-] 脱离终端；再次运行相同命令可返回该会话。若已在 `.agentkit/sandbox.yaml` 中保存工具名称，后续可省略 `--tool-name`。
+    按 Ctrl-] 脱离终端；再次运行 `agentkit sandbox exec --tool-name dev-sandbox --session-id dev --mode tmux` 可返回该会话，避免重复上传覆盖远端文件。若已在 `.agentkit/sandbox.yaml` 中保存工具名称，后续可省略 `--tool-name`。
   </Step>
 
   <Step title="传输文件">
@@ -72,13 +72,15 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
   </Step>
 
   <Step title="打开 Web 预览">
-    在持久终端中启动监听公网可访问端口的 Web 服务，然后打开预览地址：
+    在持久终端中启动 Web 服务，例如监听沙箱内的 `127.0.0.1:3000`。以下命令打开沙箱浏览器界面，初始页面是会话文件目录：
 
     ```bash lines
     agentkit sandbox web --tool-name dev-sandbox --session-id dev
     ```
 
-    在不希望自动打开浏览器的环境中加 `--no-open`，命令会输出预览 URL。
+    打开后，在沙箱浏览器中访问服务地址 `http://127.0.0.1:3000`。此地址属于远程沙箱，不能直接在本机浏览器中访问；`sandbox web` 返回的是沙箱浏览器界面地址，不会自动把应用端口发布为公网 URL
+
+    在不希望自动打开浏览器的环境中加 `--no-open`，命令只返回界面 URL
   </Step>
 
   <Step title="清理资源">

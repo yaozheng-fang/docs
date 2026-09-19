@@ -3,3 +3,9 @@ title: "Add a session as an evaluation case"
 openapi: "/productions/api-reference/openapi/en/agent-api-server.json POST /dev/apps/{app_name}/eval-sets/{eval_set_id}/add-session"
 zh_link: "/productions/api-reference/preview/zh/agent-api-server/add-session-to-eval-set"
 ---
+
+Create the target evaluation set and confirm that the session identified by `userId` and `sessionId` exists. The service converts that conversation into a new case identified by `evalId`, allowing a debugging session to become a regression sample
+
+<Warning>
+This operation copies conversation content into the evaluation set, which can include user messages and tool results. Review the sample before adding it, then retrieve the case to confirm the saved content
+</Warning>

@@ -3,69 +3,94 @@ title: "Quickstart"
 zh_link: "/productions/veadk/preview/zh/get-started/quickstart"
 ---
 
-This tutorial explains how to configure a model and run a minimal agent that
-returns an answer in your terminal.
+Configure a model, create an agent, and execute a conversation with `Runner` to see the model's answer in your terminal
 
-<Note>
-  Complete the [installation](/productions/veadk/preview/en/get-started/installation) and obtain a
-  Volcengine Ark API key first. This chapter covers only the minimal path to a
-  first run; tools, memory, knowledge bases, and frontend capabilities are
-  covered in their component documentation.
-</Note>
+## Prerequisites
+
+- Complete the [installation](/productions/veadk/preview/en/get-started/installation) and activate the Python environment containing VeADK
+- Obtain a Volcengine Ark or BytePlus ModelArk API key with permission to call your chosen model
+- The environment variable examples use Bash or zsh. Configure and run the example in the same terminal
 
 ## Configure a model
 
-Provide the credentials for calling the model in one of two ways. The simplest
-is an environment variable — only the API key is required.
+Select the platform hosting your model. Use an API key issued by that platform and replace the model name with one available to your account
 
 <Tabs>
-  <Tab title="Environment variable">
-    With the API key set, VeADK uses the default doubao model on Volcengine Ark:
+  <Tab title="Volcengine">
+    Prepare an API key and an available model in the [Ark console](https://console.volcengine.com/ark), then set:
 
     ```bash lines
+    export CLOUD_PROVIDER="volcengine"
+    export MODEL_AGENT_PROVIDER="openai"
+    export MODEL_AGENT_NAME="doubao-seed-2-1-pro-260628"
+    export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
     export MODEL_AGENT_API_KEY="your-ark-api-key"
     ```
-
-    To use a different model, also set `MODEL_AGENT_NAME`, `MODEL_AGENT_PROVIDER`, and `MODEL_AGENT_API_BASE`.
   </Tab>
-  <Tab title="Config file">
-    Create `config.yaml` in the project root; VeADK reads it automatically:
+  <Tab title="BytePlus">
+    Prepare an API key and an available model in the BytePlus ModelArk console, then set:
 
-    ```yaml config.yaml lines
-    model:
-      agent:
-        provider: openai
-        name: doubao-seed-2-1-pro-260628
-        api_base: https://ark.cn-beijing.volces.com/api/v3/
-        api_key: # your Volcengine Ark API key
+    ```bash lines
+    export CLOUD_PROVIDER="byteplus"
+    export MODEL_AGENT_PROVIDER="openai"
+    export MODEL_AGENT_NAME="seed-2-0-lite-260228"
+    export MODEL_AGENT_API_BASE="https://ark.ap-southeast.bytepluses.com/api/v3"
+    export MODEL_AGENT_API_KEY="your-modelark-api-key"
     ```
-
-    `provider: openai` uses the OpenAI-compatible protocol, and `api_base` points at Ark's compatible endpoint, so Ark models such as doubao can be used directly.
   </Tab>
 </Tabs>
 
-## Write your first agent
+`MODEL_AGENT_PROVIDER=openai` selects the OpenAI-compatible protocol. Requests go to the platform address in `MODEL_AGENT_API_BASE`. This example sets the model, address, and credentials explicitly so it does not depend on version-specific defaults
 
-Create `main.py`:
+<Warning>
+  Running the example sends the prompt to the selected model service and may incur model charges. Use test content and keep real API keys out of example files and version control
+</Warning>
+
+## Create and run an agent
+
+Create `main.py` in your project directory:
 
 ```python main.py lines
-from veadk import Agent
 import asyncio
 
-agent = Agent()
+from veadk import Agent, Runner
 
-res = asyncio.run(agent.run("Introduce Volcengine in one sentence."))
+agent = Agent()
+runner = Runner(agent=agent)
+
+res = asyncio.run(runner.run(messages="Introduce Volcengine in one sentence."))
 print(res)
 ```
 
-`Agent` holds the model and instruction; with no arguments it uses the default
-model from `config.yaml`. `agent.run(...)` is asynchronous and returns the final
-text answer.
+`Agent` defines the model, instructions, and tools. `Runner` executes the conversation. Here, `Agent()` uses the model configuration set earlier, and `runner.run(...)` returns the response text
 
-## Run
+Run the script from the directory containing `main.py`:
 
 ```bash lines
 python main.py
 ```
 
-The terminal prints the model's answer, completing a minimal VeADK agent run.
+The terminal displays execution logs and the model's answer. A nonempty answer indicates that the call completed. The model generates the answer, so its wording can vary
+
+## Optional: Use a configuration file
+
+To reuse nonsensitive model settings, create `config.yaml` beside `main.py`. This example configures Volcengine Ark; continue supplying the API key through the environment:
+
+```yaml config.yaml lines
+model:
+  agent:
+    provider: openai
+    name: doubao-seed-2-1-pro-260628
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+```
+
+VeADK searches for `config.yaml` from the current working directory upward. Existing environment variables take precedence over matching file settings. Editing the file does not override model settings exported earlier. See [Models](/productions/veadk/preview/en/components/agent/model) for additional options
+
+## Troubleshoot the first run
+
+| Symptom | Check and action |
+| --- | --- |
+| Python cannot find the `veadk` module | Activate the environment used for installation and run the installation page's version check with the current Python interpreter |
+| Model authentication or authorization fails | Confirm that the API key is exported in this terminal and matches the service address and required model permissions |
+| The model is missing or unavailable | Check the model name and availability in the platform, then update `MODEL_AGENT_NAME` |
+| Editing `config.yaml` does not change the model | Check for matching environment variables; remove stale values or update them before rerunning |

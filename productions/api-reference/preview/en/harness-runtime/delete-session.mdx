@@ -5,5 +5,7 @@ zh_link: "/productions/api-reference/preview/zh/harness-runtime/delete-session"
 ---
 
 <Warning>
-This operation deletes or replaces existing data. Confirm the target and preserve any content you need before sending the request
+This operation deletes the session and its history for the specified application and user. This endpoint provides no restore operation. Preserve any state and events you need, and confirm the session identifier first
 </Warning>
+
+Success returns HTTP `200` with JSON `null`, rather than `204`. Deleting a session does not undo external actions already completed by tools

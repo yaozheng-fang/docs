@@ -12,24 +12,43 @@ flowchart LR
 ```
 
 <Note>
-  First, follow [Authentication and login](/productions/agentkit-cli/preview/en/commands/auth) to configure AK/SK credentials or complete SSO login. Then create an app on the [Feishu Open Platform](https://open.feishu.cn/), enable the **bot** capability, and note the **App ID** and **App Secret** (Feishu has no API to create an app — do this once in the console).
+  First, follow [Authentication and login](/productions/agentkit-cli/preview/en/commands/auth) to configure AK/SK credentials or complete SSO login. Then create an app on the [Feishu Open Platform](https://open.feishu.cn/), enable the **bot** capability, and note the **App ID** and **App Secret**.
 </Note>
+
+<Warning>
+Release builds an image and creates or updates the Runtime and Feishu proxy function, which may incur charges. The bot forwards user messages to the Runtime and configured model. Verify app visibility, model permissions, and permitted data before publishing
+</Warning>
+
+The examples use Volcengine Beijing. For BytePlus, set `cloud_provider: byteplus`, use a supported region at the top level and in `runtime.region`, and supply credentials and model endpoints for that platform
 
 <Steps>
   <Step title="Create a Feishu app">
-    On the Feishu Open Platform, create a **custom app**, enable the bot capability, and get the App ID and App Secret from "Credentials & Basic Info".
+    Create a custom app on the Feishu Open Platform, enable its bot capability, and obtain the App ID and App Secret from "Credentials & Basic Info". Select long-connection event delivery, subscribe to incoming messages, and request the permissions required to receive and send messages, update cards, and add reactions. Complete permission approval and app-version publication, and include your test users in the app's availability scope
+
+    No event callback URL is required, but the long connection and event subscriptions must still be configured
   </Step>
   <Step title="Scaffold a project">
     ```bash lines
-    agentkit init my-agent --template basic
+    agentkit init my-agent --template basic --directory my-agent
     cd my-agent
     agentkit release config --name my-agent
+    ```
+
+    The `basic` template creates `my-agent.py`, while Release defaults to `main.py`. Replace `CMD` in the generated `.agentkit/Dockerfile` with the following line and retain the other build steps
+
+    ```dockerfile
+    CMD ["python", "my-agent.py"]
     ```
   </Step>
   <Step title="Declare the Feishu channel (edit .agentkit/agentkit.yaml)">
     Add an `im.feishu` block; credentials use `${VAR}` and stay out of the repo:
 
     ```yaml title=".agentkit/agentkit.yaml" lines
+    envs:
+      MODEL_AGENT_NAME: ${MODEL_AGENT_NAME}
+      MODEL_AGENT_PROVIDER: openai
+      MODEL_AGENT_API_BASE: ${MODEL_AGENT_API_BASE}
+      MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
     im:
       feishu:
         enabled: true
@@ -38,11 +57,14 @@ flowchart LR
     ```
   </Step>
   <Step title="Fill in the environment variables">
-    Put the values in `.env` — the CLI loads it automatically on deploy:
+    Put actual values in `.env`, which the CLI loads during release; add `.env` to both `.gitignore` and `.dockerignore` first. Use a model and API key available to your account. For BytePlus ModelArk, use `https://ark.ap-southeast.bytepluses.com/api/v3`:
 
     ```bash title=".env" lines
-    FEISHU_APP_ID=...
-    FEISHU_APP_SECRET=...
+    FEISHU_APP_ID=your-app-id
+    FEISHU_APP_SECRET=your-app-secret
+    MODEL_AGENT_NAME=your-model-name
+    MODEL_AGENT_API_BASE=https://ark.cn-beijing.volces.com/api/v3
+    MODEL_AGENT_API_KEY=your-model-api-key
     ```
   </Step>
   <Step title="Deploy">
@@ -53,7 +75,9 @@ flowchart LR
     No flags. `agentkit release` reads `.agentkit/agentkit.yaml`: it builds and deploys the runtime (`key_auth`), then deploys the Feishu proxy (WebSocket transport — no public callback URL to configure).
   </Step>
   <Step title="Chat in Feishu">
-    Find your bot in Feishu and message it; the proxy forwards messages to the runtime and sends the replies back to Feishu.
+    Check the Runtime with `agentkit runtime show my-agent`, then send a message from a test account included in the app's availability scope. A model response confirms that event delivery, the proxy, Runtime, and model are working together
+
+    If no message arrives, check app publication, user availability, and event subscriptions. If the bot returns an error, check model settings and Runtime logs. A failed proxy deployment does not mean the Runtime was never created; inspect existing resources before retrying
   </Step>
 </Steps>
 

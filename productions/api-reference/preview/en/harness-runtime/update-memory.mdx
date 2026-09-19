@@ -3,3 +3,11 @@ title: "Add a session to memory"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json PATCH /apps/{app_name}/users/{user_id}/memory"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/update-memory"
 ---
+
+Configure a memory backend first and provide a valid `sessionId` under the same application and user. An unconfigured memory service returns `400`; a missing session returns `404`
+
+<Warning>
+This operation sends session events to the configured memory service for storage or processing. Future retrieval can use that content. Confirm that the session data is appropriate for the selected backend before submitting it
+</Warning>
+
+A successful response is JSON `null`, indicating that the ingestion call completed. It does not return extracted memories or guarantee a match in subsequent retrieval

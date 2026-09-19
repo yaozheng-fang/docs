@@ -15,15 +15,47 @@ Intelligent development, custom configuration, code-package deployment, and exis
   When you send a message or run a test agent, Studio receives responses over a streaming endpoint. If no first event arrives within 30 seconds, Studio aborts the stream and prompts you to check shared public egress network configuration and retry, preventing the request from hanging indefinitely.
 </Note>
 
+## Find a task
+
+| Task | Guide |
+| --- | --- |
+| Start and connect to cloud agents | [Start and connect to cloud agents](#start-locally) |
+| Create or import a project | [Create or import a project](#create-an-agent) |
+| Migrate an existing application | [Migrate an existing application](#migrate-an-existing-project) |
+| Configure storage | [Configure storage](#studio-persistent-storage) |
+| Deploy Studio itself | [Deploy Studio itself](#deploy-to-vefaas) |
+| Upgrade a deployed workbench | [Upgrade a deployed workbench](#update-a-deployed-studio) |
+
+## Version and availability
+
+This page covers released VeADK 1.1.13 features and the next Preview. API key status and model-permission filtering, the migration home layout, session artifacts, GitLab MR review, MCP credential editing, and new Studio deployment resource defaults were added after 1.1.13. A regular PyPI installation does not include those additions
+
+Use the following commands in a separate virtual environment to reproduce this Preview. The source revision is pinned for consistent UI and behavior. Release-package users can proceed to local startup
+
+```bash
+git clone https://github.com/volcengine/veadk-python.git veadk-preview
+cd veadk-preview
+git checkout adcdfdcc6a5a213b249a8caad435b939c01df7f6
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+cd frontend
+npm ci
+npm run build
+cd ..
+```
+
+Python and Node.js are required; see [Installation](/productions/veadk/preview/en/get-started/installation). When starting from this source directory, pass `--frontend-dir ./frontend/dist` to use the UI you just built
+
 ## Start locally
 
-Run the command from the parent directory of your agent applications:
+Install VeADK and prepare credentials for the selected cloud account. This command starts the workbench with cloud Runtime selection:
 
 ```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
-veadk studio --agents-dir ./agents --open
+veadk studio --provider volcengine --open
 ```
 
 `--open` opens `http://127.0.0.1:8000` after the service is ready. Without it, Studio starts the service without opening a browser.
@@ -32,6 +64,20 @@ Volcengine credentials are used for models, cloud-resource queries, and AgentKit
 
 To use BytePlus as the cloud provider, pass `--provider byteplus` and supply credentials via `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN` environment variables. Runtime listings default to the region in `BYTEPLUS_REGION` or `ap-southeast-1`. Without an explicit `--provider`, the CLI reads `AGENTKIT_CLOUD_PROVIDER` then `CLOUD_PROVIDER` to determine the cloud provider, falling back to Volcengine when neither is set.
 
+
+
+
+Complete BytePlus startup example:
+
+```bash
+export BYTEPLUS_ACCESS_KEY="your-access-key"
+export BYTEPLUS_SECRET_KEY="your-secret-key"
+veadk studio --provider byteplus --open
+```
+
+To debug local agents, use `veadk studio --dev --agents-dir ./agents --open`; see [VeADK Web](/productions/veadk/preview/en/components/frontend/veadk-web#start) for the layout. `--dev` selects the local list; `--agents-dir` only supplies its directory
+
+After startup, confirm that the home page opens, then select an available agent and send a message to verify the model and Runtime connection. If the cloud list is empty, check provider, region, and permissions before changing local agent directories
 
 ## Studio persistent storage
 
@@ -1813,7 +1859,7 @@ Describe the target skill in natural language in the input box, for example "gen
 Switch to "Optimize", select the skill space and skill to optimize from AgentKit SkillSpace, then describe the optimization goal in the input box, for example "improve compatibility with Chinese column names". After submitting, Studio navigates to the Skill Center workspace to optimize the selected skill and optionally overwrite-publish it to the original skill space.
 
 <Note>
-  Skill customization shares the same generation and optimization flow, Dev Sandbox session management, candidate comparison, and publishing flow as the [Skill Center](#skill-center). The workspace acts only as a quick entry point. Browsing AgentKit SkillSpace is performed by the Studio server using its own configured Volcengine credentials; the browser never sees credentials.
+  Skill customization shares the same generation and optimization flow, Dev Sandbox session management, candidate comparison, and publishing flow as the [Skill Center](#skills). The workspace acts only as a quick entry point. Browsing AgentKit SkillSpace is performed by the Studio server using its own configured Volcengine credentials; the browser never sees credentials.
 </Note>
 
 ## Video creation
@@ -2001,7 +2047,7 @@ Installation is atomic: Studio stages the Skill files in a temporary directory, 
 
 When role-based access control is enabled, configuring Coding Agents requires the `developer` or `admin` role.
 
-Template project import and AgentKit Runtime continuous delivery adapt their region options, default region, default model API URL, and required GitHub Secret names to Studio's current cloud provider. In Volcengine mode the region options are `cn-beijing` and `cn-shanghai` (default `cn-beijing`) and the Secrets are `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and the optional `VOLCENGINE_SESSION_TOKEN`; in BytePlus mode the region is `ap-southeast-1` and the Secrets are `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN`. The cloud provider is determined by `--provider` or the `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` environment variables, falling back to Volcengine when unset. PR automated review is triggered through a GitHub App and does not rely on GitHub Actions workflows or GitHub Secrets; see [Pull Request automated review](#pull-request-automated-review).
+Template project import and AgentKit Runtime continuous delivery adapt their region options, default region, default model API URL, and required GitHub Secret names to Studio's current cloud provider. In Volcengine mode the region options are `cn-beijing` and `cn-shanghai` (default `cn-beijing`) and the Secrets are `VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, and the optional `VOLCENGINE_SESSION_TOKEN`; in BytePlus mode the region is `ap-southeast-1` and the Secrets are `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN`. The cloud provider is determined by `--provider` or the `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` environment variables, falling back to Volcengine when unset. PR automated review is triggered through a GitHub App and does not rely on GitHub Actions workflows or GitHub Secrets; see [Pull Request automated review](#github-pull-request-automated-review).
 
 ### Template project import
 
@@ -2609,8 +2655,20 @@ When running Studio locally with `veadk studio --vite`, the Studio backend start
 | `--developer` | `str \| None` | `None` | Comma-separated developer list (usernames or OAuth emails). Only effective locally without an Identity pool. Also reads `VEADK_STUDIO_DEVELOPERS`. |
 | `--generated-agent-test-run-ttl` | `int` | `1800` | Lifetime in seconds for temporary generated-agent test processes. |
 | `--open` / `--no-open` | `bool` | `--no-open` | Open the default browser when ready. Ignored with `--vite`. |
+| `--sandbox-chat-codex-tool-id` | `str` | `SANDBOX_CHAT_CODEX` | CodeEnv Tool ID for temporary chats |
+| `--sandbox-chat-openclaw-tool-id` | `str` | `SANDBOX_CHAT_OPENCLAW` | ArkClawEnv Tool ID for OpenClaw chats |
+| `--sandbox-chat-hermes-tool-id` | `str` | `SANDBOX_CHAT_HERMES` | HermesEnv Tool ID for Hermes chats |
+| `--sandbox-chat-codex-snapshot-tool-id` | `str` | `SANDBOX_CHAT_CODEX_SNAPSHOT` | Snapshot-enabled CodeEnv Tool ID for persistent chats |
+| `--sandbox-chat-openclaw-snapshot-tool-id` | `str` | `SANDBOX_CHAT_OPENCLAW_SNAPSHOT` | Snapshot-enabled Tool ID for persistent OpenClaw chats |
+| `--sandbox-chat-hermes-snapshot-tool-id` | `str` | `SANDBOX_CHAT_HERMES_SNAPSHOT` | Snapshot-enabled Tool ID for persistent Hermes chats |
+| `--help` | `bool` | — | Show help for the installed version |
 
 ## Deploy to VeFaaS
+
+<Note>
+The current Preview deploys Studio itself with 8 vCPU, 16 GB memory, and one instance on both Volcengine and BytePlus. These are workbench-service defaults, not defaults for agent Runtimes created inside Studio; those use project deployment settings
+</Note>
+
 
 `veadk studio deploy` deploys Studio as a VeFaaS application protected by VeIdentity login. It creates or reuses a Serverless API Gateway. Unless you pass an IAM role, it also creates or reuses `VeADKFrontendServiceRole` and `VeADKFrontendPolicy`. When `--user-pool-id` and `--allowed-client-id` are omitted, the command creates or reuses a named VeIdentity user pool and web client in the deployment region. After deployment, the command registers the public callback with the user-pool client and updates the application configuration.
 
@@ -2621,6 +2679,8 @@ Before deployment, the command checks the VeFaaS service role `ServerlessApplica
 </Warning>
 
 Prepare suitable Volcengine credentials, then run:
+
+Run from the installed and built Preview source root described above. `--from-source` builds and deploys that checkout. Prepare authorized Volcengine credentials first
 
 ```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"

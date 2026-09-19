@@ -13,6 +13,10 @@ Session-oriented commands share the same tool and session selectors: `-s, --sess
 
 Tool selection usually resolves explicit CLI options first, then `.agentkit/sandbox.yaml`, `AGENTKIT_SANDBOX_TOOL_ID`, and local cache or a remote `Ready` tool. Whether a command may auto-create a tool or prompt for selection depends on that command's behavior below.
 
+Configure control-plane credentials for the selected provider and confirm that the region supports the tool type. For BytePlus, use `agentkit --provider byteplus` and its matching region. Tools are not interchangeable across providers or regions
+
+A tool is a cloud compute resource; a session contains a separate file and process environment. Local session cache is only a locator and does not prove that the remote session is still active. Verify it with `sandbox list --sessions --remote --tool-id <id>`. Sessions have a TTL; disconnecting a terminal does not guarantee permanent file retention
+
 ## Command overview
 
 | Subcommand | Description |
@@ -33,7 +37,7 @@ Tool selection usually resolves explicit CLI options first, then `.agentkit/sand
 | `codex-login` | Inject local Codex or Claude subscription credentials into a sandbox session. |
 | `model-login` | Equivalent to `codex-login`. |
 | `scp` | Transfer files or directories between local storage and an existing sandbox session. |
-| `sandbox snapshot` | Create, query, resume, and delete session snapshots |
+| `snapshot` | Create, query, resume, and delete session snapshots |
 
 ## sandbox build
 
@@ -469,7 +473,7 @@ Open the sandbox web preview and print JSON containing the URL, tool id, session
 agentkit sandbox web --session-id dev --no-open
 ```
 
-The command waits for the sandbox browser to become ready before opening its home page
+The command waits for the sandbox browser before opening its home page. The URL exposes the remote browser interface, not an arbitrary application port. Navigate to the service address inside that browser to inspect a web app running in the session
 
 ## sandbox codex-login
 
@@ -573,13 +577,18 @@ Create a snapshot for a sandbox session
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
-| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--tool-id <id>` | Explicit sandbox tool ID | Required |
 | `--instance-id <id>` | sandbox instance SessionId; bypasses UserSessionId lookup | — |
 | `--json` | output JSON | `false` |
 | `-s, --session-id <id>, --sid <id>` | sandbox user session ID to snapshot | — |
-| `--sid <id>` | sandbox user session ID to snapshot | — |
 | `--session <id>` | alias for --session-id | — |
 | `-h, --help` | Show help | — |
+
+Save `tool_id` from tool creation first. The examples below require an existing `report-session` session in that tool
+
+```bash lines
+export TOOL_ID="<tool_id from create>"
+```
 
 ```bash lines
 agentkit sandbox snapshot create --tool-id "$TOOL_ID" --session-id report-session
@@ -587,13 +596,19 @@ agentkit sandbox snapshot create --tool-id "$TOOL_ID" --session-id report-sessio
 
 `--session-id` resolves a user session within the tool. Use `--instance-id` when multiple instances match; it directly selects an instance and takes precedence. In results, `session_id` identifies the user session and `instance_id` identifies the instance
 
+Save the snapshot ID returned by creation, then inspect whether the snapshot is ready
+
+```bash lines
+export SNAPSHOT_ID="<snapshot ID from snapshot create>"
+```
+
 ## sandbox snapshot get
 
 Get a sandbox session snapshot
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
-| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--tool-id <id>` | Explicit sandbox tool ID | Required |
 | `--snapshot-id <id>` | snapshot ID | Required |
 | `--json` | output JSON | `false` |
 | `-h, --help` | Show help | — |
@@ -608,7 +623,7 @@ List sandbox session snapshots
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
-| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--tool-id <id>` | Explicit sandbox tool ID | Required |
 | `--instance-id <id>` | filter by sandbox instance SessionId | — |
 | `--create-time-after <time>` | filter snapshots created after this time | — |
 | `--create-time-before <time>` | filter snapshots created before this time | — |
@@ -618,7 +633,6 @@ List sandbox session snapshots
 | `--page-size <count>` | page size pagination | — |
 | `--json` | output JSON | `false` |
 | `-s, --session-id <id>, --sid <id>` | sandbox user session ID filter | — |
-| `--sid <id>` | sandbox user session ID filter | — |
 | `--session <id>` | alias for --session-id | — |
 | `-h, --help` | Show help | — |
 
@@ -636,7 +650,7 @@ Resuming can create a billable instance or change session state on the original 
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
-| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--tool-id <id>` | Explicit sandbox tool ID | Required |
 | `--snapshot-id <id>` | snapshot ID | Required |
 | `--ttl <value>` | session TTL value | — |
 | `--ttl-unit <unit>` | TTL unit: second\|minute (aliases: s/sec/seconds, m/min/minutes) | `second` when ttl is supplied |
@@ -644,7 +658,6 @@ Resuming can create a billable instance or change session state on the original 
 | `--reuse-instance` | reuse the original sandbox instance when supported | Server decides when both are omitted |
 | `--json` | output JSON | `false` |
 | `-s, --session-id <id>, --sid <id>` | user session ID to request for the resumed session | — |
-| `--sid <id>` | user session ID to request for the resumed session | — |
 | `--session <id>` | alias for --session-id | — |
 | `-h, --help` | Show help | — |
 
@@ -662,7 +675,7 @@ This command deletes the snapshot immediately, without a confirmation prompt or 
 
 | Flag / argument | Description | Default |
 | --- | --- | --- |
-| `--tool-id <id>` | sandbox tool ID. Resolve tool by CLI tool-id/tool-name, then sandbox.yaml config, env AGENTKIT_SANDBOX_TOOL_ID. | Required |
+| `--tool-id <id>` | Explicit sandbox tool ID | Required |
 | `--snapshot-id <id>` | snapshot ID | Required |
 | `--json` | output JSON | `false` |
 | `-h, --help` | Show help | — |

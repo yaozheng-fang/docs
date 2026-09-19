@@ -14,6 +14,10 @@ Check and upgrade the AgentKit CLI to the latest published version. Run without 
 | `--check` | Only check; do not install. Prints the available update and the install command | `false` |
 | `--json` | Print the check result as JSON (`{ current, latest, behind }`) | `false` |
 
+<Warning>
+Confirming an upgrade runs the installer and replaces the local CLI. To preserve a reproducible release environment, record `agentkit --version` first and use `--check` or `--json` to inspect without installing
+</Warning>
+
 ```bash lines
 # Check, then upgrade after confirmation
 agentkit upgrade
@@ -26,5 +30,5 @@ agentkit update --json
 ```
 
 <Note>
-The upgrade runs the install script from the official release channel (equivalent to `wget -qO- <release>/install.sh | sh`). If the release channel is unreachable, the check fails; in that case, install manually using the command that `--check` prints.
+The upgrade runs the install script from the official release channel (equivalent to `wget -qO- <release>/install.sh | sh`). If the release channel is unreachable, the check fails. Restore connectivity, rerun `--check`, and then follow the printed installation command.
 </Note>

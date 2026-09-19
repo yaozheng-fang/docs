@@ -3,3 +3,7 @@ title: "按路径创建会话"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /apps/{app_name}/users/{user_id}/sessions/{session_id}"
 en_link: "/productions/api-reference/preview/en/harness-runtime/create-session-with-id"
 ---
+
+此接口已废弃，保留用于已有调用方。新接入使用[创建会话](/productions/api-reference/preview/zh/harness-runtime/create-session)，并在请求体中设置 `sessionId`
+
+本接口的请求体直接表示初始状态，例如 `{"language":"zh"}`。迁移时应改为 `{"sessionId":"session-001","state":{"language":"zh"}}`，同时从路径中移除会话 ID

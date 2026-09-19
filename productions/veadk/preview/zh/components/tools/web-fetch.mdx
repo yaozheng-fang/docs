@@ -63,5 +63,28 @@ if __name__ == "__main__":
 
 - **SSRF 防护**：解析域名后拦截私网 / 环回 / 链路本地 / 保留地址，并对每一跳重定向（含 `<meta refresh>`）重新校验，最多跟随 3 跳。
 - **上限**：HTML 下载上限 2MB、PDF 10MB；请求超时 30 秒；结果在进程内缓存 15 分钟。
-- 不渲染 JavaScript；未做 socket 级 DNS pinning（仅“解析后校验”）。
+- 不渲染 JavaScript；域名检查不能替代部署环境的网络访问限制
 </Note>
+
+## 独立调用与参数边界
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `url` | `str` | 必填 | 可公开访问的 HTTP 或 HTTPS URL |
+| `extract_mode` | `str` | `"markdown"` | `markdown` 或 `text`，其他值按 `markdown` 处理 |
+| `max_chars` | `int` | `50000` | 结果字符上限，限制在 1–200000；无法转换的值使用默认值 |
+| `tool_context` | `ToolContext \| None` | `None` | 智能体调用时自动注入，独立调用可省略 |
+
+直接调用不需要模型 API Key；读取 PDF 需要安装 `pypdf`。扫描版 PDF 不会自动进行 OCR。`truncated` 只表示抽取后的正文超过字符上限，不保证下载的页面完整或覆盖所有内容
+
+```python lines
+from veadk.tools.builtin_tools.web_fetch import web_fetch
+
+result = web_fetch("https://example.com", extract_mode="text", max_chars=2000)
+if "error" in result:
+    print("Fetch failed:", result["error"])
+else:
+    print(result["url"], result["title"])
+    print(result["content"])
+    print("Truncated:", result["truncated"])
+```

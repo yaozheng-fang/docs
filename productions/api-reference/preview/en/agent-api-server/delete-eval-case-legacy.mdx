@@ -4,6 +4,10 @@ openapi: "/productions/api-reference/openapi/en/agent-api-server.json DELETE /de
 zh_link: "/productions/api-reference/preview/zh/agent-api-server/delete-eval-case-legacy"
 ---
 
+This underscore path uses the same request and response as its hyphenated counterpart. It deletes the specified case, which is then excluded from future evaluations; preserve any content you need first
+
 <Warning>
-This operation deletes or replaces existing data. Confirm the target and preserve any content you need before sending the request
+Writing or deleting evaluation samples changes the actual evaluation set
 </Warning>
+
+See the [corresponding evaluation endpoint](/productions/api-reference/preview/en/agent-api-server/delete-eval-case) for the replacement and its complete requirements

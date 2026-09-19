@@ -14,10 +14,12 @@ en_link: "/productions/veadk/preview/en/components/memory/mem0"
 ## 依赖
 
 ```bash lines
-pip install mem0
+python -m pip install "veadk-python[database]"
 ```
 
 ## 使用示例
+
+安装命令包含 Mem0 官方 Python 包 `mem0ai>=1.0.0,<2`。运行前设置 `DATABASE_MEM0_API_KEY` 与 `DATABASE_MEM0_BASE_URL`；公共 Mem0 服务地址为 `https://api.mem0.ai`，不要附加 `/v1`。通过火山引擎换取凭证只适用于对应的托管记忆服务，不能用于获取任意 Mem0 账号的密钥
 
 ```python lines
 from veadk import Agent
@@ -35,6 +37,8 @@ agent = Agent(
 也可以通过 `backend_config` 显式传入配置：
 
 ```python lines
+import os
+
 from veadk.memory.long_term_memory import LongTermMemory
 from veadk.configs.database_configs import Mem0Config
 
@@ -44,8 +48,8 @@ ltm = LongTermMemory(
     backend_config={
         "index": "ltm_demo",
         "mem0_config": Mem0Config(
-            api_key="your-mem0-api-key",
-            base_url="https://api.mem0.ai/v1",
+            api_key=os.environ["DATABASE_MEM0_API_KEY"],
+            base_url="https://api.mem0.ai",
         ),
     },
 )
@@ -53,14 +57,25 @@ ltm = LongTermMemory(
 
 ## 参数
 
+### LongTermMemory 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseLongTermMemoryBackend` | `"opensearch"` | 本页使用 `mem0`；也可传入已配置的后端实例 |
+| `backend_config` | `dict` | `{}` | 后端配置；显式后端实例优先于此配置 |
+| `index` | `str` | `""` | 未提供 backend_config 时依次使用 index、app_name、default_app；提供配置字典时应明确指定非空索引 |
+| `app_name` | `str` | `""` | index 的回退值；实际用户来自保存的 Session 或检索参数 |
+| `top_k` | `int` | `5` | 检索片段数量；配置为正整数 |
+| `user_id` | `str` | `""` | 已废弃；不用于运行时用户隔离 |
+
 ### 构造参数
 
 `backend_config` 支持以下配置项：
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `index` | `str` | 无默认，由 `LongTermMemory` 传入 | 记忆索引名。Mem0 后端对命名无限制。 |
-| `mem0_config` | `Mem0Config` | 自动从 `DATABASE_MEM0_*` 环境变量读取 | Mem0 客户端配置。 |
+| `index` | `str` | 无默认，由 `LongTermMemory` 传入 | 记忆索引名。Mem0 后端对命名无限制 |
+| `mem0_config` | `Mem0Config` | 自动从 `DATABASE_MEM0_*` 环境变量读取 | Mem0 客户端配置 |
 
 ### Mem0 配置
 
@@ -68,10 +83,10 @@ ltm = LongTermMemory(
 
 | 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `api_key` | `DATABASE_MEM0_API_KEY` | `str` | `""` | Mem0 API Key。 |
-| `api_key_id` | `DATABASE_MEM0_API_KEY_ID` | `str` | `""` | 用于自动换取 API Key，与 `project_id` 二者提供其一即可。 |
-| `project_id` | `DATABASE_MEM0_PROJECT_ID` | `str` | `""` | 用于自动换取 API Key。 |
-| `base_url` | `DATABASE_MEM0_BASE_URL` | `str` | `""` | Mem0 服务端点，例如 `https://api.mem0.ai/v1`。 |
+| `api_key` | `DATABASE_MEM0_API_KEY` | `str` | `""` | Mem0 API Key |
+| `api_key_id` | `DATABASE_MEM0_API_KEY_ID` | `str` | `""` | 用于自动换取 API Key，与 `project_id` 二者提供其一即可 |
+| `project_id` | `DATABASE_MEM0_PROJECT_ID` | `str` | `""` | 用于自动换取 API Key |
+| `base_url` | `DATABASE_MEM0_BASE_URL` | `str` | `""` | Mem0 服务端点，例如 `https://api.mem0.ai` |
 
 ### API Key 获取顺序
 
@@ -82,7 +97,7 @@ ltm = LongTermMemory(
 ```bash lines
 # 方式一：直接提供 API Key
 export DATABASE_MEM0_API_KEY="your-mem0-api-key"
-export DATABASE_MEM0_BASE_URL="https://api.mem0.ai/v1"
+export DATABASE_MEM0_BASE_URL="https://api.mem0.ai"
 
 # 方式二：通过 api_key_id 或 project_id 自动换取
 export DATABASE_MEM0_API_KEY_ID="your-api-key-id"
@@ -92,3 +107,37 @@ export DATABASE_MEM0_PROJECT_ID="your-project-id"
 <Note>
 若未直接提供 `api_key`，VeADK 会尝试用 `api_key_id` 或 `project_id` 自动换取 API Key；两者都没有则报错。
 </Note>
+
+## 验证写入和检索
+
+配置本页依赖与凭证后运行此独立示例。它直接保存用户文本，再检索同一用户的记忆，不需要调用对话模型
+
+```python lines
+import asyncio
+
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
+from veadk.memory.long_term_memory import LongTermMemory
+
+async def main():
+    memory = LongTermMemory(backend="mem0", index="ltm_demo")
+    session = Session(
+        id="memory_check", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(session)
+    result = await memory.search_memory(
+        app_name="ltm_demo", user_id="user_42", query="preferred language"
+    )
+    for entry in result.memories:
+        print(entry.content)
+
+asyncio.run(main())
+```
+
+结果应包含所保存的语言偏好。托管服务可能异步完成记忆提取，写入返回不保证立刻可检索；空结果也可能来自权限、网络或服务失败，应结合错误日志与服务端记录判断。此方法不返回保存成功的布尔值
+
+`index` 不会传给 Mem0 的保存或检索请求，也不会创建独立项目；同一服务与凭证下，记忆主要由运行时 `user_id` 区分。多应用共享服务时使用应用级凭证或应用与用户组成的稳定标识。保存使用异步提取，查询可能暂时无结果

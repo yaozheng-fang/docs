@@ -12,24 +12,43 @@ flowchart LR
 ```
 
 <Note>
-  开始前：按照[鉴权与登录](/productions/agentkit-cli/preview/zh/commands/auth)配置 AK/SK 或完成 SSO 登录。并在[飞书开放平台](https://open.feishu.cn/)创建一个应用，开启**机器人**能力，记下 **App ID** 与 **App Secret**（飞书没有创建应用的开放接口，这一步在控制台手动完成）。
+  开始前：按照[鉴权与登录](/productions/agentkit-cli/preview/zh/commands/auth)配置 AK/SK 或完成 SSO 登录。并在[飞书开放平台](https://open.feishu.cn/)创建一个应用，开启**机器人**能力，记下 **App ID** 与 **App Secret**。
 </Note>
+
+<Warning>
+发布会构建镜像并创建或更新 Runtime 与飞书代理函数，可能产生费用。机器人会把用户消息发送到运行时和所配置的模型；发布前确认应用可见范围、模型权限和允许处理的数据
+</Warning>
+
+以下示例使用火山引擎北京区域。使用 BytePlus 时，将发布配置的 `cloud_provider` 改为 `byteplus`，顶层与 `runtime.region` 改为支持的区域，并使用该平台的凭据和模型服务地址
 
 <Steps>
   <Step title="创建飞书应用">
-    在飞书开放平台建**自建应用**，开启机器人能力，在「凭证与基础信息」拿到 App ID 与 App Secret。
+    在飞书开放平台创建自建应用，开启机器人能力，在「凭证与基础信息」获取 App ID 与 App Secret。事件订阅选择长连接方式，订阅接收消息事件，并按应用管理界面申请接收消息、发送消息、更新卡片和添加表情回复所需权限。完成权限审批与应用版本发布，并将测试用户加入可用范围
+
+    无需填写事件回调 URL；长连接建立和事件订阅仍需完成
   </Step>
   <Step title="脚手架项目">
     ```bash lines
-    agentkit init my-agent --template basic
+    agentkit init my-agent --template basic --directory my-agent
     cd my-agent
     agentkit release config --name my-agent
+    ```
+
+    `basic` 模板生成的入口是 `my-agent.py`，Release 默认入口是 `main.py`。将生成的 `.agentkit/Dockerfile` 中 `CMD` 改为以下内容，保留其余构建步骤
+
+    ```dockerfile
+    CMD ["python", "my-agent.py"]
     ```
   </Step>
   <Step title="声明飞书渠道（编辑 .agentkit/agentkit.yaml）">
     加上 `im.feishu` 块；凭证用 `${VAR}` 从环境取，不落明文：
 
     ```yaml title=".agentkit/agentkit.yaml" lines
+    envs:
+      MODEL_AGENT_NAME: ${MODEL_AGENT_NAME}
+      MODEL_AGENT_PROVIDER: openai
+      MODEL_AGENT_API_BASE: ${MODEL_AGENT_API_BASE}
+      MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
     im:
       feishu:
         enabled: true
@@ -38,11 +57,14 @@ flowchart LR
     ```
   </Step>
   <Step title="填写环境变量">
-    将取值写入 `.env`，部署时 CLI 会自动加载：
+    将实际取值写入 `.env`，部署时 CLI 会自动加载；先将 `.env` 加入 `.gitignore` 与 `.dockerignore`。模型名称和 API Key 使用账号已开通的值，BytePlus 模型地址为 `https://ark.ap-southeast.bytepluses.com/api/v3`：
 
     ```bash title=".env" lines
-    FEISHU_APP_ID=...
-    FEISHU_APP_SECRET=...
+    FEISHU_APP_ID=your-app-id
+    FEISHU_APP_SECRET=your-app-secret
+    MODEL_AGENT_NAME=your-model-name
+    MODEL_AGENT_API_BASE=https://ark.cn-beijing.volces.com/api/v3
+    MODEL_AGENT_API_KEY=your-model-api-key
     ```
   </Step>
   <Step title="部署">
@@ -53,7 +75,9 @@ flowchart LR
     无需 flag。`agentkit release` 读 `.agentkit/agentkit.yaml`：先构建并部署运行时（`key_auth`），再部署飞书 proxy（WebSocket 传输，不需要配置任何公网回调 URL）。
   </Step>
   <Step title="在飞书里对话">
-    在飞书中找到你的机器人，直接发消息即可；proxy 会把消息转给运行时，并把回复发回飞书。
+    先用 `agentkit runtime show my-agent` 确认 Runtime 状态，再从应用可用范围内的测试账号向机器人发送消息。收到模型回复后，才说明事件订阅、代理、运行时和模型链路均已走通
+
+    没有收到消息时检查应用发布、用户可用范围与事件订阅；收到错误回复时检查模型配置和 Runtime 日志。代理部署失败不代表 Runtime 未创建，应检查已有资源后重试
   </Step>
 </Steps>
 

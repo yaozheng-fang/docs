@@ -3,3 +3,11 @@ title: "Run an agent"
 openapi: "/productions/api-reference/openapi/en/agent-api-server.json POST /run"
 zh_link: "/productions/api-reference/preview/zh/agent-api-server/run"
 ---
+
+Submit one turn and receive the complete event array after execution. [Create a session](/productions/api-reference/preview/en/agent-api-server/create-session) first by default, and use its application, user, and session identifiers consistently
+
+<Warning>
+Execution writes session events and can call models, tools, and external resources. Retrying the same request can repeat those actions; confirm the target before sending it
+</Warning>
+
+This endpoint always returns a JSON array; `streaming: true` does not change it to SSE. Use [Run an agent with SSE](/productions/api-reference/preview/en/agent-api-server/run-sse) to consume events as they arrive

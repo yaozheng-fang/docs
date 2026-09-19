@@ -5,9 +5,21 @@ en_link: "/productions/veadk/preview/en/components/security/inbound"
 
 入站认证验证进入智能体的请求方身份。VeADK 支持 API Key 与 OAuth2 两类方式。
 
+<Note>
+本节的 `from_veidentity(client_secret=...)` 直接复用方式、A2A 1.0 AgentCard 和托管 API Key 解析属于未发布的 Preview，按以下源码版本核验；VeADK 1.1.13 不包含这些增量。需要这些能力时，可在独立虚拟环境中安装该版本
+
+```bash
+pip install "veadk-python @ git+https://github.com/volcengine/veadk-python.git@adcdfdcc6a5a213b249a8caad435b939c01df7f6"
+```
+</Note>
+
 ## API Key 认证
 
-API Key 通过唯一字符串密钥验证请求方身份、授权访问 API 资源。VeADK 约定将 API Key 放在 URL 的 `token` 参数中传递。
+<Warning>
+URL 参数可能进入浏览器历史、访问日志和转发链路。只通过 HTTPS 传递凭据，并对 URL 日志脱敏；密钥验证通过后仍需按用户权限限制资源访问
+</Warning>
+
+API Key 通过唯一字符串密钥验证请求方身份、授权访问 API 资源。本节的 VeFaaS API 网关部署使用 URL 的 `token` 参数传递 API Key；其他服务的认证方式应按对应 API 文档配置。
 
 <Note>
   API Key 仅适用于 A2A / MCP Server 部署模式，不建议在 VeADK Web 部署模式中使用；后者更推荐 OAuth2。
@@ -51,23 +63,37 @@ OAuth2 是一套开放的授权框架，通过令牌而非直接暴露账号密�
 
 适用于本地开发或自托管部署，通过 VeADK 提供的中间件在应用内处理 OAuth2，支持所有基于 Starlette 的框架（含 FastAPI）。推荐用 `OAuth2Config.from_veidentity()` 自动配置 VeIdentity 用户池：
 
-```python lines
+示例依赖 `fastapi` 和 `uvicorn`，先运行 `pip install fastapi uvicorn` 安装。每个应用只调用一次 `setup_oauth2()`；后续片段是替代配置，不应依次追加到同一应用
+
+准备已有用户池和 Web 客户端，预先登记 `http://localhost:8000/oauth2/callback`。设置 `OAUTH2_USER_POOL_NAME`、`OAUTH2_CLIENT_NAME`，并为运行进程提供有权读取这些资源的云凭据。示例仅用于本地 HTTP 调试；上线后使用 HTTPS 并恢复 `cookie_secure=True`
+
+```python title="app.py" lines
+import os
 from fastapi import FastAPI
 from veadk.auth.middleware.oauth2_auth import OAuth2Config, setup_oauth2
 
 app = FastAPI()
 
+@app.get("/api/profile")
+async def profile():
+    return {"authenticated": True}
+
 setup_oauth2(
     app,
     OAuth2Config.from_veidentity(
-        user_pool_name="my-app",
-        client_name="my-app-web",
-        redirect_uri="https://myapp.com/oauth2/callback",
+        user_pool_name=os.environ["OAUTH2_USER_POOL_NAME"],
+        client_name=os.environ["OAUTH2_CLIENT_NAME"],
+        redirect_uri="http://localhost:8000/oauth2/callback",
+        auto_create=False,
+        auto_register_callback=False,
+        cookie_secure=False,
     ),
 )
 ```
 
-该方法会自动创建用户池与客户端（如不存在）、注册回调 URL 并配置 OAuth2 端点。Starlette 用法相同，将 `FastAPI()` 换成 `Starlette()` 即可。
+保存为 `app.py`，运行 `uvicorn app:app --host 127.0.0.1 --port 8000`。未登录时，访问 `/api/profile` 应返回 `401`；浏览器访问 `/oauth2/login` 完成登录后，再访问该接口应返回 `authenticated: true`
+
+`from_veidentity()` 默认允许创建不存在的资源并登记回调，示例将这两项关闭。需要自动创建时应先确认资源创建权限与回调地址。Starlette 用法相同
 
 复用已有资源时关闭自动创建：
 
@@ -106,28 +132,33 @@ setup_oauth2(
     OAuth2Config.from_veidentity(
         user_pool_uid="pool-xxxx",
         client_uid="client-xxxx",
-        client_secret="your-existing-client-secret",
+        client_secret=os.environ["OAUTH2_CLIENT_SECRET"],
         redirect_uri="https://myapp.com/oauth2/callback",
         auto_create=False,
     ),
 )
 ```
 
-接入非 VeIdentity 的 OAuth2 提供商时，直接构造 `OAuth2Config`：
+接入非 VeIdentity 的提供商时，直接构造 `OAuth2Config`。以下替代配置片段适用于签发 JWT 访问令牌的提供商；先按提供商的 OpenID Connect 元数据设置各端点、签发者与公钥集环境变量，并将 `OAUTH2_AUDIENCE` 设为该 API 接受的令牌受众。不要把任意客户端 ID 当作受众
 
 ```python lines
 setup_oauth2(
     app,
     OAuth2Config(
-        authorize_url="https://provider.com/oauth2/authorize",
-        token_url="https://provider.com/oauth2/token",
-        userinfo_url="https://provider.com/oauth2/userinfo",
-        client_id="your-client-id",
-        client_secret="your-client-secret",
+        authorize_url=os.environ["OAUTH2_AUTHORIZE_URL"],
+        token_url=os.environ["OAUTH2_TOKEN_URL"],
+        userinfo_url=os.environ["OAUTH2_USERINFO_URL"],
+        issuer=os.environ["OAUTH2_ISSUER"],
+        jwks_uri=os.environ["OAUTH2_JWKS_URI"],
+        audience=os.environ["OAUTH2_AUDIENCE"],
+        client_id=os.environ["OAUTH2_CLIENT_ID"],
+        client_secret=os.environ["OAUTH2_CLIENT_SECRET"],
         redirect_uri="https://myapp.com/oauth2/callback",
     ),
 )
 ```
+
+直接构造时不会自动发现 `jwks_uri`；缺少公钥集配置会导致 JWT 校验无法完成。提供商签发不透明访问令牌时，改用 `use_introspection=True` 并设置 `introspection_url`，按提供商要求提供内省客户端凭据
 
 中间件会自动注册以下路由：
 
@@ -140,40 +171,168 @@ setup_oauth2(
 
 可配置跳过认证的路径：`exempt_paths=["/health", "/metrics"]`（精确匹配）、`exempt_prefixes=["/public/", "/static/"]`（前缀匹配）。中间件按请求类型响应：浏览器请求重定向到登录页，API 请求返回 `401`。API 请求通过 `Accept: application/json` 请求头、路径前缀（默认 `/api/`）或 `X-Requested-With: XMLHttpRequest` 识别，可用 `api_path_prefixes` 自定义。
 
-`OAuth2Config.from_veidentity()` 关键参数：
+### 应用集成参数
 
-| 参数 | 默认值 | 说明 |
-| --- | --- | --- |
-| `user_pool_name` | 必填 | VeIdentity 用户池名称（未提供 `user_pool_uid` 时使用） |
-| `user_pool_uid` | `None` | 用户池 UID，优先于 `user_pool_name` |
-| `client_name` | 必填 | 用户池客户端名称（未提供 `client_uid` 时使用） |
-| `client_uid` | `None` | 客户端 UID，优先于 `client_name` |
-| `client_secret` | `None` | 已有客户端密钥；与 `client_uid` 同时提供时跳过启动时的客户端查询 |
-| `redirect_uri` | 必填 | OAuth2 回调 URL |
-| `auto_create` | `True` | 资源不存在时自动创建 |
-| `auto_register_callback` | `True` | 自动注册回调 URL |
-| `client_type` | `WEB_APPLICATION` | 客户端类型 |
-| `scope` | `"openid profile email"` | OAuth2 作用域 |
+`setup_oauth2()` 返回管理 OAuth2 流程的 `OAuth2Handler`，并注册认证路由与中间件
 
-`OAuth2Config` 关键参数：
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `app` | `Starlette` | 必填 | Starlette 或 FastAPI 应用 |
+| `config` | `OAuth2Config` | 必填 | 认证配置 |
+| `routes` | `OAuth2RoutePaths / None` | `None` | 自定义登录、回调、登出和用户信息路径；默认使用上表中的路径 |
+| `exempt_paths` | `Iterable[str] / None` | `None` | 免认证的精确路径 |
+| `exempt_prefixes` | `Iterable[str] / None` | `None` | 免认证的路径前缀 |
+| `state_store` | `StateStore / None` | `None` | OAuth state 存储；默认使用进程内存 |
 
-| 参数 | 默认值 | 说明 |
-| --- | --- | --- |
-| `userinfo_url` | `None` | 用户信息端点 URL；配置后中间件会从该端点获取用户信息并存入会话 |
-| `user_id_field` | `"sub"` | 从用户信息中提取用户标识的字段名 |
-| `session_timeout_seconds` | `3600` | 会话超时（秒） |
-| `cookie_secure` | `True` | 是否启用安全 cookie |
-| `auto_refresh_token` | `True` | 自动刷新令牌 |
-| `token_refresh_threshold_seconds` | `300` | 令牌刷新阈值（秒） |
-| `api_path_prefixes` | `["/api/"]` | API 路径前缀 |
+例如，在已创建 `app` 与 `config` 后，可用以下片段替换原 `setup_oauth2()` 调用。`config.redirect_uri` 和提供商登记的回调必须同步改为新的回调地址
+
+```python
+from veadk.auth.middleware.oauth2_auth import OAuth2RoutePaths
+
+setup_oauth2(
+    app,
+    config,
+    routes=OAuth2RoutePaths(
+        login="/auth/login",
+        callback="/auth/callback",
+        logout="/auth/logout",
+        userinfo="/auth/userinfo",
+    ),
+    exempt_paths=["/health"],
+    exempt_prefixes=["/public/"],
+)
+```
+
+### VeIdentity 配置参数
+
+`OAuth2Config.from_veidentity()` 参数如下。省略 `session_timeout_seconds` 时，会尝试使用客户端配置的刷新令牌有效期；读取不到时保留 `OAuth2Config` 默认值
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `user_pool_name` | `str / None` | `None` | 用户池名称；名称与 UID 至少提供一项 |
+| `user_pool_uid` | `str / None` | `None` | 用户池 UID，优先于名称 |
+| `client_name` | `str / None` | `None` | 客户端名称；名称与 UID 至少提供一项 |
+| `client_uid` | `str / None` | `None` | 客户端 UID，优先于名称 |
+| `client_secret` | `str / None` | `None` | 未发布的 Preview 参数；与 client_uid 一同提供时跳过客户端密钥查询 |
+| `redirect_uri` | `str` | 必填 | OAuth2 回调 URL |
+| `auto_create` | `bool` | `True` | 按名称创建不存在的用户池和客户端；仅提供 UID 时不会创建 |
+| `auto_register_callback` | `bool` | `True` | 将回调 URL 登记到客户端 |
+| `client_type` | `UserPoolClientType` | `WEB_APPLICATION` | 新建客户端的类型 |
+| `web_origin` | `str / None` | `None` | 回调登记使用的 Web Origin；未设置时从 redirect_uri 提取 |
+| `scope` | `str` | `"openid profile email"` | 以空格分隔的授权范围 |
+| `identity_client` | `IdentityClient / None` | `None` | 使用指定的 Identity 客户端；未设置时使用全局配置或默认客户端 |
+| `**extra_config` | `Any` | — | 其他 OAuth2Config 参数，如 cookie_secure、use_pkce 和 session_timeout_seconds；不重复传入已由服务发现设置的端点参数 |
+
+### OAuth2Config 参数
+
+#### 端点与授权请求
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `authorize_url` | `str` | 必填 | 授权端点 URL |
+| `token_url` | `str` | 必填 | 令牌端点 URL |
+| `client_id` | `str` | 必填 | 提供商登记的客户端 ID |
+| `client_secret` | `str / None` | `None` | 客户端密钥；公开客户端可不设置 |
+| `redirect_uri` | `str` | 必填 | 与客户端登记值一致的回调 URL |
+| `scope` | `str` | `"openid profile"` | 以空格分隔的授权范围 |
+| `response_type` | `str` | `"code"` | 授权响应类型；本集成使用授权码流程 |
+| `extra_authorize_params` | `dict[str, str]` | `{}` | 附加到授权请求的参数 |
+| `extra_token_params` | `dict[str, str]` | `{}` | 附加到令牌请求的参数 |
+| `extra_token_headers` | `dict[str, str]` | `{}` | 令牌请求的附加请求头 |
+| `use_pkce` | `bool` | `False` | 启用 PKCE，需提供商支持 |
+| `userinfo_url` | `str / None` | `None` | 用户信息端点；未配置时不请求该端点 |
+| `end_session_url` | `str / None` | `None` | 提供商的登出端点 |
+| `logout_redirect_url` | `str` | `"/"` | 登出后重定向地址 |
+| `user_id_field` | `str` | `"sub"` | 从用户信息中提取用户标识的字段 |
+| `user_id_cookie_name` | `str` | `"veadk_user_id"` | 保存用户标识的 Cookie 名称 |
+
+#### 会话与 Cookie
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `session_cookie_name` | `str` | `"veadk_session"` | 保存会话的 Cookie 名称 |
+| `session_timeout_seconds` | `int` | `3600` | 浏览器会话的绝对有效期，单位为秒 |
+| `cookie_secure` | `bool` | `True` | 仅允许通过 HTTPS 发送 Cookie |
+| `cookie_samesite` | `str` | `"lax"` | Cookie 的 SameSite 策略 |
+| `cookie_domain` | `str / None` | `None` | Cookie 域；未设置时由浏览器限定为当前主机 |
+| `cookie_path` | `str` | `"/"` | Cookie 的路径范围 |
+| `cookie_signing_secret` | `str / None` | `None` | 会话签名密钥；未设置时使用 client_secret |
+| `auto_refresh_token` | `bool` | `True` | 有可用刷新令牌时自动刷新访问令牌 |
+| `token_refresh_threshold_seconds` | `int` | `300` | 访问令牌到期前开始刷新的时间，单位为秒 |
+
+#### 访问令牌校验
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `issuer` | `str / None` | `None` | 预期令牌签发者；按提供商元数据配置 |
+| `jwks_uri` | `str / None` | `None` | JWT 校验所需的公钥集 URL |
+| `audience` | `str / list[str] / None` | `None` | 允许的令牌受众；未设置时不限制受众 |
+| `allowed_algorithms` | `list[str]` | `["RS256"]` | 允许的 JWT 签名算法 |
+| `jwks_cache_ttl_seconds` | `int` | `300` | 公钥集缓存时间，单位为秒 |
+| `jwks_kid_miss_cooldown_seconds` | `int` | `30` | 未命中密钥标识时再次刷新公钥集的最短间隔，单位为秒 |
+| `use_introspection` | `bool` | `False` | 改用提供商的令牌内省端点验证访问令牌 |
+| `introspection_url` | `str / None` | `None` | 启用令牌内省时必填的端点 URL |
+| `introspection_client_id` | `str / None` | `None` | 内省认证客户端 ID；仅与内省密钥同时设置时生效，否则使用原客户端凭据 |
+| `introspection_client_secret` | `str / None` | `None` | 内省认证密钥；仅与内省客户端 ID 同时设置时生效，否则使用原客户端凭据 |
+| `introspection_cache_ttl_seconds` | `int` | `300` | 内省结果缓存时间上限，单位为秒；同时受令牌到期时间限制 |
+| `introspection_cache_max_entries` | `int` | `1000` | 内省缓存条目上限 |
+
+#### 存储与请求行为
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `state_ttl_seconds` | `int` | `300` | 默认内存 state 存储的有效期，单位为秒 |
+| `state_max_entries` | `int` | `10000` | 默认内存 state 存储的条目上限 |
+| `http_timeout_seconds` | `float` | `30.0` | OAuth2 HTTP 请求超时，单位为秒 |
+| `http_max_connections` | `int` | `100` | OAuth2 HTTP 客户端最大连接数 |
+| `http_max_keepalive_connections` | `int` | `20` | OAuth2 HTTP 客户端最大保活连接数 |
+| `api_path_prefixes` | `list[str]` | `["/api/"]` | 未登录时返回 401 而非登录重定向的 API 路径前缀 |
 
 <Note>
   从用户信息端点获取的信息仅保留适合写入浏览器会话 Cookie 的标准字段：`sub`、`email`、`email_verified`、`name`、`given_name`、`family_name`、`preferred_username`、`picture`、`locale`、`updated_at`，以及通过 `user_id_field` 配置的用户标识字段。仅保留类型为字符串、整数、浮点数或布尔值的字段值，以避免会话 Cookie 超出浏览器大小限制。`/oauth2/userinfo` 端点返回的即为这些过滤后的字段。
 </Note>
 
-<Note>
-  默认的 `InMemoryStateStore` 仅适用于单进程部署。分布式场景需实现基于 Redis 等外部存储的 state store，并通过 `setup_oauth2(app, config, state_store=...)` 传入。
-</Note>
+### 多进程共享 OAuth state
+
+默认的 `InMemoryStateStore` 仅适用于单进程。多实例应用需要所有实例共享同一 state 存储，并保证 state 只能使用一次
+
+以下为替代 `setup_oauth2()` 调用的配置片段，复用前文的 `app` 与 `config`。先安装 `redis` 包，准备支持 `GETDEL` 的 Redis 6.2 及以上版本，并设置 `REDIS_URL`。应用使用独立键前缀，所有实例保持一致；生产连接与凭据按部署要求配置
+
+```python
+import json
+import os
+import secrets
+
+from redis import Redis
+
+class RedisStateStore:
+    def __init__(self, client, ttl_seconds=300):
+        self.client = client
+        self.ttl_seconds = ttl_seconds
+        self.prefix = "oauth2:my-app:"
+
+    def create_state(self, redirect_after_auth="/", code_verifier=None):
+        state = secrets.token_urlsafe(32)
+        data = json.dumps({
+            "redirect_after_auth": redirect_after_auth,
+            "code_verifier": code_verifier,
+        })
+        self.client.setex(self.prefix + state, self.ttl_seconds, data)
+        return state
+
+    def validate_and_consume_state(self, state):
+        data = self.client.getdel(self.prefix + state)
+        return json.loads(data) if data else None
+
+redis_client = Redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+setup_oauth2(
+    app,
+    config,
+    state_store=RedisStateStore(redis_client, ttl_seconds=config.state_ttl_seconds),
+)
+```
+
+`create_state()` 返回随机 state 并保存重定向地址与 PKCE 校验值；`validate_and_consume_state()` 原子读取并删除记录，失效时返回 `None`。自定义存储自行管理有效期、容量与连接生命周期，`state_max_entries` 不会自动限制 Redis 中的记录
 
 ## OAuth2 JWT 认证
 
@@ -221,3 +380,7 @@ VeADK 支持解析 A2A 1.0 AgentCard：当 AgentCard 未提供顶层 `url` 字�
 ### 技能沙箱中的身份透传
 
 `execute_skills` 在调用技能沙箱时同样会将入站身份凭证转发给沙箱。VeADK 从凭证服务中读取凭证键为 `inbound_auth` 的入站凭证，并以 `inbound_auth` 请求头发送到沙箱的 A2A 端点，使沙箱中的工作流能够以原始用户身份执行。若当前请求未携带入站凭证，则不附加该请求头。详见[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)中的技能沙箱执行部分。
+
+## 会话与部署限制
+
+`cookie_signing_secret` 用于签名浏览器会话，省略时回退到 `client_secret`；公开客户端应显式配置稳定的签名密钥。签名用于防篡改，不等于加密。多实例部署需共享签名密钥和 OAuth state 存储，且公网回调必须与客户端登记地址完全一致

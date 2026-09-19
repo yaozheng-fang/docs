@@ -11,6 +11,12 @@
 
 > 完整的写作规范见仓库根目录的 [`SPEC.md`](./SPEC.md)。本节是供仓库协作环境加载的精简版；两者冲突时以 `SPEC.md` 为准。
 
+## Documentation skill
+
+编写、改进或审查文档时，使用仓库内的 [`agentkit-docs-spec`](./.agents/skills/agentkit-docs-spec/SKILL.md) 技能。先读取根 `SPEC.md` 和对应产品规范，再按任务选读技能中的写作、页面结构、示例核验、双语和审查参考
+
+根 `SPEC.md` 定义文档要求，产品规范补充各产品约定，技能提供执行方法与检查清单。发生冲突时以根 `SPEC.md` 为准；更新规范或技能时，同步核对相互引用与规则一致性
+
 ## Product-specific specs
 
 When editing product documentation under `productions/<product>/preview/{zh,en}`, read the root [`SPEC.md`](./SPEC.md) first, then read the matching product spec:
@@ -32,7 +38,7 @@ The root `SPEC.md` has highest priority. Product-specific specs only add directo
 - 采用书面、正式的中文，避免口语化。
 - 不要把提问或提示词原封不动搬进文档，一律以文档自身口吻重写。
 - 标题使用描述性短语，不用数字序号（不写 `## 1. 安装`）。
-- YAML frontmatter 提供 `title`；HTTP API 单接口页面另提供 `openapi`，绑定对应语言的规范文件、方法和路径。不添加 `description` 或页面副标题。
+- YAML frontmatter 提供 `title`；HTTP API 单接口页面另提供 `openapi`，绑定对应语言的规范文件、方法和路径。保留并维护语言切换使用的 `en_link` / `zh_link`，不添加 `description` 或页面副标题。
 - 内容具体、完整：提到可选安装/配置时写清它包含什么；介绍可扩展点必须给出使用方法与示例。
 - 每个后端有独立、完整的说明（全部参数：名称、类型、默认值、说明 + 可运行示例）。命令行的所有子命令与标志用表格列出并配示例。
 - 避免源码级表述：不暴露内部文件名、内部函数名、私有机制、异常类型或构造参数字面量；以使用者视角描述行为。用户需直接使用的公开 API（类名、构造参数、配置键、环境变量、用户自建文件路径）应保留并写清。

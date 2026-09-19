@@ -15,9 +15,17 @@ The Harness server is a standalone VeADK agent runtime that you create, configur
 
 ## Prerequisites
 
-- `veadk-python[harness]` is installed;
-- Volcengine credentials are configured (`VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`);
-- Do not commit `.env`, API keys, or access credentials to the repository.
+- Python 3.10–3.13 with `veadk-python[harness]` installed; this extra provides Headroom compression support
+- Volcengine `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` with permission to build images, access TOS, create Runtimes, and configure IAM roles in the target region
+- An enabled model or endpoint accessible to the Runtime IAM role, plus separate connection settings and permissions for knowledge bases, databases, and tools
+
+```bash lines
+pip install "veadk-python[harness]"
+```
+
+`veadk harness deploy` uses the Volcengine deployment flow and has no BytePlus options. For no-code deployment on BytePlus, use [Harness in the standalone AgentKit CLI](/productions/agentkit-cli/preview/en/workflows/harness). The command groups and configuration files are not interchangeable
+
+The generated Dockerfile builds the service from VeADK `main` by default. To reproduce a released version, set its `VEADK_REF` to the required tag before building. Commands on this page were checked against VeADK 1.1.13
 
 ## Command overview
 
@@ -31,7 +39,13 @@ The Harness server is a standalone VeADK agent runtime that you create, configur
 | `deploy` | Convert `harness.yaml` into runtime environment variables and perform an AgentKit cloud build and Runtime creation |
 | `invoke` | Call a deployed Harness server and print the output |
 
+`create`, `add`, and `show` operate on local files. `deploy` uses cloud resources, and `invoke` calls the deployed service and may consume model usage
+
 ## Create a project
+
+<Warning>
+If the target directory is non-empty, confirmation allows existing project files to be overwritten. Back up required configuration or use a new directory first
+</Warning>
 
 ```bash lines
 veadk harness create my-harness
@@ -47,15 +61,23 @@ This command generates the following files in the `my-harness` directory:
 | `Dockerfile` | Builds the Harness server image |
 | `README.md` | Project readme |
 
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `DIR_NAME` | `str` | Required | Output directory relative to the current directory |
+
+A non-empty directory triggers overwrite confirmation, so retain required files first. `create` only generates local files and does not deploy cloud resources
+
+Inside the project, copy `.env.example` to `.env` and fill in deployment AK/SK values. Exclude `.env`, `harness.json`, and configurations containing real secrets from version control. The API key in invocation metadata is also a credential
+
 ## Configure the agent
 
-Use `veadk harness add` to write parameters into `harness.yaml`:
+Use `veadk harness add` to write parameters into `harness.yaml`. Replace `your-model-name` with an available model or endpoint ID. The knowledge-base example also requires usable VikingDB resources in the selected project and region; omit its three knowledge-base options when not needed:
 
 ```bash lines
 cd my-harness
 veadk harness add \
   --harness-name my-harness \
-  --model-name doubao-seed-1-6-250615 \
+  --model-name your-model-name \
   --tools web_search,web_fetch \
   --system-prompt "You are a helpful assistant." \
   --knowledgebase-type viking \
@@ -65,36 +87,78 @@ veadk harness add \
 
 ### Configuration parameters
 
-`veadk harness add` accepts the following parameters (unset fields keep their existing value):
+`add` updates only explicitly supplied fields. Defaults below describe omitted options, not initial server defaults. `--path` defaults to the current directory, and every subcommand supports `--help`
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `--harness-name` | `str` | `default` | Harness and Runtime name; also used as the knowledge base and long-term memory index name |
-| `--model-name` | `str` | VeADK default model | Reasoning model name |
-| `--tools` | `str` | — | Built-in tool names, comma-separated |
-| `--skills` | `str` | — | Skill Hub skill names or skill-space refs, comma-separated |
-| `--system-prompt` | `str` | VeADK default instruction | Agent system prompt |
-| `--runtime` | `adk` \| `codex` | `adk` | Runtime backend |
-| `--max-llm-calls` | `int` | `10` | Maximum LLM calls per run |
-| `--structured-tool-calls` | `bool` | `false` | Whether to use the Ark Responses API for structured tool calling |
-| `--include-tools-every-turn` | `bool` | `true` | Whether to include tool definitions on every model turn |
-| `--knowledgebase-type` | `str` | — | Knowledge base backend type |
-| `--long-term-memory-type` | `str` | — | Long-term memory backend type |
-| `--short-term-memory-type` | `str` | `local` | Short-term session store backend type |
-| `--discovery-url` | `str` | — | OIDC discovery URL; enables OAuth2/JWT auth |
-| `--allowed-id` | `str` | — | Allowed client IDs for OAuth2/JWT auth, comma-separated |
+| --- | --- | --- | --- |
+| `--name` / `--harness-name` | `str` | Unchanged | Harness and Runtime name |
+| `--model-name` | `str` | Unchanged | Model or endpoint ID available to the account |
+| `--tools` | `str` | Unchanged | Comma-separated built-in tool names |
+| `--builtin-tools` | `str` | Unchanged | Not persisted by add in this version; use builtin_tools in YAML |
+| `--mcp-router-id` | `str` | Unchanged | Not persisted by add in this version; use mcp_router_id in YAML |
+| `--skills` | `str` | Unchanged | Comma-separated Skill Hub slugs or skill-space references prefixed with space: |
+| `--selected-skills` | `str` | Unchanged | Not persisted by add in this version; use selected_skills in YAML |
+| `--mcp` | `str` | Unchanged | Not persisted by add in this version; use mcp in YAML |
+| `--system-prompt` | `str` | Unchanged | System instruction |
+| `--runtime` | `str` | Unchanged | Runtime backend: adk or codex |
+| `--registry` | `str` | Unchanged | Not persisted by add in this version; use registry in YAML |
+| `--knowledgebase-type` | `str` | Unchanged | Knowledge base backend; an empty string disables it |
+| `--long-term-memory-type` | `str` | Unchanged | Long-term memory backend; an empty string disables it |
+| `--short-term-memory-type` | `str` | Unchanged | Session backend: local, sqlite, mysql, or postgresql |
+| `--max-llm-calls` | `int` | Unchanged | Maximum model calls per run; use a positive integer |
+| `--structured-tool-calls` | `bool` | Unchanged | Enable structured tool calls; edit YAML to false to disable |
+| `--include-tools-every-turn` | `bool` | Unchanged | Send tool definitions every turn; edit YAML to false to disable |
+| `--knowledgebase-project` | `str` | Unchanged | VikingDB project |
+| `--knowledgebase-region` | `str` | Unchanged | VikingDB region |
+| `--knowledgebase-resource-id` | `str` | Unchanged | VikingDB resource ID |
+| `--knowledgebase-host` | `str` | Unchanged | Database host |
+| `--knowledgebase-port` | `str` | Unchanged | Database port, supplied as text |
+| `--knowledgebase-username` | `str` | Unchanged | Redis or OpenSearch username |
+| `--knowledgebase-password` | `str` | Unchanged | Database password written to local configuration |
+| `--knowledgebase-use-ssl` | `str` | Unchanged | OpenSearch SSL; requires the text true or false |
+| `--knowledgebase-cert-path` | `str` | Unchanged | OpenSearch certificate path |
+| `--knowledgebase-secret-token` | `str` | Unchanged | Saved in configuration but not used by the current OpenSearch backend |
+| `--knowledgebase-db` | `str` | Unchanged | Redis database number |
+| `--long-term-memory-project` | `str` | Unchanged | VikingDB project |
+| `--long-term-memory-region` | `str` | Unchanged | VikingDB region |
+| `--long-term-memory-resource-id` | `str` | Unchanged | VikingDB resource ID |
+| `--long-term-memory-host` | `str` | Unchanged | Database host |
+| `--long-term-memory-port` | `str` | Unchanged | Database port, supplied as text |
+| `--long-term-memory-username` | `str` | Unchanged | OpenSearch username; ignored by Redis long-term memory |
+| `--long-term-memory-password` | `str` | Unchanged | Database password written to local configuration |
+| `--long-term-memory-use-ssl` | `str` | Unchanged | OpenSearch SSL; requires the text true or false |
+| `--long-term-memory-cert-path` | `str` | Unchanged | OpenSearch certificate path |
+| `--long-term-memory-secret-token` | `str` | Unchanged | Saved in configuration but not used by the current OpenSearch backend |
+| `--long-term-memory-db` | `str` | Unchanged | Redis database number |
+| `--long-term-memory-api-key` | `str` | Unchanged | Mem0 API key |
+| `--long-term-memory-api-key-id` | `str` | Unchanged | Mem0 API key ID |
+| `--long-term-memory-project-id` | `str` | Unchanged | Mem0 project ID |
+| `--long-term-memory-base-url` | `str` | Unchanged | Mem0 service URL |
+| `--short-term-memory-host` | `str` | Unchanged | Database host |
+| `--short-term-memory-user` | `str` | Unchanged | MySQL or PostgreSQL username |
+| `--short-term-memory-password` | `str` | Unchanged | Database password written to local configuration |
+| `--short-term-memory-database` | `str` | Unchanged | MySQL or PostgreSQL database name |
+| `--short-term-memory-charset` | `str` | Unchanged | MySQL character set |
+| `--short-term-memory-port` | `str` | Unchanged | Database port, supplied as text |
+| `--path` | `str` | `.` | Directory containing harness.yaml |
 
-Each backend's connection parameters also has its own flag, for example `--knowledgebase-project`, `--knowledgebase-region`, `--long-term-memory-host`, `--short-term-memory-host`, written under the matching component section.
+Set the component backend type before its connection settings. Connection options accept text, such as `--knowledgebase-use-ssl true`; this differs from the boolean switch in the standalone AgentKit CLI. Passwords and API keys are written to local `harness.yaml`; do not commit files containing real credentials
+
+<Note>
+Although help lists `--builtin-tools`, `--mcp-router-id`, `--selected-skills`, `--mcp`, and `--registry`, this version of `add` does not persist them. Edit YAML directly for structured resources as shown below. OIDC options belong to `deploy`, not `add`
+</Note>
+
+A connection field accepted by the CLI is not necessarily used by every backend. Redis usernames work for knowledge bases but are ignored by long-term memory. OpenSearch secret_token is not used by current knowledge-base or memory connections. See [Redis memory](/productions/veadk/preview/en/components/memory/redis) and [OpenSearch knowledge bases](/productions/veadk/preview/en/components/knowledge/opensearch)
 
 ### harness.yaml configuration structure
 
-`harness.yaml` organizes configuration in sections. On deploy, top-level fields and the `model` section are flattened into runtime environment variables (e.g. `model.name` maps to `MODEL_AGENT_NAME`); each component's `type` selects a backend, and its other parameters map to the environment variables that backend reads.
+`harness.yaml` groups model, tool, skill, knowledge-base, and memory settings. Deployment passes them to the Runtime. Each component selects its backend with `type` and then supplies that backend's connection settings. The initial session backend is `local`, and the server defaults to at most 10 model calls per run
 
 ```yaml title="harness.yaml" lines
 harness_name: my-harness
 
 model:
-  name: doubao-seed-1-6-250615
+  name: your-model-name
 
 tools:
   - web_search
@@ -124,7 +188,7 @@ short_term_memory:
 ```
 
 <Note>
-  You can also use a `harness:` wrapper section in `harness.yaml` to nest all Harness parameters in a single object. Fields inside the `harness:` section are extracted and merged with top-level fields.
+  Agent fields also accept a `harness:` wrapper, whose values take precedence over matching top-level fields. Keep deployment `harness_name` and gateway `auth` at the top level. `add` edits top-level fields, so avoid duplicate nested settings. This command does not expand `${VAR}` in YAML; do not apply the standalone AgentKit CLI interpolation rules
 </Note>
 
 #### Structured resource configuration
@@ -146,7 +210,7 @@ Structured resource configuration example:
 ```yaml title="harness.yaml" lines
 harness:
   model:
-    name: doubao-seed-1-6-250615
+    name: your-model-name
   temperature: 0.3
   top_p: 0.9
   max_llm_calls: 8
@@ -157,14 +221,13 @@ harness:
         region: cn-beijing
     - id: mcp_router
       config:
-        url: http://router.example.com/mcp
-        api_key: your-api-key
+        url: https://router.example.com/mcp
   selected_skills:
     - source: skillhub
       slug: team/reporting
   mcp:
     - name: db
-      server_url: http://db.example.com/mcp
+      server_url: https://db.example.com/mcp
   knowledgebase:
     type: viking
     config:
@@ -173,6 +236,27 @@ harness:
       project: default
       region: cn-beijing
 ```
+
+### Execution enhancement configuration
+
+Set `harness_enhance` in `harness.yaml` to enable context preparation, tool-result compression, and answer verification. This example uses built-in compression and does not require Headroom
+
+```yaml title="harness.yaml" lines
+harness_enhance:
+  enabled: true
+  components: [invocation_context, compactor, response_verification]
+  profile: default
+  compression_provider: builtin
+```
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enabled` | `bool` | `false` | Enable enhancement plugins |
+| `components` | `list[str]` | The three components shown above | Select plugin components |
+| `profile` | `str` | `default` | Plugin configuration profile |
+| `compression_provider` | `str` | `builtin` | Compression provider: builtin or headroom |
+
+HTTP callers can override these settings for one request through the top-level `harness_enhance` field, with `components` supplied as a comma-separated string. Compression can lose details and answer verification does not guarantee factual accuracy. See [Harness extension](/productions/veadk/preview/en/components/extensions/harness) for component behavior and limits
 
 ## View configuration
 
@@ -183,10 +267,20 @@ veadk harness show
 This command prints the parameters configured in `harness.yaml`, followed by the list of parameters that can be overridden per invocation through `veadk harness invoke`.
 
 <Note>
-  Knowledge base, long-term memory, sampling parameters (temperature, top_p, etc.), and registry fields are overridden only through the HTTP API and are not exposed as CLI flags.
+  Override knowledge bases, long-term memory, and sampling settings through HTTP. Structured options such as `--registry` appear in help, but the CLI passes text without parsing JSON objects; use the corresponding HTTP request fields
 </Note>
 
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--path` | `str` | `.` | Directory containing harness.yaml |
+
+`show` prints configuration values without automatically redacting passwords or API keys; remove secrets before sharing output
+
 ## Deploy
+
+<Warning>
+Deployment builds an image and creates or updates cloud resources, which may incur charges. Check the region, Runtime name, model access, and runtime environment settings first. Retain the current configuration before changing a production service. On failure, inspect resources already created before retrying
+</Warning>
 
 ```bash lines
 veadk harness deploy
@@ -194,9 +288,18 @@ veadk harness deploy
 
 This command reads `harness.yaml`, converts it into runtime environment variables, and performs an AgentKit cloud build and Runtime creation. After deployment, the Runtime endpoint, Runtime id, and API key are recorded in `harness.json`.
 
-<Warning>
-  Deployment creates cloud runtime resources. Confirm the project, region, and Runtime name before executing. Destroying a Runtime with `veadk agentkit destroy` deletes cloud runtime resources; preserve any needed logs and data beforehand.
-</Warning>
+
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `--volcengine-access-key` | `str` | `VOLCENGINE_ACCESS_KEY` | Deployment AK; prefer the environment variable |
+| `--volcengine-secret-key` | `str` | `VOLCENGINE_SECRET_KEY` | Deployment SK; prefer the environment variable |
+| `--region` | `str` | `VOLCENGINE_REGION`, then `REGION`, then `cn-beijing` | Deployment region |
+| `--path` | `str` | `.` | Project directory with harness.yaml and Dockerfile |
+| `--discovery-url` | `str` | `auth.discovery_url` | OIDC discovery URL |
+| `--allowed-id` | `str` | `auth.allowed_ids` | Comma-separated allowed client IDs |
+
+`harness.json` is written only when deployment returns an endpoint. API-key mode records the key; OAuth mode records discovery and client settings without storing a user JWT. Default in-memory sessions disappear when the process stops; configure MySQL or PostgreSQL for persistence
 
 ### Authentication
 
@@ -221,17 +324,30 @@ veadk harness invoke --name my-harness --message "Describe your capabilities"
 ### Invoke parameters
 
 | Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `--name` | `str` | — | Harness name; reads URL and API key from `harness.json` |
-| `--message` / `-m` | `str` | — | Message to send |
-| `--user-id` | `str` | `cli-user` | Session user id |
-| `--session-id` | `str` | `cli-session` | Session id |
-| `--max-llm-calls` | `int` | — | Override max LLM calls for this call |
-| `--url` | `str` | `HARNESS_URL` | Harness URL |
-| `--key` | `str` | `HARNESS_KEY` | API key |
-| `--path` | `str` | `.` | Directory containing `harness.json` |
+| --- | --- | --- | --- |
+| `[MESSAGE]` | `str` | — | Message; supply this or --message |
+| `--name` / `--harness` | `str` | — | Required Harness name used to read harness.json |
+| `--message` / `-m` | `str` | — | Message, taking precedence over the positional argument |
+| `--user-id` | `str` | `cli-user` | Session user ID |
+| `--session-id` | `str` | `cli-session` | Session ID; use different values for separate conversations |
+| `--max-llm-calls` | `int` | — | Override the model-call limit for this invocation |
+| `--url` | `str` | — | Explicit URL, then HARNESS_URL, then harness.json |
+| `--key` | `str` | — | Bearer credential; explicit value, then HARNESS_KEY, then harness.json; also accepts a user JWT |
+| `--path` | `str` | `.` | Directory containing harness.json |
+| `--model-name` | `str` | — | Model or endpoint ID available to the account |
+| `--tools` | `str` | — | Comma-separated built-in tool names |
+| `--builtin-tools` | `str` | — | Does not parse JSON lists; use HTTP builtin_tools |
+| `--mcp-router-id` | `str` | — | MCP toolset ID for this invocation |
+| `--skills` | `str` | — | Comma-separated Skill Hub slugs or skill-space references prefixed with space: |
+| `--selected-skills` | `str` | — | Does not parse JSON lists; use HTTP selected_skills |
+| `--mcp` | `str` | — | Does not parse JSON lists; use HTTP mcp |
+| `--system-prompt` | `str` | — | System instruction |
+| `--runtime` | `str` | — | Runtime backend: adk or codex |
+| `--registry` | `str` | — | Does not parse JSON objects; use HTTP registry |
 
-At invoke time you can use override flags to override the deployed agent's configuration for this single call, such as `--tools`, `--skills`, `--system-prompt`, `--model-name`. The override applies only to this call and does not modify `harness.yaml`.
+Overrides affect only the current request and do not modify `harness.yaml`. Use distinct `--session-id` values for independent conversations; the default cli-user and cli-session reuse the same identifiers
+
+After receiving a non-empty reply, verify tools, knowledge, and memory as needed. If CLI output is empty, inspect the HTTP response error field. HTTP 200 alone does not prove successful agent execution
 
 ## HTTP API
 
@@ -262,7 +378,7 @@ The Harness server supports overriding the deployed agent's configuration on eac
   "prompt": "Compile a research report",
   "harness_name": "my-harness",
   "harness": {
-    "model_name": "doubao-seed-1-6-250615",
+    "model_name": "your-model-name",
     "system_prompt": "You are a research assistant.",
     "tools": "web_search,web_fetch",
     "temperature": 0.3
@@ -314,12 +430,20 @@ The following fields can be overridden per request through `harness`:
   Request-level knowledge base and long-term memory overrides are resolved from AgentKit control-plane resource ids into runtime configuration. When an `id` is provided, the Harness server fetches the corresponding resource's connection info from the AgentKit control plane.
 </Note>
 
+HTTP examples require the deployed endpoint and a real Bearer credential. Read the API key from local harness.json for API-key mode; for OAuth, use a valid JWT issued by the user pool
+
+```bash lines
+export HARNESS_URL="https://your-harness-endpoint"
+export HARNESS_KEY="your-api-key-or-user-jwt"
+```
+
 ### Create a session
 
 ```bash lines
-curl -X POST "https://<harness-url>/apps/my-harness/users/user-1/sessions" \
+curl -X POST "$HARNESS_URL/apps/my-harness/users/user-1/sessions" \
+  -H "Authorization: Bearer $HARNESS_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"id": "session-1", "state": {"key": "value"}}'
+  -d '{"sessionId": "session-1", "state": {"key": "value"}}'
 ```
 
 The request body can include the following fields:
@@ -334,7 +458,8 @@ The request body can include the following fields:
 ### Query default configuration
 
 ```bash lines
-curl "https://<harness-url>/get_agent_config?app_name=my-harness&user_id=user-1&session_id=session-1"
+curl "$HARNESS_URL/get_agent_config?app_name=my-harness&user_id=user-1&session_id=session-1" \
+  -H "Authorization: Bearer $HARNESS_KEY"
 ```
 
 Returns the current Harness default configuration, including model name, runtime backend, and max LLM calls. Supports camelCase query parameters (`appName`, `userId`, `sessionId`) and also accepts a `POST` request body.
@@ -342,6 +467,8 @@ Returns the current Harness default configuration, including model name, runtime
 ## Environment variables
 
 The Harness server configures runtime behavior through environment variables. `harness.yaml` is automatically converted to the corresponding environment variables on deploy; you can also set them directly in the runtime environment.
+
+CLI invocation also accepts `HARNESS_URL`, `HARNESS_KEY`, and `HARNESS_TIMEOUT`, with a 600-second default timeout. The first two supply fallback values for `--url` and `--key`; they are not automatically written to deployment configuration
 
 ### Model and tools
 
@@ -361,9 +488,8 @@ The Harness server configures runtime behavior through environment variables. `h
 | `TOOL_MCP_ROUTER_URL` | — | MCP Router service URL |
 | `TOOL_MCP_ROUTER_API_KEY` | — | MCP Router auth API key |
 | `AGENTKIT_TOOL_ID_SCRIPT` | — | AgentKit Tool id for `run_code` |
-| `AGENTKIT_TOOL_REGION` | — | Region for `run_code` |
+| `AGENTKIT_TOOL_REGION` | — | Shared region for `run_code` and `coding` |
 | `AGENTKIT_TOOL_ID_OPENCODE` | — | AgentKit Tool id for `coding` |
-| `AGENTKIT_TOOL_REGION` | — | Region for `coding` |
 
 ### Resource configuration
 

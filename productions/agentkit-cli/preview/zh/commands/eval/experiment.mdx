@@ -28,8 +28,6 @@ agentkit eval exp list --json
 
 查看某个实验的详情：状态、评测集、目标、评估器、汇总分数和字段映射。`get` 是 `show` 的别名。
 
-该命令也可写作 `eval experiment get`。
-
 | 标志/参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `<id>` | 实验 ID。 | 必填 |
@@ -83,5 +81,13 @@ agentkit eval experiment results 75901xxxxxxxxxxxxx --json
 | `Draining` / `Processing` | 仍在执行中。 |
 
 <Tip>
-用例失败但没有实验级错误信息时，通常是目标运行时未正常响应（未部署、未就绪或鉴权失败），而非评测配置问题；请先确认 `--target` 指向的运行时处于运行状态。
+用例失败时，先读取逐条结果中的错误，再检查目标就绪状态、鉴权、字段映射与评判模型。实验汇总未提供错误原因，不代表评测配置已正确。
 </Tip>
+
+实验 ID 来自 `eval run` 或 `experiment list`。`show` 不会持续等待实验结束，`Processing` 时应稍后再次查询；`results` 默认只返回第一页，完整分析时需按 `--page` 逐页读取
+
+```bash lines
+agentkit eval experiment results <experiment-id> --page 2 --limit 20 --json
+```
+
+逐条结果可能包含用例原文、目标输出和评分理由，应按评测数据的访问范围保存和共享。`Success` 表示执行结束，不表示所有分数都达到业务要求

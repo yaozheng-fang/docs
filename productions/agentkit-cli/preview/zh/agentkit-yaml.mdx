@@ -24,7 +24,7 @@ common:
   agent_type: Basic App
   dependencies_file: requirements.txt
   runtime_envs:
-    MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
+    LOG_LEVEL: INFO
   launch_type: cloud
   cloud_provider: volcengine
 
@@ -57,6 +57,10 @@ docker_build:
   base_image:
   build_script:
 ```
+
+<Warning>
+根目录生命周期配置不会把 `${VAR}` 替换为环境变量。需要传入模型密钥时，可在已导出变量后运行 `agentkit config --runtime_envs "MODEL_AGENT_API_KEY=$MODEL_AGENT_API_KEY"`，由 shell 先展开值；这会将实际密钥写入 `agentkit.yaml`，请先将该文件与 `.env` 加入 `.gitignore` 和 `.dockerignore`。下文 `.agentkit/agentkit.yaml` 的 `${VAR}` 语法只适用于 Release 配置
+</Warning>
 
 ### 通用字段
 
@@ -191,7 +195,7 @@ runtime:
 
 # ── Harness Sidecar optimization (optional) ─────────────
 # Enabling any component selects the managed Sidecar Runtime. Initial support is
-# Volcengine cn-shanghai, CPython 3.12, linux/amd64, and exactly one instance;
+# Volcengine cn-shanghai/cn-beijing, CPython 3.12, linux/amd64, and exactly one instance;
 # set runtime.min_instance/max_instance to 1. The private Runtime artifact is
 # supplied by the platform and must never be written into this file.
 # harness_sidecar:
@@ -341,7 +345,7 @@ infrastructure:
 `harness_sidecar` 为托管 Harness Runtime 启用 Product Component 能力。启用后，`release` 会使用平台提供的托管 Sidecar 基础镜像，在发布过程中写入 Sidecar 运行时配置，并在运行时就绪后校验 Sidecar、已启用的模型代理和所需 MCP 网关状态。启用该块时，至少需要在 `component_overrides` 中将一个可选组件设为 `true`。
 
 <Warning>
-当前托管 Harness Sidecar 仅支持 Volcengine `cn-shanghai`、CPython 3.12、`linux/amd64`，并要求 `runtime.min_instance` 与 `runtime.max_instance` 都为 `1`。它还要求发布环境由平台提供托管 Sidecar 基础镜像配置；普通本地环境未提供该配置时，发布会失败。启用 Sidecar 时必须使用默认 `key_auth` 网关鉴权，不能与 `custom_jwt` 或前端 BFF 鉴权派生同时使用。
+当前托管 Harness Sidecar 仅支持 火山引擎 `cn-shanghai` 与 `cn-beijing`、CPython 3.12、`linux/amd64`，并要求 `runtime.min_instance` 与 `runtime.max_instance` 都为 `1`。它还要求发布环境由平台提供托管 Sidecar 基础镜像配置；普通本地环境未提供该配置时，发布会失败。启用 Sidecar 时必须使用 Header API Key 形式的 `key_auth` 网关鉴权，不能与 `custom_jwt` 或前端 BFF 鉴权派生同时使用。
 </Warning>
 
 ```yaml lines

@@ -7,7 +7,7 @@ en_link: "/productions/veadk/preview/en/components/tools/image-generate"
 
 对应工具标识 `image_generate`。
 
-`image_generate` 根据文本描述生成图片。图生图编辑见 `image_edit`。
+`image_generate` 支持文生图、参考图生成与组图生成。需要 SeedEdit 编辑模型时使用 `image_edit`。
 
 导入路径：`from veadk.tools.builtin_tools.image_generate import image_generate`
 
@@ -40,6 +40,8 @@ model:
     api_base: https://ark.cn-beijing.volces.com/api/v3/
     api_key: your-api-key-here
 ```
+
+使用 BytePlus 时应按已开通服务显式设置对应的媒体模型名称、API 地址和 API Key；不要假定 `CLOUD_PROVIDER` 会覆盖这些媒体配置。图像或视频的能力与参数限制以所选模型服务为准。`MODEL_IMAGE_API_BASE` 在导入时读取，应在启动进程前配置
 
 ## 使用方法
 
@@ -75,3 +77,43 @@ if __name__ == "__main__":
 <Note>
 `image_generate` 是规范导入名。`from veadk.tools.builtin_tools.generate_image import image_generate` 仍可用，但 `generate_image` 模块已废弃，请改用 `image_generate`。
 </Note>
+
+## 参数与结果
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `tasks` | `list[dict]` | 必填 | 图像请求列表 |
+| `tool_context` | `ToolContext` | 自动注入 | 保存生成结果的运行时上下文 |
+| `timeout` | `int` | `600` | 单个图像请求超时秒数 |
+| `model_name` | `str \| None` | `None` | 覆盖本次模型名，否则读取 `MODEL_IMAGE_NAME` 或内置默认模型 |
+
+每个 `tasks` 元素支持以下字段。除模式标识外，可选字段未传入时由模型服务决定默认行为；需要确定的尺寸或水印行为时应显式传入
+
+| 字段 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `task_type` | `str` | 必填 | `text_to_single`、`text_to_group`、`single_image_to_single`、`single_image_to_group`、`multi_image_to_single` 或 `multi_image_to_group`，描述生成意图 |
+| `prompt` | `str` | 必填 | 图像描述；组图时在描述中明确数量 |
+| `image` | `str \| list[str]` | 不传入 | 参考图 URL 或 Base64；纯文生图不传入 |
+| `size` | `str` | 服务默认 | 所选模型支持的分辨率档位或宽高字符串，如 `2048x2048` |
+| `response_format` | `str` | 服务默认 | `url` 或 `b64_json`，一般选择 `url` |
+| `watermark` | `bool` | 服务默认 | 是否添加水印 |
+| `sequential_image_generation` | `str` | 服务默认 | 组图需显式设为 `auto`，单图使用 `disabled` |
+| `max_images` | `int` | 服务默认 | 仅在 `auto` 时生效，为数量上限而非精确数量 |
+| `tools` | `list[dict]` | 不传入 | 支持的模型可使用 `[{"type": "web_search"}]`，仅限文生图 |
+| `output_format` | `str` | 服务默认 | 支持该参数的模型可设 `png` 或 `jpeg` |
+
+组图模式取决于 `image` 与 `sequential_image_generation`，仅设置 `task_type` 不会自动补全其他字段。例如以下请求明确要求最多 3 张图片：
+
+```python lines
+tasks = [{
+    "task_type": "text_to_group",
+    "prompt": "Generate 3 illustrations of a cat, each in a different pose",
+    "size": "2048x2048",
+    "response_format": "url",
+    "sequential_image_generation": "auto",
+    "max_images": 3,
+    "watermark": True,
+}]
+```
+
+结果包含 `status`、`success_list`、`error_list` 与 `error_detail_list`。`success_list` 中每项是图像名称到 URL 的映射，批量请求可能部分成功，应同时检查错误列表。选择 `b64_json` 时，工具会尝试将图片上传到 TOS 后返回 URL，需额外配置可写入的对象存储；它不会直接把 Base64 原样作为最终工具结果返回

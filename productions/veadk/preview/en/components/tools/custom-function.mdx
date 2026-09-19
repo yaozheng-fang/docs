@@ -11,6 +11,10 @@ When the built-in tools don't fit your needs, wrap any Python function as a **cu
 - A context-aware function adds a `tool_context: ToolContext` parameter to access the agent's runtime context — shared session state and other runtime information. The framework injects this argument automatically; the model neither sees nor needs to pass it.
 - Long-running tasks suit time-consuming or asynchronous work (large computations, data analysis, batch jobs). Wrap the function with `LongRunningFunctionTool`: the tool returns a `pending` status and a task ID first, your app advances the task in the background, then feeds the final result back to the agent.
 
+## Prerequisites
+
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model) before running the agent examples. Plain Python functions can also be called locally without a model or service credentials.
+
 ## Usage
 
 ### Plain-argument functions
@@ -37,12 +41,11 @@ The calculator below illustrates this. Note the `divide` branch: on division by 
 import asyncio
 from typing import Any, Dict
 
-from google.adk.tools.tool_context import ToolContext
 from veadk import Agent, Runner
 
 
 def calculator(
-    a: float, b: float, operation: str, tool_context: ToolContext
+    a: float, b: float, operation: str
 ) -> Dict[str, Any]:
     """A simple calculator that performs a basic arithmetic operation.
 
@@ -121,7 +124,7 @@ The tool function can read and update shared session state through `tool_context
 
 ### Long-running tasks
 
-Here's a complete, runnable example: the tool returns `pending`, the run loop captures the long-running call, then a `FunctionResponse` feeds back a `finish` status so the agent can produce its final reply.
+This example simulates submission and completion without downloading data or starting a background job. The tool returns `pending`, the run loop captures the long-running call, then a `FunctionResponse` feeds back a `finish` status so the agent can produce its final reply.
 
 ```python title="examples/tools/function_tools/long_running_tool.py" lines
 import asyncio
@@ -147,7 +150,7 @@ def big_data_processing(data_url: str) -> dict[str, Any]:
         dict[str, Any]: The initial task state, with "status" == "pending",
         the "data-url", and a "task-id" to track the job.
     """
-    # Kick off the long-running job and return its handle immediately.
+    # Simulate a submitted job; replace this with a real job service.
     return {
         "status": "pending",
         "data-url": data_url,
@@ -160,7 +163,7 @@ long_running_tool = LongRunningFunctionTool(func=big_data_processing)
 agent = Agent(
     name="long_running_tool_agent",
     model_name="doubao-seed-2-1-pro-260628",
-    instruction="Use long_running_tool to process big data.",
+    instruction="Use big_data_processing to process big data.",
     tools=[long_running_tool],
 )
 runner = Runner(agent=agent, app_name=APP_NAME)
@@ -217,7 +220,7 @@ async def main():
             if text := "".join(part.text or "" for part in event.content.parts):
                 print(f"[{event.author}]: {text}")
 
-    # The task finished in the background; send the final result back to the agent.
+    # Simulate completion and send the final result back to the agent.
     if long_running_response is not None:
         updated = long_running_response.model_copy(deep=True)
         updated.response = {"status": "finish"}
@@ -236,3 +239,9 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Synchronous, asynchronous, and long-running calls
+
+A normal tool may use `def` or `async def`. Async functions can await network or storage operations, but do not automatically create background jobs. `LongRunningFunctionTool` marks a call that expects a later result; the application still owns submission, persistence, polling, and failure handling.
+
+When supplying the final result, preserve the original `FunctionResponse` call ID and tool name, and use the same application, user, and session identifiers. Do not attach another request's result. Normal functions should also return an explicit success or failure status so error text is not treated as business data.

@@ -9,19 +9,23 @@ en_link: "/productions/agentkit-cli/preview/en/workflows/evaluation"
 开始前请确认已配置火山引擎 AK/SK，或已通过 `agentkit login` 获取有效的短期 STS 凭证。评测能力当前处于 Preview 阶段，CLI 会先解析当前账号使用的 Coze 或 TEA 评测后端；可用 `agentkit eval backend` 查看解析结果。
 </Note>
 
+<Warning>
+上传用例会将输入与参考答案存入评测平台，正式实验会调用目标智能体和评判模型，并可能产生费用。使用允许上传的评测数据；`--dry-run` 只核对配置，仍会连接后端解析资源，但不会提交实验或自动发布评测集版本
+</Warning>
+
 ## 端到端流程
 
 <Steps>
   <Step title="初始化并部署智能体">
-    先创建项目并部署，得到一个可评测的目标运行时：
+    按[高代码智能体](/productions/agentkit-cli/preview/zh/workflows/high-code)完成项目初始化、模型配置和部署，并将应用命名为 `qa-agent`；也可使用已有的可调用 Runtime。以下命令确认目标和评测后端
 
     ```bash lines
-    agentkit init qa-agent --template basic
-    cd qa-agent
-    agentkit launch
+    agentkit runtime show qa-agent
+    agentkit invoke run "你好" --runtime-id "<qa-agent runtime ID>"
+    agentkit eval backend
     ```
 
-    部署完成后可用 `agentkit invoke run "你好"` 确认运行时可正常响应。
+    替换实际 Runtime ID。本文后续示例按 TEA 后端展示；Coze 与 TEA 的可用模板和版本要求不同，应以当前账号返回结果为准
   </Step>
 
   <Step title="创建评测集并添加用例">
@@ -61,11 +65,11 @@ en_link: "/productions/agentkit-cli/preview/en/workflows/evaluation"
     # 从「相关性」模板派生，换成自己的模型端点
     agentkit eval evaluator create \
       --name 相关性 \
-      --from-template "相关性" \
+      --from-template "<template name from list>" \
       --model ep-xxxxxxxx
     ```
 
-    TEA 后端提交实验时需要指定评估器版本。创建或更新草稿后，可先提交版本：
+    TEA 后端提交实验时需要指定评估器版本。将模板占位符替换为列表返回的实际名称；创建或更新草稿后，提交版本。Coze 用户跳过此步骤，并从后续命令中移除 `--evaluator-version 0.0.1`：
 
     ```bash lines
     agentkit eval evaluator version submit 0.0.1 --evaluator 相关性
@@ -117,9 +121,12 @@ en_link: "/productions/agentkit-cli/preview/en/workflows/evaluation"
 
 ```bash lines
 # 一个可放入 CI 的最小闭环示例
-EXP=$(agentkit eval run --dataset qa-set --evaluator 相关性 --evaluator-version 0.0.1 --target qa-agent --json | jq -r .experimentId)
-agentkit eval experiment show "$EXP" --json
+set -euo pipefail
+experiment_id=$(agentkit eval run --dataset qa-set --evaluator 相关性 --evaluator-version 0.0.1 --target qa-agent --json | jq -er .experimentId)
+agentkit eval experiment show "$experiment_id" --json
 ```
+
+上面的 CI 示例只提交实验并读取一次状态，不等待所有用例完成，也没有设置质量门槛。需要阻断发布时，应继续查询至终态，再依据实际分数和用例失败情况决定流水线结果；不要将拿到实验 ID 当作评测通过
 
 ## 实践建议
 

@@ -93,3 +93,13 @@ agentkit group list --user-pool-id pool-example --max-results 20 --json
 ```bash lines
 agentkit group delete --user-pool-id pool-example --group-id group-example --yes
 ```
+
+## 核对用户组
+
+创建后保存返回的用户组 ID；更新后按该 ID 查询并核对描述：
+
+```bash lines
+agentkit group list --user-pool-id pool-example --group-id group-example --json
+```
+
+本组命令管理用户组资源与描述，没有添加或移除组成员的子命令。不要把部门的 `add-users` 当作用户组成员管理命令

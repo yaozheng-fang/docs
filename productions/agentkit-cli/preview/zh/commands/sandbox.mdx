@@ -13,6 +13,10 @@ en_link: "/productions/agentkit-cli/preview/en/commands/sandbox"
 
 工具选择通常按显式 CLI 参数、`.agentkit/sandbox.yaml`、`AGENTKIT_SANDBOX_TOOL_ID`、本地缓存或远端 `Ready` 工具的顺序解析；具体命令是否允许自动创建或提示选择，以对应命令说明为准。
 
+先配置所选平台的控制面凭据，并确认区域支持目标工具类型。使用 BytePlus 时，在命令前加 `agentkit --provider byteplus` 并配置对应区域；不同平台和区域的工具不能互用
+
+工具是云端计算资源，会话是其中一次独立的文件与进程环境。本地会话缓存只用于定位，并不证明远端仍在运行；使用 `sandbox list --sessions --remote --tool-id <id>` 确认远端状态。会话有存活时间，断开终端不会保证文件永久保留
+
 ## 命令总览
 
 | 子命令 | 说明 |
@@ -33,7 +37,7 @@ en_link: "/productions/agentkit-cli/preview/en/commands/sandbox"
 | `codex-login` | 将本地 Codex 或 Claude 订阅凭据注入沙箱会话。 |
 | `model-login` | `codex-login` 的等价命令。 |
 | `scp` | 在本地与已有沙箱会话之间传输文件或目录。 |
-| `sandbox snapshot` | 创建、查询、恢复和删除会话快照 |
+| `snapshot` | 创建、查询、恢复和删除会话快照 |
 
 ## sandbox build
 
@@ -469,7 +473,7 @@ agentkit sandbox shell --session-id dev --command "python --version"
 agentkit sandbox web --session-id dev --no-open
 ```
 
-打开沙箱主页前会等待浏览器就绪，避免会话刚启动时打开失败
+打开沙箱主页前会等待浏览器就绪。该 URL 是远程浏览器界面，不会自动发布应用的监听端口；访问会话内的 Web 服务时，在远程浏览器中打开其地址
 
 ## sandbox codex-login
 
@@ -538,6 +542,8 @@ agentkit sandbox scp ./local.txt sandbox:/home/gem/local.txt --session-id dev
 agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id dev
 ```
 
+<span id="技能空间角色与-jwt" />
+
 ## 技能空间、角色与 JWT
 
 创建 `Skill` 工具时，必须传入 `--role-name` 或 `--skill-role-name`，两者不能同时使用或重复传入。交互选择会列出角色并标明缺少的策略，不满足要求的角色不可选；可在提示中确认创建默认角色。非交互环境需传入明确的角色名称
@@ -577,15 +583,26 @@ agentkit sandbox create --tool-type Skill --role-name my-sandbox-role --skill-sp
 | `--instance-id <id>` | 沙箱实例的 SessionId；create 时优先于用户会话 ID | — |
 | `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
 | `-s, --session-id <id>, --sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
-| `--sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
 | `--session <id>` | --session-id 的别名 | — |
 | `-h, --help` | 显示帮助 | — |
+
+先将工具创建结果中的 `tool_id` 赋给变量；以下示例要求该工具内已有 `report-session` 会话
+
+```bash lines
+export TOOL_ID="<tool_id from create>"
+```
 
 ```bash lines
 agentkit sandbox snapshot create --tool-id "$TOOL_ID" --session-id report-session
 ```
 
 `--session-id` 在工具内定位用户会话；匹配多个实例时改用 `--instance-id`，该参数直接指定实例 ID 并优先使用。结果中的 `session_id` 是用户会话，`instance_id` 是实例 ID，两者不可混淆
+
+将创建结果返回的快照 ID 保存为变量，再检查快照是否可用
+
+```bash lines
+export SNAPSHOT_ID="<snapshot ID from snapshot create>"
+```
 
 ## sandbox snapshot get
 
@@ -618,7 +635,6 @@ agentkit sandbox snapshot get --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
 | `--page-size <count>` | 页大小，正整数 | — |
 | `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
 | `-s, --session-id <id>, --sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
-| `--sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
 | `--session <id>` | --session-id 的别名 | — |
 | `-h, --help` | 显示帮助 | — |
 
@@ -644,7 +660,6 @@ agentkit sandbox snapshot list --tool-id "$TOOL_ID" --max-results 20
 | `--reuse-instance` | 请求复用原实例，与 --create-new-instance 互斥 | 未指定时由服务端决定 |
 | `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
 | `-s, --session-id <id>, --sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
-| `--sid <id>` | 用户会话 ID；create 时定位源会话，resume 时指定目标会话 | — |
 | `--session <id>` | --session-id 的别名 | — |
 | `-h, --help` | 显示帮助 | — |
 

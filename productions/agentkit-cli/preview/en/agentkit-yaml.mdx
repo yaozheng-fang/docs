@@ -24,7 +24,7 @@ common:
   agent_type: Basic App
   dependencies_file: requirements.txt
   runtime_envs:
-    MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY}
+    LOG_LEVEL: INFO
   launch_type: cloud
   cloud_provider: volcengine
 
@@ -57,6 +57,10 @@ docker_build:
   base_image:
   build_script:
 ```
+
+<Warning>
+Root lifecycle configuration does not substitute `${VAR}` from the environment. After exporting a model key, use `agentkit config --runtime_envs "MODEL_AGENT_API_KEY=$MODEL_AGENT_API_KEY"` so the shell expands it first. This writes the actual key to `agentkit.yaml`; add that file and `.env` to both `.gitignore` and `.dockerignore` before running the command. The `${VAR}` syntax described below applies to Release configuration in `.agentkit/agentkit.yaml`
+</Warning>
 
 ### Common Fields
 
@@ -191,7 +195,7 @@ runtime:
 
 # ── Harness Sidecar optimization (optional) ─────────────
 # Enabling any component selects the managed Sidecar Runtime. Initial support is
-# Volcengine cn-shanghai, CPython 3.12, linux/amd64, and exactly one instance;
+# Volcengine cn-shanghai/cn-beijing, CPython 3.12, linux/amd64, and exactly one instance;
 # set runtime.min_instance/max_instance to 1. The private Runtime artifact is
 # supplied by the platform and must never be written into this file.
 # harness_sidecar:
@@ -341,7 +345,7 @@ The `runtime` block configures compute resources and the scaling policy.
 `harness_sidecar` enables Product Component capabilities for a managed Harness Runtime. When it is enabled, `release` uses a platform-provided managed Sidecar base image, injects the Sidecar runtime configuration during release, and verifies the Sidecar, the enabled model proxy, and the required MCP gateway after the runtime becomes ready. When this block is enabled, set at least one selectable component to `true` in `component_overrides`.
 
 <Warning>
-Managed Harness Sidecar currently supports only Volcengine `cn-shanghai`, CPython 3.12, `linux/amd64`, and exactly one runtime instance, so both `runtime.min_instance` and `runtime.max_instance` must be `1`. It also requires the release environment to provide the platform-managed Sidecar base image configuration; release fails in ordinary local environments where that configuration is unavailable. Sidecar releases must use the default `key_auth` gateway auth and cannot be combined with `custom_jwt` or frontend BFF-derived auth.
+Managed Harness Sidecar currently supports Volcengine `cn-shanghai` and `cn-beijing`, CPython 3.12, `linux/amd64`, and exactly one runtime instance, so both `runtime.min_instance` and `runtime.max_instance` must be `1`. It also requires the release environment to provide the platform-managed Sidecar base image configuration; release fails in ordinary local environments where that configuration is unavailable. Sidecar releases must use header-based `key_auth` gateway authentication and cannot be combined with `custom_jwt` or frontend BFF-derived auth.
 </Warning>
 
 ```yaml lines

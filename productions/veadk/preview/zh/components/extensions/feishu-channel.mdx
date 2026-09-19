@@ -24,7 +24,7 @@ en_link: "/productions/veadk/preview/en/components/extensions/feishu-channel"
 安装：
 
 ```bash lines
-pip install veadk-python[extensions]
+pip install "veadk-python[extensions]"
 ```
 
 如果只想要这一项能力，也可以单独安装：
@@ -49,15 +49,21 @@ pip install lark-oapi
 tool:
   feishu_channel:
     app_id: cli_xxx
-    app_secret: xxx
     transport: ws
     streaming: true
     reactions: true
 ```
 
+在飞书开放平台启用应用的机器人能力，配置接收消息事件，并开通发送消息和读取所需消息上下文的权限。将应用发布到测试范围后，把机器人加入测试会话。先完成模型配置，再在启动进程前设置凭据
+
+```bash lines
+export TOOL_FEISHU_CHANNEL_APP_ID="your-app-id"
+export TOOL_FEISHU_CHANNEL_APP_SECRET="your-app-secret"
+```
+
 ## 使用方法
 
-```python title="examples/channel/feishu_bot.py" lines
+```python title="feishu_bot.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -66,7 +72,6 @@ from veadk.memory.short_term_memory import ShortTermMemory
 
 agent = Agent(
     name="feishu_agent",
-    model_name="doubao-seed-2-1-pro-260628",
     instruction="你是一个通过飞书机器人与用户沟通的助手。",
 )
 
@@ -93,7 +98,7 @@ if __name__ == "__main__":
 
 ## 优雅关停
 
-`FeishuChannelExtension` 提供独立的生命周期方法，用于在 ASGI 应用（如 FastAPI、Starlette）的启动与关闭钩子中管理 WebSocket 连接，使滚动更新或进程退出时不会丢失正在处理的飞书消息。
+`FeishuChannelExtension` 提供独立的生命周期方法，用于在 ASGI 应用（如 FastAPI、Starlette）的启动与关闭钩子中管理 WebSocket 连接，尽量完成滚动更新或退出时已接收的消息。
 
 关停流程分两步：先关闭 WebSocket 以停止接收新消息（飞书会将新事件重新路由到仍持有连接的其他实例），再等待已接收的消息完成回复。消息回复通过飞书 OpenAPI HTTP 客户端发送，不依赖 WebSocket，因此关停期间已接收的消息仍能正常回复。
 
@@ -105,7 +110,7 @@ if __name__ == "__main__":
 
 在 ASGI 应用的启动与关闭钩子中调用 `start()` 与 `shutdown()`：
 
-```python title="examples/channel/feishu_asgi.py" lines
+```python title="feishu_asgi.py" lines
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -189,7 +194,7 @@ app = FastAPI(lifespan=lifespan)
 
 先保存并配置上方的 `feishu_bot.py`，再在同一目录创建以下文件：
 
-```python title="examples/channel/feishu_bot_thread.py" lines
+```python title="feishu_bot_thread.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 
@@ -203,7 +208,7 @@ channel = FeishuChannelExtension(
 
 关闭该能力，使扩展仅转发当前消息原文：
 
-```python title="examples/channel/feishu_bot_plain.py" lines
+```python title="feishu_bot_plain.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 
@@ -221,3 +226,9 @@ channel = FeishuChannelExtension(
 - 可以通过 `session_id_factory` 与 `user_id_factory` 覆盖默认的身份映射逻辑。
 - `connect()` 与 `disconnect()` 同时兼容异步客户端和提供 `start()` / `stop()` 的同步 Channel SDK。
 - 开启流式输出时，回复内容按增量片段直接拼接发送，不再因去重启发式而丢失或截断字符。
+
+## 启动与验证
+
+将第一个示例保存为 `feishu_bot.py`，运行 `python feishu_bot.py` 后保持进程运行。在测试会话中向机器人发送一条文本，确认收到回复。使用 ASGI 示例时，将 `feishu_asgi.py` 放在同一目录，安装 `fastapi` 和 `uvicorn` 后运行 `uvicorn feishu_asgi:app --host 127.0.0.1 --port 8000`；两种启动方式选择一种
+
+后面的历史消息开关示例仅替换 `channel` 配置，仍需启动连接。机器人无响应时，依次检查应用发布范围、事件订阅、机器人是否在会话中、消息权限以及模型配置；只有当前消息可用而历史缺失时，再检查历史读取权限与两个上下文开关

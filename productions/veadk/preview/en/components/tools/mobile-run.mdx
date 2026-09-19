@@ -28,6 +28,14 @@ Environment variables:
 
 The `tool_id` is in the form `product_id-pod_id`; obtain it from the instance-management page of the cloud-phone console.
 
+Set environment variables before importing the module. `TOOL_MOBILE_USE_TOOL_ID` must contain a text representation of a string list, including for a single device:
+
+```bash lines
+export TOOL_MOBILE_USE_TOOL_ID='["product123-pod456"]'
+```
+
+Use the console's `product_id-pod_id` format for each item, with devices from the same product. This tool reads Volcengine credentials and uses its cloud-phone endpoint; `CLOUD_PROVIDER` does not switch it automatically. Logged-in accounts perform real actions, so this example limits operations to opening the app and searching.
+
 ## Usage
 
 ```python title="examples/tools/mobile_run/agent.py" lines
@@ -42,7 +50,9 @@ agent = Agent(
     model_name="doubao-seed-2-1-pro-260628",
     description="An agent that operates a cloud phone.",
     instruction="Use the mobile tool to complete tasks on the cloud phone.",
-    tools=[create_mobile_use_tool()],
+    tools=[create_mobile_use_tool(
+        system_prompt="Only open the requested app and search. Do not place orders, send messages, or change account settings.",
+    )],
 )
 
 runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
@@ -56,3 +66,14 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Parameters and results
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `system_prompt` | `str` | Required | Constraints and completion criteria for phone operations |
+| `timeout_seconds` | `int` | `900` | Timeout for device waiting and remote task configuration; not a guarantee that all local polling is forcibly interrupted |
+| `max_step` | `int` | `100` | Maximum remote action steps |
+| `step_interval_seconds` | `int` | `1` | Step interval passed to the remote task; local status polling has a separate wait |
+
+The returned async tool requires `user_prompts: list[str]`. Put consecutive actions that must use one device in a single string. Split only independent work into multiple items. Results follow input order and contain success, failure, or error messages. Inspect each result rather than checking only that the list is nonempty.

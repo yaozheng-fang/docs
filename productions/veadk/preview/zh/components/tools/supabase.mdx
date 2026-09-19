@@ -7,16 +7,50 @@ en_link: "/productions/veadk/preview/en/components/tools/supabase"
 
 `build_supabase_mcptoolset`（`from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset`）用于快速构建访问 [Supabase](https://supabase.com/) MCP Server 的工具集，接受 `url` 与 `api_key` 两个参数，返回一个可直接注册到智能体的 `MCPToolset` 实例。
 
+## 前提条件
+
+按 [Supabase MCP 指南](https://supabase.com/docs/guides/getting-started/mcp)准备 MCP 端点与服务接受的 Bearer 凭证。URL 不是数据库连接地址，凭证也不能直接假定为数据库 anon key。此封装不会完成交互式 OAuth 登录；需要该流程时使用适当的 MCP 客户端认证配置
+
+设置 `SUPABASE_MCP_URL` 与 `SUPABASE_MCP_TOKEN`，并限定端点的项目范围和所需权限。这两个变量是示例使用的应用变量，由代码显式传入
+
 ## 使用方法
 
 ```python lines
+import os
+
 from veadk import Agent
 from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset
 
 supabase_toolset = build_supabase_mcptoolset(
-    url="https://your-supabase-mcp-endpoint",
-    api_key="your-api-key-here",
+    url=os.environ["SUPABASE_MCP_URL"],
+    api_key=os.environ["SUPABASE_MCP_TOKEN"],
 )
 
 agent = Agent(tools=[supabase_toolset])
+```
+
+## 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `url` | `str` | 必填 | Supabase MCP Streamable HTTP 地址 |
+| `api_key` | `str` | 必填 | 作为 `Authorization: Bearer ...` 发送的凭证 |
+
+返回 `MCPToolset`。先调用 `await supabase_toolset.get_tools()` 并检查工具名称，再注册到智能体；应用退出时调用 `await supabase_toolset.close()`。若工具包含写入、迁移或删除操作，应在端点权限与工具过滤配置中限制范围。仅列出工具不需要配置推理模型
+
+```python lines
+import asyncio
+import os
+from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset
+
+async def main():
+    toolset = build_supabase_mcptoolset(
+        os.environ["SUPABASE_MCP_URL"], os.environ["SUPABASE_MCP_TOKEN"]
+    )
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
 ```

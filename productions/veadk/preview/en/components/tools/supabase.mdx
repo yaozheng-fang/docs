@@ -7,16 +7,50 @@ zh_link: "/productions/veadk/preview/zh/components/tools/supabase"
 
 `build_supabase_mcptoolset` (`from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset`) quickly builds a tool set that accesses a [Supabase](https://supabase.com/) MCP Server. It accepts a `url` and an `api_key`, and returns an `MCPToolset` instance you can register on the agent directly.
 
+## Prerequisites
+
+Follow the [Supabase MCP guide](https://supabase.com/docs/guides/getting-started/mcp) to obtain an MCP endpoint and a Bearer credential accepted by it. The URL is not a database connection string, and a database anon key is not automatically an MCP credential. This wrapper does not perform an interactive OAuth login; use suitable MCP client authentication when that flow is required.
+
+Set `SUPABASE_MCP_URL` and `SUPABASE_MCP_TOKEN`, restricting project scope and permissions as needed. These are application variables used explicitly by this example.
+
 ## Usage
 
 ```python lines
+import os
+
 from veadk import Agent
 from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset
 
 supabase_toolset = build_supabase_mcptoolset(
-    url="https://your-supabase-mcp-endpoint",
-    api_key="your-api-key-here",
+    url=os.environ["SUPABASE_MCP_URL"],
+    api_key=os.environ["SUPABASE_MCP_TOKEN"],
 )
 
 agent = Agent(tools=[supabase_toolset])
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `url` | `str` | Required | Supabase MCP Streamable HTTP URL |
+| `api_key` | `str` | Required | Credential sent as `Authorization: Bearer ...` |
+
+The function returns `MCPToolset`. Discover tools with `await supabase_toolset.get_tools()` before registering it with an agent, and call `await supabase_toolset.close()` on shutdown. Restrict write, migration, or deletion capabilities through endpoint permissions and tool filtering. Discovery alone requires no reasoning model.
+
+```python lines
+import asyncio
+import os
+from veadk.tools.builtin_tools.supabase_toolset import build_supabase_mcptoolset
+
+async def main():
+    toolset = build_supabase_mcptoolset(
+        os.environ["SUPABASE_MCP_URL"], os.environ["SUPABASE_MCP_TOKEN"]
+    )
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
 ```

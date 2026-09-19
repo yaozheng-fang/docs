@@ -47,3 +47,25 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 输入、结果与服务范围
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `url_list` | `list[str]` | 必填 | 待读取的 URL 列表，每次最多提交 3 个 |
+
+调用是异步的，成功时返回包含页面标题和正文的列表；没有可用结果或读取失败时可能返回空列表。凭证必须具备火山方舟 LinkReader 服务的访问权限，任意第三方模型 API Key 不能用于该服务。`CLOUD_PROVIDER=byteplus` 不会自动切换该工具的服务端点
+
+```python lines
+import asyncio
+from veadk.tools.builtin_tools.link_reader import link_reader
+
+async def main():
+    pages = await link_reader(["https://www.volcengine.com/docs/85508/1650263"])
+    if not pages:
+        print("No readable pages returned; check access and service configuration")
+    for page in pages:
+        print(page)
+
+asyncio.run(main())
+```

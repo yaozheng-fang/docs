@@ -42,7 +42,9 @@ agentkit eval evaluator templates --type prompt
 agentkit eval evaluator template show relevance
 ```
 
-## evaluator template list
+<span id="evaluator-template-list-2" />
+
+## evaluator list
 
 列出当前项目或工作区下的评估器。
 
@@ -94,6 +96,16 @@ agentkit eval evaluator create \
   --name 相关性 \
   --from-template relevance \
   --model "Doubao 2.0 Pro"
+```
+
+在执行自定义评估器示例前，创建 `rubric.txt`：
+
+```text title="rubric.txt" lines
+问题：{{input}}
+参考答案：{{reference_output}}
+实际回答：{{output}}
+判断实际回答是否正确回答问题并与参考答案一致
+正确且完整记为 1，否则记为 0，并简要说明评分原因
 ```
 
 ```bash lines
@@ -180,3 +192,13 @@ agentkit eval evaluator version submit 0.0.2 --evaluator 相关性 --description
 ```bash lines
 agentkit eval evaluator delete 相关性 -y
 ```
+
+创建后使用 `evaluator show` 检查模型、提示词和输入字段。TEA 草稿需提交版本后才能作为明确版本用于实验；更改草稿后再次提交新版本，不要把草稿修改当作已有版本已更新
+
+```bash lines
+agentkit eval evaluator show 相关性
+agentkit eval evaluator version submit 0.0.1 --evaluator 相关性
+agentkit eval evaluator version list --evaluator 相关性
+```
+
+示例中的模板 key 和模型必须在当前后端可用。Coze 的模型参数使用账号可调用的方舟端点 ID，不能直接使用 TEA 的数字模型 ID

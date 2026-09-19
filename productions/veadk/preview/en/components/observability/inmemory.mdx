@@ -13,7 +13,7 @@ zh_link: "/productions/veadk/preview/zh/components/observability/inmemory"
 
 ## Automatic management
 
-`InMemoryExporter` is created and managed automatically by `OpentelemetryTracer` and records every span. It therefore **cannot** be added explicitly to the `exporters` list of `OpentelemetryTracer`, or initialization fails.
+`InMemoryExporter` is created and managed automatically by `OpentelemetryTracer` and records completed, sampled spans. It therefore **cannot** be added explicitly to the `exporters` list of `OpentelemetryTracer`, or initialization fails.
 
 ```python lines
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
@@ -26,25 +26,23 @@ tracer = OpentelemetryTracer(exporters=[])
 
 After a session run finishes, call the tracer's `dump` method to export that session's spans to a local JSON file:
 
-```python lines
+```python title="app.py" lines
 import asyncio
+from pathlib import Path
 
 from veadk import Agent, Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-from veadk.tools.demo_tools import get_city_weather
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
 tracer = OpentelemetryTracer()
-
-agent = Agent(tools=[get_city_weather], tracers=[tracer])
-
-runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
-
-asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="session_id_demo"))
-
-# Dump the current session's spans to JSON
-path = tracer.dump(user_id="user-1", session_id="session_id_demo")
-print(f"trace written to {path}")
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("Explain the purpose of an agent in one sentence", session_id="demo-session")
+)
+print(response)
+Path("traces").mkdir(exist_ok=True)
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(path)
 ```
 
 ## Parameters
@@ -65,10 +63,16 @@ print(f"trace written to {path}")
 | :--- | :--- | :--- | :--- |
 | `user_id` | `str` | `unknown_user_id` | User identifier, used to organize and name the dump file. |
 | `session_id` | `str` | `unknown_session_id` | Session identifier, used to filter spans of that session. |
-| `path` | `str` | Agent directory | Directory for the output file; defaults to the agent directory. |
+| `path` | `str` | Agent directory | Output directory; it must already exist because `dump` does not create it. |
 
 The dump file is named like `{name}_{user_id}_{session_id}_{trace_id}.json`, and its content is a list of spans, each containing the name, `span_id`, `trace_id`, start/end times, attributes, and parent span.
 
 <Note>
 Memory usage grows with the number of spans, so long-running processes should watch memory growth. Session-level filtering relies on a correctly configured `session_id`; `dump` first force-exports all pending spans, then filters by `session_id` before writing the file.
 </Note>
+
+## Checking the export
+
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model), save the example as `app.py`, and run `python app.py`. The printed file path should exist, and its JSON list should contain spans from this model call
+
+In-memory data is lost when the process exits. Session filtering relies on session identifiers recorded by model-call spans. The file can be empty if no relevant model span was recorded, sampling omitted the data, or the session ID differs. `user_id` names the output file; it does not filter spans or enforce access control

@@ -17,6 +17,14 @@ DeepSeek Harness creation mode is an agent creation method in Studio for configu
 | Containerized deployment | Generate an independent DeepSeek Harness container project that deploys as an AgentKit Runtime callable via HTTP API |
 | Custom model routing | Add multiple model providers and models, and configure sub-agent model selection policies |
 
+## Prerequisites
+
+Start [Studio](/productions/veadk/preview/en/components/frontend/studio#start-locally). Prepare an accessible model service and API key. Local builds require Docker; cloud deployment requires build, registry, and Runtime permissions for the selected provider
+
+<Warning>
+The default `workspace-write` permission allows workspace changes and command execution. Mount only task-required directories into the container. `danger-full-access` expands access and skips confirmation, so review tool and credential scope before selecting it
+</Warning>
+
 ## Creation entry point
 
 On the Studio "Agents" page, click "Create agent" and select "Quick create" from the creation menu. In the agent type selection dialog, choose "DeepSeek Harness" and click "Continue" to enter the DeepSeek Harness configuration page.
@@ -205,3 +213,14 @@ When using custom providers, also pass the corresponding secret environment vari
 ## Configuration scope
 
 The editor covers common native DeepSeek Harness settings, including default model, preset, permissions, DeepSeek model service, custom model providers, command execution, tool calls, sub-agent model selection, and web search. Other native plugin and preset-file settings are outside the editor's scope. Presets must exist in the deployed Harness; custom presets and extra plugins must be explicitly installed and added to the build context.
+
+## Verify the runtime
+
+After starting the container, check readiness and send one request from another terminal. Model calls may incur charges
+
+```bash
+curl --fail http://127.0.0.1:8000/ping
+curl --fail http://127.0.0.1:8000/invocations   -H 'Content-Type: application/json'   -d '{"prompt":"Introduce your capabilities","session_id":"demo-session"}'
+```
+
+Invoke after the health check returns `200`. A successful response includes `response` and `session_id`. Wait for readiness after `503`, and wait for the existing session call after `409` rather than retrying concurrently. Shared storage alone does not provide cross-instance session concurrency control; use session routing or external coordination

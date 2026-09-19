@@ -51,7 +51,7 @@ agentkit user create --user-pool-id pool-example --preferred-username alice --na
 | --- | --- | --- |
 | `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
 | `--user-id <uid>` | 用户 ID，必填 | 必填 |
-| `--preferred-username <username>` | 用户名；创建时可重复传入，更新时不能为空 | — |
+| `--preferred-username <username>` | 新的用户名，不能为空 | — |
 | `--name <name>` | 名称 | — |
 | `--email <email>` | 邮箱地址 | — |
 | `--phone <phone>` | E.164 格式的电话号码 | — |
@@ -92,7 +92,7 @@ agentkit user delete --user-pool-id pool-example --user-id user-example --yes
 | --- | --- | --- |
 | `--user-pool-id <uid>` | 用户池 ID，必填 | 必填 |
 | `--email <email>` | 邮箱地址 | — |
-| `--preferred-username <username>` | 用户名；创建时可重复传入，更新时不能为空 | — |
+| `--preferred-username <username>` | 按用户名精确筛选 | — |
 | `--name <name>` | 名称 | — |
 | `--max-results <count>` | 每页数量，范围 `0`–`100`；`0` 使用服务端默认值 | 服务端默认值 |
 | `--next-token <token>` | 上一页返回的分页令牌 | — |
@@ -124,3 +124,13 @@ agentkit user create --user-pool-id pool-example --file users.json --json
 ```
 
 使用参数批量创建时，每个用户取各参数中相同序号的值；可选参数数量不能超过用户名数量。批次可能部分成功，有失败项时命令返回非零退出码，请只重试失败项
+
+## 核对用户变更
+
+创建和更新后，以用户名精确查询同一用户池，检查返回的用户 ID 与字段：
+
+```bash lines
+agentkit user list --user-pool-id pool-example --preferred-username alice --json
+```
+
+用户名用于查询与登录标识；后续更新、删除和部门成员操作应使用返回的用户 ID。列表为空时先核对用户池、区域与筛选字段，分页令牌只能用于继续相应列表查询

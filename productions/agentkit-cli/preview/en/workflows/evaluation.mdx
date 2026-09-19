@@ -9,19 +9,23 @@ Evaluation closes the "develop → deploy → evaluate → tune" loop: use a fix
 Before you start, configure Volcengine AK/SK credentials or obtain valid short-lived STS credentials through `agentkit login`. Evaluation is currently in Preview. The CLI first resolves whether the current account uses the Coze or TEA evaluation backend; run `agentkit eval backend` to inspect the resolved backend.
 </Note>
 
+<Warning>
+Uploading cases stores their inputs and reference answers on the evaluation platform. A submitted experiment calls the target agent and judging model and may incur charges. Use data approved for evaluation. `--dry-run` still contacts the backend to resolve resources, but does not submit an experiment or automatically publish a dataset version
+</Warning>
+
 ## End-to-end flow
 
 <Steps>
   <Step title="Initialize and deploy an agent">
-    Create the project and deploy it to obtain a target runtime to evaluate:
+    Follow [High-code agents](/productions/agentkit-cli/preview/en/workflows/high-code) to initialize a project, configure its model, and deploy it as `qa-agent`, or use an existing callable Runtime. Verify the target and evaluation backend
 
     ```bash lines
-    agentkit init qa-agent --template basic
-    cd qa-agent
-    agentkit launch
+    agentkit runtime show qa-agent
+    agentkit invoke run "hello" --runtime-id "<qa-agent runtime ID>"
+    agentkit eval backend
     ```
 
-    Once deployed, run `agentkit invoke run "hello"` to confirm the runtime responds.
+    Supply the actual Runtime ID. The remaining examples show the TEA backend. Coze and TEA have different templates and version requirements; use the results returned for your account
   </Step>
 
   <Step title="Create a dataset and add cases">
@@ -61,11 +65,11 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
     # Derive from the "relevance" template and swap in your own endpoint
     agentkit eval evaluator create \
       --name relevance \
-      --from-template "relevance" \
+      --from-template "<template name from list>" \
       --model ep-xxxxxxxx
     ```
 
-    The TEA backend requires an evaluator version when submitting an experiment. After creating or updating the draft, submit a version:
+    The TEA backend requires an evaluator version. Replace the template placeholder with a name returned by the list command, then submit a version after creating or updating the draft. Coze users skip this step and omit `--evaluator-version 0.0.1` from subsequent commands:
 
     ```bash lines
     agentkit eval evaluator version submit 0.0.1 --evaluator relevance
@@ -117,9 +121,12 @@ The evaluation commands need no browser login and all support `--json`, so they 
 
 ```bash lines
 # A minimal loop you can drop into CI
-EXP=$(agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target qa-agent --json | jq -r .experimentId)
-agentkit eval experiment show "$EXP" --json
+set -euo pipefail
+experiment_id=$(agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target qa-agent --json | jq -er .experimentId)
+agentkit eval experiment show "$experiment_id" --json
 ```
+
+The CI example submits an experiment and reads its status once; it does not wait for all cases or enforce a quality threshold. To gate a release, poll until a terminal state and decide the pipeline outcome from actual scores and failed cases. Receiving an experiment ID does not mean the evaluation passed
 
 ## Practical guidance
 

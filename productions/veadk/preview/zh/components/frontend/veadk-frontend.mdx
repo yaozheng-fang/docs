@@ -7,7 +7,7 @@ VeADK 自带一个生产级 React 前端——一个面向企业的智能体应�
 
 ## 功能一览
 
-- **创建智能体**：当前可通过自定义配置创建智能体，产出可运行的 VeADK 项目（`agent.py`、`requirements.txt` 等），并可在线预览、编辑与下载。智能模式、模板和工作流入口显示为「敬请期待」，暂不可用。
+- **创建智能体**：当前可通过自定义配置创建智能体，产出可运行的 VeADK 项目（`agent.py`、`requirements.txt` 等），并可在线预览、编辑与下载。其他创建方式及其可用范围见 [Studio](/productions/veadk/preview/zh/components/frontend/studio)。
 - **多模态消息**：上传图片、TXT、Markdown、PDF 和视频；用户附件与模型返回的媒体均可预览并随历史会话重新加载。
 - **对话与调试**：与智能体多轮对话，展示思考过程、工具调用、子智能体移交、Token 与用时；对话支持渲染 ECharts 与 Mermaid 图表（含源码切换和放大查看）、图片放大、视频与音频播放、文件预览和长时任务进度；内置工具（网页搜索、图像生成、视频生成、长期记忆检索、知识库检索）在执行时显示专属图标与运行状态；对话中还会渲染智能体返回的 [A2UI](/productions/veadk/preview/zh/components/frontend/a2ui) 富界面卡片。
 - **停止生成**：智能体回复过程中，输入框的发送按钮变为停止按钮，点击后中断当前回复。已接收的内容保留在对话中，停止后可立即在同一会话中发送下一条消息。该能力在 `veadk frontend` 与 `veadk studio` 的对话页面（含沙箱会话）均生效。
@@ -33,38 +33,29 @@ VeADK 自带一个生产级 React 前端——一个面向企业的智能体应�
 
 ## 运行
 
-先构建前端，再用一条命令在单个进程中同时提供界面与智能体 API。
+先完成[安装](/productions/veadk/preview/zh/get-started/installation)与[模型配置](/productions/veadk/preview/zh/components/agent/model)。发行包已带界面，无需先安装 Node.js 或构建前端。准备一个包含 `agent.py` 和 `__init__.py` 的智能体目录，并在 `agent.py` 中暴露 `root_agent`；完整目录示例见 [A2UI](/productions/veadk/preview/zh/components/frontend/a2ui#项目准备)
 
-<Steps>
-
-<Step title="构建前端">
-
-```bash lines
-cd frontend && npm install && npm run build
+```bash
+veadk frontend --dev --agents-dir ./agents --open
 ```
 
-构建产物会作为界面被 `veadk frontend` 提供。使用 pip 安装 VeADK 时，包内已内置一份构建产物，可直接运行。
+浏览器打开 `http://127.0.0.1:8000` 后，选择本地智能体并发送文本，确认收到回复。只传 `--agents-dir` 不会切换到本地列表，必须同时使用 `--dev`。连接云端 Runtime 时省略 `--dev`，并按当前云服务商配置 AK/SK
 
-</Step>
-
-<Step title="启动">
-
-```bash lines
-veadk frontend --agents-dir examples
-# 打开 http://127.0.0.1:8000
-```
-
-</Step>
-
-</Steps>
+<Warning>
+更改监听地址使其他设备可访问前，先配置 SSO 或受信任的网关。`gateway` 模式依赖网关完成验证，应阻止请求绕过网关直接访问服务
+</Warning>
 
 ### 开发模式（热更新）
+
+只有修改前端源码时才需要此模式。在 VeADK 源码根目录启动后端；另开终端进入 `frontend` 目录启动 Vite。生产构建执行 `npm run build`，再用 `--frontend-dir` 指向构建产物
 
 开发模式下 `veadk frontend` 只提供智能体 API，并为 Vite 开发服务器（`http://localhost:5173`，回退到 `http://localhost:5174`）放行 CORS；界面则由 Vite 单独以热更新方式运行。
 
 ```bash lines
-veadk frontend --dev --vite --agents-dir examples   # 仅 API，为 Vite 放行 CORS
-cd frontend && npm run dev                    # http://localhost:5173，代理 API
+veadk frontend --dev --vite --agents-dir ./agents   # 仅 API，为 Vite 放行 CORS
+cd frontend
+npm install
+npm run dev                    # http://localhost:5173，代理 API
 ```
 
 ### 组件预览
@@ -72,7 +63,9 @@ cd frontend && npm run dev                    # http://localhost:5173，代理 A
 `frontend` 目录包含一个独立的组件预览页面，用于浏览共享组件库中的组件实现。预览页面不依赖后端服务，按基础组件、复合组件、布局、节点组件和 AI APP 分组展示，包含设计 Token、明暗主题切换和从 TypeScript 接口生成的参数表。此入口独立于 Studio 生产构建，不替换现有业务页面。
 
 ```bash lines
-cd frontend && npm run dev:components
+cd frontend
+npm install
+npm run dev:components
 # 打开 http://127.0.0.1:5186/components-preview/
 ```
 
@@ -97,6 +90,18 @@ cd frontend && npm run dev:components
 | `--auth-mode` | `frontend` | `frontend` 由本服务处理 OAuth2；`gateway` 信任上游网关验证并转发的 JWT。 |
 | `--generated-agent-test-run-ttl` | `1800` | Studio 生成智能体的临时调试进程保留秒数。 |
 | `--open / --no-open` | `--no-open` | 服务启动后是否打开系统浏览器；`--vite` 模式下忽略。 |
+| `--site-title` | `VEADK_SITE_TITLE` | 系统名称，最多 16 个字符 |
+| `--site-logo` | `VEADK_SITE_LOGO` | 本地图片或 HTTP(S) Logo 地址 |
+| `--sandbox-chat-codex-tool-id` | `SANDBOX_CHAT_CODEX` | 临时会话使用的 CodeEnv Tool ID |
+| `--sandbox-chat-openclaw-tool-id` | `SANDBOX_CHAT_OPENCLAW` | OpenClaw 会话的 ArkClawEnv Tool ID |
+| `--sandbox-chat-hermes-tool-id` | `SANDBOX_CHAT_HERMES` | Hermes 会话的 HermesEnv Tool ID |
+| `--sandbox-chat-codex-snapshot-tool-id` | `SANDBOX_CHAT_CODEX_SNAPSHOT` | 持久化会话的 CodeEnv Tool ID |
+| `--sandbox-chat-openclaw-snapshot-tool-id` | `SANDBOX_CHAT_OPENCLAW_SNAPSHOT` | 持久化 OpenClaw 会话的 Tool ID |
+| `--sandbox-chat-hermes-snapshot-tool-id` | `SANDBOX_CHAT_HERMES_SNAPSHOT` | 持久化 Hermes 会话的 Tool ID |
+| `--super-admin` | `VEADK_STUDIO_SUPER_ADMIN` | 初始化 Identity 角色的超级管理员邮箱或 UID |
+| `--admin` | `VEADK_STUDIO_ADMINS` | 本地管理员名单；配置条件见 Studio 角色说明 |
+| `--developer` | `VEADK_STUDIO_DEVELOPERS` | 本地开发者名单；配置条件见 Studio 角色说明 |
+| `--help` | — | 查看当前安装版本的命令帮助 |
 
 <Note>
   非开发模式下，若未找到已构建的界面目录，命令会报错并提示先执行 `npm run build`。开发 React 前端时使用 `--vite`，并可同时使用 `--dev` 加载本地智能体。
@@ -204,7 +209,7 @@ Google 同理，把 `OAUTH2_PROVIDER` 换成 `google`；Keycloak、Auth0、Okta 
 
 VeADK Frontend 可能部署到公网，因此会限制用户可控制的地址和文件路径：
 
-- 在线创建项目不直接执行浏览器提交的代码；部署前测试应在受控的本地环境中完成。
+- 调试运行会执行生成的项目；仅测试可信内容，并按 Studio 的测试范围限制模型地址和外部资源。
 - 远程 AgentKit 代理要求提供 API Key，并只接受 HTTPS 的 `volceapi.com` 域名。
 - AgentKit 部署文件必须位于本次项目目录内，绝对路径和跳出目录的相对路径会被拒绝。
 - 静态文件只允许从已构建的界面目录读取，不能通过路径跳转读取主机上的其他文件。
@@ -237,8 +242,13 @@ register("RevenueChart", RevenueChart);
 import type { ComponentRendererProps } from "../../registry";
 
 export function RevenueChart({ node, ctx }: ComponentRendererProps) {
-  const series = ctx.resolve(node.series as any);
-  return <div className="corp-chart">{/* 渲染 series */}</div>;
+  const values = ctx.resolve(node.series);
+  const series = Array.isArray(values) ? values.filter(
+    (value): value is number => typeof value === "number"
+  ) : [];
+  return <ol>{series.map((value, index) => (
+    <li key={index}>{value.toLocaleString()}</li>
+  ))}</ol>;
 }
 ```
 

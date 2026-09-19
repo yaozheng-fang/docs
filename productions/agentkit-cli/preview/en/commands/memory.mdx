@@ -5,6 +5,12 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/memory"
 
 The `memory` command group manages AgentKit memory collections, covering listing, inspection, creation, update, and deletion. The command is also available under the `mem` alias.
 
+A memory collection is a cloud resource for storing and retrieving long-term memory. Creating it does not automatically make an agent write memories. Associate the returned collection ID in the agent or runtime configuration and use credentials for the same provider and region
+
+<Warning>
+Creating a collection can incur cloud charges. Conversation and user information written to it is stored by the selected memory service. Check associated agents and retain required data before deleting; `--yes` skips confirmation
+</Warning>
+
 ## memory list
 
 List all memory collections.
@@ -84,3 +90,5 @@ Delete a memory collection.
 ```bash lines
 agentkit memory delete m-12345678 --yes
 ```
+
+After creation or update, inspect the returned ID with `agentkit memory show <id> --json`. If the resource exists but the agent cannot save memories, check the runtime's collection ID, permissions, and provider configuration. Resource management success does not verify application-level memory reads and writes

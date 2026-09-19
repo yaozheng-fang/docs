@@ -10,19 +10,48 @@ en_link: "/productions/veadk/preview/en/components/session/postgresql"
 - 生产环境、多实例或分布式部署；
 - 团队已使用 PostgreSQL 作为统一存储。
 
+## 依赖
+
+安装 `veadk-python` 后已包含所需数据库驱动。运行示例前创建数据库和账号，授予会话表的创建、读写权限，并确认运行环境可连接数据库地址；VeADK 不创建数据库实例或数据库本身
+
+通过环境变量提供连接信息；密码由部署环境的密钥配置注入
+
+```bash
+export DATABASE_POSTGRESQL_HOST="127.0.0.1"
+export DATABASE_POSTGRESQL_USER="veadk"
+export DATABASE_POSTGRESQL_DATABASE="veadk_sessions"
+```
+
+另需设置 `DATABASE_POSTGRESQL_PASSWORD`。这些连接参数适用于自建数据库、火山引擎和 BytePlus 的可达数据库实例，不自动选择云厂商或区域
+
 ## 使用示例
 
 连接信息通过 `config.yaml`（或对应环境变量）提供，不要把密码写进代码。
 
 ```python lines
-from veadk import Agent, Runner
+import asyncio
+
 from veadk.memory.short_term_memory import ShortTermMemory
 
-stm = ShortTermMemory(backend="postgresql")  # 连接信息来自 config.yaml / 环境变量
+stm = ShortTermMemory(backend="postgresql")
 
-agent = Agent(name="demo")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+async def main():
+    try:
+        await stm.create_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        session = await stm.session_service.get_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        assert session is not None
+        print(session.id)
+    finally:
+        await stm.session_service.close()
+
+asyncio.run(main())
 ```
+
+成功后输出 `chat_01`，表示会话已创建并可读回；示例不调用模型。实际对话时将同一 `stm` 传给 `Runner(short_term_memory=stm, agent=agent)`，并保持应用、用户和会话标识一致
 
 如需透传连接池等 SQLAlchemy 驱动参数，可使用 `db_kwargs`：
 
@@ -61,12 +90,13 @@ stm = ShortTermMemory(
 
 | 参数 | 类型 | 默认值 | 对 postgresql 是否生效 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `backend` | `str` | `"local"` | 生效 | 设为 `"postgresql"` 选择本后端。 |
-| `backend_configs` | `dict` | `{}` | 生效 | PostgreSQL 专用配置；可包含 `postgresql_config`（一个 `PostgreSqlConfig` 实例），用于覆盖默认从环境变量读取的配置。 |
-| `db_kwargs` | `dict` | `{}` | 生效 | 传给 SQLAlchemy 引擎，常用于连接池设置，如 `pool_size`、`pool_recycle`、`pool_pre_ping` 等。 |
-| `db_url` | `str` | `""` | 生效（覆盖） | 直接给出连接串。一旦设置，将忽略 `backend` 与 `backend_configs`，并采用 `db_url` 与 `db_kwargs`。 |
-| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 不生效 | 仅 `sqlite` 使用。 |
-| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 读取会话后触发的回调，入参为加载到的 `Session`。 |
+| `backend` | `str` | `"local"` | 生效 | 设为 `"postgresql"` 选择本后端 |
+| `backend_configs` | `dict` | `{}` | 生效 | PostgreSQL 专用配置；可包含 `postgresql_config`（一个 `PostgreSqlConfig` 实例），用于覆盖默认从环境变量读取的配置 |
+| `db_kwargs` | `dict` | `{}` | 生效 | 传给 SQLAlchemy 引擎，常用于连接池设置，如 `pool_size`、`pool_recycle`、`pool_pre_ping` 等 |
+| `db_url` | `str` | `""` | 生效（覆盖） | 直接给出连接串。一旦设置，将忽略 `backend` 与 `backend_configs`，并采用 `db_url` 与 `db_kwargs` |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 不生效 | 仅 `sqlite` 使用 |
+| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 同步读取回调；接收 `Session` 或 `None`，以及查询时的参数，建议使用 `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | 生效 | 通过 `ShortTermMemory.create_session()` 首次创建会话后触发；支持同步或异步回调，接收新建的 `Session` |
 
 ### PostgreSqlConfig 字段与环境变量
 
@@ -85,13 +115,13 @@ database:
 
 | 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `host` | `DATABASE_POSTGRESQL_HOST` | `str` | `""` | 数据库主机或 IP。 |
-| `port` | `DATABASE_POSTGRESQL_PORT` | `int` | `5432` | 端口。 |
-| `user` | `DATABASE_POSTGRESQL_USER` | `str` | `""` | 用户名。 |
-| `password` | `DATABASE_POSTGRESQL_PASSWORD` | `str` | `""` | 密码。 |
-| `database` | `DATABASE_POSTGRESQL_DATABASE` | `str` | `""` | 数据库名。 |
-| `schema` | `DATABASE_POSTGRESQL_SCHEMA` | `str` | `""` | 可选的 PostgreSQL schema。设置后会自动创建，并把会话表限定在该 schema 中。1.0.2 新增。 |
-| `secret_token` | `DATABASE_POSTGRESQL_SECRET_TOKEN` | `str` | `""` | PostgreSQL 鉴权用的 STS 临时令牌，暂未支持。 |
+| `host` | `DATABASE_POSTGRESQL_HOST` | `str` | `""` | 数据库主机或 IP |
+| `port` | `DATABASE_POSTGRESQL_PORT` | `int` | `5432` | 端口 |
+| `user` | `DATABASE_POSTGRESQL_USER` | `str` | `""` | 用户名 |
+| `password` | `DATABASE_POSTGRESQL_PASSWORD` | `str` | `""` | 密码 |
+| `database` | `DATABASE_POSTGRESQL_DATABASE` | `str` | `""` | 数据库名 |
+| `schema` | `DATABASE_POSTGRESQL_SCHEMA` | `str` | `""` | 可选的 PostgreSQL schema。设置后会在连接时创建缺失的 schema，并把会话表限定在其中；账号需拥有相应 schema 创建与使用权限 |
+| `secret_token` | `DATABASE_POSTGRESQL_SECRET_TOKEN` | `str` | `""` | PostgreSQL 鉴权用的 STS 临时令牌，暂未支持 |
 
 <Note>
 VeADK 会选择与当前 Google ADK 版本兼容的 PostgreSQL 驱动，并自动编码用户名与密码中的特殊字符。可在火山引擎[开通 PostgreSQL 数据库](https://www.volcengine.com/product/rds-pg)。

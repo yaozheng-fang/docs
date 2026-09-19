@@ -29,7 +29,7 @@ Requirements:
 | `VOLCENGINE_ACCESS_KEY` | Volcengine | — | Volcengine AccessKey. |
 | `VOLCENGINE_SECRET_KEY` | Volcengine | — | Volcengine SecretKey. |
 | `BYTEPLUS_WEB_SEARCH_API_KEY` | BytePlus | — | API key for the BytePlus SearchInfinity API; required in BytePlus mode. |
-| `BYTEPLUS_WEB_SEARCH_URL` | BytePlus | Built-in URL | Override the BytePlus SearchInfinity search endpoint. |
+| `BYTEPLUS_WEB_SEARCH_URL` | BytePlus | `https://torchlight.byteintlapi.com/search_api/web_search` | Override the BytePlus SearchInfinity search endpoint. |
 
 Or configure in `config.yaml`:
 
@@ -81,4 +81,30 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+## Parameters and results
+
+| Tool | Parameter | Type | Default | Result |
+| :--- | :--- | :--- | :--- | :--- |
+| `web_search` | `query` | `str` | Required | Summary list for one query |
+| `parallel_web_search` | `queries` | `list[str]` | Required | Mapping from query strings to summary lists |
+| Both | `tool_context` | `ToolContext \| None` | `None` | Injected during agent calls; may supply Volcengine credentials |
+
+In Volcengine mode, credentials are resolved in this order: paired `TOOL_WEB_SEARCH_ACCESS_KEY` / `TOOL_WEB_SEARCH_SECRET_KEY`, AK/SK in the tool context, `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`, and IAM temporary credentials from a managed environment. The session token comes from that final IAM flow; setting AK/SK directly does not attach an arbitrary STS token.
+
+Each query requests up to five results. Parallel results use query text as dictionary keys, so deduplicate queries first. An error response may appear as a list item; inspect results before using them in an answer.
+
+This example calls the search service without a reasoning model:
+
+```python lines
+import asyncio
+from veadk.tools.builtin_tools.parallel_web_search import parallel_web_search
+
+async def main():
+    results = await parallel_web_search(["AgentKit documentation", "VeADK documentation"])
+    for query, summaries in results.items():
+        print(query, summaries)
+
+asyncio.run(main())
 ```

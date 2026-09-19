@@ -20,6 +20,8 @@ Redis must support RediSearch (vector search).
 
 ## Usage
 
+Before running, provide Redis with RediSearch, an account allowed to create and access indexes, and the Redis and embedding variables below. Durability depends on Redis RDB/AOF and backup settings; VeADK does not enable them
+
 ```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
@@ -36,6 +38,8 @@ agent = Agent(
 You can also pass connection config explicitly via `backend_config`:
 
 ```python lines
+import os
+
 from veadk.memory.long_term_memory import LongTermMemory
 from veadk.configs.database_configs import RedisConfig
 
@@ -47,7 +51,7 @@ ltm = LongTermMemory(
         "redis_config": RedisConfig(
             host="localhost",
             port=6379,
-            password="your-password",
+            password=os.environ["DATABASE_REDIS_PASSWORD"],
             db=0,
         ),
     },
@@ -55,6 +59,17 @@ ltm = LongTermMemory(
 ```
 
 ## Parameters
+
+### LongTermMemory parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseLongTermMemoryBackend` | `"opensearch"` | Set to `redis` for this page, or pass a configured backend instance |
+| `backend_config` | `dict` | `{}` | Backend settings; a supplied backend instance takes precedence |
+| `index` | `str` | `""` | Without backend_config, resolves from index, app_name, then default_app; supply a nonempty index with a configuration dictionary |
+| `app_name` | `str` | `""` | Fallback for index; the actual user comes from the saved Session or search arguments |
+| `top_k` | `int` | `5` | Number of retrieved chunks; use a positive integer |
+| `user_id` | `str` | `""` | Deprecated; does not select the runtime user |
 
 ### Constructor parameters
 
@@ -74,7 +89,7 @@ ltm = LongTermMemory(
 | :--- | :--- | :--- | :--- | :--- |
 | `host` | `DATABASE_REDIS_HOST` | `str` | `""` | Redis host. |
 | `port` | `DATABASE_REDIS_PORT` | `int` | `6379` | Port. |
-| `username` | `DATABASE_REDIS_USERNAME` | `str \| None` | `None` | Username, optional. |
+| `username` | `DATABASE_REDIS_USERNAME` | `str \| None` | `None` | The field exists, but Redis long-term memory connections do not forward username; this field does not select an ACL user |
 | `password` | `DATABASE_REDIS_PASSWORD` | `str` | `""` | Password. |
 | `db` | `DATABASE_REDIS_DB` | `int` | `0` | Database number. |
 | `secret_token` | `DATABASE_REDIS_SECRET_TOKEN` | `str` | `""` | STS temporary-credential token; not yet enabled. |
@@ -108,3 +123,35 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 <Note>
 The vector dimension comes from the embedding config (`MODEL_EMBEDDING_DIM`). The index uses the flat algorithm with a cosine distance metric, and an index is created per user (`veadk-ltm/{index}/{user_id}`).
 </Note>
+
+## Verify writes and retrieval
+
+After configuring the dependencies and credentials on this page, run this standalone example. It saves user text and searches for that user directly without calling a conversation model
+
+```python lines
+import asyncio
+
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
+from veadk.memory.long_term_memory import LongTermMemory
+
+async def main():
+    memory = LongTermMemory(backend="redis", index="ltm_demo")
+    session = Session(
+        id="memory_check", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(session)
+    result = await memory.search_memory(
+        app_name="ltm_demo", user_id="user_42", query="preferred language"
+    )
+    for entry in result.memories:
+        print(entry.content)
+
+asyncio.run(main())
+```
+
+Results should contain the saved language preference. Managed services may extract memories asynchronously, so a completed write does not guarantee immediate retrieval. An empty result can also indicate permission, network, or service failure; check error logs and service records. The save method does not return a success Boolean

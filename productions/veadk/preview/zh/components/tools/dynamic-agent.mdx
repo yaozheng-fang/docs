@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
 ### 离线模式
 
-当用户明确禁止联网、知识库和任何外部资源访问时，主智能体可以跳过 `collect_resources`，直接调用 `create_agents` 并传入空字符串作为 `collection_id`。此时每个 LLM 节点的 `resources` 必须为空列表，子智能体仅使用自身模型能力完成当前任务。离线模式下不会发起 Skill Hub 关键词检索或其他资源源调用。
+当用户明确禁止检索外部资源但允许模型服务调用时，主智能体可以跳过 `collect_resources`，直接调用 `create_agents` 并传入空字符串作为 `collection_id`。此时每个 LLM 节点的 `resources` 必须为空列表，子智能体仅使用自身模型能力完成当前任务。离线模式下不会发起 Skill Hub 关键词检索或其他资源源调用。
 
 ### 智能体蓝图
 
@@ -211,5 +211,22 @@ LLM 节点是最常用的叶节点，其字段如下：
 - `create_agents` 必须在由 `Runner` 驱动的活跃智能体调用中执行，否则无法注册子智能体并完成移交。
 - 每次 `collect_resources` 的结果只需调用一次 `create_agents`，并在同一次调用中包含全部所需子智能体；调用完成或设置 `handoff_to` 后不应再次调用。
 - 同一会话内多次调用 `collect_resources` 会覆盖同一会话的资源快照；资源快照存储在进程内有界缓存中（最多 128 份），`create_agents` 读取快照后不会使其失效，同一快照可被具有相同请求指纹的后续调用复用。
-- 动态创建的子智能体注册在当前会话的智能体树中，会话结束后不再保留。
+- 动态创建的子智能体不是持久化部署。应用退出时调用 `await create_agent.close()` 释放资源；同一会话重新收集资源会清理此前注册的子智能体，不应假定关闭聊天页面就已经释放服务连接
 - `python_tools` 在当前进程内执行，不做沙箱隔离。
+
+## 调用参数与完成检查
+
+| 工具 | 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `collect_resources` | `skill_hub_keywords` | `list[str] \| None` | `None` | 公共 Skill Hub 查询词，通常为 2–5 个短语；省略时不发起关键词搜索 |
+| `collect_resources` | `tool_context` | `ToolContext \| None` | `None` | 运行时注入，用于关联当前用户与会话 |
+| `create_agents` | `collection_id` | `str` | 必填 | 当前用户的资源收集结果 ID；无外部资源模式可传空字符串 |
+| `create_agents` | `agents` | `list` | 必填 | 按前文结构填写的完整蓝图列表 |
+| `create_agents` | `handoff_to` | `str` | 必填 | 蓝图列表中负责完成任务的智能体名称 |
+| `create_agents` | `tool_context` | `ToolContext \| None` | `None` | 实际调用时必须有活动智能体上下文才能移交任务 |
+
+“离线模式”仅指跳过资源收集，不会把云端模型改成本地模型；模型推理仍可能访问网络。严格禁止任何网络访问时，需要另行配置可离线运行的模型与运行环境
+
+每次收集后将所需蓝图一次性提交是推荐调用流程，重复请求的去重行为不意味着只能使用快照一次。新一轮收集会替换当前会话的资源快照；不要保存旧 `collection_id` 作为长期资源引用
+
+创建结果可能包含部分失败项。检查 `results` 中各项状态以及是否返回 `handoff_to`，没有有效移交目标时不能视为任务已开始执行。使用自定义 `resource_sources`、`leaf_factory` 或 `knowledge_factory` 时，其接口需与当前版本相匹配；普通集成保持默认值即可

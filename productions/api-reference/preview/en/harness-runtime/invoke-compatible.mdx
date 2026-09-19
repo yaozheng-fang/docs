@@ -3,3 +3,13 @@ title: "Compatibility invocation"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /invoke"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/invoke-compatible"
 ---
+
+Use this endpoint for text-only compatibility clients. The body is typically `{"prompt":"Hello"}`; supply the user and session in the `user_id` and `session_id` headers, rather than body fields
+
+Provide both headers explicitly to avoid grouping unrelated calls under default user or session identifiers. The service checks and creates the session, using the loaded agent application name
+
+<Warning>
+Invocation saves the session and executes models and tools, which can incur charges or perform external actions. Resending the same message can repeat these actions
+</Warning>
+
+The response is SSE. Read continuously with `curl -N` and handle in-stream `error` messages. For structured ADK messages, use [Run Harness with SSE](/productions/api-reference/preview/en/harness-runtime/run-sse)

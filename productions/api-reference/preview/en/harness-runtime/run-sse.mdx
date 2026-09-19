@@ -3,3 +3,18 @@ title: "Run Harness with SSE"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /run_sse"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/run-sse"
 ---
+
+Submit `app_name: "harness_agent"`, `user_id`, `session_id`, and `new_message`. Create a session first for standard calls or MCP-only overrides; `streaming: true` requests incremental model output
+
+With general `harness` overrides on KeyAuth deployments, the service waits for completion and sends one SSE event. It reads only text from `new_message.parts` and does not apply `state_delta` or `invocation_id`. Top-level `max_llm_calls` applies only to this general-override path and takes precedence over `harness.max_llm_calls`
+
+<Warning>
+Execution saves session events and can call models and tools. Retries can repeat external actions. Shared OAuth allows only MCP overrides; see the [service overview](/productions/api-reference/preview/en/harness-runtime/overview) for all restrictions
+</Warning>
+
+Each SSE message uses `data: <JSON>` followed by a blank line. Read until the stream closes with `curl -N`, handling text, state, or artifact events as well as `data: {"error":"..."}`. HTTP `200` does not establish execution success. A successful general-override event has this form:
+
+```text
+data: {"content":{"parts":[{"text":"Hello"}]},"partial":false}
+
+```

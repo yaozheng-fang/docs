@@ -3,3 +3,18 @@ title: "流式运行 Harness"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /run_sse"
 en_link: "/productions/api-reference/preview/en/harness-runtime/run-sse"
 ---
+
+使用 `app_name: "harness_agent"`、`user_id`、`session_id` 和 `new_message` 提交消息。普通调用或仅覆盖 MCP 时，应先创建会话；`streaming: true` 请求模型增量输出
+
+KeyAuth 部署传入普通 `harness` 覆盖时，服务等待执行完成后发送单个 SSE 事件，仅提取 `new_message.parts` 中的文本；不会应用 `state_delta` 或 `invocation_id`。顶层 `max_llm_calls` 仅在这类普通覆盖中生效，并优先于 `harness.max_llm_calls`
+
+<Warning>
+运行会保存会话事件，并可能调用模型与工具。重试可能重复产生外部操作。共享 OAuth 仅允许 MCP 覆盖，完整限制见[服务概述](/productions/api-reference/preview/zh/harness-runtime/overview)
+</Warning>
+
+每条 SSE 消息使用 `data: <JSON>` 并以空行分隔。使用 `curl -N` 读取到流结束，同时处理文本、状态或制品事件，以及 `data: {"error":"..."}`；HTTP `200` 不表示执行成功。普通覆盖的成功事件形如：
+
+```text
+data: {"content":{"parts":[{"text":"Hello"}]},"partial":false}
+
+```

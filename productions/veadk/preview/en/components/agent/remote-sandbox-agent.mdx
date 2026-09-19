@@ -1,180 +1,161 @@
 ---
-title: "Remote sandbox sub-agent"
+title: "Remote sandbox agent"
 zh_link: "/productions/veadk/preview/zh/components/agent/remote-sandbox-agent"
 ---
 
-## Overview
+`AgentkitRemoteSandboxAgent` sends a text task to an AgentKit Skill or CodeEnv sandbox and returns progress, tool events, and results. Use it directly as a root agent or as a coordinator's sub-agent
 
-`AgentkitRemoteSandboxAgent` is a native ADK sub-agent that wraps a Skill or CodeEnv sandbox session hosted on AgentKit. It can run as the application's root agent or be registered in an `Agent`'s `sub_agents` list, allowing a coordinator agent to delegate tasks to it via `transfer_to_agent`.
-
-Unlike [sandbox tools](/productions/veadk/preview/en/components/tools/code-sandbox) (such as `run_code` and `execute_skills`), which are mounted as individual tools that the model calls during inference, `AgentkitRemoteSandboxAgent` is a complete sub-agent that receives a text task and executes it end to end in the remote sandbox. Tool calls, streaming progress, and the final result are returned as events without requiring the local coordinator to orchestrate each tool invocation.
-
-<Note>
-`AgentkitRemoteSandboxAgent` shares the same infrastructure and credential configuration as the code sandbox. Environment variables, Tool ID, and other prerequisites are described in the [Code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox) page and are not repeated here.
-</Note>
-
-## When to use
-
-Suitable for the following scenarios:
-
-- You need to delegate a complete coding, skill-execution, or file-operation task to a remote sandbox rather than splitting it into multiple tool calls;
-- You need a sub-agent that can receive a task transfer and return results directly, forming a multi-agent topology with a coordinator agent;
-- Sandbox tasks are long-running and you want to observe progress through streaming events.
+Unlike [code sandbox tools](/productions/veadk/preview/en/components/tools/code-sandbox), this entry delegates an entire task and lets the remote agent choose the steps. `run_code` and `execute_skills` are individual tools called by the current agent
 
 ## Dependencies and prerequisites
 
-<Warning>
-Before using:
+- Install VeADK and prepare an accessible AgentKit Tool ID, region, and account credentials
+- A Skill sandbox must expose a compatible A2A service; a CodeEnv image must support Codex Worker protocol v1 and `tool_events`
+- The caller must reach both the AgentKit control plane and the returned sandbox session endpoint
+- A local coordinator also needs [model configuration](/productions/veadk/preview/en/get-started/quickstart); when calling the remote agent directly, the remote service supplies model execution
 
-1. Configure Volcengine AK / SK;
-2. Configure the AgentKit Tool ID;
-3. Ensure the remote sandbox image or skill service meets protocol requirements.
+<Warning>
+These examples create or reuse cloud sandbox sessions and may incur resource charges. Sandboxes can execute code, commands, and file operations and access reachable services. Use trusted images, restrict data, network, and permissions, and confirm that task content may be sent to the sandbox
 </Warning>
 
-Import path:
+For Volcengine, configure the following and replace `CodeEnv` with the actual tool type:
 
-```python lines
-from veadk import AgentkitRemoteSandboxAgent
+```bash  lines
+export VOLCENGINE_ACCESS_KEY="<access-key>"
+export VOLCENGINE_SECRET_KEY="<secret-key>"
+export AGENTKIT_TOOL_REGION="cn-beijing"
+export AGENTKIT_TOOL_ID="<tool-id>"
+export AGENTKIT_TOOL_TYPE="CodeEnv"
 ```
 
-`AgentkitRemoteSandboxAgent` does not make network requests during construction; network connections are established on demand during the first run.
+For BytePlus, set `CLOUD_PROVIDER=byteplus` and the appropriate region, and confirm that the account has a compatible Tool service. This entry currently reads credentials from `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`; changing platforms does not switch it to `BYTEPLUS_*`. Supply target-platform credentials through those variable names. Endpoint overrides are listed below
+
+Construction makes no network request; the first run establishes the connection
 
 ## Usage
 
-### As a sub-agent
+### As a root agent
 
-Register `AgentkitRemoteSandboxAgent` in the coordinator agent's `sub_agents` list. The coordinator agent delegates tasks to the sandbox sub-agent via `transfer_to_agent` during inference, and the sub-agent executes the task in the remote sandbox and returns results directly.
+Save this script as `remote_sandbox.py` and run `python remote_sandbox.py` from the configured terminal:
 
-```python title="remote_sandbox_subagent.py" lines
+```python remote_sandbox.py lines
+import asyncio
 import os
-
-from veadk import Agent, Runner
+from veadk import AgentkitRemoteSandboxAgent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
-from veadk import AgentkitRemoteSandboxAgent
 
 sandbox = AgentkitRemoteSandboxAgent(
-    name="sandbox",
-    description="Execute tasks requiring remote skills, Python, commands, or file operations, and report the process and results.",
-    tool_id=os.getenv("AGENTKIT_TOOL_ID"),
+    name="remote_sandbox",
+    description="Run code and skills in the remote sandbox.",
+    tool_id=os.environ["AGENTKIT_TOOL_ID"],
     tool_type=os.getenv("AGENTKIT_TOOL_TYPE") or None,
 )
 
+async def main():
+    runner = Runner(agent=sandbox, short_term_memory=ShortTermMemory())
+    print(await runner.run(
+        messages="Calculate the sum of integers from 1 to 100 using Python.",
+        session_id="remote-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+A successful run prints the final remote result; the sum in this example should be `5050`. The example explicitly supplies short-term memory so `Runner` can create a session for this root agent
+
+### As a sub-agent
+
+A coordinator chooses whether to transfer the task. Give the sandbox a specific `description` so the coordinator can recognize suitable work
+
+```python coordinator.py lines
+import asyncio
+import os
+from veadk import Agent, AgentkitRemoteSandboxAgent, Runner
+
+sandbox = AgentkitRemoteSandboxAgent(
+    name="sandbox",
+    description="Execute tasks that require remote code, files, or skills.",
+    tool_id=os.environ["AGENTKIT_TOOL_ID"],
+    tool_type=os.getenv("AGENTKIT_TOOL_TYPE") or None,
+)
 coordinator = Agent(
     name="coordinator",
     instruction=(
-        "Understand the user's request. When code execution, file operations, "
-        "or sandbox skills are needed, use transfer_to_agent to delegate the "
-        "task to sandbox. The sandbox will display the tool process and answer "
-        "the user directly; no need to repeat its summary."
+        "Answer general questions directly. Transfer tasks that need code "
+        "execution to sandbox using transfer_to_agent."
     ),
     sub_agents=[sandbox],
 )
 
-runner = Runner(agent=coordinator, short_term_memory=ShortTermMemory())
+async def main():
+    print(await Runner(agent=coordinator).run(
+        messages="Use Python to calculate the sum of integers from 1 to 100.",
+        session_id="coordinator-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-### As a root agent
-
-You can also use `AgentkitRemoteSandboxAgent` directly as the application's root agent. In this mode there is no local coordinator agent; the user's text task is executed directly in the remote sandbox.
-
-```python title="remote_sandbox_root.py" lines
-import os
-
-from veadk import AgentkitRemoteSandboxAgent
-
-root_agent = AgentkitRemoteSandboxAgent(
-    name="remote_sandbox",
-    description="Execute remote skills, Python, commands, or file operations, and report the process and results.",
-    tool_id=os.getenv("AGENTKIT_TOOL_ID"),
-    tool_type=os.getenv("AGENTKIT_TOOL_TYPE") or None,
-)
-```
+Run `python coordinator.py`. The coordinator can delegate through `transfer_to_agent`, after which the sandbox returns the result directly. Transfer is a model decision; use the root-agent entry when a task must go to the sandbox
 
 ## Sandbox types
 
-`AgentkitRemoteSandboxAgent` supports two remote sandbox types, specified by the `tool_type` parameter. When not explicitly set, the framework auto-discovers the type through the AgentKit control plane's `GetTool` API.
-
-| Type | Description |
+| `tool_type` | Description |
 | :--- | :--- |
-| `Skill` | Interacts with the skill sandbox via the A2A protocol. Suitable for skill workflows hosted in the AgentKit Skills Sandbox. |
-| `CodeEnv` | Interacts with the code execution sandbox via the Codex Worker protocol. Suitable for code generation, command execution, and file operations. The CodeEnv sandbox image must support Codex Worker protocol v1 and the `tool_events` capability. |
+| `Skill` | Runs skill workflows through A2A |
+| `CodeEnv` | Runs code, commands, and file tasks through Codex Worker |
 
-<Note>
-Private tools must explicitly specify `tool_type`. Auto-discovery only applies to tools whose control-plane type is `Skill` or `CodeEnv`; for compatible custom tools with a different type, you must explicitly specify a matching type.
-</Note>
+When `tool_type` is omitted, AgentKit `GetTool` discovers it. Specify the type for private tools or compatible custom tools that report a different type. `AGENTKIT_TOOL_TYPE` is read explicitly by these examples, not automatically by the agent
 
 ## Parameters
 
-`AgentkitRemoteSandboxAgent` inherits from `BaseAgent`. The following are constructor parameters:
-
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `name` | `str` | — | Agent name, unique within the application. |
-| `description` | `str` | — | Agent description, used by the coordinator agent to decide when to transfer tasks. |
-| `tool_id` | `str \| None` | `None` | AgentKit Tool ID. When not specified, read from the `AGENTKIT_TOOL_ID` environment variable. |
-| `tool_type` | `Literal["Skill", "CodeEnv"] \| None` | `None` | Sandbox type. Auto-discovered when not specified. |
-| `request_timeout` | `float` | `900` | Per-task execution timeout, in seconds. Range: 0–86000. |
-| `expiry_buffer` | `float` | `90` | Session lease expiry buffer, in seconds. Range: 0–86400. |
-| `ready_timeout` | `float` | `120` | Timeout for waiting the sandbox session to become ready, in seconds. Must be greater than 0. |
-| `ttl` | `int` | `1800` | Sandbox session time-to-live, in seconds. Range: 60–86400. |
-| `prefer_internal_endpoint` | `bool` | `False` | Whether to prefer the internal endpoint when connecting to the sandbox. |
-| `endpoint` | `str \| None` | `None` | Pre-provisioned session endpoint URL for local testing. When set, `tool_type` must also be explicitly specified, and control-plane session management is bypassed. |
-| `api_key` | `SecretStr \| None` | `None` | Sandbox API key for data-plane authentication. When set, sent as the `X-API-Key` header. |
+| `name` | `str` | Required | Agent name, unique within the application |
+| `description` | `str` | `""` | Capability description used by the coordinator for transfers |
+| `tool_id` | `str \| None` | `None` | Falls back to `AGENTKIT_TOOL_ID` |
+| `tool_type` | `Literal["Skill", "CodeEnv"] \| None` | `None` | Automatically discovered when omitted |
+| `request_timeout` | `float` | `900` | Task timeout in seconds, greater than 0 and less than 86000 |
+| `expiry_buffer` | `float` | `90` | Session lease margin in seconds, at least 0 and less than 86400 |
+| `ready_timeout` | `float` | `120` | Session readiness timeout in seconds, greater than 0 |
+| `ttl` | `int` | `1800` | Session lifetime in seconds, from 60 to 86400 |
+| `prefer_internal_endpoint` | `bool` | `False` | Prefers an internal endpoint reachable from the caller |
+| `endpoint` | `str \| None` | `None` | Pre-provisioned session endpoint for testing or self-managed sessions; requires `tool_type` and bypasses control-plane session management |
+| `api_key` | `SecretStr \| None` | `None` | Data-plane access key sent as `X-API-Key` |
 
-<Warning>
-- `request_timeout + expiry_buffer + 2 * ready_timeout` must be less than 86400 seconds, otherwise construction will raise an error.
-- When `endpoint` is specified, `tool_type` must also be explicitly set, otherwise construction will raise an error.
-</Warning>
+`request_timeout + expiry_buffer + 2 * ready_timeout` must be less than 86400 seconds, or initialization fails. The table lists task-integration parameters; standard ADK `BaseAgent` callback configuration is also available
 
 ## Environment variables
 
-`AgentkitRemoteSandboxAgent` uses the following environment variables, shared with the [Code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox):
-
-| Environment variable | Default | Description |
+| Variable | Default | Description |
 | :--- | :--- | :--- |
-| `AGENTKIT_TOOL_ID` | — | AgentKit Tool ID, used as the default Tool ID for the sandbox session. |
-| `AGENTKIT_TOOL_TYPE` | — | Sandbox type, either `Skill` or `CodeEnv`. |
-| `AGENTKIT_TOOL_REGION` | `cn-beijing` | AgentKit control-plane region. |
-| `AGENTKIT_TOOL_HOST` | — | AgentKit control-plane host, used to override the default endpoint. |
-| `AGENTKIT_TOOL_SERVICE_CODE` | — | AgentKit control-plane ServiceCode, used to target PPE / STG or other environments. |
-| `AGENTKIT_TOOL_SCHEME` | — | AgentKit control-plane scheme, either `http` or `https`. |
-| `VOLCENGINE_ACCESS_KEY` | — | Volcengine AccessKey. |
-| `VOLCENGINE_SECRET_KEY` | — | Volcengine SecretKey. |
+| `AGENTKIT_TOOL_ID` | Unset | Default Tool ID |
+| `AGENTKIT_TOOL_REGION` | Volcengine: `cn-beijing`; BytePlus: `ap-southeast-1` | Control-plane region; Volcengine can also inherit `REGION` |
+| `AGENTKIT_TOOL_HOST` | SDK endpoint for the environment | Explicit control-plane host override; use an address supplied by the service |
+| `AGENTKIT_TOOL_SERVICE_CODE` | `agentkit` | Control-plane service identifier; overriding it also affects the derived endpoint |
+| `AGENTKIT_TOOL_SCHEME` | `https` | Control-plane protocol, `http` or `https` |
+| `VOLCENGINE_ACCESS_KEY` | Unset | AccessKey variable read by this entry |
+| `VOLCENGINE_SECRET_KEY` | Unset | SecretKey variable read by this entry |
+| `CLOUD_PROVIDER` | Volcengine | `byteplus` selects the BytePlus default region |
+
+Credentials are resolved from session state, environment variables, then the environment's IAM Role. A bound IAM Role can supply temporary credentials. Do not expose cloud credentials in session state as ordinary user-visible business data
 
 ## Session management
 
-`AgentkitRemoteSandboxAgent` automatically manages remote sandbox sessions at runtime:
+The same application, user, session, and agent can reuse a valid remote session, retaining sandbox files and runtime state. `ttl` defaults to 30 minutes and allows up to 24 hours. Files must not be assumed to survive expiration or session replacement; save required outputs to persistent storage
 
-- A stable logical session key is derived from the application name, user ID, and session ID, and the corresponding physical session is created or reused on the sandbox side;
-- The `ttl` parameter controls the session's time-to-live; sessions are automatically released after expiry;
-- Concurrent calls on the same logical session are serialized to prevent duplicate executions on the same session;
-- The readiness wait is governed by `ready_timeout`; an error is raised on timeout.
-
-<Note>
-The default session time-to-live is 1800 seconds (30 minutes), with a maximum of 86400 seconds (24 hours). Sessions can be reused within their lifetime, preserving the sandbox's file and runtime environment state across calls.
-</Note>
+An agent instance rejects overlapping calls to the same logical session instead of queuing them. Serialize submissions per session. Readiness and execution are controlled by `ready_timeout` and `request_timeout`, respectively
 
 ## Inbound authentication
 
-When the coordinator agent's runtime context contains inbound authentication credentials, `AgentkitRemoteSandboxAgent` forwards them to the remote sandbox as an `inbound_auth` request header, enabling sandbox workflows to execute with the original user's identity. When no inbound credentials are present in the current request, the header is not attached and the sandbox executes anonymously.
+When the current context contains inbound credentials, the agent forwards them through the `inbound_auth` header to preserve the original user identity. Without those credentials, the header is omitted. This does not bypass the sandbox's own access authentication: `X-API-Key`, configured by `api_key`, serves a separate purpose
 
-<Note>
-For the source and configuration of inbound authentication credentials, see [Inbound authentication](/productions/veadk/preview/en/components/security/inbound).
-</Note>
-
-## Security boundaries
-
-<Warning>
-The remote sandbox can execute arbitrary code, commands, and file operations, and can access services reachable from the sandbox network. Before running, confirm that the sandbox source is trusted and restrict the data, network, and permissions the sandbox can access. Do not include long-term credentials in task instructions or environment variables; use the sandbox's supported credential management for any credentials needed.
-</Warning>
+Forward identity credentials only to trusted sandboxes. See [inbound authentication](/productions/veadk/preview/en/components/security/inbound)
 
 ## Error handling
 
-Errors that occur during sandbox execution are returned as events and do not crash the application. Common error situations include:
+Readiness timeouts, execution timeouts, and protocol incompatibility usually return events containing `error_message`. Concurrent-call conflicts, initialization failures, and cancellation may still propagate to the caller. Handle both event errors and call exceptions
 
-- The sandbox session did not become ready within the readiness timeout;
-- Task execution timed out;
-- The sandbox image protocol is incompatible;
-- A call is already active on the same session.
-
-When a task is interrupted due to timeout or cancellation, the framework attempts to notify the remote sandbox to cancel the current task, preventing unnecessary execution.
+`Runner.run` returns text only. Use `Runner.run_async` to inspect progress and distinguish errors from normal answers. Timeouts and cancellation trigger a best-effort remote stop; they do not prove that an operation was never executed. Confirm remote state before retrying a task with side effects

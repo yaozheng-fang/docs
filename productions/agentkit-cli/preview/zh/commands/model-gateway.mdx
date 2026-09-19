@@ -9,6 +9,10 @@ en_link: "/productions/agentkit-cli/preview/en/commands/model-gateway"
   Model Gateway 会创建或使用云端网关资源，并保存模型提供方 API Key。执行前确认账号、区域、网关模式与密钥来源；不要把真实 API Key 写入仓库、脚本或命令历史。
 </Warning>
 
+先配置云端管理凭证并选择区域，再启用网关、创建提供方和调用方。提供方 API Key 用于网关调用上游模型，调用方 API Key 用于应用访问网关，二者不能互换
+
+示例使用火山方舟；执行前在同一终端导出 `MODEL_PROVIDER_API_KEY`，并确认模型在账号中已开通。BytePlus 需显式选择 `--provider byteplus`，同时使用对应区域的网关、ModelArk 地址和模型授权
+
 ## model-gateway activate
 
 启用 Model Gateway。若当前区域已经存在 Model Gateway，命令会返回已有资源；若资源处于失败状态，命令会报错。创建后 CLI 会等待网关进入可用状态。
@@ -41,7 +45,7 @@ agentkit mgw activate --apig-gateway-id <apig-gateway-id> --json
 ```bash lines
 agentkit model-gateway provider create ark \
   --base-url https://ark.cn-beijing.volces.com/api/v3 \
-  --api-key ${MODEL_PROVIDER_API_KEY} \
+  --api-key "$MODEL_PROVIDER_API_KEY" \
   --model deepseek-v4-flash-ga-260731
 ```
 
@@ -193,6 +197,10 @@ agentkit model-gateway consumer update app-server \
 agentkit model-gateway consumer delete app-server --yes
 ```
 
+<Warning>
+`consumer show` 和 `show-example` 的输出包含调用方 API Key。不要把完整输出放入公开日志、工单或版本库；分享示例前替换其中的凭证
+</Warning>
+
 ## model-gateway show-example
 
 根据提供方和调用方生成调用示例。命令会读取提供方访问地址、协议、可访问模型以及调用方 API Key，然后输出所选类型的示例。
@@ -217,3 +225,5 @@ agentkit mgw show-example \
 ```
 
 `agentkit` 示例会输出可写入当前项目的模型环境变量，例如 `MODEL_AGENT_NAME`、`MODEL_AGENT_API_BASE` 与 `MODEL_AGENT_API_KEY`。
+
+`show-example` 只生成示例，不执行模型请求。使用生成示例发起一次测试后，收到模型回答才说明网关鉴权、模型授权和上游凭证都可用；测试会产生模型用量

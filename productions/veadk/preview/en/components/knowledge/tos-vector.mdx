@@ -18,12 +18,18 @@ pip install "veadk-python[extensions]"
 
 ## Usage
 
+Before running, configure `MODEL_EMBEDDING_NAME`, `MODEL_EMBEDDING_DIM`, `MODEL_EMBEDDING_API_BASE`, and `MODEL_EMBEDDING_API_KEY`. The `extensions` extra includes llama-index, embedding adapters, and vector-store connectors. Text is sent to the configured embedding service. For BytePlus or another provider, explicitly set the matching endpoint, model, and credentials; the default Ark endpoint does not automatically switch
+
+Also provide Volcengine AK/SK, account ID, vector-bucket name, and region. Initialization creates or accesses the bucket and index, requires permissions, and may incur charges. Content and vectors are sent to TOS
+
 ```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(backend="tos_vector", index="company_faq")
-kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+assert kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+for entry in kb.search("annual leave", top_k=3):
+    print(entry.content)
 
 agent = Agent(
     name="demo",
@@ -35,6 +41,8 @@ agent = Agent(
 You can also pass credentials and config explicitly via `backend_config`:
 
 ```python lines
+import os
+
 from veadk.knowledgebase import KnowledgeBase
 from veadk.configs.database_configs import TOSVectorConfig
 
@@ -43,8 +51,8 @@ kb = KnowledgeBase(
     index="company_faq",
     backend_config={
         "index": "company_faq",
-        "volcengine_access_key": "your-ak",
-        "volcengine_secret_key": "your-sk",
+        "volcengine_access_key": os.environ["VOLCENGINE_ACCESS_KEY"],
+        "volcengine_secret_key": os.environ["VOLCENGINE_SECRET_KEY"],
         "tos_vector_bucket_name": "your-vector-bucket",
         "tos_vector_account_id": "your-account-id",
         "tos_vector_config": TOSVectorConfig(
@@ -56,6 +64,20 @@ kb = KnowledgeBase(
 ```
 
 ## Parameters
+
+### KnowledgeBase parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | Set to `tos_vector` or pass a backend instance |
+| `backend_config` | `dict` | `{}` | Must include index when nonempty; does not merge the outer index |
+| `index` | `str` | `""` | Index name; falls back to app_name when no configuration dictionary is supplied |
+| `app_name` | `str` | `""` | Fallback for index; not a user authorization filter |
+| `top_k` | `int` | `10` | Default result count; search(top_k=0) uses this value |
+| `name` | `str` | `"user_knowledgebase"` | Knowledge-base name shown to the agent |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | Explains the knowledge base to the agent |
+| `enable_profile` | `bool` | `False` | Enables document profiles; generate profile files first, or leave disabled for ordinary retrieval |
+| `query_with_user_profile` | `bool` | `False` | Uses the agent’s Viking long-term memory profile to guide queries; the knowledge backend itself need not be Viking |
 
 ### Constructor parameters
 
@@ -69,12 +91,12 @@ kb = KnowledgeBase(
 | `tos_vector_bucket_name` | `str \| None` | Read from env var `DATABASE_TOS_VECTOR_BUCKET` | TOS vector bucket name. |
 | `tos_vector_account_id` | `str \| None` | Read from env var `DATABASE_TOS_VECTOR_ACCOUNT_ID` | Volcengine account ID. |
 | `tos_vector_config` | `TOSVectorConfig` | Read automatically from `DATABASE_TOS_VECTOR_*` env vars | TOS vector client config. |
-| `session_token` | `str` | `""` | STS temporary-credential token. |
+| `session_token` | `str` | `""` | Not forwarded by this backend; use tos_vector_config.security_token for STS |
 | `embedding_config` | `EmbeddingModelConfig` | Read automatically from `MODEL_EMBEDDING_*` env vars | Embedding model config. |
 
 ### TOS vector client config
 
-`tos_vector_config` is a `TOSVectorConfig` with env prefix `DATABASE_TOS_VECTOR_` (common fields shown):
+`tos_vector_config` is a `TOSVectorConfig` with env prefix `DATABASE_TOS_VECTOR_`:
 
 | Field | Env var | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
@@ -87,10 +109,18 @@ kb = KnowledgeBase(
 | `socket_timeout` | `DATABASE_TOS_VECTOR_SOCKET_TIMEOUT` | `int` | `30` | Socket timeout (seconds). |
 | `enable_verify_ssl` | `DATABASE_TOS_VECTOR_ENABLE_VERIFY_SSL` | `bool` | `true` | Whether to verify the SSL certificate. |
 | `dns_cache_time` | `DATABASE_TOS_VECTOR_DNS_CACHE_TIME` | `int` | `15` | DNS cache time (seconds). |
+| `proxy_host` | `DATABASE_TOS_VECTOR_PROXY_HOST` | `str \| None` | `None` | Proxy host |
+| `proxy_port` | `DATABASE_TOS_VECTOR_PROXY_PORT` | `int \| None` | `None` | Proxy port |
+| `proxy_username` | `DATABASE_TOS_VECTOR_PROXY_USERNAME` | `str \| None` | `None` | Proxy username |
+| `proxy_password` | `DATABASE_TOS_VECTOR_PROXY_PASSWORD` | `str \| None` | `None` | Proxy password |
+| `high_latency_log_threshold` | `DATABASE_TOS_VECTOR_HIGH_LATENCY_LOG_THRESHOLD` | `int` | `100` | High-latency log threshold in TOS SDK units |
+| `credentials_provider` | `DATABASE_TOS_VECTOR_CREDENTIALS_PROVIDER` | `object \| None` | `None` | TOS SDK credential provider; configure an object in code |
+| `except100_continue_threshold` | `DATABASE_TOS_VECTOR_EXCEPT100_CONTINUE_THRESHOLD` | `int` | `65536` | Request body threshold for 100-continue |
+| `user_agent_product_name` | `DATABASE_TOS_VECTOR_USER_AGENT_PRODUCT_NAME` | `str \| None` | `None` | User-Agent product name |
+| `user_agent_soft_name` | `DATABASE_TOS_VECTOR_USER_AGENT_SOFT_NAME` | `str \| None` | `None` | User-Agent software name |
+| `user_agent_soft_version` | `DATABASE_TOS_VECTOR_USER_AGENT_SOFT_VERSION` | `str \| None` | `None` | User-Agent software version |
+| `user_agent_customized_key_values` | `DATABASE_TOS_VECTOR_USER_AGENT_CUSTOMIZED_KEY_VALUES` | `dict[str, str] \| None` | `None` | Custom User-Agent key-value pairs |
 
-<Note>
-`TOSVectorConfig` also exposes advanced fields such as proxy settings (`proxy_host`/`proxy_port`/`proxy_username`/`proxy_password`), `high_latency_log_threshold`, and `user_agent_*`; the defaults are usually fine.
-</Note>
 
 ### Embedding config
 
@@ -123,3 +153,7 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 <Warning>
 `add_from_directory` and `add_from_files` are still being refined and may have gaps when handling some files (e.g., documents containing images). Text ingestion (`add_from_text`) is stable.
 </Warning>
+
+Global BytePlus configuration can map AK/SK, but does not automatically switch this backend’s TOS Vector endpoint. Explicitly configure a supported endpoint and region for the target service. Set `DATABASE_TOS_VECTOR_SECURITY_TOKEN` for a temporary credential token; the outer `session_token` has no effect. Existing indexes must match the embedding dimension; create a new index and reimport when changing models or dimensions
+
+The example search should return the annual-leave policy. For empty results, check successful ingestion, matching embedding dimensions, completed server processing, network access, and permissions. Managed ingestion may not be immediately searchable. Running the configured Agent also requires model credentials

@@ -9,6 +9,17 @@ A2UI lets an agent return **rich, interactive UI** — cards, forms, row/column 
   A2UI needs the optional component package: `pip install "veadk-python[a2ui]"`.
 </Note>
 
+## Project setup
+
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model) and use a tool-capable model with the ADK runtime. Create the files below; use the next example for `agent.py` and put `from . import agent` in `__init__.py`
+
+```text
+agents/
+└── ui_agent/
+    ├── __init__.py
+    └── agent.py
+```
+
 ## Enable
 
 Set `enable_a2ui=True` when creating the agent, and it can reply with UI when appropriate. It uses a built-in basic component set by default (card, text, button, divider, and other common components):
@@ -16,7 +27,7 @@ Set `enable_a2ui=True` when creating the agent, and it can reply with UI when ap
 ```python title="agent.py" lines
 from veadk import Agent
 
-agent = Agent(
+root_agent = Agent(
     name="ui_agent",
     instruction="When the answer is naturally visual (a status card, summary, options, a small form), reply with rich UI; otherwise reply in plain text.",
     enable_a2ui=True,
@@ -26,6 +37,15 @@ agent = Agent(
 The model decides whether to return UI based on the `instruction` — stating *when* to use UI works best.
 
 ## See it rendered
+
+Run from the parent directory of `agents`:
+
+```bash
+veadk frontend --dev --agents-dir ./agents --open
+```
+
+Select `ui_agent` and ask for three tasks displayed as cards. A successful response includes a structured card. If only text appears, check whether the model called the A2UI tool and whether the frontend recognized its components. Models do not guarantee UI output on every turn
+
 
 A2UI is rendered by the frontend. Launch [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend) and chat with the agent to see the returned cards and other components.
 
@@ -41,3 +61,37 @@ Pass your catalog to the agent's `a2ui_catalog` to enable it. For the frontend r
 <Note>
   Components without a renderer fall back to a collapsible JSON view, so a mismatch never breaks the UI.
 </Note>
+
+### Catalog example
+
+Save this script as `create_catalog.py` and run it in `agents/ui_agent`. It adds `RevenueChart` to the basic catalog and writes `catalog.json`, which the agent discovers at startup
+
+```python title="create_catalog.py" lines
+import copy
+import json
+from pathlib import Path
+from veadk.a2ui.catalog import get_basic_catalog
+
+catalog, _ = get_basic_catalog()
+schema = copy.deepcopy(catalog.catalog_schema)
+schema["$id"] = "https://example.com/catalogs/finance.json"
+schema["catalogId"] = "https://example.com/catalogs/finance.json"
+schema["components"]["RevenueChart"] = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "component": {"const": "RevenueChart"},
+        "series": {"type": "array", "items": {"type": "number"}},
+    },
+    "required": ["id", "component", "series"],
+    "additionalProperties": False,
+}
+Path("catalog.json").write_text(json.dumps(schema, indent=2), encoding="utf-8")
+```
+
+Replace the sample catalog ID with your own identifier. Register a matching `RevenueChart` renderer in Frontend and rebuild it. A catalog does not install frontend components; the JSON fallback for unknown components is diagnostic output, not successful component rendering
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `enable_a2ui` | `bool` | `False` | Attach the A2UI toolset |
+| `a2ui_catalog` | Path, `BaseA2UICatalog`, `A2uiCatalog`, or `(A2uiCatalog, examples)` | `None` | Discovers `catalog.json` in the agent directory, otherwise uses the basic catalog; relative paths resolve from the agent directory |

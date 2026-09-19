@@ -154,3 +154,13 @@ agentkit department delete --user-pool-id pool-example --department-id dept-exam
 ```
 
 Membership changes return a result for each user. Partial failures produce a nonzero exit status; successful changes are not rolled back
+
+## Verify hierarchy and membership changes
+
+Save the department ID returned by creation, then query the parent's immediate children to confirm the hierarchy:
+
+```bash lines
+agentkit department list --user-pool-id pool-example --parent-department-id root --name Engineering --json
+```
+
+This query does not recursively return the full organization tree or list department members. Membership commands need existing user IDs in the same pool. Check per-user results and retry only failures. `remove-users` removes department membership without deleting user accounts

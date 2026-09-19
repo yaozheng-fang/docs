@@ -3,3 +3,11 @@ title: "将会话写入记忆"
 openapi: "/productions/api-reference/openapi/zh/agent-api-server.json PATCH /apps/{app_name}/users/{user_id}/memory"
 en_link: "/productions/api-reference/preview/en/agent-api-server/update-memory"
 ---
+
+先确认服务已配置记忆后端，并使用同一应用、用户下的有效 `sessionId`。未配置记忆服务返回 `400`，会话不存在返回 `404`
+
+<Warning>
+此操作将会话事件交给已配置的记忆服务保存或处理，后续检索可能使用这些内容。提交前确认会话包含的数据适合写入该后端
+</Warning>
+
+成功返回 JSON `null`，表示写入调用已完成；返回体不包含提取出的记忆，也不保证后续检索一定命中这些内容

@@ -41,10 +41,15 @@ model:
     api_key: your-api-key-here
 ```
 
+For BytePlus, explicitly configure the media model name, API base URL, and key for your enabled service. Do not assume `CLOUD_PROVIDER` overrides media configuration. Capabilities and parameter limits depend on the selected model service. The editing model uses separate `MODEL_EDIT_*` settings.
+
+Before running the example, set `SOURCE_IMAGE_URL` to a real image URL accessible to the editing service. The image is sent to the model service for processing.
+
 ## Usage
 
 ```python title="examples/tools/image_edit/agent.py" lines
 import asyncio
+import os
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
@@ -63,7 +68,7 @@ runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
 
 async def main():
     response = await runner.run(
-        "In this image https://example.com/cat.png, replace the cat with a puppy"
+        f"In {os.environ['SOURCE_IMAGE_URL']}, replace the cat with a puppy"
     )
     print(response)
 
@@ -71,3 +76,19 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Parameters and results
+
+`image_edit(params, tool_context)` is asynchronous. It requires `params: list[dict]`, while `tool_context: ToolContext` is injected during execution. Each request supports:
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `origin_image` | `str` | Required | Source URL or `data:image/...;base64,...` |
+| `prompt` | `str` | Required | Editing instruction |
+| `image_name` | `str` | `generated_image_{idx}` | Result name; use distinct names in a batch |
+| `response_format` | `str` | `"url"` | `url` or `b64_json` |
+| `guidance_scale` | `float` | `2.5` | Prompt influence; SeedEdit 3.0 supports 1.0–10.0 |
+| `watermark` | `bool` | `True` | Add a watermark |
+| `seed` | `int` | `-1` | SeedEdit 3.0 supports -1 to 2147483647; -1 selects a random seed |
+
+The result contains `status`, `success_list`, and `error_list`. Success items map names to image URLs. `status` can be `success` when some items failed, so inspect the error list as well. `b64_json` results are uploaded to TOS first and require writable object storage configuration; the default `url` skips that upload. A fixed seed does not guarantee identical images across model versions.

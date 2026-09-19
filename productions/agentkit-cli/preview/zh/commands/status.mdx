@@ -17,3 +17,7 @@ agentkit status --config-file agentkit.yaml --verbose
 ```
 
 输出会包含可用的端点、容器 ID、运行时 ID、镜像、运行时间和健康检查结果。详细元数据以 JSON 格式打印，便于排查配置或运行时状态。
+
+在运行过 `deploy` 或 `launch` 的项目目录使用此命令。它读取当前配置中的部署记录，不会列出账号下的全部运行时；按名称或 ID 查询其他运行时应使用 [`runtime show`](/productions/agentkit-cli/preview/zh/commands/runtime#runtime-show)
+
+若未发现部署记录，先确认工作目录和 `--config-file`，不要把“尚未部署”理解为云端服务已被删除。状态正常仍需通过应用调用验证模型、工具和业务逻辑

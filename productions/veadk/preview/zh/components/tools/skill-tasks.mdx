@@ -86,7 +86,7 @@ if __name__ == "__main__":
 | `input-required` | 任务需要额外输入。 |
 | `auth-required` | 任务需要身份认证。 |
 
-`working` 为非终态，其余状态为终态。任务达到终态后，再次调用 `poll_skill` 返回的快照不再变化。
+`submitted` 与 `working` 表示任务尚未完成，`unknown` 表示无法确定当前状态。`completed`、`failed`、`canceled`、`rejected` 为结束状态；`input-required` 与 `auth-required` 表示流程需要外部处理，不能当作成功。VeADK 的等待工具会在后两种状态停止等待，但这不意味着 A2A 协议禁止任务后续继续变化。`poll_skill` 每次重新查询服务端，不保证返回不可变快照
 
 ## invoke_skill
 
@@ -105,7 +105,7 @@ def invoke_skill(
 | :--- | :--- | :--- | :--- |
 | `workflow_prompt` | `str` | — | 技能工作流指令。 |
 | `tool_context` | `ToolContext` | `None` | 工具运行时上下文，由 VeADK 自动注入；调用时必须提供。 |
-| `timeout` | `int` | `1800` | 任务执行的超时时间，单位为秒。取值范围为 1–1800。 |
+| `timeout` | `int` | `1800` | 创建请求的等待预算，单位为秒，范围 1–1800；不代表远端任务在此时自动取消。 |
 
 <Note>
 `tool_context` 在签名中标记为可选，但实际调用时必须提供，否则会报错。VeADK 在智能体运行时自动注入该参数，无需手动传入。
@@ -137,5 +137,11 @@ def poll_skill(
 ## 安全边界
 
 <Warning>
-`invoke_skill` 和 `poll_skill` 在远端技能沙箱中执行工作流，沙箱中的代码可以访问沙箱网络可达的服务并读写文件。运行前应确认技能来源可信，并限制沙箱可访问的数据、网络和权限。入站身份凭证（凭证键 `inbound_auth`）会以 `inbound_auth` 请求头转发给技能沙箱，使沙箱中的工作流能够以原始用户身份执行；当前请求未携带入站凭证时不附加该请求头，沙箱以匿名方式执行。入站身份凭证的来源与配置方式参见[入站认证](/productions/veadk/preview/zh/components/security/inbound)。
+`invoke_skill` 和 `poll_skill` 在远端技能沙箱中执行工作流，沙箱中的代码可以访问沙箱网络可达的服务并读写文件。运行前应确认技能来源可信，并限制沙箱可访问的数据、网络和权限。入站身份凭证（凭证键 `inbound_auth`）会以 `inbound_auth` 请求头转发给技能沙箱，使沙箱中的工作流能够以原始用户身份执行；当前请求未携带入站凭证时不附加该请求头，不转发该用户身份，但访问沙箱仍需有效的云服务凭证与权限。入站身份凭证的来源与配置方式参见[入站认证](/productions/veadk/preview/zh/components/security/inbound)。
 </Warning>
+
+## 任务查询的上下文
+
+`invoke_skill` 返回前仍需建立沙箱会话并完成一次网络请求，因此非阻塞仅指不等待整个工作流结束。查询时保留原任务 `id`，使用相同的 Tool ID、用户和会话上下文；更换会话后不能假定仍能访问同一任务
+
+状态查询不创建新任务。应用应限制轮询频率并在 `input-required` 或 `auth-required` 时处理所需输入或授权；不要反复提交相同工作流。`completed` 后还需读取任务的输出或产物，不能仅凭任务 ID 或状态字符串交付结果

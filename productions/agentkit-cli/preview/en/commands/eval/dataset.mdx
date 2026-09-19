@@ -9,6 +9,21 @@ The `eval dataset` command group manages evaluation sets: list, show, create, up
 These subcommands are also available as top-level aliases, so the `eval` prefix may be omitted: `agentkit eval dataset list` is equivalent to `agentkit dataset list`. The examples below use the shorter `agentkit dataset ...` form. `--project` applies only to the Coze evaluation backend; the TEA backend ignores it.
 </Note>
 
+Run `agentkit eval backend` first to confirm the backend and workspace. Adding cases writes to a remote dataset; exclude user data that is not approved for evaluation
+
+### Group options
+
+Place these options between `dataset` and its subcommand. They also apply to `eval dataset`:
+
+| Flag / argument | Description | Default |
+| --- | --- | --- |
+| `--cache-refresh` | Bypass local cache and refresh evaluation backend data | `false` |
+| `--verbose` | Print full TEA requests to stderr with the session cookie masked; business content may remain in logs | `false` |
+
+```bash lines
+agentkit dataset --cache-refresh list
+```
+
 ## dataset list
 
 List evaluation datasets.
@@ -99,8 +114,9 @@ Add one or more cases to an evaluation dataset. The Coze backend accepts flat `{
 
 ```bash lines
 agentkit dataset add qa-set --field "input=What is the capital of France?" --field "reference_output=Paris"
-agentkit dataset add qa-set --file cases.json
 ```
+
+The following `items.json` uses the TEA item format. Coze files use flat objects, such as `[{"input":"Question","reference_output":"Answer"}]`
 
 ```json title="items.json" lines
 [
@@ -202,3 +218,5 @@ Create a committed version for a TEA evaluation dataset.
 ```bash lines
 agentkit dataset version create 0.0.2 --dataset qa-set --description "Add edge cases"
 ```
+
+After adding cases, inspect fields and items with `agentkit dataset show qa-set --items 20`, then create a version on TEA. Editing cases does not change the version used by an existing experiment. Save and explicitly pass `--dataset-version` for reproducible evaluation

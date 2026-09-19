@@ -22,7 +22,13 @@ en_link: "/productions/api-reference/preview/en/harness-runtime/overview"
 
 ## 连接服务
 
-已部署 Runtime 的地址使用部署结果中的访问地址；本地运行时通常为 `http://localhost:8000`
+在已完成 Harness 配置的项目目录中，可用以下命令启动本地开发服务。模型凭证、依赖与 `harness.yaml` 的准备方式见 [Harness 命令](/productions/agentkit-cli/preview/zh/commands/harness)
+
+```bash lines
+agentkit harness dev --host 127.0.0.1 --port 8000
+```
+
+本地地址为 `http://localhost:8000`。云端调用使用 `agentkit harness deploy` 返回的 Runtime 地址，并按部署模式提供认证
 
 下例适用于配置了 Runtime API Key 的 KeyAuth 部署。环境变量 `HARNESS_URL` 为 Runtime 地址，`HARNESS_API_KEY` 为 Runtime 访问凭证；它不是模型 API Key，也不是 MCP 服务凭证
 
@@ -54,7 +60,7 @@ curl -N "$HARNESS_URL/run_sse" \
 | `skills` | 逗号分隔的 Skill Hub slug、技能空间 ID 或空间:技能引用，追加到本次请求 |
 | `mcp_servers` | 整个列表替换；省略时继承，空数组禁用本次请求的远程 MCP |
 | `registry_space_id`、`registry_endpoint`、`registry_region`、`registry_top_k` | 覆盖本次请求的智能体注册中心配置 |
-| `max_llm_calls` | 模型调用次数上限，至少为 1；`run_agent_request` 中的值优先于 `harness`，再其次为部署配置 |
+| `max_llm_calls` | 模型调用次数上限，至少为 1；`/harness/invoke` 优先采用 `run_agent_request` 中的值；`/run_sse` 普通覆盖优先采用顶层值，再其次为 `harness` 与部署配置 |
 
 MCP 服务使用以下结构，`protocol` 默认 `streamable-http`，也可选择 `sse`。`endpoint` 必须是 HTTP(S) 地址，不能包含用户名密码或片段标识；`api_key` 可省略，不允许换行
 

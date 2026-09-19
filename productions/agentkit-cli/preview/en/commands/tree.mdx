@@ -17,3 +17,13 @@ Print the full command tree.
 ```bash lines
 agentkit tree --all
 ```
+
+The tree describes the locally installed version and requires no cloud account or project configuration. For an unrecognized option, check `agentkit --version` and the target command's `--help`
+
+Save a command inventory for scripts:
+
+```bash lines
+agentkit tree --all --json > command-tree.json
+```
+
+The file contains command names, aliases, arguments, options, and subcommands. It describes CLI structure rather than cloud resources

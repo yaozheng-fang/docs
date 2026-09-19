@@ -3,6 +3,14 @@ title: "Use VikingDB storage"
 zh_link: "/productions/veadk/preview/zh/components/knowledge/viking"
 ---
 
+<Note>
+API key authentication and the associated management-precheck behavior on this page are unreleased Preview features, verified against public source `adcdfdcc6a5a213b249a8caad435b939c01df7f6`. Stable VeADK 1.1.13 does not include them. Install that source before using the API key examples
+</Note>
+
+```bash
+python -m pip install "veadk-python @ git+https://github.com/volcengine/veadk-python.git@adcdfdcc6a5a213b249a8caad435b939c01df7f6"
+```
+
 The `viking` backend integrates with the managed VikingDB knowledge base service. Files are first uploaded to TOS (object storage), then registered into a VikingDB collection; splitting, embedding, and retrieval all run server-side, so **no local embedding is required**. It is the recommended backend for production.
 
 ## When to use
@@ -19,13 +27,17 @@ The `viking` backend integrates with the managed VikingDB knowledge base service
 
 ## Usage
 
+Set the AK/SK, project, region, and TOS bucket below first. Initialization may create a collection; ingestion uploads documents for server-side processing. These actions require resource permissions and may incur charges
+
 ```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
 # index must start with a letter, contain only letters/digits/underscores, length 1-128
 kb = KnowledgeBase(backend="viking", index="company_faq")
-kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+assert kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+for entry in kb.search("annual leave", top_k=3):
+    print(entry.content)
 
 agent = Agent(
     name="demo",
@@ -37,6 +49,8 @@ agent = Agent(
 You can also pass project and credentials explicitly via `backend_config`:
 
 ```python lines
+import os
+
 from veadk.knowledgebase import KnowledgeBase
 from veadk.configs.database_configs import TOSConfig
 
@@ -45,8 +59,8 @@ kb = KnowledgeBase(
     index="company_faq",
     backend_config={
         "index": "company_faq",
-        "volcengine_access_key": "your-ak",
-        "volcengine_secret_key": "your-sk",
+        "volcengine_access_key": os.environ["VOLCENGINE_ACCESS_KEY"],
+        "volcengine_secret_key": os.environ["VOLCENGINE_SECRET_KEY"],
         "volcengine_project": "default",
         "version": "2",
         "tos_config": TOSConfig(
@@ -60,6 +74,8 @@ kb = KnowledgeBase(
 Search an existing collection using an API key:
 
 ```python lines
+import os
+
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(
@@ -67,13 +83,27 @@ kb = KnowledgeBase(
     index="company_faq",
     backend_config={
         "index": "company_faq",
-        "api_key": "your-vikingdb-api-key",
+        "api_key": os.environ["DATABASE_VIKING_API_KEY"],
         "volcengine_project": "default",
     },
 )
 ```
 
 ## Parameters
+
+### KnowledgeBase parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | Set to `viking` or pass a backend instance |
+| `backend_config` | `dict` | `{}` | Must include index when nonempty; does not merge the outer index |
+| `index` | `str` | `""` | Index name; falls back to app_name when no configuration dictionary is supplied |
+| `app_name` | `str` | `""` | Fallback for index; not a user authorization filter |
+| `top_k` | `int` | `10` | Default result count; search(top_k=0) uses this value |
+| `name` | `str` | `"user_knowledgebase"` | Knowledge-base name shown to the agent |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | Explains the knowledge base to the agent |
+| `enable_profile` | `bool` | `False` | Enables document profiles; generate profile files first, or leave disabled for ordinary retrieval |
+| `query_with_user_profile` | `bool` | `False` | Uses the agent’s Viking long-term memory profile to guide queries; the knowledge backend itself need not be Viking |
 
 ### Constructor parameters
 
@@ -149,9 +179,11 @@ export DATABASE_TOS_REGION="cn-beijing"
 ```
 
 <Note>
-Embedding, splitting, and retrieval all run server-side in VikingDB, so this backend requires no embedding model configuration. Profile-related features such as `enable_profile` and `query_with_user_profile` also depend on the Viking family of backends.
+Embedding, splitting, and retrieval all run server-side in VikingDB, so this backend requires no embedding model configuration. `query_with_user_profile` requires Viking long-term memory on the agent; it does not impose that requirement on the knowledge backend
 </Note>
 
 <Warning>
 `index` (the collection name) must start with a letter, contain only letters, digits, and underscores, and be 1-128 characters long; otherwise initialization fails. `version` supports only `"2"` or `"4"`.
 </Warning>
+
+The example search should return the annual-leave policy. For empty results, check successful ingestion, matching embedding dimensions, completed server processing, network access, and permissions. Managed ingestion may not be immediately searchable. Running the configured Agent also requires model credentials

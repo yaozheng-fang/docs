@@ -767,6 +767,9 @@
                 }
               }
             }
+          },
+          "499": {
+            "description": "客户端断开连接后调用被取消；连接关闭时客户端可能无法读取此状态"
           }
         },
         "description": "执行一次调用，完成后以 JSON 数组返回全部事件；streaming 不改变此接口的响应格式\n\n默认需先创建会话；启用 `--auto_create_session` 后可自动创建。`appName` 可在设置 `ADK_DEFAULT_APP_NAME` 时省略",
@@ -1097,7 +1100,8 @@
                 }
               ],
               "title": "Version"
-            }
+            },
+            "description": "可选版本号；省略时读取最新版本"
           }
         ],
         "responses": {
@@ -1140,7 +1144,7 @@
             }
           }
         },
-        "description": "返回最新版本的 Part；制品不存在时返回 404",
+        "description": "省略 version 时返回最新版本的 Part，提供 version 查询参数时返回指定版本；制品或版本不存在时返回 404",
         "tags": [
           "制品"
         ]
@@ -1751,7 +1755,7 @@
             }
           }
         },
-        "description": "创建空评测集，使用 evalSet.eval_set_id 指定 ID；添加用例需调用相应接口\n\n仅在启用开发界面的服务中可用，例如 `veadk web` 或 `adk api_server --with_ui`；默认 `adk api_server` 不提供此接口"
+        "description": "使用 evalSet.eval_set_id 创建空评测集；本接口不会导入请求中的 eval_cases，添加用例需调用相应接口\n\n仅在启用开发界面的服务中可用，例如 `veadk web` 或 `adk api_server --with_ui`；默认 `adk api_server` 不提供此接口"
       },
       "get": {
         "tags": [
@@ -1885,7 +1889,7 @@
           "评测 · 开发服务"
         ],
         "summary": "列出评测用例",
-        "description": "返回按 ID 排序的用例数组；此接口当前仅提供路径中的下划线写法\n\n仅在启用开发界面的服务中可用，例如 `veadk web` 或 `adk api_server --with_ui`；默认 `adk api_server` 不提供此接口",
+        "description": "返回按 ID 排序的用例 ID 数组；此接口当前仅提供路径中的下划线写法\n\n仅在启用开发界面的服务中可用，例如 `veadk web` 或 `adk api_server --with_ui`；默认 `adk api_server` 不提供此接口",
         "operationId": "agentApiListEvalCases",
         "parameters": [
           {
@@ -2213,7 +2217,7 @@
           "评测 · 开发服务"
         ],
         "summary": "运行评测",
-        "description": "按 evalCaseIds 选择用例；省略或为空时评测全部用例。evalMetrics 必填，响应包含逐用例状态和指标结果\n\n仅在启用开发界面的服务中可用，例如 `veadk web` 或 `adk api_server --with_ui`；默认 `adk api_server` 不提供此接口",
+        "description": "优先按 evalCaseIds 选择用例；省略或为空时回退到 evalIds，两者均未选择时评测全部用例。evalMetrics 必填，响应包含逐用例状态和指标结果\n\n仅在启用开发界面的服务中可用，例如 `veadk web` 或 `adk api_server --with_ui`；默认 `adk api_server` 不提供此接口",
         "operationId": "agentApiRunEvaluation",
         "parameters": [
           {
@@ -11262,7 +11266,7 @@
             },
             "type": "array",
             "title": "Evalcaseids",
-            "description": "要评测的用例 ID；省略或为空时选择全部用例"
+            "description": "要评测的用例 ID；省略或为空时回退到 evalIds，两者均未选择时评测全部用例"
           },
           "evalMetrics": {
             "items": {

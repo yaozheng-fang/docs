@@ -5,23 +5,42 @@ zh_link: "/productions/veadk/preview/zh/components/tools/trusted-mcp"
 
 ## Overview
 
-When connecting to an MCP Server protected by access control, use `TrustedMcpToolset` (`from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset`). It builds on the standard `McpToolset` and injects authentication into outbound requests, allowing secure access to trusted MCP services. It reuses Google ADK's connection parameters — the example below uses `StreamableHTTPConnectionParams`:
+`TrustedMcpToolset` connects to services supporting the Trusted MCP protocol. Enable it with both a Streamable HTTP connection and the `x-trusted-mcp: true` header. An `Authorization` header alone does not enable trusted transport. The server must support this protocol; connect ordinary MCP servers using [Custom MCP servers](/productions/veadk/preview/en/components/tools/custom-mcp).
+
+## Prerequisites
+
+Install `python -m pip install veadk-python` and obtain the MCP URL, credentials, and trusted connection requirements from the service provider. Set `MCP_SERVER_URL` and `MCP_SERVER_TOKEN`, then verify discovery before registering the toolset with an agent.
 
 ## Usage
 
-```python lines
-from veadk import Agent
+```python title="mcp_connection.py" lines
+import asyncio
+import os
 from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset
-from google.adk.tools.mcp_tool.mcp_session_manager import (
-    StreamableHTTPConnectionParams,
-)
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 
-toolset = TrustedMcpToolset(
-    connection_params=StreamableHTTPConnectionParams(
-        url="https://your-trusted-mcp-endpoint",
-        headers={"Authorization": "Bearer your-api-key-here"},
-    ),
-)
+async def main():
+    toolset = TrustedMcpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url=os.environ["MCP_SERVER_URL"],
+            headers={
+                "Authorization": f"Bearer {os.environ['MCP_SERVER_TOKEN']}",
+                "x-trusted-mcp": "true",
+            },
+        ),
+    )
+    try:
+        print([tool.name for tool in await toolset.get_tools()])
+    finally:
+        await toolset.close()
 
-agent = Agent(tools=[toolset])
+asyncio.run(main())
 ```
+
+The output lists tools available to the credential. When registering with `Agent(tools=[toolset])`, close the connection after completing the application calls as well.
+
+## Parameters
+
+`connection_params` is required; use `StreamableHTTPConnectionParams` for trusted transport. Other keyword arguments use the installed Google ADK `McpToolset` parameters and defaults; see the [complete parameter table](/productions/veadk/preview/en/components/tools/custom-mcp#parameters). Use `tool_filter` to restrict tools and `header_provider` for request-specific identity headers. Do not reuse a fixed user token across different users.
+
+Trusted transport does not replace server authorization, and successful discovery does not authorize every business operation. See [Trusted MCP security](/productions/veadk/preview/en/components/security/trusted-mcp) for deployment and server requirements.

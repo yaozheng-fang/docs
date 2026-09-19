@@ -35,3 +35,11 @@ VeADK tools are grouped by how they connect and what they do.
 <Note>
 Built-in tools and built-in MCP tools mostly depend on Volcengine services — enable the corresponding service and configure authentication (AK/SK, API keys) before use. System tools are managed by the framework and need not be added to the `tools` list manually.
 </Note>
+
+## Preparation and result checks
+
+Complete [installation](/productions/veadk/preview/en/get-started/installation) and [model configuration](/productions/veadk/preview/en/components/agent/model), then enable the service and credentials listed on the tool page. Model API keys and tool AK/SK or service API keys are separate. Setting `CLOUD_PROVIDER` does not switch every tool endpoint automatically.
+
+`Agent(tools=[...])` registers capabilities without executing them. After `Runner.run()`, inspect execution events or tool results to confirm the call and its status. A model answer alone does not prove an external operation succeeded. Await asynchronous tools, and call `await toolset.close()` when shutting down an MCP application.
+
+Start with the [custom calculator](/productions/veadk/preview/en/components/tools/custom-function) to check the calling flow. For MCP, discover tools before invoking a capability with the required permissions. Sandbox, mobile, and third-party service tools can change real files or account data; specify the allowed operations in the tool instructions.

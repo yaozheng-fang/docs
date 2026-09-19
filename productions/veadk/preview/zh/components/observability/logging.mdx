@@ -21,13 +21,13 @@ python app.py
 每条日志包含时间、级别、调用位置和消息：
 
 ```text lines
-2026-07-14 10:30:00 | INFO | runner.py:180 - Event output: request completed
+2026-07-14 10:30:00 | INFO | app.py:20 - Request completed
 ```
 
 当代码运行在正在记录的 OpenTelemetry span 中时，日志会自动增加 `trace_id`，便于在日志系统和链路追踪系统之间关联同一次请求：
 
 ```text lines
-2026-07-14 10:30:00 | INFO | runner.py:180 | trace_id=0123456789abcdef - Event output: request completed
+2026-07-14 10:30:00 | INFO | app.py:20 | trace_id=0123456789abcdef0123456789abcdef - Request completed
 ```
 
 在交互式终端中，时间、级别和调用位置使用颜色区分；标准输出被重定向或采集时，不会写入 ANSI 颜色转义序列。
@@ -36,11 +36,14 @@ python app.py
 
 应用可以使用标准库 logger 输出自己的日志，并单独控制 `veadk` 命名空间的级别：
 
+`LOGGING_LEVEL` 控制 VeADK 日志；应用自己的 logger 需要独立配置 handler，或在导入 VeADK 前调用 `logging.basicConfig()`。已有根 handler 时，`basicConfig()` 默认不重新配置。下面的示例运行后应显示 `Agent initialized`
+
 ```python lines
 import logging
 
-from veadk import Agent
+logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(name)s | %(message)s")
 
+from veadk import Agent
 logging.getLogger("veadk").setLevel(logging.INFO)
 app_logger = logging.getLogger("company_assistant")
 

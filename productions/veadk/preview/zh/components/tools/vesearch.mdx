@@ -55,3 +55,20 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## 参数与结果验证
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | 必填 | 联网问答的查询文本 |
+
+`TOOL_VESEARCH_ENDPOINT` 填写已创建的智能体 ID，不是 HTTP URL。工具调用联网问答服务并返回文本摘要；失败时也可能返回错误文本，因此不能仅以返回类型判断成功。请求超时为 30 秒，`CLOUD_PROVIDER=byteplus` 不会自动更换此服务
+
+```python lines
+from veadk.tools.builtin_tools.vesearch import vesearch
+
+answer = vesearch("What is AgentKit?")
+print(answer)
+```
+
+该调用只需联网问答服务的配置，不调用外层推理模型；通过 `Runner` 使用时才需要额外配置智能体模型

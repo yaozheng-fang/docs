@@ -124,3 +124,13 @@ agentkit user create --user-pool-id pool-example --file users.json --json
 ```
 
 Repeated flags are matched by position, and optional fields cannot outnumber usernames. A batch can partially succeed; any failed item produces a nonzero exit status. Retry only failed items
+
+## Verify user changes
+
+After creation or update, query the same pool by exact username and inspect the returned user ID and fields:
+
+```bash lines
+agentkit user list --user-pool-id pool-example --preferred-username alice --json
+```
+
+The username is a lookup and login identifier. Use the returned user ID for updates, deletion, and department membership. For an empty list, check the pool, region, and filter. Use pagination tokens to continue their corresponding list query

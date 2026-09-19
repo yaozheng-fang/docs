@@ -14,16 +14,28 @@ The `local` backend keeps sessions in process memory. It needs no external servi
 ## Usage
 
 ```python lines
-from veadk import Agent, Runner
+import asyncio
+
 from veadk.memory.short_term_memory import ShortTermMemory
 
-stm = ShortTermMemory(backend="local")  # local is the default; same as omitting backend
+stm = ShortTermMemory(backend="local")
 
-agent = Agent(name="demo")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+async def main():
+    await stm.create_session(
+        app_name="memory_demo", user_id="user_42", session_id="chat_01"
+    )
+    session = await stm.session_service.get_session(
+        app_name="memory_demo", user_id="user_42", session_id="chat_01"
+    )
+    assert session is not None
+    print(session.id)
+
+asyncio.run(main())
 ```
 
-Because `local` is the default, the following are all equivalent:
+The output is `chat_01`, confirming that the session was created and read back. This example does not call a model. For conversations, pass the same `stm` to `Runner(short_term_memory=stm, agent=agent)` and keep the app, user, and session identifiers consistent
+
+Because `local` is the default, the following select in-memory storage; separate instances do not share sessions:
 
 ```python lines
 ShortTermMemory()                    # uses the default backend
@@ -43,12 +55,13 @@ If the `Runner` receives no `short_term_memory` or `session_service`, it automat
 
 | Parameter | Type | Default | Effective for local | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `backend` | `str` | `"local"` | Yes | Set to `"local"` or leave empty to select this backend. |
+| `backend` | `str` | `"local"` | Yes | Set to `"local"` or omit this parameter; an empty string is not a valid backend |
 | `db_url` | `str` | `""` | Yes (override) | Once set, `backend` is ignored and a database backend is used instead. Leave unset to stay in memory. |
 | `backend_configs` | `dict` | `{}` | No | Not read by `local`. |
 | `db_kwargs` | `dict` | `{}` | No | Used only by database backends. |
 | `local_database_path` | `str` | `/tmp/veadk_local_database.db` | No | Used only by `sqlite`. |
-| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Callback invoked after a session is loaded; receives the loaded `Session`. |
+| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Synchronous read callback; receives `Session` or `None` plus the query arguments. Use `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | Yes | Runs after `ShortTermMemory.create_session()` creates a new session; accepts the new `Session` and can be synchronous or asynchronous |
 
 <Warning>
 The `local` backend does not persist to disk; all session data is lost when the process exits. Do not use it in production for sessions that must survive. For persistence use [SQLite](/productions/veadk/preview/en/components/session/sqlite), [MySQL](/productions/veadk/preview/en/components/session/mysql), or [PostgreSQL](/productions/veadk/preview/en/components/session/postgresql).

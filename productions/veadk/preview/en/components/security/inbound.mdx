@@ -5,9 +5,21 @@ zh_link: "/productions/veadk/preview/zh/components/security/inbound"
 
 Inbound authentication verifies the identity of requests coming into the agent. VeADK supports API keys and OAuth2.
 
+<Note>
+Direct reuse through `from_veidentity(client_secret=...)`, A2A 1.0 AgentCard parsing, and managed API key resolution are unreleased Preview additions verified at the revision below. They are not included in VeADK 1.1.13. Install this revision in a separate virtual environment when using these additions
+
+```bash
+pip install "veadk-python @ git+https://github.com/volcengine/veadk-python.git@adcdfdcc6a5a213b249a8caad435b939c01df7f6"
+```
+</Note>
+
 ## API key authentication
 
-An API key verifies the caller's identity and authorizes access to API resources with a single string secret. VeADK passes the API key in the URL's `token` parameter.
+<Warning>
+URL parameters can appear in browser history, access logs, and forwarded links. Use HTTPS and redact credential-bearing URLs from logs. Successful key validation still requires resource authorization
+</Warning>
+
+An API key verifies the caller's identity and authorizes access to API resources with a single string secret. The VeFaaS API gateway deployment described here passes the API key in the URL's `token` parameter. Follow the corresponding API documentation for other services.
 
 <Note>
   API keys apply only to the A2A / MCP Server deployment mode; they are not recommended for the VeADK Web mode, which should use OAuth2 instead.
@@ -51,23 +63,37 @@ When a user visits the app, the API gateway guides them through login; afterward
 
 For local development or self-hosted deployment, VeADK's middleware handles OAuth2 inside the app and supports any Starlette-based framework (including FastAPI). Prefer `OAuth2Config.from_veidentity()`, which auto-configures a VeIdentity user pool:
 
-```python lines
+Install the example dependencies with `pip install fastapi uvicorn`. Call `setup_oauth2()` once per application; the later fragments are alternative configurations, not additional setup calls
+
+Prepare an existing user pool and Web client, and register `http://localhost:8000/oauth2/callback`. Set `OAUTH2_USER_POOL_NAME` and `OAUTH2_CLIENT_NAME`, and provide cloud credentials allowed to read those resources. This example is for local HTTP development only; use HTTPS and restore `cookie_secure=True` for deployment
+
+```python title="app.py" lines
+import os
 from fastapi import FastAPI
 from veadk.auth.middleware.oauth2_auth import OAuth2Config, setup_oauth2
 
 app = FastAPI()
 
+@app.get("/api/profile")
+async def profile():
+    return {"authenticated": True}
+
 setup_oauth2(
     app,
     OAuth2Config.from_veidentity(
-        user_pool_name="my-app",
-        client_name="my-app-web",
-        redirect_uri="https://myapp.com/oauth2/callback",
+        user_pool_name=os.environ["OAUTH2_USER_POOL_NAME"],
+        client_name=os.environ["OAUTH2_CLIENT_NAME"],
+        redirect_uri="http://localhost:8000/oauth2/callback",
+        auto_create=False,
+        auto_register_callback=False,
+        cookie_secure=False,
     ),
 )
 ```
 
-This creates the user pool and client (if missing), registers the callback URL, and configures the OAuth2 endpoints. Starlette usage is identical — swap `FastAPI()` for `Starlette()`.
+Save as `app.py` and run `uvicorn app:app --host 127.0.0.1 --port 8000`. Before login, `/api/profile` should return `401`. Open `/oauth2/login` in a browser, complete login, then request the profile again to receive `authenticated: true`
+
+`from_veidentity()` enables resource creation and callback registration by default; this example disables both. Automatic creation requires the corresponding permissions and a valid callback address. Starlette usage is the same
 
 To reuse existing resources, disable auto-creation:
 
@@ -106,28 +132,33 @@ setup_oauth2(
     OAuth2Config.from_veidentity(
         user_pool_uid="pool-xxxx",
         client_uid="client-xxxx",
-        client_secret="your-existing-client-secret",
+        client_secret=os.environ["OAUTH2_CLIENT_SECRET"],
         redirect_uri="https://myapp.com/oauth2/callback",
         auto_create=False,
     ),
 )
 ```
 
-To use an OAuth2 provider other than VeIdentity, construct `OAuth2Config` directly:
+For a provider other than VeIdentity, construct `OAuth2Config` directly. This alternative configuration fragment is for providers that issue JWT access tokens. Set endpoint, issuer, and public-key environment variables from the provider's OpenID Connect metadata, and set `OAUTH2_AUDIENCE` to the audience accepted by this API. Do not assume that any client ID is a valid audience
 
 ```python lines
 setup_oauth2(
     app,
     OAuth2Config(
-        authorize_url="https://provider.com/oauth2/authorize",
-        token_url="https://provider.com/oauth2/token",
-        userinfo_url="https://provider.com/oauth2/userinfo",
-        client_id="your-client-id",
-        client_secret="your-client-secret",
+        authorize_url=os.environ["OAUTH2_AUTHORIZE_URL"],
+        token_url=os.environ["OAUTH2_TOKEN_URL"],
+        userinfo_url=os.environ["OAUTH2_USERINFO_URL"],
+        issuer=os.environ["OAUTH2_ISSUER"],
+        jwks_uri=os.environ["OAUTH2_JWKS_URI"],
+        audience=os.environ["OAUTH2_AUDIENCE"],
+        client_id=os.environ["OAUTH2_CLIENT_ID"],
+        client_secret=os.environ["OAUTH2_CLIENT_SECRET"],
         redirect_uri="https://myapp.com/oauth2/callback",
     ),
 )
 ```
+
+Direct construction does not discover `jwks_uri`; JWT validation cannot complete without a public key set. For opaque access tokens, set `use_introspection=True` and `introspection_url`, and supply introspection client credentials required by the provider
 
 The middleware registers these routes automatically:
 
@@ -140,40 +171,168 @@ The middleware registers these routes automatically:
 
 You can exempt paths from auth: `exempt_paths=["/health", "/metrics"]` (exact match) and `exempt_prefixes=["/public/", "/static/"]` (prefix match). The middleware responds by request type: browser requests redirect to the login page; API requests get a `401`. API requests are detected via the `Accept: application/json` header, a path prefix (default `/api/`), or the `X-Requested-With: XMLHttpRequest` header, and can be customized with `api_path_prefixes`.
 
-Key `OAuth2Config.from_veidentity()` parameters:
+### Application integration parameters
 
-| Parameter | Default | Description |
-| --- | --- | --- |
-| `user_pool_name` | required | VeIdentity user pool name (used if `user_pool_uid` is not set) |
-| `user_pool_uid` | `None` | User pool UID, takes precedence over `user_pool_name` |
-| `client_name` | required | User pool client name (used if `client_uid` is not set) |
-| `client_uid` | `None` | Client UID, takes precedence over `client_name` |
-| `client_secret` | `None` | Existing client secret; when paired with `client_uid`, skips the client lookup during startup |
-| `redirect_uri` | required | OAuth2 callback URL |
-| `auto_create` | `True` | Create resources if missing |
-| `auto_register_callback` | `True` | Register the callback URL automatically |
-| `client_type` | `WEB_APPLICATION` | Client type |
-| `scope` | `"openid profile email"` | OAuth2 scope |
+`setup_oauth2()` returns an `OAuth2Handler` that manages OAuth2 and registers authentication routes and middleware
 
-Key `OAuth2Config` parameters:
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `app` | `Starlette` | Required | Starlette or FastAPI application |
+| `config` | `OAuth2Config` | Required | Authentication configuration |
+| `routes` | `OAuth2RoutePaths / None` | `None` | Custom login, callback, logout, and user information paths; defaults to the routes above |
+| `exempt_paths` | `Iterable[str] / None` | `None` | Exact paths exempt from authentication |
+| `exempt_prefixes` | `Iterable[str] / None` | `None` | Path prefixes exempt from authentication |
+| `state_store` | `StateStore / None` | `None` | OAuth state store; defaults to process memory |
 
-| Parameter | Default | Description |
-| --- | --- | --- |
-| `userinfo_url` | `None` | User info endpoint URL; when configured, the middleware fetches user info from this endpoint and stores it in the session |
-| `user_id_field` | `"sub"` | Field name used to extract the user identifier from the user info response |
-| `session_timeout_seconds` | `3600` | Session timeout (seconds) |
-| `cookie_secure` | `True` | Enable secure cookies |
-| `auto_refresh_token` | `True` | Refresh tokens automatically |
-| `token_refresh_threshold_seconds` | `300` | Token refresh threshold (seconds) |
-| `api_path_prefixes` | `["/api/"]` | API path prefixes |
+After creating `app` and `config`, replace the original `setup_oauth2()` call with this fragment to customize paths. Update both `config.redirect_uri` and the provider registration to match the new callback URL
+
+```python
+from veadk.auth.middleware.oauth2_auth import OAuth2RoutePaths
+
+setup_oauth2(
+    app,
+    config,
+    routes=OAuth2RoutePaths(
+        login="/auth/login",
+        callback="/auth/callback",
+        logout="/auth/logout",
+        userinfo="/auth/userinfo",
+    ),
+    exempt_paths=["/health"],
+    exempt_prefixes=["/public/"],
+)
+```
+
+### VeIdentity configuration parameters
+
+`OAuth2Config.from_veidentity()` accepts the parameters below. When `session_timeout_seconds` is omitted, it attempts to use the client's configured refresh-token lifetime; if unavailable, the `OAuth2Config` default remains
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `user_pool_name` | `str / None` | `None` | User pool name; provide a name or UID |
+| `user_pool_uid` | `str / None` | `None` | User pool UID; takes precedence over the name |
+| `client_name` | `str / None` | `None` | Client name; provide a name or UID |
+| `client_uid` | `str / None` | `None` | Client UID; takes precedence over the name |
+| `client_secret` | `str / None` | `None` | Unreleased Preview parameter; skips the client-secret lookup when provided with client_uid |
+| `redirect_uri` | `str` | Required | OAuth2 callback URL |
+| `auto_create` | `bool` | `True` | Create missing named user pools and clients; UID-only references do not create resources |
+| `auto_register_callback` | `bool` | `True` | Register the callback URL with the client |
+| `client_type` | `UserPoolClientType` | `WEB_APPLICATION` | Type of a newly created client |
+| `web_origin` | `str / None` | `None` | Web Origin for callback registration; derived from redirect_uri when unset |
+| `scope` | `str` | `"openid profile email"` | Space-separated authorization scopes |
+| `identity_client` | `IdentityClient / None` | `None` | Use a supplied Identity client; defaults to global settings or a default client |
+| `**extra_config` | `Any` | — | Additional OAuth2Config options such as cookie_secure, use_pkce, and session_timeout_seconds; do not repeat endpoint options populated by discovery |
+
+### OAuth2Config parameters
+
+#### Endpoints and authorization requests
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `authorize_url` | `str` | Required | Authorization endpoint URL |
+| `token_url` | `str` | Required | Token endpoint URL |
+| `client_id` | `str` | Required | Client ID registered with the provider |
+| `client_secret` | `str / None` | `None` | Client secret; optional for public clients |
+| `redirect_uri` | `str` | Required | Callback URL matching the registered client value |
+| `scope` | `str` | `"openid profile"` | Space-separated authorization scopes |
+| `response_type` | `str` | `"code"` | Authorization response type; this integration uses the authorization code flow |
+| `extra_authorize_params` | `dict[str, str]` | `{}` | Additional authorization request parameters |
+| `extra_token_params` | `dict[str, str]` | `{}` | Additional token request parameters |
+| `extra_token_headers` | `dict[str, str]` | `{}` | Additional token request headers |
+| `use_pkce` | `bool` | `False` | Enable PKCE when supported by the provider |
+| `userinfo_url` | `str / None` | `None` | User information endpoint; not requested when unset |
+| `end_session_url` | `str / None` | `None` | Provider logout endpoint |
+| `logout_redirect_url` | `str` | `"/"` | Redirect destination after logout |
+| `user_id_field` | `str` | `"sub"` | User information field containing the user identifier |
+| `user_id_cookie_name` | `str` | `"veadk_user_id"` | Cookie name for the user identifier |
+
+#### Sessions and cookies
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `session_cookie_name` | `str` | `"veadk_session"` | Session cookie name |
+| `session_timeout_seconds` | `int` | `3600` | Absolute browser session lifetime in seconds |
+| `cookie_secure` | `bool` | `True` | Send cookies only over HTTPS |
+| `cookie_samesite` | `str` | `"lax"` | Cookie SameSite policy |
+| `cookie_domain` | `str / None` | `None` | Cookie domain; defaults to the current host in the browser |
+| `cookie_path` | `str` | `"/"` | Cookie path scope |
+| `cookie_signing_secret` | `str / None` | `None` | Session signing secret; falls back to client_secret |
+| `auto_refresh_token` | `bool` | `True` | Refresh access tokens automatically when a refresh token is available |
+| `token_refresh_threshold_seconds` | `int` | `300` | Seconds before access token expiry at which refresh starts |
+
+#### Access token validation
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `issuer` | `str / None` | `None` | Expected token issuer; use provider metadata |
+| `jwks_uri` | `str / None` | `None` | Public key set URL required for JWT validation |
+| `audience` | `str / list[str] / None` | `None` | Allowed token audiences; no audience restriction when unset |
+| `allowed_algorithms` | `list[str]` | `["RS256"]` | Allowed JWT signing algorithms |
+| `jwks_cache_ttl_seconds` | `int` | `300` | Public key set cache lifetime in seconds |
+| `jwks_kid_miss_cooldown_seconds` | `int` | `30` | Minimum interval in seconds between public key refreshes for unknown key IDs |
+| `use_introspection` | `bool` | `False` | Validate access tokens through the provider introspection endpoint |
+| `introspection_url` | `str / None` | `None` | Required introspection endpoint URL when introspection is enabled |
+| `introspection_client_id` | `str / None` | `None` | Introspection client ID; used only with the introspection secret, otherwise the original client credentials apply |
+| `introspection_client_secret` | `str / None` | `None` | Introspection client secret; used only with the introspection client ID, otherwise the original client credentials apply |
+| `introspection_cache_ttl_seconds` | `int` | `300` | Maximum introspection cache lifetime in seconds, also bounded by token expiry |
+| `introspection_cache_max_entries` | `int` | `1000` | Maximum number of introspection cache entries |
+
+#### Storage and request behavior
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `state_ttl_seconds` | `int` | `300` | Default in-memory state lifetime in seconds |
+| `state_max_entries` | `int` | `10000` | Maximum entries in the default in-memory state store |
+| `http_timeout_seconds` | `float` | `30.0` | OAuth2 HTTP request timeout in seconds |
+| `http_max_connections` | `int` | `100` | Maximum OAuth2 HTTP client connections |
+| `http_max_keepalive_connections` | `int` | `20` | Maximum OAuth2 HTTP keep-alive connections |
+| `api_path_prefixes` | `list[str]` | `["/api/"]` | API path prefixes that return 401 instead of redirecting unauthenticated requests |
 
 <Note>
   When fetching user info from the userinfo endpoint, only fields safe to store in a browser session cookie are retained: `sub`, `email`, `email_verified`, `name`, `given_name`, `family_name`, `preferred_username`, `picture`, `locale`, `updated_at`, plus the field configured via `user_id_field`. Only values of type string, integer, float, or boolean are kept, to prevent the session cookie from exceeding browser size limits. The `/oauth2/userinfo` endpoint returns these filtered fields.
 </Note>
 
-<Note>
-  The default `InMemoryStateStore` fits single-process deployments only. For distributed setups, implement a state store backed by Redis or similar and pass it via `setup_oauth2(app, config, state_store=...)`.
-</Note>
+### Sharing OAuth state across processes
+
+The default `InMemoryStateStore` is for a single process. All instances of a distributed application need a shared state store that consumes each state only once
+
+This fragment replaces the `setup_oauth2()` call and reuses `app` and `config` from above. Install the `redis` package, prepare Redis 6.2 or later with `GETDEL` support, and set `REDIS_URL`. Use an application-specific key prefix shared by all its instances, and configure production connections and credentials for your deployment
+
+```python
+import json
+import os
+import secrets
+
+from redis import Redis
+
+class RedisStateStore:
+    def __init__(self, client, ttl_seconds=300):
+        self.client = client
+        self.ttl_seconds = ttl_seconds
+        self.prefix = "oauth2:my-app:"
+
+    def create_state(self, redirect_after_auth="/", code_verifier=None):
+        state = secrets.token_urlsafe(32)
+        data = json.dumps({
+            "redirect_after_auth": redirect_after_auth,
+            "code_verifier": code_verifier,
+        })
+        self.client.setex(self.prefix + state, self.ttl_seconds, data)
+        return state
+
+    def validate_and_consume_state(self, state):
+        data = self.client.getdel(self.prefix + state)
+        return json.loads(data) if data else None
+
+redis_client = Redis.from_url(os.environ["REDIS_URL"], decode_responses=True)
+setup_oauth2(
+    app,
+    config,
+    state_store=RedisStateStore(redis_client, ttl_seconds=config.state_ttl_seconds),
+)
+```
+
+`create_state()` returns a random state and stores the redirect destination and PKCE verifier. `validate_and_consume_state()` atomically reads and deletes the record, returning `None` for an invalid state. A custom store manages its own expiry, capacity, and connection lifecycle; `state_max_entries` does not limit Redis records automatically
 
 ## OAuth2 JWT authentication
 
@@ -218,7 +377,7 @@ service failures from being treated as an expired identity token.
 
 ### Managed API Key credential authentication
 
-When the downstream AgentCard declares a credential provider in `capabilities.extensions` (containing `credentialProviderName` and `poolName`), and `security` / `securitySchemes` did not produce a usable authentication header, VeADK queries the identity service for the API Key managed by that credential provider and constructs the authentication header according to the credential metadata returned (header name, prefix, etc.). This mechanism uses Agent Identity to centrally manage and rotate API Keys, requiring no manual API Key configuration on the VeADK side.
+When the downstream AgentCard declares a credential provider in `capabilities.extensions` (containing `credentialProviderName` and `poolName`), and `security` / `securitySchemes` did not produce a usable authentication header, VeADK queries the identity service for the API Key managed by that credential provider and constructs the authentication header according to the credential metadata returned (header name, prefix, etc.). This mechanism uses Agent Identity to centrally manage API keys, requiring no manual API Key configuration on the VeADK side.
 
 <Note>
 VeADK supports parsing A2A 1.0 AgentCards: when the AgentCard does not provide a top-level `url` field, VeADK resolves the endpoint from `supportedInterfaces` by protocol binding type and version, preferring JSONRPC bindings with protocol version 1.0.
@@ -233,3 +392,7 @@ inbound identity credential. VeADK reads the credential stored under the
 workflow runs under the original user identity. If the current request carries
 no inbound credential, the header is omitted. See the skill sandbox execution
 section in [Code sandboxes](/productions/veadk/preview/en/components/tools/code-sandbox).
+
+## Session and deployment limits
+
+`cookie_signing_secret` signs browser sessions and falls back to `client_secret`. Public clients should set a stable signing secret explicitly. Signing prevents tampering; it is not encryption. Multiple instances need a shared signing secret and OAuth state store. Public callback URLs must exactly match the registered client URL

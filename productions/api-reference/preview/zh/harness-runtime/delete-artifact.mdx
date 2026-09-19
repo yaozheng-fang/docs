@@ -5,5 +5,7 @@ en_link: "/productions/api-reference/preview/en/harness-runtime/delete-artifact"
 ---
 
 <Warning>
-此操作会删除或替换已有数据，发送请求前请确认目标资源并保存需要保留的内容
+此操作删除指定名称的制品及其全部版本，不是只删除最新版本。本接口不提供恢复操作，删除前应另行保存需要保留的内容
 </Warning>
+
+成功响应为 HTTP `200` 和 JSON `null`。如需确认目标，先读取该制品的版本列表与元数据

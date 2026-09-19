@@ -3,6 +3,12 @@ title: "Content-safety guardrail"
 zh_link: "/productions/veadk/preview/zh/components/security/content-safety"
 ---
 
+`content_safety` sends text to a moderation service around model and tool calls. A blocking decision can replace content or stop a tool call. Use it to connect an agent to existing content policies
+
+<Warning>
+This capability sends user text, model responses, and tool data to the configured moderation endpoint. In VeADK 1.1.13, non-200 HTTP responses, timeouts, and some request errors are logged and execution continues. These failures do not mean moderation approved the content. Workflows that must block on moderation failure need additional enforcement and error handling
+</Warning>
+
 ## Overview
 
 Tool identifier `content_safety`.
@@ -33,7 +39,7 @@ Notes:
 
 ## Environment & prerequisites
 
-Before using `content_safety`, purchase an instance, add assets, and obtain its AppID, then configure the access information through environment variables or `config.yaml`. `content_safety` reads the following settings at initialization.
+Before using `content_safety`, purchase an instance, add assets, and obtain its AppID, then configure the access information through environment variables or `config.yaml`. `content_safety` reads the following settings at initialization. Configure AppID before importing it; initialization fails when AppID is missing.
 
 | Environment variable | config.yaml key | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -49,8 +55,13 @@ tool:
   llm_shield:
     app_id: <your_app_id>
     url: <your_llm_shield_url>
-    api_key: <your_api_key>
     region: cn-beijing
+```
+
+VeADK loads the region from `config.yaml` at startup. Alternatively, set the environment variable before starting Python; it takes precedence:
+
+```bash
+export TOOL_LLM_SHIELD_REGION="cn-beijing"
 ```
 
 <Note>
@@ -67,6 +78,8 @@ Used when the `TOOL_LLM_SHIELD_URL` path does not contain `/OpenTOP/V1/Lumen/Mod
 
 - When `TOOL_LLM_SHIELD_API_KEY` is configured, API key authentication is used (the `x-api-key` request header is sent).
 - When no API key is configured, Volcengine AK/SK authentication is used: the `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY` environment variables are read first; if both are missing, temporary credentials are obtained from the IAM role of the runtime environment. The request headers carry the service region and service identifier.
+
+With `CLOUD_PROVIDER=byteplus`, global configuration can map BytePlus AK/SK to the credential settings above. Confirm that the moderation service accepts those account credentials. Using a BytePlus model does not configure the moderation endpoint, region, or permissions
 
 ### Lumen Moderate endpoint
 
@@ -90,7 +103,6 @@ from veadk.tools.builtin_tools.llm_shield import content_safety
 
 agent = Agent(
     name="robot",
-    model_name="doubao-seed-2-1-pro-260628",
     description="A robot that helps the user.",
     instruction="Talk with the user in a friendly way.",
     before_model_callback=content_safety.before_model_callback,
@@ -102,11 +114,11 @@ agent = Agent(
 runner = Runner(agent=agent)
 
 response = asyncio.run(
-    runner.run("网上都说A地很多骗子和小偷，他们的典型伎俩……")
+    runner.run("Describe how you can help in one sentence")
 )
 
 print(response)
-# Your request has been blocked due to: Model Misuse. Please modify your input and try again.
+
 ```
 
 To switch to the Lumen Moderate endpoint, specify the corresponding access address and API key in environment variables or `config.yaml`; the calling code stays the same:
@@ -116,5 +128,24 @@ tool:
   llm_shield:
     app_id: <your_app_id>
     url: https://<your-lumen-host>/OpenTOP/V1/Lumen/Moderate
-    api_key: <your_api_key>
 ```
+
+## Checking moderation
+
+Configure settings before importing `content_safety`, and provide the key through `TOOL_LLM_SHIELD_API_KEY`. Save the example and run `python app.py`. Ordinary input should receive a response; verify blocking with test text covered by your configured policy and check the service audit records. A fixed sample sentence does not guarantee a particular policy match
+
+Model-input moderation checks the first text part of the last user content in the current request; model-output moderation checks its first text part. It does not automatically cover all history, images, audio, or multipart content. Tool callbacks moderate serialized arguments and results. The default request timeout is `50` seconds
+
+### Adjusting the request timeout
+
+In the example above, replace the `content_safety` import with this configuration fragment and retain the same four callbacks:
+
+```python
+from veadk.tools.builtin_tools.llm_shield import LLMShieldPlugin
+
+content_safety = LLMShieldPlugin(timeout=30)
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `timeout` | `int` | `50` | Timeout for each moderation request in seconds |

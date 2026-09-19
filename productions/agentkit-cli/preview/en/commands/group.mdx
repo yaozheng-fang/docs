@@ -93,3 +93,13 @@ Deletion is irreversible. Check the user pool and resource IDs. Interactive term
 ```bash lines
 agentkit group delete --user-pool-id pool-example --group-id group-example --yes
 ```
+
+## Verify a group
+
+Save the group ID returned by creation, then query that ID after updates to check its description:
+
+```bash lines
+agentkit group list --user-pool-id pool-example --group-id group-example --json
+```
+
+This command group manages group resources and descriptions. It has no subcommands for adding or removing group members. Department `add-users` commands do not manage group membership

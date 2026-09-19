@@ -24,7 +24,7 @@ When an incoming message belongs to a Feishu thread or is a reply, the extension
 Installation:
 
 ```bash lines
-pip install veadk-python[extensions]
+pip install "veadk-python[extensions]"
 ```
 
 If you only want this capability, install it on its own:
@@ -49,15 +49,21 @@ Or configure in `config.yaml`:
 tool:
   feishu_channel:
     app_id: cli_xxx
-    app_secret: xxx
     transport: ws
     streaming: true
     reactions: true
 ```
 
+Enable the bot capability in the Feishu developer console, subscribe to message events, and grant permission to send messages and read the required context. Publish to a test scope and add the bot to a test conversation. Configure the model and set credentials before starting the process
+
+```bash lines
+export TOOL_FEISHU_CHANNEL_APP_ID="your-app-id"
+export TOOL_FEISHU_CHANNEL_APP_SECRET="your-app-secret"
+```
+
 ## Usage
 
-```python title="examples/channel/feishu_bot.py" lines
+```python title="feishu_bot.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -66,7 +72,6 @@ from veadk.memory.short_term_memory import ShortTermMemory
 
 agent = Agent(
     name="feishu_agent",
-    model_name="doubao-seed-2-1-pro-260628",
     instruction="You are an assistant that talks to users through a Feishu bot.",
 )
 
@@ -93,7 +98,7 @@ if __name__ == "__main__":
 
 ## Graceful shutdown
 
-`FeishuChannelExtension` exposes dedicated lifecycle methods to manage the WebSocket connection from ASGI application (FastAPI, Starlette) startup and shutdown hooks, so that rolling updates or process exits do not drop in-flight Feishu messages.
+`FeishuChannelExtension` exposes dedicated lifecycle methods to manage the WebSocket connection from ASGI application (FastAPI, Starlette) startup and shutdown hooks, to allow already-received messages to finish during rolling updates or exit.
 
 Shutdown runs in two steps: first the WebSocket is closed so no new messages are accepted (Feishu re-routes new events to another instance that still holds a connection), then already-received messages are allowed to finish replying. Replies are sent over the Feishu OpenAPI HTTP client, which does not depend on the WebSocket, so messages received before shutdown still reply normally.
 
@@ -105,7 +110,7 @@ Long-connection scripts that only call `connect()` directly do not need `start()
 
 Call `start()` and `shutdown()` from the ASGI app's startup and shutdown hooks:
 
-```python title="examples/channel/feishu_asgi.py" lines
+```python title="feishu_asgi.py" lines
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -189,7 +194,7 @@ Fetching thread history and quoted messages requires calling Feishu OpenAPI mess
 
 Save and configure the `feishu_bot.py` example above, then create the following file in the same directory:
 
-```python title="examples/channel/feishu_bot_thread.py" lines
+```python title="feishu_bot_thread.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 
@@ -203,7 +208,7 @@ channel = FeishuChannelExtension(
 
 Disable the capability so the extension forwards only the current message text:
 
-```python title="examples/channel/feishu_bot_plain.py" lines
+```python title="feishu_bot_plain.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 
@@ -221,3 +226,9 @@ channel = FeishuChannelExtension(
 - Override the default identity mapping via `session_id_factory` and `user_id_factory`.
 - `connect()` and `disconnect()` support both async clients and synchronous Channel SDK clients exposing `start()` / `stop()`.
 - When streaming output is enabled, reply content is concatenated directly from delta chunks and is no longer corrupted or truncated by the dedup heuristic.
+
+## Starting and verifying
+
+Save the first example as `feishu_bot.py`, run `python feishu_bot.py`, and keep the process running. Send text in the test conversation and confirm a reply. For ASGI hosting, put `feishu_asgi.py` in the same directory, install `fastapi` and `uvicorn`, then run `uvicorn feishu_asgi:app --host 127.0.0.1 --port 8000`. Choose one startup method
+
+The later history examples replace only the `channel` configuration; a connection must still be started. If the bot does not reply, check publication scope, event subscription, chat membership, message permissions, and model configuration. If only history is missing, check context-reading permissions and the two history switches

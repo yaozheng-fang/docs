@@ -18,6 +18,8 @@ pip install "veadk-python[extensions]"
 
 ## Usage
 
+Before running, provide a reachable OpenSearch cluster, an account allowed to create and access indexes, a valid CA certificate, and the connection and embedding variables below. Dimensions must match an existing index; use a new index and reinsert memories when changing dimensions
+
 ```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
@@ -35,6 +37,8 @@ agent = Agent(
 You can also pass connection and embedding config explicitly via `backend_config`:
 
 ```python lines
+import os
+
 from veadk.memory.long_term_memory import LongTermMemory
 from veadk.configs.database_configs import OpensearchConfig
 
@@ -47,7 +51,7 @@ ltm = LongTermMemory(
             host="localhost",
             port=9200,
             username="admin",
-            password="admin",
+            password=os.environ["DATABASE_OPENSEARCH_PASSWORD"],
             use_ssl=True,
             cert_path="/path/to/ca.pem",
         ),
@@ -56,6 +60,17 @@ ltm = LongTermMemory(
 ```
 
 ## Parameters
+
+### LongTermMemory parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseLongTermMemoryBackend` | `"opensearch"` | Set to `opensearch` for this page, or pass a configured backend instance |
+| `backend_config` | `dict` | `{}` | Backend settings; a supplied backend instance takes precedence |
+| `index` | `str` | `""` | Without backend_config, resolves from index, app_name, then default_app; supply a nonempty index with a configuration dictionary |
+| `app_name` | `str` | `""` | Fallback for index; the actual user comes from the saved Session or search arguments |
+| `top_k` | `int` | `5` | Number of retrieved chunks; use a positive integer |
+| `user_id` | `str` | `""` | Deprecated; does not select the runtime user |
 
 ### Constructor parameters
 
@@ -79,7 +94,7 @@ ltm = LongTermMemory(
 | `username` | `DATABASE_OPENSEARCH_USERNAME` | `str` | `""` | Username. |
 | `password` | `DATABASE_OPENSEARCH_PASSWORD` | `str` | `""` | Password. |
 | `cert_path` | `DATABASE_OPENSEARCH_CERT_PATH` | `str` | `""` | CA certificate path. When empty, certificates are not verified — a security risk that triggers a warning. |
-| `secret_token` | `DATABASE_OPENSEARCH_SECRET_TOKEN` | `str` | `""` | STS temporary-credential token. |
+| `secret_token` | `DATABASE_OPENSEARCH_SECRET_TOKEN` | `str` | `""` | Not used by current OpenSearch long-term memory connections |
 
 ### Embedding config
 
@@ -112,3 +127,37 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 <Warning>
 `index` must follow OpenSearch naming rules: all lowercase, only `a-z0-9_-.`, and not starting with `_` or `-`; otherwise initialization fails. In production, set `cert_path` to enable certificate verification and avoid security risks.
 </Warning>
+
+## Verify writes and retrieval
+
+After configuring the dependencies and credentials on this page, run this standalone example. It saves user text and searches for that user directly without calling a conversation model
+
+```python lines
+import asyncio
+
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
+from veadk.memory.long_term_memory import LongTermMemory
+
+async def main():
+    memory = LongTermMemory(backend="opensearch", index="ltm_demo")
+    session = Session(
+        id="memory_check", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(session)
+    result = await memory.search_memory(
+        app_name="ltm_demo", user_id="user_42", query="preferred language"
+    )
+    for entry in result.memories:
+        print(entry.content)
+
+asyncio.run(main())
+```
+
+Results should contain the saved language preference. Managed services may extract memories asynchronously, so a completed write does not guarantee immediate retrieval. An empty result can also indicate permission, network, or service failure; check error logs and service records. The save method does not return a success Boolean
+
+The final index includes `user_id`, so user IDs must also meet the index character rules. The same `index` and `user_id` access the same memory; `search_memory(app_name=...)` does not add another index boundary

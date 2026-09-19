@@ -3,9 +3,9 @@ title: "Overview"
 zh_link: "/productions/veadk/preview/zh/components/session"
 ---
 
-Short-term memory holds session-level context so an agent remembers what was said across turns. It is essentially the conversation context sent to the model — the system prompt plus the message history — keyed by `session_id`: reuse the same `session_id` and the agent remembers earlier turns.
+Short-term memory stores messages, tool interactions, and state so later turns can restore context. Sessions are identified by `app_name`, `user_id`, and `session_id`; continuing a session requires the same storage backend and all three identifiers
 
-When a user starts a conversation, VeADK automatically creates a `Session` object and tracks everything in that conversation.
+The agent configuration supplies system instructions. Compaction, filtering, and agent settings also determine which history reaches the model. Persisting a session does not mean sending its entire history unchanged on every turn
 
 <Note>
 Short-term memory builds on Google ADK's Session mechanism. For background, see [Google ADK Session](https://google.github.io/adk-docs/sessions/session).
@@ -27,11 +27,11 @@ stm = ShortTermMemory(backend="sqlite", local_database_path="./stm.db")
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `backend` | `"local" \| "sqlite" \| "mysql" \| "postgresql" \| "database"` | `"local"` | Selects the backend. `database` is deprecated and equivalent to `sqlite`. |
-| `db_url` | `str` | `""` | A database connection string (e.g. `sqlite:///./test.db`). Once set, `backend` is ignored, and `db_url` is used with `db_kwargs`. |
+| `db_url` | `str` | `""` | A database connection string (e.g. `sqlite+aiosqlite:///./test.db`). Once set, `backend` is ignored, and `db_url` is used with `db_kwargs`. |
 | `backend_configs` | `dict` | `{}` | Backend-specific settings, such as overriding database connection configuration through `mysql_config` or `postgresql_config`. |
 | `db_kwargs` | `dict` | `{}` | Additional database connection or connection-pool settings. |
 | `local_database_path` | `str` | `/tmp/veadk_local_database.db` | Local DB file path, used only by `sqlite`. |
-| `after_load_memory_callback` | `Callable \| None` | `None` | Callback invoked after a session is loaded; receives the loaded `Session`. |
+| `after_load_memory_callback` | `Callable \| None` | `None` | Synchronous read callback; receives `Session` or `None` plus the query arguments. Use `def callback(session, *args, **kwargs)` |
 | `after_create_session_callback` | `Callable \| None` | `None` | Synchronous or asynchronous callback invoked after a new session is created; receives the new `Session` and is not invoked when an existing session is reused. |
 
 <Warning>
@@ -57,7 +57,7 @@ All backends provide the same session-management operations. They differ in pers
 
 ## Working with the Runner
 
-Short-term memory is usually passed to the `Runner`, which then creates or restores sessions automatically. Reuse the same `session_id` at run time to continue the context.
+Short-term memory is usually passed to the `Runner`, which then creates or restores sessions automatically. Complete [model configuration](/productions/veadk/preview/en/components/agent/model), then reuse the app, user, and session identifiers to continue the context
 
 ```python lines
 import asyncio
@@ -67,12 +67,15 @@ from veadk.memory.short_term_memory import ShortTermMemory
 
 stm = ShortTermMemory(backend="sqlite", local_database_path="./stm.db")
 agent = Agent(name="memory_agent", instruction="Remember what the user tells you.")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo", user_id="user_42")
 
 async def main():
     sid = "user-42-chat"
-    print(await runner.run(messages="My name is Ming and my favorite color is blue.", session_id=sid))
-    print(await runner.run(messages="What's my name? What's my favorite color?", session_id=sid))
+    try:
+        print(await runner.run(messages="My name is Ming and my favorite color is blue.", session_id=sid))
+        print(await runner.run(messages="What's my name? What's my favorite color?", session_id=sid))
+    finally:
+        await stm.session_service.close()
 
 asyncio.run(main())
 ```
@@ -98,10 +101,10 @@ or synchronize an external system after a session is first created. Register
 `after_create_session_callback`:
 
 ```python lines
-import asyncio
+from veadk.memory.short_term_memory import ShortTermMemory
 
 async def after_create_session(session):
-    await provision_external_resources(session.id)
+    print(f"Created session: {session.id}")
 
 stm = ShortTermMemory(
     after_create_session_callback=after_create_session,
@@ -114,8 +117,8 @@ function or an asynchronous function (`async def`). If it raises an exception,
 the exception is propagated to the caller and agent execution does not continue.
 
 <Note>
-  Under a database backend, `ShortTermMemory.create_session()` first checks for
-  and reuses an existing session with the same `session_id` to avoid duplicates.
+  For every backend, `ShortTermMemory.create_session()` first checks for
+  and reuses an existing session with the same `app_name`, `user_id`, and `session_id` to avoid duplicates.
   The callback only runs on first creation.
 </Note>
 
@@ -125,7 +128,7 @@ As a conversation grows, the history keeps expanding, increasing what the model 
 
 ### Configure compaction
 
-Once configured, the `Runner` compacts the history each time the interval is reached.
+Pass the `App` configuration below to a Google ADK Runner or app loader that supports it to compact history at the configured invocation interval. Creating an `App` alone does not run compaction.
 
 ```python lines
 from google.adk.apps.app import App, EventsCompactionConfig
@@ -142,7 +145,7 @@ app = App(
     root_agent=root_agent,
     events_compaction_config=EventsCompactionConfig(
         compaction_interval=3,  # compact every 3 new calls
-        overlap_size=1,         # overlap with the last event of the previous window
+        overlap_size=1,         # overlap with 1 invocation from the previous window
     ),
 )
 ```
@@ -176,6 +179,8 @@ summarization_llm = LiteLlm(
 my_compactor = LlmEventSummarizer(
     llm=summarization_llm,
     prompt_template="""Summarize this conversation:
+{conversation_history}
+
 1. Keep key entities, data points, and timeline;
 2. Highlight the core problems discussed and their solutions;
 3. Stay logically coherent and context-relevant;
@@ -192,3 +197,7 @@ app = App(
     ),
 )
 ```
+
+A custom template must contain `{conversation_history}`; otherwise the summary request contains no history to summarize. The `app` above is application configuration and must be passed to a Google ADK Runner or app loader that supports `App`. Constructing it alone does not run conversations or compaction. Compaction makes additional model requests, and summaries may omit detail, so they are not backups of the original conversation
+
+`after_load_memory_callback` must be synchronous, may receive `None` for a missing session, and should accept query keyword arguments. `after_create_session_callback` runs only for sessions created through `ShortTermMemory.create_session()`; direct `session_service.create_session()` calls bypass it. A failed callback does not automatically remove the session that was already created

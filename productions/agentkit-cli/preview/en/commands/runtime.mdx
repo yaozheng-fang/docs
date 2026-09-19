@@ -5,13 +5,21 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/runtime"
 
 The `runtime` command group manages AgentKit runtimes, covering listing, inspection, log retrieval, version history, releasing, updating, and deletion.
 
+Sign in with runtime-management permissions first. Runtimes are scoped by provider and region. Replace example names with results from `runtime list`; save and use runtime IDs in automation. For BytePlus:
+
+```bash lines
+agentkit --provider byteplus runtime list --region ap-southeast-1 --project default
+```
+
+On read commands, `--json` selects JSON output. On `runtime update`, it takes a JSON request body. These uses are not interchangeable
+
 ## runtime list
 
 List all runtimes.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `-p, --project <name>` | Project name. | default |
 | `--json` | Output raw JSON. | `false` |
 | `--gateway-mode <mode>` | Filter by `Shared` or `Exclusive` | — |
@@ -28,7 +36,7 @@ Show details of a runtime, optionally a specific version.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<runtime>` | Runtime id (`r-...`) or name. Required. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `--rev <n>` | Show a specific version instead of the current one. | current |
 | `--json` | Output raw JSON. | `false` |
 
@@ -38,6 +46,10 @@ agentkit runtime show my-agent --rev 3
 
 When `--json` is used for the current runtime and the runtime is bound to a Tool, the output includes `toolId`.
 
+<Warning>
+Deleting a runtime stops its service, making it unavailable to existing callers. Check callers, associated resources, the ID, and region first. `--yes` skips confirmation
+</Warning>
+
 ## runtime delete
 
 Delete a runtime.
@@ -45,7 +57,7 @@ Delete a runtime.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<runtime>` | Runtime id (`r-...`) or name. Required. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
 ```bash lines
@@ -61,7 +73,7 @@ Show logs for a runtime instance.
 | `<runtime>` | Runtime id (`r-...`) or name. Required. | — |
 | `-i, --instance <name>` | Instance name. | auto-resolve |
 | `-n, --limit <n>` | Number of log lines; `0` = all. | server-side |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash lines
@@ -76,7 +88,7 @@ Open an interactive terminal inside a running instance of the runtime, the same 
 | --- | --- | --- |
 | `<runtime>` | Runtime id (`r-...`) or name. Required. | — |
 | `-i, --instance <name>` | Instance to attach to; otherwise a ready instance is used, and you are prompted when several exist. | auto-resolve |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 
 ```bash lines
 agentkit runtime attach my-agent
@@ -89,12 +101,16 @@ List a runtime's version history.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<runtime>` | Runtime id (`r-...`) or name. Required. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `--json` | Output raw JSON. | `false` |
 
 ```bash lines
 agentkit runtime versions my-agent
 ```
+
+<Warning>
+`runtime release` and `runtime update --auto-release` change the live version; resource changes can also affect charges. `--no-wait` means the request was submitted, not that the new version is ready
+</Warning>
 
 ## runtime release
 
@@ -104,7 +120,7 @@ Release (publish) a runtime version, making it live.
 | --- | --- | --- |
 | `<runtime>` | Runtime id (`r-...`) or name. Required. | — |
 | `--rev <n>` | Version number to release. | latest |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `--no-wait` | Return immediately instead of waiting for `Ready`. | `false` |
 
 ```bash lines
@@ -136,7 +152,7 @@ Update a runtime's configuration. This does not release the new version unless `
 | `--envs-json <json>` | Env vars as a JSON array, e.g. `'[{"Key":"K","Value":"V"}]'`. | — |
 | `--tags-json <json>` | Tags as a JSON array. | — |
 | `--json <jsonString>` | Advanced: JSON object merged into the request body. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `--auto-release` | Release the new version immediately after updating. | `false` |
 | `--no-wait` | Return immediately instead of waiting for the runtime to settle. | `false` |
 
@@ -153,3 +169,15 @@ agentkit runtime list --gateway-mode Exclusive --gateway-instance-id gateway-exa
 ```
 
 Gateway mode, instance, and network configuration are creation-time settings. `runtime update --json` rejects changes to these fields. Create a runtime under a new name and migrate callers when a different gateway is required
+
+## Check publication results
+
+Use `runtime versions` to confirm the revision, then `runtime show` to inspect current state. For an instance that is not ready, inspect startup failures with `runtime logs`. Logs may contain user requests and business data; handle them according to project requirements
+
+```bash lines
+agentkit runtime versions my-agent
+agentkit runtime show my-agent
+agentkit runtime logs my-agent --limit 200
+```
+
+Commands in `runtime attach` act on the live instance. Changes are not written back to the local project or image. Rebuild and publish project changes when they must persist

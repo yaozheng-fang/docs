@@ -5,12 +5,19 @@ en_link: "/productions/agentkit-cli/preview/en/commands/eval/run"
 
 `eval run` 是串联评测闭环的核心命令：它以一个评测集、一个或多个评估器，对一个已部署的运行时或 TEA 源评测目标提交一次实验。评测集、评估器与目标均可用 ID 或名称指定，字段映射默认自动完成。
 
+先准备当前后端中的评测集、评估器和可用目标；TEA 还需先提交评估器版本。下方先预览请求，`--dry-run` 仍需要联网解析资源，但不会提交实验，也不会自动发布评测集草稿
+
+<Warning>
+移除 `--dry-run` 后会调用目标与评判模型，可能产生用量费用并把用例、输出交给评测平台。未指定已提交评测集版本时，还可能自动发布草稿版本
+</Warning>
+
 ```bash lines
 agentkit eval run \
   --dataset qa-set \
   --evaluator 相关性 \
   --evaluator-version 0.0.1 \
-  --target my-agent
+  --target my-agent \
+  --dry-run
 ```
 
 <Note>
@@ -47,18 +54,14 @@ agentkit eval run \
   --concurrency 8
 ```
 
-```bash lines
-agentkit eval run --dataset qa-set --evaluator relevance --target qa-agent --dry-run
-```
+## 自动字段映射
 
 一次实验中有三层数据需要对齐：评测集字段、目标输入与输出、评估器输入。`eval run` 会按约定自动连接：
 
 - 目标运行时通常以 `user_input` 为输入字段、`actual_output` 为输出字段；评测集的主输入字段（如 `input`）会传入目标的 `user_input`。
 - 评估器中表示模型答案的字段（如 `output`）取自目标输出 `actual_output`；其余字段（如 `input`、`reference_output`）按同名从评测集取值。
 
-一次实验中有三层数据需要对齐：评测集字段、目标输入与输出、评估器输入。默认情况下，CLI 会把评测集主输入传给目标输入，并把目标输出传给评估器的答案字段；字段名称不一致时用 `--map` 覆盖。
-
-TEA 后端使用箭头语法：
+### `--map` 语法
 
 TEA 后端使用带前缀的箭头语法：
 

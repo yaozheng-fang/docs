@@ -3,7 +3,7 @@ title: "使用本地内存存储"
 en_link: "/productions/veadk/preview/en/components/knowledge/local"
 ---
 
-`local` 后端使用 LlamaIndex 的内存向量索引存储知识。知识文本先经 embedding 模型向量化，再写入进程内的向量索引，检索时按相似度召回。它无需任何外部服务，是 `KnowledgeBase` 的**默认后端**，最适合本地调试与快速验证。
+`local` 后端使用 LlamaIndex 的内存向量索引存储知识。知识文本先经 embedding 模型向量化，再写入进程内的向量索引，检索时按相似度召回。它无需外部数据库，但需要可用的 embedding 服务，是 `KnowledgeBase` 的**默认后端**，最适合本地调试与快速验证。
 
 <Warning>
 数据仅保存在进程内存中，程序退出后即丢失。生产环境请使用持久化后端。
@@ -22,12 +22,16 @@ pip install "veadk-python[extensions]"
 
 ## 使用示例
 
+运行前配置 `MODEL_EMBEDDING_NAME`、`MODEL_EMBEDDING_DIM`、`MODEL_EMBEDDING_API_BASE` 与 `MODEL_EMBEDDING_API_KEY`。`extensions` 包含 llama-index、embedding 适配器及向量存储连接器；模型文本会发送到配置的 embedding 服务。使用 BytePlus 或其他模型服务时应显式设置匹配的地址、模型与凭证，火山方舟默认地址不会自动切换
+
 ```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(backend="local", index="company_faq")
-kb.add_from_text("公司的标准年假为每年 15 天，入职满一年起享受。")
+assert kb.add_from_text("公司的标准年假为每年 15 天，入职满一年起享受。")
+for entry in kb.search("年假", top_k=3):
+    print(entry.content)
 
 agent = Agent(
     name="demo",
@@ -57,14 +61,28 @@ kb = KnowledgeBase(
 
 ## 参数
 
+### KnowledgeBase 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | 本页设为 `local`；也可传后端实例 |
+| `backend_config` | `dict` | `{}` | 非空时必须包含 index；不会自动合并外层 index |
+| `index` | `str` | `""` | 索引名称；无配置字典时回退到 app_name |
+| `app_name` | `str` | `""` | index 的回退值，不是检索时的用户权限过滤器 |
+| `top_k` | `int` | `10` | 默认检索数量；search(top_k=0) 使用此值 |
+| `name` | `str` | `"user_knowledgebase"` | 向智能体描述的知识库名称 |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | 向智能体说明用途 |
+| `enable_profile` | `bool` | `False` | 启用资料画像；需先生成画像文件，普通检索保持关闭 |
+| `query_with_user_profile` | `bool` | `False` | 借助智能体绑定的 Viking 长期记忆画像生成查询；不要求知识库本身使用 Viking |
+
 ### 构造参数
 
 `backend_config` 支持以下配置项：
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `index` | `str` | 无默认，由 `KnowledgeBase` 传入 | 知识库索引名。本地后端对命名无额外限制。 |
-| `embedding_config` | `EmbeddingModelConfig` | 自动从 `MODEL_EMBEDDING_*` 环境变量读取 | embedding 模型配置。 |
+| `index` | `str` | 无默认，由 `KnowledgeBase` 传入 | 知识库索引名。本地后端对命名无额外限制 |
+| `embedding_config` | `EmbeddingModelConfig` | 自动从 `MODEL_EMBEDDING_*` 环境变量读取 | embedding 模型配置 |
 
 ### embedding 配置
 
@@ -72,10 +90,10 @@ kb = KnowledgeBase(
 
 | 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | embedding 模型名。 |
-| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | embedding 向量维度。 |
-| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | embedding 服务的 API 地址。 |
-| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | 依次回退到 `MODEL_AGENT_API_KEY` 或自动获取的 Ark 令牌 | 访问 embedding 服务的密钥。 |
+| `name` | `MODEL_EMBEDDING_NAME` | `str` | `doubao-embedding-vision-250615` | embedding 模型名 |
+| `dim` | `MODEL_EMBEDDING_DIM` | `int` | `2048` | embedding 向量维度 |
+| `api_base` | `MODEL_EMBEDDING_API_BASE` | `str` | `https://ark.cn-beijing.volces.com/api/v3/` | embedding 服务的 API 地址 |
+| `api_key` | `MODEL_EMBEDDING_API_KEY` | `str` | 依次回退到 `MODEL_AGENT_API_KEY` 或自动获取的 Ark 令牌 | 访问 embedding 服务的密钥 |
 
 ## 环境变量配置
 
@@ -89,3 +107,5 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 <Note>
 本地后端仅依赖 embedding 模型，无需任何数据库连接配置。文本会按文件类型自动切分为片段后再向量化。
 </Note>
+
+示例检索结果应包含年假规则。若返回为空，先确认写入返回成功、模型维度一致及服务端处理完成，再检查网络与权限；托管后端不保证导入后立即可检索。绑定 Agent 后仍需完成模型配置才能运行问答

@@ -41,6 +41,8 @@ model:
     api_key: your-api-key-here
 ```
 
+For BytePlus, explicitly configure the media model name, API base URL, and key for your enabled service. Do not assume `CLOUD_PROVIDER` overrides media configuration. Capabilities and parameter limits depend on the selected model service. `MODEL_IMAGE_API_BASE` is read at import time; configure it before starting the process.
+
 ## Usage
 
 ```python title="examples/tools/image_generate/agent.py" lines
@@ -75,3 +77,43 @@ if __name__ == "__main__":
 <Note>
 `image_generate` is the canonical import name. `from veadk.tools.builtin_tools.generate_image import image_generate` still works, but the `generate_image` module is deprecated — use `image_generate` instead.
 </Note>
+
+## Parameters and results
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `tasks` | `list[dict]` | Required | Image request list |
+| `tool_context` | `ToolContext` | Injected | Invocation context used to store generated results |
+| `timeout` | `int` | `600` | Timeout in seconds for each image request |
+| `model_name` | `str \| None` | `None` | Per-call model override; otherwise uses `MODEL_IMAGE_NAME` or the built-in default |
+
+Each task supports these fields. Omitted optional request fields use model-service defaults. Set dimensions or watermark behavior explicitly when they matter.
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `task_type` | `str` | Required | Intent: `text_to_single`, `text_to_group`, `single_image_to_single`, `single_image_to_group`, `multi_image_to_single`, or `multi_image_to_group` |
+| `prompt` | `str` | Required | Image description; specify the requested count for groups |
+| `image` | `str \| list[str]` | Omitted | Reference image URLs or Base64; omit for text-only generation |
+| `size` | `str` | Service default | Supported resolution level or dimensions such as `2048x2048` |
+| `response_format` | `str` | Service default | `url` or `b64_json`; usually use `url` |
+| `watermark` | `bool` | Service default | Add a watermark |
+| `sequential_image_generation` | `str` | Service default | Set `auto` for groups, or `disabled` for one image |
+| `max_images` | `int` | Service default | Upper bound used only with `auto`, not an exact count |
+| `tools` | `list[dict]` | Omitted | Supported models accept `[{"type": "web_search"}]` for text-only generation |
+| `output_format` | `str` | Service default | `png` or `jpeg` on models supporting this field |
+
+Generation mode follows `image` and `sequential_image_generation`; `task_type` alone does not fill the other fields. This request explicitly allows up to three images:
+
+```python lines
+tasks = [{
+    "task_type": "text_to_group",
+    "prompt": "Generate 3 illustrations of a cat, each in a different pose",
+    "size": "2048x2048",
+    "response_format": "url",
+    "sequential_image_generation": "auto",
+    "max_images": 3,
+    "watermark": True,
+}]
+```
+
+Results contain `status`, `success_list`, `error_list`, and `error_detail_list`. Each success item maps an image name to a URL. A batch may partly succeed, so inspect error lists as well. With `b64_json`, the tool attempts to upload the image to TOS and return a URL, requiring writable object storage configuration; it does not return raw Base64 unchanged as the final tool result.

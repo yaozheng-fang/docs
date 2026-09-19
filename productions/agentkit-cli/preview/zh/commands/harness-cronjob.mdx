@@ -39,6 +39,8 @@ BytePlus 使用 `cloud.provider: byteplus`、对应运行时区域和 TOS 桶；
 | `cronjob.lease_seconds` | 执行租约秒数，30–600 | `60` |
 | `cronjob.poll_seconds` | 调度轮询秒数，1–60 | `5` |
 
+部署后先运行 `agentkit harness cronjob status my-harness` 确认响应实例已启用调度且存储可用，再创建任务。该状态只代表响应本次请求的实例，不是所有副本的汇总状态
+
 ## 命令总览
 
 | 命令 | 说明 |
@@ -82,6 +84,12 @@ agentkit harness cronjob create my-harness --name morning-report --cron "0 9 * *
 ```
 
 返回结果包含 `cronjob_id`。相同幂等键与相同输入返回同一任务，输入改变则拒绝。一次性任务将 `--cron` 替换为未来时间，例如 `--at "2026-10-01T09:00:00+08:00"`。`--config` 使用 [Harness 调用配置](/productions/agentkit-cli/preview/zh/commands/harness#调用配置文件) 中的消息、`harness` 和模型调用上限；未覆盖字段继承部署配置
+
+将创建结果中的实际 `cronjob_id` 保存为变量，供以下详情、暂停和历史命令使用
+
+```bash lines
+export CRONJOB_ID="<cronjob_id from create>"
+```
 
 ## harness cronjob list
 
@@ -203,6 +211,12 @@ agentkit harness cronjob runs my-harness "$CRONJOB_ID"
 
 将返回的 `next_cursor` 传入 `--cursor` 读取下一页
 
+从 `runs` 返回的执行历史中选择 `run_id`，再读取该次执行的结果；任务 ID 和执行 ID 不能互换
+
+```bash lines
+export RUN_ID="<run_id from runs>"
+```
+
 ## harness cronjob result
 
 读取一次执行的最终结果
@@ -254,3 +268,5 @@ agentkit harness cronjob cancel my-harness "$CRONJOB_ID" "$RUN_ID"
 - `status` 只反映响应请求的实例；`runs` 按从新到旧返回。结果保存到历史前的短暂阶段可先通过 `get` 或 `result` 查看
 
 外部操作不保证只发生一次，例如工具完成外部写入后实例立即中断。恢复前应核对已发生的操作，避免重复执行。调度会扫描保留的任务，任务量增加时应结合 TOS 请求量调整轮询间隔
+
+暂停任务用于停止后续调度；取消针对某一个 `run_id`，不改变周期计划。取消请求返回后应重新查询执行状态，不能假定已完成的外部操作被撤销。当前 CLI 没有删除任务定义的子命令；停止后续执行使用 `pause`

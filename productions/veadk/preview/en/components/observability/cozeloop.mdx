@@ -11,30 +11,47 @@ zh_link: "/productions/veadk/preview/zh/components/observability/cozeloop"
 - You want to analyze conversation quality and tool-usage effectiveness with Cozeloop's evaluation capabilities;
 - You already have a Cozeloop workspace and access token.
 
+## Prerequisites
+
+Complete [installation](/productions/veadk/preview/en/get-started/installation) and [model configuration](/productions/veadk/preview/en/components/agent/model), then set the environment variables below before starting Python. Replace placeholders with accessible resources and valid credentials
+
+<Warning>
+Cozeloop receives trace data. Specify an existing workspace ID where possible; omitting it attempts to create a default workspace using your token and requires permission to do so. Configuring an exporter does not create or run evaluation tasks
+</Warning>
+
+```bash lines
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT="https://api.coze.cn/v1/loop/opentelemetry/v1/traces"
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY="your-cozeloop-token"
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME="your-cozeloop-space-id"
+```
+
 ## Usage
 
-```python lines
+Save as `app.py` and run `python app.py`. The example uses existing resources and flushes pending traces after one model call
+
+```python title="app.py" lines
 import asyncio
 
 from veadk import Agent, Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-from veadk.tools.demo_tools import get_city_weather
 from veadk.tracing.telemetry.exporters.cozeloop_exporter import CozeloopExporter
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
-exporters = [CozeloopExporter()]
-tracer = OpentelemetryTracer(exporters=exporters)
-
-agent = Agent(tools=[get_city_weather], tracers=[tracer])
-
-runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
-
-asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="session_id_demo"))
+tracer = OpentelemetryTracer(exporters=[CozeloopExporter()])
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("Explain the purpose of an agent in one sentence", session_id="demo-session")
+)
+print(response)
+tracer.force_export()
+print("Trace ID:", tracer.trace_id)
 ```
 
 You can also pass connection parameters explicitly via `CozeloopExporterConfig`:
 
 ```python lines
+import os
+
 from veadk.tracing.telemetry.exporters.cozeloop_exporter import (
     CozeloopExporter,
     CozeloopExporterConfig,
@@ -43,11 +60,12 @@ from veadk.tracing.telemetry.exporters.cozeloop_exporter import (
 exporter = CozeloopExporter(
     config=CozeloopExporterConfig(
         endpoint="https://api.coze.cn/v1/loop/opentelemetry/v1/traces",
-        space_id="your-cozeloop-space-id",
-        token="your-cozeloop-token",
+        space_id=os.environ["OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME"],
+        token=os.environ["OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY"],
     )
 )
 ```
+
 
 ## Parameters
 
@@ -75,13 +93,7 @@ exporter = CozeloopExporter(
 `space_id` is taken from the environment variable `OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME`; when unset, the exporter creates a default workspace automatically using `token` as the credential. After logging in to Cozeloop, the segment after `space` in the URL is the workspace ID.
 </Note>
 
-## Environment variables
 
-```bash lines
-export OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT="https://api.coze.cn/v1/loop/opentelemetry/v1/traces"
-export OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY="your-cozeloop-token"
-export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME="your-cozeloop-space-id"
-```
 
 You can also let `Agent` attach the Cozeloop exporter automatically from an environment variable, without constructing it explicitly:
 
@@ -92,3 +104,7 @@ export ENABLE_COZELOOP=true
 <Tip>
 With `ENABLE_COZELOOP=true`, `Agent` creates an `OpentelemetryTracer` and attaches `CozeloopExporter` automatically, even when the agent provides no `tracers`.
 </Tip>
+
+## Verification and troubleshooting
+
+Search for the run's Trace ID in the target backend. A successful model response does not prove trace delivery. If data is missing, check the endpoint and region, credential permissions, target resource, and whether `tracer.force_export()` ran before the process exited

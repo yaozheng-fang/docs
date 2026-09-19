@@ -19,6 +19,14 @@ Agent API Server 提供应用发现、会话管理、智能体运行、制品读
 
 ## 启动服务
 
+在独立 Python 环境中安装与本参考一致的 Google ADK：
+
+```bash lines
+python -m pip install "google-adk==2.2.0"
+```
+
+使用 VeADK 智能体时，先完成 [VeADK 安装](/productions/veadk/preview/zh/get-started/installation)与[快速开始](/productions/veadk/preview/zh/get-started/quickstart)，并确认同一环境中的 Google ADK 版本
+
 先准备一个符合 ADK 目录约定的智能体应用，例如 `agents/travel_assistant/agent.py`，其中导出 `root_agent`。模型凭证和应用依赖应在运行服务的环境中配置
 
 在包含 `agents` 目录的项目根目录执行：
@@ -47,6 +55,12 @@ python -m pip install "google-adk[eval]==2.2.0"
 ```
 
 默认启用本地会话和制品存储；指定存储 URI 或禁用本地存储时行为相应改变。未启用 `--auto_create_session` 时，应先创建会话，再调用 `/run` 或 `/run_sse`
+
+## 首次调用
+
+从 `/list-apps` 响应选择应用名称，在该应用和业务用户下[创建会话](/productions/api-reference/preview/zh/agent-api-server/create-session)，然后保存返回的 `id`。将这三个标识用于[运行智能体](/productions/api-reference/preview/zh/agent-api-server/run)或[流式运行智能体](/productions/api-reference/preview/zh/agent-api-server/run-sse)，再通过[获取会话](/productions/api-reference/preview/zh/agent-api-server/get-session)读取保存的状态与事件
+
+返回事件可能包含文本、工具调用或状态与制品更新，不能把每个事件都当作最终回答。使用 SSE 时，还需处理流内错误；HTTP `200` 本身不代表整个调用成功
 
 ## 地址与字段
 

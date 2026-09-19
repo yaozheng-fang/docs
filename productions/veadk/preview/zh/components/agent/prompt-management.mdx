@@ -3,46 +3,111 @@ title: "提示词管理"
 en_link: "/productions/veadk/preview/en/components/agent/prompt-management"
 ---
 
-在生产环境中，系统提示词往往需要版本管理与动态下发。提示词管理让你在运行时模板化并热更新提示词，而无需修改代码或重启服务。每次处理用户请求前，VeADK 都会调用提示词管理器的 `get_prompt` 方法获取最新内容，并将其作为该智能体的系统提示词。
+提示词管理器从外部来源提供系统提示词，适合独立维护提示词版本或按请求选择内容。设置 `Agent.prompt_manager` 后，管理器会替代 `instruction`；获取时机由运行时解析提示词的过程决定，不应假定每个用户请求只调用一次
 
-## 使用 CozeLoop
+以下示例需要先完成[模型配置](/productions/veadk/preview/zh/get-started/quickstart)
 
-VeADK 内置 `CozeloopPromptManager`，可将系统提示词对接到 CozeLoop 云端提示词管理。
+## 使用 Cozeloop
 
-先安装 CozeLoop 的 Python SDK：
+在 Cozeloop 中创建提示词并发布版本，将 `production` 标签绑定到要使用的版本，准备有读取权限的工作空间 ID 和 Token。该管理器读取提示词模板中第一条消息的内容，因此请将完整系统提示词放在第一条消息中
+
+安装 SDK，并在运行脚本的终端设置环境变量：
 
 ```bash lines
 pip install cozeloop
 ```
 
-将凭证通过环境变量提供，避免在代码中硬编码：
-
-```bash lines
-export COZELOOP_WORKSPACE_ID="<你的 Workspace ID>"
-export COZELOOP_TOKEN="<你的 CozeLoop Token>"
+```bash  lines
+export COZELOOP_WORKSPACE_ID="<workspace-id>"
+export COZELOOP_TOKEN="<access-token>"
+export COZELOOP_PROMPT_KEY="<published-prompt-key>"
 ```
 
-创建管理器并传入智能体：
+这些环境变量由下方示例显式读取，并不是管理器自动发现的配置项
 
-```python lines
+```python managed_prompt.py lines
+import asyncio
 import os
-from veadk import Agent
+from veadk import Agent, Runner
 from veadk.prompts.prompt_manager import CozeloopPromptManager
 
-prompt_manager = CozeloopPromptManager(
+manager = CozeloopPromptManager(
     cozeloop_workspace_id=os.environ["COZELOOP_WORKSPACE_ID"],
     cozeloop_token=os.environ["COZELOOP_TOKEN"],
-    prompt_key="your_prompt_key",  # CozeLoop 中创建的 Prompt Key
-    label="production",            # CozeLoop 中创建的 Prompt 标签
+    prompt_key=os.environ["COZELOOP_PROMPT_KEY"],
+    label="production",
 )
+agent = Agent(name="assistant", prompt_manager=manager)
 
-agent = Agent(name="assistant", prompt_manager=prompt_manager)
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain how to check an invoice.", session_id="managed-prompt"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-<Note>
-  CozeLoop 会在本地缓存提示词，更新间隔为 1 分钟。当获取失败时，会回退到 VeADK 默认的系统提示词。
-</Note>
+运行 `python managed_prompt.py` 后，智能体使用所选提示词生成回答。可在模板中设置明确的回答格式，检查输出是否采用该格式
+
+### 构造参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `cozeloop_workspace_id` | `str` | 必填 | 提示词所在工作空间 |
+| `cozeloop_token` | `str` | 必填 | 有权读取提示词的访问 Token |
+| `prompt_key` | `str` | 必填 | 已发布提示词的唯一标识 |
+| `version` | `str` | `""` | 固定版本号；需要可复现结果时使用 |
+| `label` | `str` | `""` | 版本标签；例如 `production` |
+
+选择固定版本时设置 `version`；需要随标签更新时设置 `label`。缓存和刷新周期由安装的 Cozeloop SDK 决定，标签变更不保证立即生效
+
+### 获取失败与模板限制
+
+- 返回的提示词、消息列表或第一条消息内容为空时，使用 VeADK 默认提示词，并记录警告
+- 网络、鉴权或 SDK 调用异常不会由管理器统一转换为默认提示词；应用需要处理这些失败
+- 不会自动拼接多条消息，也不会自动渲染 Cozeloop 模板变量
+- 即使同时设置了 `Agent.instruction`，它也不会作为该管理器的失败回退
 
 ## 自定义提示词管理器
 
-若需从自有的配置中心、数据库或文件加载提示词，可继承 `BasePromptManager` 并实现 `get_prompt` 方法。该方法在每次处理用户请求前被调用，返回的字符串将作为该智能体的系统提示词。
+继承 `BasePromptManager` 并实现 `get_prompt(context, **kwargs)`。下面的管理器每次读取同目录的 `system-prompt.txt`；修改文件会影响下一次读取，文件不存在或为空时明确失败
+
+先在脚本同目录创建提示词文件：
+
+```text system-prompt.txt lines
+You help users check invoices. Ask for the billing period and explain each step clearly.
+```
+
+```python file_prompt.py lines
+import asyncio
+from pathlib import Path
+from google.adk.agents.readonly_context import ReadonlyContext
+from veadk import Agent, Runner
+from veadk.prompts.prompt_manager import BasePromptManager
+
+class FilePromptManager(BasePromptManager):
+    def __init__(self, path: Path):
+        self.path = path
+
+    def get_prompt(self, context: ReadonlyContext, **kwargs) -> str:
+        text = self.path.read_text(encoding="utf-8").strip()
+        if not text:
+            raise ValueError("The prompt file must not be empty")
+        return text
+
+agent = Agent(
+    name="assistant",
+    prompt_manager=FilePromptManager(Path(__file__).with_name("system-prompt.txt")),
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain how to check an invoice.", session_id="file-prompt"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+运行 `python file_prompt.py` 可看到使用文件提示词生成的回答。`context` 的可读字段见[系统提示词](/productions/veadk/preview/zh/components/agent/system-prompt)。接入数据库或配置中心时，需要自行定义超时、缓存、版本选择和失败策略；函数返回值中的模板变量也应由管理器自行处理

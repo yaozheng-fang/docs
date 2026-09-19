@@ -19,6 +19,14 @@ These endpoints are separate from AgentKit cloud resource management APIs and do
 
 ## Start the server
 
+Install the Google ADK version used by this reference in a dedicated Python environment:
+
+```bash lines
+python -m pip install "google-adk==2.2.0"
+```
+
+For VeADK agents, follow [VeADK installation](/productions/veadk/preview/en/get-started/installation) and the [quickstart](/productions/veadk/preview/en/get-started/quickstart), then confirm the Google ADK version in the same environment
+
 Prepare an agent application using the ADK directory layout, such as `agents/travel_assistant/agent.py` exporting `root_agent`. Configure the model credentials and application dependencies in the server environment
 
 From the project root containing `agents`, run:
@@ -47,6 +55,12 @@ python -m pip install "google-adk[eval]==2.2.0"
 ```
 
 Local session and artifact storage is enabled by default. Explicit storage URIs or disabling local storage change this behavior. Unless `--auto_create_session` is enabled, create a session before calling `/run` or `/run_sse`
+
+## Make the first call
+
+Choose an application from `/list-apps`, [create a session](/productions/api-reference/preview/en/agent-api-server/create-session) under that application and the intended user, and keep the returned `id`. Use these three identifiers to [run an agent](/productions/api-reference/preview/en/agent-api-server/run) or [stream its events](/productions/api-reference/preview/en/agent-api-server/run-sse). Then [get the session](/productions/api-reference/preview/en/agent-api-server/get-session) to read its saved state and events
+
+Events can contain text, tool calls, or state and artifact updates; not every event is a final answer. With SSE, handle in-stream errors as well. HTTP `200` alone does not establish that the entire invocation succeeded
 
 ## Addresses and fields
 

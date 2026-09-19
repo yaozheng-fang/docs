@@ -5,6 +5,16 @@ en_link: "/productions/agentkit-cli/preview/en/commands/auth"
 
 `auth` 命令组用于控制台登录与 SSO 鉴权：通过浏览器登录并存储短时 STS 凭据或仅保存用户 OIDC 会话、清除会话、查看当前身份、管理登录配置，以及为组织准备 CLI SSO 登录资源。`login`、`logout`、`whoami` 同时提供为顶层命令（如 `agentkit login`）。
 
+选择登录方式时，先确定后续任务：
+
+| 任务 | 登录方式 |
+| --- | --- |
+| 构建、部署和管理资源 | 控制台登录、能换取 STS 的组织 SSO，或所选平台的 AK/SK |
+| 使用组织共享 Harness 聊天 | 组织 SSO 的 `--identity-only`，并使用管理员发布的别名 |
+| 只保存登录地址供以后使用 | `auth profile set`；保存配置本身不会完成登录 |
+
+完成浏览器授权后，用 `agentkit whoami` 确认当前身份。账号身份正确仍需具备目标资源对应的权限
+
 ## auth login
 
 通过浏览器完成当前云厂商的控制台登录，或使用指定 SSO 地址登录。SSO 模式使用 OIDC 登录结果换取短时 STS 凭据；`--identity-only` 只保存用户 OIDC 会话，可供 `harness invoke` 在匹配的 `custom_jwt` Runtime 上自动转发用户 `id_token`，但不创建 AgentKit 管理凭据。通用 `invoke run` 调用 `custom_jwt` Runtime 时仍需通过 `--headers` 显式传入 `Authorization`。
@@ -105,7 +115,9 @@ agentkit auth profile set my-profile \
 
 列出已保存的配置。
 
-该命令不接受任何参数或选项。
+| 标志/参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| _（无业务选项）_ | 列出本机保存的登录配置 | — |
 
 ```bash lines
 agentkit auth profile list
@@ -268,3 +280,5 @@ agentkit whoami
 火山引擎与 BytePlus 的控制台会话分别保存，`whoami` 和 `logout` 按当前云厂商选择会话。已配置的有效环境凭据仍优先于登录缓存，不会被登录覆盖
 
 需要云凭据的命令在交互终端缺少凭据时可启动浏览器登录。全局 `--no-auto-login` 禁止自动登录；CI、`--json`、`--raw`、`--yes` 或非交互终端也不会弹出自动登录，需事先提供凭据。纯本地操作和 `--dry-run` 不触发此流程
+
+退出登录只清除 CLI 保存的会话，不会撤销环境变量中的 AK/SK，也不会关闭浏览器中的云控制台会话。若退出后命令仍能访问资源，先检查当前终端是否仍导出了有效云端凭证

@@ -56,3 +56,16 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Parameters and output format
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `text` | `str` | Required | Text to synthesize |
+| `tool_context` | `ToolContext` | Injected | Invocation context |
+
+Success returns `{"saved_audio_path": "..."}`; failures may return `error`. Audio is saved locally as 24 kHz PCM in a `.pcm` file, not a WAV or MP3 file. Use matching PCM parameters when converting it. Missing output directories are created, and the process needs write permission.
+
+The tool uses the `seed-tts-2.0` resource and the Volcengine speech endpoint. Enable the resource and selected voice for the App ID. `CLOUD_PROVIDER=byteplus` does not switch the speech endpoint. The tool may also attempt playback on the host machine; check the output file even if no audio device is available.
+
+Check `error`, then verify that `saved_audio_path` exists and is nonempty. A server-local path is not a user-downloadable link; publish the file through your application when needed.

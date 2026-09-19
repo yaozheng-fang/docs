@@ -14,16 +14,28 @@ en_link: "/productions/veadk/preview/en/components/session/local"
 ## 使用示例
 
 ```python lines
-from veadk import Agent, Runner
+import asyncio
+
 from veadk.memory.short_term_memory import ShortTermMemory
 
-stm = ShortTermMemory(backend="local")  # 默认即为 local，等价于不传 backend
+stm = ShortTermMemory(backend="local")
 
-agent = Agent(name="demo")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+async def main():
+    await stm.create_session(
+        app_name="memory_demo", user_id="user_42", session_id="chat_01"
+    )
+    session = await stm.session_service.get_session(
+        app_name="memory_demo", user_id="user_42", session_id="chat_01"
+    )
+    assert session is not None
+    print(session.id)
+
+asyncio.run(main())
 ```
 
-由于 `local` 是默认值，以下三种写法完全等价：
+成功后输出 `chat_01`，表示会话已创建并可读回；示例不调用模型。实际对话时将同一 `stm` 传给 `Runner(short_term_memory=stm, agent=agent)`，并保持应用、用户和会话标识一致
+
+由于 `local` 是默认值，以下写法均选择内存后端；不同实例不共享会话：
 
 ```python lines
 ShortTermMemory()                    # 使用默认后端
@@ -43,12 +55,13 @@ ShortTermMemory(backend="local")     # 显式指定
 
 | 参数 | 类型 | 默认值 | 对 local 是否生效 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `backend` | `str` | `"local"` | 生效 | 设为 `"local"` 或留空即选择本后端。 |
-| `db_url` | `str` | `""` | 生效（覆盖） | 一旦设置，将忽略 `backend`，改用数据库后端。若要保持内存模式，请勿设置。 |
-| `backend_configs` | `dict` | `{}` | 不生效 | `local` 不读取此项。 |
-| `db_kwargs` | `dict` | `{}` | 不生效 | 仅数据库后端使用。 |
-| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 不生效 | 仅 `sqlite` 使用。 |
-| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 读取会话后触发的回调，入参为加载到的 `Session`。 |
+| `backend` | `str` | `"local"` | 生效 | 设为 `"local"` 或省略此参数；空字符串不是合法后端 |
+| `db_url` | `str` | `""` | 生效（覆盖） | 一旦设置，将忽略 `backend`，改用数据库后端。若要保持内存模式，请勿设置 |
+| `backend_configs` | `dict` | `{}` | 不生效 | `local` 不读取此项 |
+| `db_kwargs` | `dict` | `{}` | 不生效 | 仅数据库后端使用 |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 不生效 | 仅 `sqlite` 使用 |
+| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 同步读取回调；接收 `Session` 或 `None`，以及查询时的参数，建议使用 `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | 生效 | 通过 `ShortTermMemory.create_session()` 首次创建会话后触发；支持同步或异步回调，接收新建的 `Session` |
 
 <Warning>
 `local` 后端不落盘，进程退出后所有会话数据都会丢失，切勿在生产环境用它保存需要长期保留的会话。需要持久化请改用 [SQLite](/productions/veadk/preview/zh/components/session/sqlite)、[MySQL](/productions/veadk/preview/zh/components/session/mysql) 或 [PostgreSQL](/productions/veadk/preview/zh/components/session/postgresql)。

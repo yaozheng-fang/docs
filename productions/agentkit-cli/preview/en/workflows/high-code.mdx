@@ -14,7 +14,7 @@ The high-code path suits cases that need custom logic, tools, or multi-agent orc
     Create a project from a built-in template. Run `agentkit init --list-templates` to list every template first.
 
     ```bash lines
-    agentkit init my-agent --template basic
+    agentkit init my-agent --template basic --directory my-agent
     cd my-agent
     ```
   </Step>
@@ -25,8 +25,29 @@ The high-code path suits cases that need custom logic, tools, or multi-agent orc
       The runtime container must listen on `0.0.0.0:8000` to pass its readiness probe. Templates satisfy this by default, so you rarely need to change it.
     </Note>
   </Step>
+<Step title="Configure the model and cloud">
+    Follow the [Quickstart](/productions/agentkit-cli/preview/en/quickstart#create-and-configure-a-project) to select Volcengine or BytePlus and configure the model name, API base URL, and API key. Deployment credentials and model credentials serve different purposes; CLI login alone does not configure the model
+
+    Add `agentkit.yaml` and `.env` to `.gitignore` and `.dockerignore` in the project root, then write the exported model variables to lifecycle configuration
+
+    ```bash lines
+    agentkit config \
+      --runtime_envs "MODEL_AGENT_NAME=$MODEL_AGENT_NAME" \
+      --runtime_envs "MODEL_AGENT_API_BASE=$MODEL_AGENT_API_BASE" \
+      --runtime_envs "MODEL_AGENT_API_KEY=$MODEL_AGENT_API_KEY" \
+      --runtime_envs "MODEL_AGENT_PROVIDER=openai"
+    agentkit config --show
+    ```
+
+    This writes actual values to local `agentkit.yaml`; root configuration does not substitute `${VAR}` inside the file
+  </Step>
+
   <Step title="Build and deploy">
     Run the full lifecycle flow, building the image in the cloud and creating or updating the runtime.
+
+<Warning>
+    `launch` builds an image and creates or updates cloud resources, which may incur charges. An update also changes the existing Runtime's behavior. Check the configuration, account, region, and project first
+    </Warning>
 
     ```bash lines
     agentkit launch
@@ -56,6 +77,10 @@ The high-code path suits cases that need custom logic, tools, or multi-agent orc
 </Steps>
 
 When you no longer need the runtime, delete it to free resources:
+
+<Warning>
+Deletion affects production calls and cannot be undone. Confirm the Runtime and retain required business data first
+</Warning>
 
 ```bash lines
 agentkit runtime delete my-agent -y

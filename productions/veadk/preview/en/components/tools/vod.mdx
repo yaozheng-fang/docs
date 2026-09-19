@@ -37,6 +37,8 @@ tool:
     timeout: 10.0
 ```
 
+Install `uv`, verify `uvx --version`, and allow downloads of the VOD MCP server and dependencies. Replace the example URLs with valid service-accessible videos and the Space name with an existing Space. Configure the reasoning model as well.
+
 ## Usage
 
 ```python title="examples/tools/vod/agent.py" lines
@@ -73,3 +75,40 @@ if __name__ == "__main__":
 <Note>
 Some video-editing tasks take a while and return a `task_id` immediately. You can keep asking the agent whether the task is finished to retrieve the result.
 </Note>
+
+## Capability groups and configuration timing
+
+| Group | Purpose |
+| :--- | :--- |
+| `edit` | Video editing |
+| `intelligent_slicing` | Intelligent slicing |
+| `intelligent_matting` | Intelligent matting |
+| `subtitle_processing` | Subtitle processing |
+| `audio_processing` | Audio processing |
+| `video_enhancement` | Video enhancement |
+| `upload` | Media uploads |
+| `video_play` | Video playback |
+
+Set `TOOL_VOD_GROUPS` and `TOOL_VOD_TIMEOUT` before importing `vod_tools`, or use the YAML configuration above; VeADK translates loaded configuration into environment variables. Restart the process after changes to rebuild the connection. The timeout controls MCP connection waiting, not completion of a video-processing job. The VOD MCP server supplies its own default capabilities when VeADK passes no groups.
+
+This built-in connection launches the Volcengine VOD MCP server. Configuring BytePlus credentials does not establish BytePlus endpoint support; use MCP configuration matching the target video service. A `task_id` only confirms submission; query the task until success and obtain the result URL before treating it as complete.
+
+## Verify the connection
+
+```python lines
+import asyncio
+
+from veadk.tools.builtin_tools.vod import vod_tools
+
+
+async def main():
+    try:
+        tools = await vod_tools.get_tools()
+        print([tool.name for tool in tools])
+    finally:
+        await vod_tools.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

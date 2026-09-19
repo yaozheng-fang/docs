@@ -38,3 +38,12 @@ agentkit eval target list --name my-agent
 ```bash lines
 agentkit eval target version-list --source-target-id <source-target-id>
 ```
+
+开始前运行 `agentkit eval backend` 确认当前账号使用 TEA，并确保目标已在该工作区中可见。`version-list` 的源目标 ID 来自 `target list`，不是评测实验 ID
+
+```bash lines
+agentkit eval target list --name my-agent --json
+agentkit eval target version-list --source-target-id <source-target-id> --json
+```
+
+记录返回的目标版本，提交实验时通过 `--target-version` 固定版本，避免“最新版本”随部署变化。列表无匹配时先检查后端、工作区和目标名称，不应改用其他资源的 ID

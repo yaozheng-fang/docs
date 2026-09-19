@@ -3,7 +3,7 @@ title: "Outbound authentication"
 zh_link: "/productions/veadk/preview/zh/components/security/outbound"
 ---
 
-Outbound authentication solves credentials when the agent calls third-party services. Agent Identity encrypts and stores API keys and OAuth tokens, keeps them out of your code, and caches, refreshes, and rotates them automatically. Choose a method by scenario:
+Outbound authentication solves credentials when the agent calls third-party services. Agent Identity encrypts and stores API keys and OAuth tokens, keeps them out of your code, with refresh behavior determined by the flow and provider configuration. Storing an API key does not automatically rotate that key in the third-party service. Choose a method by scenario:
 
 | Method | Provider type | When to use |
 | --- | --- | --- |
@@ -26,18 +26,32 @@ Outbound authentication solves credentials when the agent calls third-party serv
 
 Once the credential exists, two wrappers inject it into the agent: `VeIdentityFunctionTool` for plain function tools and `VeIdentityMcpToolset` for MCP toolsets. Both take an `auth_config` — produced by the methods below — and Agent Identity injects the credential at runtime.
 
-```python lines
-from veadk.integrations.ve_identity import VeIdentityFunctionTool, VeIdentityMcpToolset
-from google.adk.agents.mcp import StdioServerParameters
+Configure the model and create the credential provider in Agent Identity first. The process needs permission to read that provider. Set `SERVICE_PROFILE_URL` to an HTTPS profile endpoint you control that accepts a Bearer API key. This example reads data without modifying external resources
 
-# Function tool: auth_config sets the credential source; `into` names the injected parameter
-tool = VeIdentityFunctionTool(func=call_api, auth_config=auth_config, into="api_key")
+```python title="app.py" lines
+import asyncio
+import os
+import httpx
+from veadk import Agent
+from veadk.integrations.ve_identity import VeIdentityFunctionTool, api_key_auth
 
-# MCP toolset: pass the same auth_config
-toolset = VeIdentityMcpToolset(
-    auth_config=auth_config,
-    connection_params=StdioServerParameters(command="python", args=["-m", "my_mcp_server"]),
+async def get_profile(api_key: str) -> dict:
+    """Read the current account profile."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(
+            os.environ["SERVICE_PROFILE_URL"],
+            headers={"Authorization": f"Bearer {api_key}"},
+        )
+        response.raise_for_status()
+        return response.json()
+
+tool = VeIdentityFunctionTool(
+    func=get_profile,
+    auth_config=api_key_auth(provider_name="my-api-provider"),
+    into="api_key",
 )
+agent = Agent(name="profile_assistant", tools=[tool])
+print(asyncio.run(agent.run("Read my account profile")))
 ```
 
 ## API key
@@ -52,7 +66,7 @@ auth_config = api_key_auth(provider_name="my-api-provider")
 
 ## OAuth2 M2M
 
-For service-to-service calls — more secure than an API key and supports token refresh. In the console, **New › New OAuth Client**, choose the **Machine to Machine (M2M)** flow; credentials can use a built-in provider (Lark, Coze, Google, GitHub), an OIDC issuer URL, or fully custom endpoints. Build the `auth_config` with `oauth2_auth` and `auth_flow="M2M"`:
+For service-to-service calls — using tokens with expiry and scopes. In the console, **New › New OAuth Client**, choose the **Machine to Machine (M2M)** flow; credentials can use a built-in provider (Lark, Coze, Google, GitHub), an OIDC issuer URL, or fully custom endpoints. Build the `auth_config` with `oauth2_auth` and `auth_flow="M2M"`:
 
 ```python lines
 from veadk.integrations.ve_identity import oauth2_auth
@@ -93,7 +107,11 @@ After the user authorizes, the provider redirects the code and state to this add
 
 ## Example
 
-The agent below connects to Volcengine ECS's MCP service through user-federation auth, querying instances and running commands on the user's behalf:
+<Warning>
+This example accesses real ECS resources. Configure the named OAuth provider with read permissions and complete user consent on first use. Prompts are not authorization controls; restrict write access in the provider and tool scope
+</Warning>
+
+The agent below connects to Volcengine ECS's MCP service through user-federation auth, querying instances after user authorization:
 
 ```python lines
 import asyncio
@@ -113,11 +131,36 @@ ecs_tools = VeIdentityMcpToolset(
 
 agent = Agent(
     tools=[ecs_tools],
-    system_prompt="You are a Volcengine ECS assistant that can query ECS instances and run server commands.",
+    system_prompt="You are a Volcengine ECS assistant. Only read instance information; do not modify resources or run server commands.",
     run_processor=AuthRequestProcessor(),
 )
 
-asyncio.run(agent.run("List my ECS instances and run `uname -a` on a running one"))
+async def main():
+    try:
+        print(await agent.run("List my ECS instances"))
+    finally:
+        await ecs_tools.close()
+
+asyncio.run(main())
 ```
 
 For more detail, see the [Agent Identity documentation](https://www.volcengine.com/docs/86848/2080920?lang=zh).
+
+## Authentication parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `provider_name` | `str` | `Required` | Existing credential provider name |
+| `identity_client` | `IdentityClient` | `None` | Accepted by both factories; uses the default identity client if omitted |
+| `region` | `str` | `None` | Accepted by both factories; uses identity service region configuration |
+| `scopes` | `list[str]` | `None` | OAuth2 scopes; omission uses provider defaults |
+| `auth_flow` | `str` | `None` | OAuth2 flow: M2M or USER_FEDERATION; provider default if omitted |
+| `callback_url` | `str` | `None` | Application callback for OAuth2 user consent |
+| `force_authentication` | `bool` | `False` | Whether OAuth2 should force authentication |
+| `response_for_auth_required` | `dict / str` | `None` | Response while OAuth2 user consent is required |
+| `on_auth_url` | `Callable` | `None` | Callback for presenting the OAuth2 authorization URL |
+| `oauth2_auth_poller` | `Callable` | `None` | Factory for an OAuth2 authorization poller |
+
+`VeIdentityFunctionTool` requires `func` and `auth_config`. `into` defaults to `api_key` for API key auth or `access_token` for OAuth2 and must name a function parameter. The model does not supply that credential parameter; do not return it in tool output
+
+Successful execution returns service data; pending consent may produce an authorization prompt. For failures, check the provider name, region, workload permissions, consent state, and third-party scopes without logging tokens

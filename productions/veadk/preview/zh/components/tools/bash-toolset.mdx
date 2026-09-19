@@ -3,6 +3,15 @@ title: "Bash 工具集"
 en_link: "/productions/veadk/preview/en/components/tools/bash-toolset"
 ---
 
+<Note>
+`BashToolset` 属于未发布能力，PyPI 1.1.13 不包含此工具。体验本页功能可安装以下已核验源码版本；运行智能体示例还需配置模型，直接文件读取不需要模型凭证
+</Note>
+
+```bash lines
+python -m pip install "veadk-python @ git+https://github.com/volcengine/veadk-python.git@adcdfdcc6a5a213b249a8caad435b939c01df7f6"
+```
+
+
 ## 功能说明
 
 `BashToolset` 是一组只读文件系统工具集，提供十个常见 Shell 命令的读取能力，但不启动 Shell 进程，也不接受命令行选项。所有工具使用 Python 标准库实现，在配置的权限范围内安全地读取文件和目录。
@@ -38,15 +47,19 @@ en_link: "/productions/veadk/preview/en/components/tools/bash-toolset"
 
 ```python title="bash_toolset_agent.py" lines
 import asyncio
+from pathlib import Path
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 from veadk.tools.builtin_tools.bash_toolset import BashToolset
 
+workspace = Path("reader_demo").resolve()
+workspace.mkdir(exist_ok=True)
+(workspace / "main.py").write_text("print(2 + 3)\n", encoding="utf-8")
+
 toolset = BashToolset(
-    working_directory="/workspace",
+    working_directory=workspace,
     allowed_tools=["cat", "find", "grep", "ls"],
-    exclude_patterns=[".env", ".env.*", ".ssh", "private"],
 )
 
 agent = Agent(
@@ -76,7 +89,6 @@ if __name__ == "__main__":
 ```python lines
 BashToolset(
     working_directory=None,
-    *,
     allowed_directories=None,
     allowed_tools=None,
     exclude_patterns=None,
@@ -211,16 +223,23 @@ BashToolset(
 
 ```python title="bash_toolset_multi_root.py" lines
 import asyncio
+from pathlib import Path
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 from veadk.tools.builtin_tools.bash_toolset import BashToolset
 
+project = Path("reader_demo/project").resolve()
+docs = Path("reader_demo/docs").resolve()
+(project / "src").mkdir(parents=True, exist_ok=True)
+docs.mkdir(parents=True, exist_ok=True)
+(project / "src/main.py").write_text("print(2 + 3)\n", encoding="utf-8")
+(docs / "design.md").write_text("The program adds two numbers\n", encoding="utf-8")
+
 toolset = BashToolset(
-    working_directory="/workspace/project",
-    allowed_directories=["/workspace/project", "/workspace/docs"],
+    working_directory=project,
+    allowed_directories=[project, docs],
     allowed_tools=["cat", "ls", "find", "grep"],
-    exclude_patterns=[".env", ".env.*"],
     timeout=30.0,
     max_output_bytes=65536,
 )
@@ -250,6 +269,32 @@ if __name__ == "__main__":
 <Warning>
 - `BashToolset` 的权限控制在创建时固定，后续修改传入的列表不会影响已创建的工具集。
 - 应用层访问控制不能替代操作系统级沙箱。主机需要控制允许目录内的文件重命名、硬链接和挂载操作。
-- 文件打开使用描述符级路径遍历（`O_NOFOLLOW`），防止在路径校验和文件打开之间替换符号链接，但无法防止文件系统层面的竞争条件。
 - 超时取消调用方并协作停止读取工作线程；被阻塞的文件系统调用无法被 Python 线程强制中断。
 </Warning>
+
+## 不调用模型的本地验证
+
+此示例在临时目录创建测试文本，读取后输出 `hello`，随后自动删除临时目录。读取工具本身不修改文件，文件准备由示例应用完成
+
+```python lines
+import asyncio
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from veadk.tools.builtin_tools.bash_toolset import BashToolset
+
+async def main():
+    with TemporaryDirectory() as directory:
+        Path(directory, "sample.txt").write_text("hello\n", encoding="utf-8")
+        toolset = BashToolset(working_directory=directory, allowed_tools=["cat"])
+        try:
+            tool = (await toolset.get_tools())[0]
+            result = await tool.run_async(args={"path": "sample.txt"}, tool_context=None)
+            assert result["error"] is None
+            print(result["output"])
+        finally:
+            await toolset.close()
+
+asyncio.run(main())
+```
+
+多目录场景中，相对路径始终以 `working_directory` 为基准；访问其他允许目录时使用绝对路径。自定义 `exclude_patterns` 会替换默认排除项，不能假定与默认值合并。输出有 `error` 时，即使 `output` 非空也可能只是部分结果

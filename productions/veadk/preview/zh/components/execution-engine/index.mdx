@@ -3,110 +3,136 @@ title: "执行引擎"
 en_link: "/productions/veadk/preview/en/components/execution-engine"
 ---
 
-`Runner` 是执行引擎的核心：它协调智能体、工具与回调，共同响应用户输入，同时管理信息流、状态变化，以及与模型、工具、存储的交互。VeADK 的执行引擎完全兼容 Google ADK 的 `Runner`，其完整机制可参见 [Google ADK 运行时文档](https://google.github.io/adk-docs/runtime/)。
-
-## 多租户隔离
-
-面向企业级多租户场景，`Runner` 通过 `app_name`、`user_id`、`session_id` 三个维度实现数据隔离：
-
-| 数据 | 隔离维度 |
-| --- | --- |
-| 短期会话 | `app_name`、`user_id`、`session_id` |
-| 长期记忆 | `app_name`、`user_id` |
-| 知识库 | `app_name` |
+`Runner` 负责运行智能体，并连接会话存储、工具和追踪能力。VeADK 在 Google ADK 的事件执行接口上提供 `run()` 简化入口；需要逐个处理事件时，使用 `run_async()`
 
 ## 最简运行
 
-`Runner.run()` 直接运行一个智能体，处理输入并返回最终文本响应，适合本地测试：
+先完成[安装](/productions/veadk/preview/zh/get-started/installation)和[模型配置](/productions/veadk/preview/zh/components/agent/model)。将示例保存为 `app.py`，运行 `python app.py`，终端应输出模型的文本回复
 
-```python lines
+```python title="app.py" lines
 import asyncio
 from veadk import Agent, Runner
 
-agent = Agent()
-runner = Runner(agent=agent)
-
-response = asyncio.run(runner.run("北京的天气怎么样？"))
-print(response)
-```
-
-<Note>
-  `run()` 封装度较高。当 `Runner` 配置了短期会话时，它会按需自动创建会话。若需要更细粒度地控制执行过程，使用 `run_async()`。
-</Note>
-
-## 流式处理事件
-
-`Runner.run_async()` 返回一个异步生成器，逐个产出智能体执行过程中的事件。相比 `run()` 只拿到最终文本，遍历事件可以获得思考过程、工具调用与结果、以及流式增量，便于自行开发上层逻辑。
-
-```python lines
-import asyncio
-from google.genai.types import Content, Part
-from veadk import Agent, Runner
-
-APP_NAME, USER_ID, SESSION_ID = "app", "user", "session"
-
-agent = Agent()
-runner = Runner(agent=agent, app_name=APP_NAME, user_id=USER_ID)
-
-message = Content(role="user", parts=[Part(text="北京的天气怎么样？")])
+agent = Agent(name="assistant")
+runner = Runner(agent=agent, app_name="demo", user_id="demo-user")
 
 async def main():
-    async for event in runner.run_async(
-        user_id=USER_ID,
-        session_id=SESSION_ID,
-        new_message=message,
-    ):
-        ...  # 见下文解析事件
+    response = await runner.run(
+        "用一句话解释智能体的用途", session_id="demo-session"
+    )
+    print(response)
 
 asyncio.run(main())
 ```
 
+`run()` 是异步方法，需要 `await` 或 `asyncio.run()`。默认使用进程内会话；已有会话会按相同的应用、用户和会话标识继续对话，进程退出后内存中的会话丢失
+
 <Note>
-  `run_async()` 在调用前需已存在对应会话。若直接使用它，请确保 `session_id` 对应的会话已创建。
+显式为每段对话分配 `session_id`，不要依赖默认临时值生成独立会话。`run()` 返回执行过程中最后保留的文本片段，可能为空；多部分输出、工具事件和完整结构化结果应通过 `run_async()` 处理
 </Note>
+
+## 多租户隔离
+
+`app_name`、`user_id` 和 `session_id` 用于定位数据，不是身份验证或访问授权机制。服务端应从已验证的请求身份取得用户标识，不能直接相信客户端任意传入的 `user_id`
+
+| 数据 | 标识与范围 |
+| --- | --- |
+| 短期会话 | 通过 `app_name`、`user_id`、`session_id` 查找；持久性取决于[会话后端](/productions/veadk/preview/zh/components/session) |
+| 长期记忆 | 用户过滤取决于[记忆后端](/productions/veadk/preview/zh/components/memory)；本地后端不按 `user_id` 隔离 |
+| 知识库 | 由所选知识库、集合及后端查询条件决定；设置 `app_name` 不会自动建立租户访问控制 |
+
+## 流式处理事件
+
+`run_async()` 返回异步事件流。与 `run()` 不同，调用前需创建对应会话。下面使用 `StreamingMode.SSE` 请求流式事件，但仅打印完整回复，避免把增量片段和完整文本重复显示
+
+```python title="stream.py" lines
+import asyncio
+from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.genai.types import Content, Part
+from veadk import Agent, Runner
+
+APP_NAME, USER_ID, SESSION_ID = "stream_demo", "demo-user", "demo-session"
+runner = Runner(
+    agent=Agent(name="assistant"), app_name=APP_NAME, user_id=USER_ID
+)
+
+async def main():
+    await runner.session_service.create_session(
+        app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
+    )
+    message = Content(role="user", parts=[Part(text="用一句话解释智能体的用途")])
+    async for event in runner.run_async(
+        user_id=USER_ID,
+        session_id=SESSION_ID,
+        new_message=message,
+        run_config=RunConfig(streaming_mode=StreamingMode.SSE),
+    ):
+        if event.error_code:
+            print("Error:", event.error_code, event.error_message)
+        for call in event.get_function_calls():
+            print("Tool call:", call.name)
+        for result in event.get_function_responses():
+            print("Tool result:", result.name)
+        if event.partial:
+            continue
+        if event.is_final_response() and event.content:
+            text = "".join(
+                part.text for part in (event.content.parts or [])
+                if part.text and not part.thought
+            )
+            if text:
+                print(text)
+
+asyncio.run(main())
+```
+
+保存为 `stream.py`，运行 `python stream.py`。若接入工具，终端还会显示工具调用和返回事件名称。增量输出取决于模型和运行时是否支持流式传输；读取事件流不等于所有运行时都会逐 token 返回
+
+要逐步显示文字，可将 `partial=True` 事件用于更新当前回复，并在完整事件到达时替换为完整文本。不要把两者直接追加到同一条输出
 
 ## 解析事件
 
-每个事件描述了执行过程中的一步。其常用字段如下：
-
-| 字段 | 说明 |
+| 字段或方法 | 说明 |
 | --- | --- |
-| `author` | 产出该事件的智能体或工具名称 |
-| `content` | 事件内容，包含 `role` 与 `parts` 列表 |
-| `partial` | 是否为流式输出的增量片段 |
-| `usage_metadata` | 本步的 token 用量 |
-| `invocation_id` | 本次调用的标识 |
+| `author` | 事件的产出方 |
+| `content.parts` | 文本、工具调用、工具结果或多模态内容；可能为空 |
+| `partial` | 是否为尚未完成的增量片段 |
+| `usage_metadata` | 模型返回的用量信息；可能不存在 |
+| `invocation_id` | 本次执行的标识 |
+| `error_code`、`error_message` | 事件携带的错误信息；执行也可能直接抛出错误 |
+| `is_final_response()` | 是否为可展示的完整回复事件；多智能体流程可能产生多个回复 |
+| `get_function_calls()` | 当前事件中的工具调用 |
+| `get_function_responses()` | 当前事件中的工具结果 |
 
-`content.parts` 中的每个 `part` 可能是不同类型，据此区分处理：
+`part.text` 是文本，`part.thought` 标记思考内容，`part.function_call` 和 `part.function_response` 分别表示工具调用和返回。展示给最终用户时应按内容类型处理，避免直接输出含凭证或敏感数据的完整工具参数
 
-| part 字段 | 含义 |
-| --- | --- |
-| `text` | 模型输出的文本 |
-| `thought` | 标记该片段为模型的思考过程 |
-| `function_call` | 模型发起的工具调用，含 `name` 与 `args` |
-| `function_response` | 工具返回的结果，含 `name` 与 `response` |
+## 参数与行为
 
-事件还提供了便捷方法：`is_final_response()` 判断是否为最终回复，`get_function_calls()` 与 `get_function_responses()` 分别取出本事件中的工具调用与结果。
+### Runner 构造参数
 
-```python lines
-async for event in runner.run_async(
-    user_id=USER_ID, session_id=SESSION_ID, new_message=message,
-):
-    # 工具调用与结果
-    for call in event.get_function_calls():
-        print("调用工具:", call.name, call.args)
-    for resp in event.get_function_responses():
-        print("工具结果:", resp.name, resp.response)
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `agent` | `BaseAgent` | `None` | 运行的智能体，通常传入 VeADK `Agent` |
+| `short_term_memory` | `ShortTermMemory` | 从智能体读取，否则使用内存会话 | 使用非 VeADK 根智能体时应显式传入 |
+| `app_name` | `str` | `veadk_default_app` | 应用标识；传入 ADK `app` 时由该应用决定 |
+| `user_id` | `str` | `veadk_default_user` | `run()` 使用的默认用户标识 |
+| `upload_inline_data_to_tos` | `bool` | `False` | 将运行中的内联媒体上传到 TOS；需要凭证、资源权限并可能产生费用 |
+| `run_processor` | `BaseRunProcessor` | 优先使用智能体配置，否则不拦截 | 本次 Runner 的运行处理器；认证场景见[出站认证](/productions/veadk/preview/zh/components/security/outbound) |
 
-    # 区分思考与文本
-    if event.content:
-        for part in event.content.parts:
-            if part.thought:
-                continue  # 模型思考过程，可按需展示
-            if part.text:
-                print(part.text)
+可通过关键字参数传入 ADK 的 `session_service`、`memory_service`、`credential_service`。显式服务优先于智能体配置；自行传入会话服务时，应通过该服务创建会话并使用 `run_async()`，避免会话创建与读取指向不同后端。其他 ADK 参数见 [Runner 参考](https://google.github.io/adk-docs/api-reference/python/google-adk.html#google.adk.runners.Runner)
 
-    # 最终回复
-    if event.is_final_response() and event.content:
-        final_text = "".join(p.text for p in event.content.parts if p.text)
-```
+### run 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `messages` | `str`、`MediaMessage` 或其列表 | 必填 | 用户输入；列表按顺序执行 |
+| `user_id` | `str` | 空字符串 | 为空时使用 Runner 的用户标识 |
+| `session_id` | `str` | 临时标识 | 建议显式提供；相同标识继续同一段对话 |
+| `run_config` | `RunConfig` | `None` | 省略时最大模型调用次数取 `MODEL_AGENT_MAX_LLM_CALLS`，默认 `100` |
+| `save_tracing_data` | `bool` | `False` | 运行后保存已配置追踪器的数据 |
+| `upload_inline_data_to_tos` | `bool` | `False` | 为当前调用启用媒体上传 |
+| `run_processor` | `BaseRunProcessor` | `None` | 当前调用的处理器，优先于 Runner 配置 |
+
+<Note>
+VeADK `run()` 达到最大模型调用次数时返回空字符串。需要区分调用上限、无文本回复与其他失败时，应消费 `run_async()` 事件并处理执行错误
+</Note>

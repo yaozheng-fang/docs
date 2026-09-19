@@ -5,5 +5,7 @@ en_link: "/productions/api-reference/preview/en/harness-runtime/delete-session"
 ---
 
 <Warning>
-此操作会删除或替换已有数据，发送请求前请确认目标资源并保存需要保留的内容
+此操作会删除指定应用和用户的会话及其会话历史，本接口不提供恢复操作。删除前保存需要保留的状态和事件，并确认会话标识
 </Warning>
+
+成功响应为 HTTP `200` 和 JSON `null`，不是 `204`。删除会话不能撤销此前工具已经完成的外部操作

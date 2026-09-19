@@ -19,3 +19,15 @@ en_link: "/productions/agentkit-cli/preview/en/commands/onboard"
 ```bash lines
 agentkit onboard --agent claude-code --scope project
 ```
+
+## 安装范围与结果
+
+`project` 相对于当前工作目录，`global` 相对于用户主目录。省略 `--scope` 时交互选择；使用 `--yes` 时默认为 `project`。因此在自动化中应明确传入目标与范围：
+
+```bash lines
+agentkit onboard --agent claude-code --scope project --yes
+```
+
+命令完成后列出写入的技能目录。再次安装会覆盖同名技能文件，先保存本地修改。未指定 `--agent` 或 `--all` 时，`--yes` 仅选择本机检测到的客户端；没有检测结果会失败，不会自动安装所有客户端
+
+该命令只复制随 CLI 提供的技能，不安装客户端，也不登录云平台

@@ -21,7 +21,13 @@ The `local` backend relies on vector search, which requires the extensions:
 pip install "veadk-python[extensions]"
 ```
 
+<Warning>
+A single `local` long-term memory instance does not filter retrieval by `user_id` or `app_name`. Do not put private data from different users in one instance; choose a backend with user isolation when required
+</Warning>
+
 ## Usage
+
+The `extensions` extra includes llama-index and vector-store adapters. Before running, set the embedding endpoint, model, dimension, and API key below. Local storage still sends memory text to the configured embedding service
 
 ```python lines
 from veadk import Agent
@@ -40,6 +46,17 @@ agent = Agent(
 For a full cross-session example, see [Long-term memory · Cross-session example](/productions/veadk/preview/en/components/memory/index#cross-session-example).
 
 ## Parameters
+
+### LongTermMemory parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseLongTermMemoryBackend` | `"opensearch"` | Set to `local` for this page, or pass a configured backend instance |
+| `backend_config` | `dict` | `{}` | Backend settings; a supplied backend instance takes precedence |
+| `index` | `str` | `""` | Without backend_config, resolves from index, app_name, then default_app; supply a nonempty index with a configuration dictionary |
+| `app_name` | `str` | `""` | Fallback for index; the actual user comes from the saved Session or search arguments |
+| `top_k` | `int` | `5` | Number of retrieved chunks; use a positive integer |
+| `user_id` | `str` | `""` | Deprecated; does not select the runtime user |
 
 Usually you only pass `index` or `app_name` to `LongTermMemory`. To customize embedding, pass `embedding_config` through `backend_config`.
 
@@ -80,3 +97,35 @@ If `MODEL_EMBEDDING_API_KEY` is not set separately, VeADK reuses `MODEL_AGENT_AP
 <Warning>
 The `local` backend keeps memory only in process memory; data is lost when the process exits and cannot be shared across processes. For persistence or multi-instance sharing, use [VikingDB](/productions/veadk/preview/en/components/memory/vikingdb), [Mem0](/productions/veadk/preview/en/components/memory/mem0), [OpenSearch](/productions/veadk/preview/en/components/memory/opensearch), or [Redis](/productions/veadk/preview/en/components/memory/redis).
 </Warning>
+
+## Verify writes and retrieval
+
+After configuring the dependencies and credentials on this page, run this standalone example. It saves user text and searches for that user directly without calling a conversation model
+
+```python lines
+import asyncio
+
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
+from veadk.memory.long_term_memory import LongTermMemory
+
+async def main():
+    memory = LongTermMemory(backend="local", index="ltm_demo")
+    session = Session(
+        id="memory_check", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(session)
+    result = await memory.search_memory(
+        app_name="ltm_demo", user_id="user_42", query="preferred language"
+    )
+    for entry in result.memories:
+        print(entry.content)
+
+asyncio.run(main())
+```
+
+Results should contain the saved language preference. Managed services may extract memories asynchronously, so a completed write does not guarantee immediate retrieval. An empty result can also indicate permission, network, or service failure; check error logs and service records. The save method does not return a success Boolean

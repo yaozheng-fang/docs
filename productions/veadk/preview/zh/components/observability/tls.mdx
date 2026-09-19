@@ -11,51 +11,44 @@ en_link: "/productions/veadk/preview/en/components/observability/tls"
 - 需要长期留存与合规审计的追踪数据；
 - 需要结合 TLS 的告警与分析能力进行观测。
 
-## 使用示例
+## 接入前准备
 
-TLS 接入通常分两步：先用 `VeTLS` 客户端创建日志项目与追踪实例，再用 `TLSExporter` 上报数据。
+先完成[安装](/productions/veadk/preview/zh/get-started/installation)和[模型配置](/productions/veadk/preview/zh/components/agent/model)，再设置以下环境变量。占位符需要替换为有权限访问的实际资源和凭证；在启动 Python 前完成配置
 
-```python lines
-import asyncio
-from os import getenv
+<Warning>
+TLS 会接收链路数据并可能产生存储费用。建议显式指定已有追踪主题 ID；省略时会调用 TLS 获取或创建默认追踪资源。此示例使用火山引擎 TLS 端点。`CLOUD_PROVIDER=byteplus` 时，凭据配置可以使用 BytePlus AK/SK；端点、区域和主题仍需与目标服务匹配，不能仅凭模型使用 BytePlus 判断 TLS 已完成配置
+</Warning>
 
-from veadk import Agent, Runner
-from veadk.integrations.ve_tls.ve_tls import VeTLS
-from veadk.memory.short_term_memory import ShortTermMemory
-from veadk.tools.demo_tools import get_city_weather
-from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter, TLSExporterConfig
-from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+```bash lines
+export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT="https://tls-cn-beijing.volces.com:4318/v1/traces"
+export OBSERVABILITY_OPENTELEMETRY_TLS_REGION="cn-beijing"
+export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME="your-tls-trace-topic"
 
-# 创建日志项目与追踪实例
-ve_tls_client = VeTLS()
-log_project_id = ve_tls_client.create_log_project("veadk_demo")
-
-trace_instance_name = getenv("OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME")
-trace_instance = ve_tls_client.create_tracing_instance(
-    log_project_id, trace_instance_name
-)
-
-# 用 TLSExporter 上报 Tracing 数据
-tls_exporter = TLSExporter(
-    config=TLSExporterConfig(
-        topic_id=trace_instance.get("TraceTopicId", trace_instance_name),
-    )
-)
-tracer = OpentelemetryTracer(exporters=[tls_exporter])
-
-agent = Agent(tools=[get_city_weather], tracers=[tracer])
-
-runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
-
-asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_id_demo"))
+# 火山引擎凭证
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
 ```
 
-不显式传入 `config` 时，`topic_id` 会在缺省情况下自动获取追踪主题 ID：
+## 使用示例
 
-```python lines
+保存为 `app.py`，运行 `python app.py`。示例复用已有资源，完成一次模型调用后刷新待导出的链路数据
+
+```python title="app.py" lines
+import asyncio
+
+from veadk import Agent, Runner
 from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
-exporter = TLSExporter()
+tracer = OpentelemetryTracer(exporters=[TLSExporter()])
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("用一句话解释智能体的用途", session_id="demo-session")
+)
+print(response)
+tracer.force_export()
+print("Trace ID:", tracer.trace_id)
 ```
 
 ## 参数
@@ -68,7 +61,7 @@ exporter = TLSExporter()
 | :--- | :--- | :--- | :--- |
 | `config` | `TLSExporterConfig` | 自动从环境变量读取 | TLS 连接与认证配置。 |
 | `resource_attributes` | `dict` | `{}` | 附加到 span 的资源属性。 |
-| `headers` | `dict` | `{}` | 附加的请求头；导出器会自动并入主题、凭证与地域相关的 TLS 认证头。 |
+| `headers` | `dict` | `{}` | TLS 认证头由连接配置生成；当前实现不会把额外自定义请求头发送到上报端点。 |
 
 ### TLS 连接配置
 
@@ -79,24 +72,14 @@ exporter = TLSExporter()
 | `endpoint` | `OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT` | `str` | `https://tls-cn-beijing.volces.com:4318/v1/traces` | TLS OTLP 接入点（HTTP）。 |
 | `region` | `OBSERVABILITY_OPENTELEMETRY_TLS_REGION` | `str` | `cn-beijing` | TLS 服务所在地域。 |
 | `topic_id` | `OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME` | `str` | 未设置时自动获取追踪主题 ID | TLS 追踪主题 ID，用于组织日志数据。 |
-| `access_key` | `VOLCENGINE_ACCESS_KEY` | `str` | 从火山引擎凭证读取 | 火山引擎访问密钥。 |
-| `secret_key` | `VOLCENGINE_SECRET_KEY` | `str` | 从火山引擎凭证读取 | 火山引擎密钥。 |
+| `access_key` | `VOLCENGINE_ACCESS_KEY` / `BYTEPLUS_ACCESS_KEY` | `str` | 读取当前凭据配置 | 目标 TLS 服务接受的 Access Key；BytePlus 凭据兼容映射要求 `CLOUD_PROVIDER=byteplus` |
+| `secret_key` | `VOLCENGINE_SECRET_KEY` / `BYTEPLUS_SECRET_KEY` | `str` | 读取当前凭据配置 | 与 Access Key 配套的 Secret Key |
 
 <Note>
 `topic_id` 未通过 `OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME` 提供时，导出器会调用 `VeTLS` 自动获取追踪主题 ID，因此需要配置有效的火山引擎凭证（`VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`）。
 </Note>
 
-## 环境变量配置
 
-```bash lines
-export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT="https://tls-cn-beijing.volces.com:4318/v1/traces"
-export OBSERVABILITY_OPENTELEMETRY_TLS_REGION="cn-beijing"
-export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME="your-tls-trace-topic"
-
-# 火山引擎凭证
-export VOLCENGINE_ACCESS_KEY="your-access-key"
-export VOLCENGINE_SECRET_KEY="your-secret-key"
-```
 
 也可以让 `Agent` 依据环境变量自动挂载 TLS 导出器，无需显式构造：
 
@@ -107,3 +90,7 @@ export ENABLE_TLS=true
 <Tip>
 设置 `ENABLE_TLS=true` 后，即便智能体未显式提供 `tracers`，`Agent` 也会自动创建 `OpentelemetryTracer` 并挂载 `TLSExporter`。
 </Tip>
+
+## 验证与排查
+
+运行后在目标平台按本次 Trace ID 查询。模型回复成功只说明智能体完成了调用，不代表链路上传成功；找不到数据时依次检查端点和地域、凭证权限、目标资源以及进程退出前是否调用 `tracer.force_export()`

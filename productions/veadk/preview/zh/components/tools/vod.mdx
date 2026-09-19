@@ -37,6 +37,8 @@ tool:
     timeout: 10.0
 ```
 
+安装 `uv`，确认 `uvx --version` 可执行，并允许下载 VOD MCP Server 及依赖。视频需使用服务可访问的有效 URL，替换示例中的 URL 与已创建的 Space 名称；推理模型也需完成配置
+
 ## 使用方法
 
 ```python title="examples/tools/vod/agent.py" lines
@@ -73,3 +75,40 @@ if __name__ == "__main__":
 <Note>
 有些视频编辑任务耗时较长，会直接返回一个 `task_id`。可以继续向智能体询问任务是否完成，从而获取后续结果。
 </Note>
+
+## 能力组与配置生效时机
+
+| 能力组 | 用途 |
+| :--- | :--- |
+| `edit` | 视频编辑 |
+| `intelligent_slicing` | 智能切片 |
+| `intelligent_matting` | 智能抠像 |
+| `subtitle_processing` | 字幕处理 |
+| `audio_processing` | 音频处理 |
+| `video_enhancement` | 视频增强 |
+| `upload` | 媒体上传 |
+| `video_play` | 视频播放 |
+
+在导入 `vod_tools` 前设置 `TOOL_VOD_GROUPS` 与 `TOOL_VOD_TIMEOUT`，也可使用上文 YAML 配置；VeADK 加载配置时将其转换为环境变量。修改后重新启动进程以重建工具连接。`timeout` 控制 MCP 连接等待，不是视频处理任务的完成时限。默认能力由 VOD MCP Server 提供，VeADK 未配置时不主动传入能力组
+
+此内置连接启动火山引擎 VOD MCP Server。BytePlus 凭证的配置不代表该服务自动支持 BytePlus 端点，应使用与目标视频云服务匹配的 MCP 配置。返回 `task_id` 仅代表任务已提交，需继续查询到成功状态并取得结果地址后才算完成
+
+## 验证连接
+
+```python lines
+import asyncio
+
+from veadk.tools.builtin_tools.vod import vod_tools
+
+
+async def main():
+    try:
+        tools = await vod_tools.get_tools()
+        print([tool.name for tool in tools])
+    finally:
+        await vod_tools.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

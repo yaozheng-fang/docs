@@ -3,3 +3,11 @@ title: "运行智能体"
 openapi: "/productions/api-reference/openapi/zh/agent-api-server.json POST /run"
 en_link: "/productions/api-reference/preview/en/agent-api-server/run"
 ---
+
+用于提交一轮消息并在调用完成后取得完整事件数组。默认先[创建会话](/productions/api-reference/preview/zh/agent-api-server/create-session)；请求中的应用、用户和会话标识必须对应同一会话
+
+<Warning>
+运行会写入会话事件，并可能调用模型、工具与外部资源。重试同一请求可能再次执行这些操作，发送前确认调用目标
+</Warning>
+
+本接口始终返回 JSON 数组，`streaming: true` 不会将响应变为 SSE。需要持续读取事件时使用[流式运行智能体](/productions/api-reference/preview/zh/agent-api-server/run-sse)

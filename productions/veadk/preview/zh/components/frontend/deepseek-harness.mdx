@@ -17,6 +17,14 @@ DeepSeek Harness 创建模式是 Studio 中的一种智能体创建方式，用�
 | 容器化部署 | 生成独立的 DeepSeek Harness 容器项目，部署为 AgentKit Runtime 后通过 HTTP API 调用 |
 | 自定义模型路由 | 添加多个模型提供方和模型，配置子智能体的模型选择策略 |
 
+## 准备条件
+
+先按 [Studio 启动说明](/productions/veadk/preview/zh/components/frontend/studio#在本地启动)运行工作台。准备可访问的模型服务与 API Key；本地构建需要 Docker，云端部署需要当前云服务商的构建、镜像仓库和 Runtime 权限
+
+<Warning>
+默认权限为 `workspace-write`，智能体可以修改工作目录并执行命令。仅在容器内挂载任务所需目录；选择 `danger-full-access` 会扩大访问权限并跳过确认，应先核对工具与凭据范围
+</Warning>
+
 ## 创建入口
 
 在 Studio 的「智能体」页面中点击「创建智能体」，在创建菜单中选择「快速创建」。在弹出的 Agent 类型选择对话框中选择「DeepSeek Harness」并点击「继续」，进入 DeepSeek Harness 配置页面。
@@ -205,3 +213,14 @@ docker run --rm -p 127.0.0.1:8000:8000 -e DEEPSEEK_API_KEY deepseek-harness-agen
 ## 配置范围
 
 编辑器覆盖 DeepSeek Harness 的常用原生设置，包括默认模型、预设、权限、DeepSeek 模型服务、自定义模型提供方、命令执行、工具调用、子智能体模型选择和网络搜索。其他原生插件和预设文件设置不在编辑器范围内。预设需要存在于部署的 Harness 中；自定义预设和额外插件需显式安装并添加到构建上下文。
+
+## 验证运行
+
+容器启动后，在另一个终端检查健康状态并发送一次请求。模型调用可能产生费用
+
+```bash
+curl --fail http://127.0.0.1:8000/ping
+curl --fail http://127.0.0.1:8000/invocations   -H 'Content-Type: application/json'   -d '{"prompt":"Introduce your capabilities","session_id":"demo-session"}'
+```
+
+健康检查返回 `200` 后再调用；成功响应应包含 `response` 与 `session_id`。`503` 时等待启动完成，`409` 时等待同一会话的已有请求结束，不要并发重试。共享存储本身不能保证多实例下的同会话并发控制，部署时还需固定会话路由或外部协调

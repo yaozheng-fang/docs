@@ -8,7 +8,7 @@ en_link: "/productions/agentkit-cli/preview/en/commands/migrate"
 - 对 LangChain、LangGraph、ADK、Strands 和 Bedrock AgentCore 项目执行本地结构化迁移，生成 AgentKit 应用文件。
 - 对 Dify Workflow、Dify Chatflow 或其他类型的智能体项目启动远程迁移任务，并在任务结束后下载生成的 VeADK 项目。
 
-```bash lines
+```text
 agentkit migrate [project-dir] --framework langchain|langgraph|adk|strands|agentcore --entry <file.py:object> [options]
 agentkit migrate [project-dir] --framework dify|any create|list|status [job-id] [options]
 ```
@@ -88,6 +88,8 @@ agentkit migrate . --framework adk --entry agent.py:root_agent
 agentkit migrate . --framework strands --entry agent.py:build_agent
 ```
 
+`--verify` 会导入源项目与生成的应用，可能执行模块初始化逻辑。验证前安装项目依赖，确认入口可导入，且初始化代码不会触发不期望的外部操作；完成本地检查不等于云端部署成功
+
 ## migrate create
 
 为 Dify 导出目录或其他智能体项目创建远程迁移任务。命令会上传源目录、创建远程沙箱并返回任务 ID；任务在后台继续执行。相同工作区、源目录和迁移配置已有进行中的任务时，命令会复用该任务。
@@ -107,6 +109,8 @@ agentkit migrate . --framework strands --entry agent.py:build_agent
 | `--model-base-url <url>` | 生成应用使用的目标模型 Base URL | — |
 | `--model-api-key-env <name>` | 生成应用读取目标模型 API Key 的环境变量名称 | — |
 | `-p, --project <name>` | 远程沙箱和生成配置使用的 AgentKit 项目 | `default` |
+| `-r, --region <region>` | 远程沙箱和生成配置的云区域 | 当前云厂商的默认区域 |
+| `--json` | 输出任务 JSON | `false` |
 | `--codex-model <id>` | 远程迁移沙箱使用的模型 ID | 云端模型服务默认值 |
 | `--codex-model-provider <provider>` | 远程迁移沙箱使用的模型服务 | 由当前云厂商决定 |
 | `--codex-api-key-env <name>` | 保存远程迁移模型 API Key 的环境变量名称；未指定时读取 `AGENTKIT_MIGRATE_MODEL_API_KEY` | `AGENTKIT_MIGRATE_MODEL_API_KEY` |
@@ -130,6 +134,8 @@ agentkit migrate ./source-agent --framework any create \
   --codex-model ep-xxxxxxxx \
   --codex-api-key-env ARK_API_KEY
 ```
+
+`--output` 相对于传入的项目目录解析：示例 `./dify-export` 与 `../agentkit-support` 最终得到同级目录。创建结果只表示远程任务已开始；保留返回的任务 ID，并从同一工作区运行 `migrate status` 获取最终交付和报告
 
 ## migrate list
 

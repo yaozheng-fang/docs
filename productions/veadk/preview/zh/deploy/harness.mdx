@@ -15,9 +15,17 @@ Harness 服务是一个独立的 VeADK 智能体运行时，通过 `veadk harnes
 
 ## 前置条件
 
-- 已安装 `veadk-python[harness]`；
-- 已配置火山引擎访问凭据（`VOLCENGINE_ACCESS_KEY` 和 `VOLCENGINE_SECRET_KEY`）；
-- 不要把 `.env`、API Key 或访问凭据提交到代码仓库。
+- Python 3.10–3.13，并安装 `veadk-python[harness]`；该 extra 提供 Headroom 压缩支持
+- 已配置火山引擎 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`，具备目标地域中构建镜像、访问 TOS、创建 Runtime 和配置 IAM 角色的权限
+- 模型或端点已开通，Runtime 的 IAM 角色可访问对应模型；知识库、数据库和工具有各自的连接与访问权限
+
+```bash lines
+pip install "veadk-python[harness]"
+```
+
+本文的 `veadk harness deploy` 使用火山引擎部署流程，未提供 BytePlus 参数。BytePlus 无代码部署应使用[独立 AgentKit CLI 的 Harness 流程](/productions/agentkit-cli/preview/zh/workflows/harness)。两组命令及配置不能直接互换
+
+生成的 Dockerfile 默认从 VeADK `main` 构建服务；要复现指定发布版本，可在构建前将 Dockerfile 的 `VEADK_REF` 设置为目标 tag。本文命令按 VeADK 1.1.13 核验
 
 ## 命令总览
 
@@ -31,7 +39,13 @@ Harness 服务是一个独立的 VeADK 智能体运行时，通过 `veadk harnes
 | `deploy` | 将 `harness.yaml` 转换为运行时环境变量并执行 AgentKit 云端构建与 Runtime 创建 |
 | `invoke` | 调用已部署的 Harness 服务并输出结果 |
 
+`create`、`add` 和 `show` 操作本地文件；`deploy` 使用云资源；`invoke` 调用已部署服务并可能消耗模型额度
+
 ## 创建项目
+
+<Warning>
+目标目录非空时，确认后会覆盖同名项目文件。需要保留原配置时先备份，或使用一个新目录
+</Warning>
 
 ```bash lines
 veadk harness create my-harness
@@ -47,15 +61,23 @@ veadk harness create my-harness
 | `Dockerfile` | 构建 Harness 服务镜像 |
 | `README.md` | 项目说明 |
 
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `DIR_NAME` | `str` | 必填 | 相对当前目录的输出目录 |
+
+目录非空时会要求确认覆盖；先保留其中需要的文件。`create` 只生成项目，不会部署云资源
+
+进入项目后将 `.env.example` 复制为 `.env`，填写部署 AK/SK，并将 `.env`、`harness.json` 和含真实密钥的配置排除出版本控制。调用元数据中的 API Key 也是凭据
+
 ## 配置智能体
 
-使用 `veadk harness add` 将参数写入 `harness.yaml`：
+使用 `veadk harness add` 将参数写入 `harness.yaml`。将 `your-model-name` 替换为可调用的模型或端点 ID；以下知识库示例还要求相应项目和地域中已有可用的 VikingDB 资源，不使用知识库时省略这三个知识库选项：
 
 ```bash lines
 cd my-harness
 veadk harness add \
   --harness-name my-harness \
-  --model-name doubao-seed-1-6-250615 \
+  --model-name your-model-name \
   --tools web_search,web_fetch \
   --system-prompt "你是一个有帮助的助手。" \
   --knowledgebase-type viking \
@@ -65,36 +87,78 @@ veadk harness add \
 
 ### 配置参数
 
-`veadk harness add` 支持以下参数（未设置的字段保持原值）：
+`add` 只更新显式提供的字段；下表默认值描述省略选项时的行为，不是服务的初始默认值。`--path` 默认当前目录，所有子命令均支持 `--help`
 
 | 参数 | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `--harness-name` | `str` | `default` | Harness 与 Runtime 名称，同时作为知识库和长期记忆的索引名 |
-| `--model-name` | `str` | VeADK 默认模型 | 推理模型名称 |
-| `--tools` | `str` | — | 内置工具名称，逗号分隔 |
-| `--skills` | `str` | — | Skill Hub 技能名称或技能空间引用，逗号分隔 |
-| `--system-prompt` | `str` | VeADK 默认指令 | 智能体系统提示词 |
-| `--runtime` | `adk` \| `codex` | `adk` | 运行时后端 |
-| `--max-llm-calls` | `int` | `10` | 单次运行的最大 LLM 调用次数 |
-| `--structured-tool-calls` | `bool` | `false` | 是否使用 Ark Responses API 进行结构化工具调用 |
-| `--include-tools-every-turn` | `bool` | `true` | 是否在每轮模型调用中包含工具定义 |
-| `--knowledgebase-type` | `str` | — | 知识库后端类型 |
-| `--long-term-memory-type` | `str` | — | 长期记忆后端类型 |
-| `--short-term-memory-type` | `str` | `local` | 短期会话存储后端类型 |
-| `--discovery-url` | `str` | — | OIDC 发现地址，启用 OAuth2/JWT 认证 |
-| `--allowed-id` | `str` | — | OAuth2/JWT 允许的客户端 ID，逗号分隔 |
+| --- | --- | --- | --- |
+| `--name` / `--harness-name` | `str` | 不修改 | Harness 与 Runtime 名称 |
+| `--model-name` | `str` | 不修改 | 账号可调用的模型或端点 ID |
+| `--tools` | `str` | 不修改 | 内置工具名称，逗号分隔 |
+| `--builtin-tools` | `str` | 不修改 | 当前 add 不写入此结构化字段；改用 YAML 的 builtin_tools |
+| `--mcp-router-id` | `str` | 不修改 | 当前 add 不写入此字段；改用 YAML 的 mcp_router_id |
+| `--skills` | `str` | 不修改 | Skill Hub slug 或 space: 前缀的技能空间引用，逗号分隔 |
+| `--selected-skills` | `str` | 不修改 | 当前 add 不写入此结构化字段；改用 YAML 的 selected_skills |
+| `--mcp` | `str` | 不修改 | 当前 add 不写入此结构化字段；改用 YAML 的 mcp |
+| `--system-prompt` | `str` | 不修改 | 系统提示词 |
+| `--runtime` | `str` | 不修改 | 运行后端：adk 或 codex |
+| `--registry` | `str` | 不修改 | 当前 add 不写入此结构化字段；改用 YAML 的 registry |
+| `--knowledgebase-type` | `str` | 不修改 | 知识库后端；空字符串禁用 |
+| `--long-term-memory-type` | `str` | 不修改 | 长期记忆后端；空字符串禁用 |
+| `--short-term-memory-type` | `str` | 不修改 | 会话后端：local、sqlite、mysql、postgresql |
+| `--max-llm-calls` | `int` | 不修改 | 单次运行最大模型调用次数，应为正整数 |
+| `--structured-tool-calls` | `bool` | 不修改 | 启用结构化工具调用；关闭时直接修改 YAML 为 false |
+| `--include-tools-every-turn` | `bool` | 不修改 | 启用每轮发送工具定义；关闭时直接修改 YAML 为 false |
+| `--knowledgebase-project` | `str` | 不修改 | VikingDB 项目 |
+| `--knowledgebase-region` | `str` | 不修改 | VikingDB 地域 |
+| `--knowledgebase-resource-id` | `str` | 不修改 | VikingDB 资源 ID |
+| `--knowledgebase-host` | `str` | 不修改 | 数据库主机 |
+| `--knowledgebase-port` | `str` | 不修改 | 数据库端口，以文本传入 |
+| `--knowledgebase-username` | `str` | 不修改 | Redis 或 OpenSearch 用户名 |
+| `--knowledgebase-password` | `str` | 不修改 | 数据库密码，写入本地配置 |
+| `--knowledgebase-use-ssl` | `str` | 不修改 | OpenSearch SSL，必须传入 true 或 false 文本 |
+| `--knowledgebase-cert-path` | `str` | 不修改 | OpenSearch 证书路径 |
+| `--knowledgebase-secret-token` | `str` | 不修改 | 可写入配置，但当前 OpenSearch 后端不使用此令牌 |
+| `--knowledgebase-db` | `str` | 不修改 | Redis 数据库编号 |
+| `--long-term-memory-project` | `str` | 不修改 | VikingDB 项目 |
+| `--long-term-memory-region` | `str` | 不修改 | VikingDB 地域 |
+| `--long-term-memory-resource-id` | `str` | 不修改 | VikingDB 资源 ID |
+| `--long-term-memory-host` | `str` | 不修改 | 数据库主机 |
+| `--long-term-memory-port` | `str` | 不修改 | 数据库端口，以文本传入 |
+| `--long-term-memory-username` | `str` | 不修改 | OpenSearch 用户名；Redis 长期记忆不使用此字段 |
+| `--long-term-memory-password` | `str` | 不修改 | 数据库密码，写入本地配置 |
+| `--long-term-memory-use-ssl` | `str` | 不修改 | OpenSearch SSL，必须传入 true 或 false 文本 |
+| `--long-term-memory-cert-path` | `str` | 不修改 | OpenSearch 证书路径 |
+| `--long-term-memory-secret-token` | `str` | 不修改 | 可写入配置，但当前 OpenSearch 后端不使用此令牌 |
+| `--long-term-memory-db` | `str` | 不修改 | Redis 数据库编号 |
+| `--long-term-memory-api-key` | `str` | 不修改 | Mem0 API Key |
+| `--long-term-memory-api-key-id` | `str` | 不修改 | Mem0 API Key ID |
+| `--long-term-memory-project-id` | `str` | 不修改 | Mem0 项目 ID |
+| `--long-term-memory-base-url` | `str` | 不修改 | Mem0 服务地址 |
+| `--short-term-memory-host` | `str` | 不修改 | 数据库主机 |
+| `--short-term-memory-user` | `str` | 不修改 | MySQL 或 PostgreSQL 用户名 |
+| `--short-term-memory-password` | `str` | 不修改 | 数据库密码，写入本地配置 |
+| `--short-term-memory-database` | `str` | 不修改 | MySQL 或 PostgreSQL 数据库名 |
+| `--short-term-memory-charset` | `str` | 不修改 | MySQL 字符集 |
+| `--short-term-memory-port` | `str` | 不修改 | 数据库端口，以文本传入 |
+| `--path` | `str` | `.` | 包含 harness.yaml 的目录 |
 
-每个后端的连接参数也有独立的标志，例如 `--knowledgebase-project`、`--knowledgebase-region`、`--long-term-memory-host`、`--short-term-memory-host` 等，写入对应组件分节。
+先设置组件的后端类型，再填写该后端需要的连接参数。连接选项均接收文本，例如 `--knowledgebase-use-ssl true`；它与独立 AgentKit CLI 的布尔开关不同。密码和 API Key 会写入本地 `harness.yaml`，不要提交包含真实凭据的文件
+
+<Note>
+当前版本虽然在帮助中列出 `--builtin-tools`、`--mcp-router-id`、`--selected-skills`、`--mcp` 与 `--registry`，但 `add` 不会保存这些值。结构化资源请按下文直接编辑 YAML；OIDC 选项属于 `deploy`，不属于 `add`
+</Note>
+
+连接字段被 CLI 接受不代表所有后端都会使用。Redis 用户名在知识库中可用，在长期记忆中不生效；OpenSearch 的 `secret_token` 不用于当前知识库或长期记忆连接。详见 [Redis 长期记忆](/productions/veadk/preview/zh/components/memory/redis)和 [OpenSearch 知识库](/productions/veadk/preview/zh/components/knowledge/opensearch)
 
 ### harness.yaml 配置结构
 
-`harness.yaml` 使用分节结构组织配置。部署时，顶层字段和 `model` 分节被展平为运行时环境变量（如 `model.name` 映射到 `MODEL_AGENT_NAME`），每个组件的 `type` 选择后端，其余参数映射到对应后端读取的环境变量。
+`harness.yaml` 按模型、工具、技能、知识库和记忆组织配置。部署时会将配置传入 Runtime；每个组件先用 `type` 选择后端，再配置其连接参数。初始会话后端为 `local`，单次运行最多调用模型 10 次
 
 ```yaml title="harness.yaml" lines
 harness_name: my-harness
 
 model:
-  name: doubao-seed-1-6-250615
+  name: your-model-name
 
 tools:
   - web_search
@@ -124,7 +188,7 @@ short_term_memory:
 ```
 
 <Note>
-  也可以在 `harness.yaml` 中使用 `harness:` 包装分节，将所有 Harness 参数放在一个嵌套对象中。`harness:` 分节内的字段会被提取并与顶层字段合并。
+  智能体字段也支持 `harness:` 包装分节，嵌套字段优先于同名顶层字段。部署名称 `harness_name` 和网关 `auth` 保留在顶层；`add` 修改顶层字段，因此不要同时保留同名嵌套配置。该命令不展开 YAML 中的 `${VAR}`，不要套用独立 AgentKit CLI 的配置插值规则
 </Note>
 
 #### 结构化资源配置
@@ -146,7 +210,7 @@ short_term_memory:
 ```yaml title="harness.yaml" lines
 harness:
   model:
-    name: doubao-seed-1-6-250615
+    name: your-model-name
   temperature: 0.3
   top_p: 0.9
   max_llm_calls: 8
@@ -157,14 +221,13 @@ harness:
         region: cn-beijing
     - id: mcp_router
       config:
-        url: http://router.example.com/mcp
-        api_key: your-api-key
+        url: https://router.example.com/mcp
   selected_skills:
     - source: skillhub
       slug: team/reporting
   mcp:
     - name: db
-      server_url: http://db.example.com/mcp
+      server_url: https://db.example.com/mcp
   knowledgebase:
     type: viking
     config:
@@ -173,6 +236,27 @@ harness:
       project: default
       region: cn-beijing
 ```
+
+### 执行增强配置
+
+在 `harness.yaml` 中配置 `harness_enhance`，可为服务启用上下文准备、工具结果压缩与回答校验。以下配置使用内置压缩，不要求 Headroom
+
+```yaml title="harness.yaml" lines
+harness_enhance:
+  enabled: true
+  components: [invocation_context, compactor, response_verification]
+  profile: default
+  compression_provider: builtin
+```
+
+| 字段 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `enabled` | `bool` | `false` | 启用增强插件 |
+| `components` | `list[str]` | 上例三个组件 | 选择增强组件 |
+| `profile` | `str` | `default` | 插件配置场景 |
+| `compression_provider` | `str` | `builtin` | 压缩提供方，可选 builtin 或 headroom |
+
+HTTP 调用可通过请求体顶层的 `harness_enhance` 临时覆盖这些设置，其中 `components` 使用逗号分隔的字符串。压缩可能损失细节，回答校验也不保证事实正确；组件行为和限制见 [Harness 扩展](/productions/veadk/preview/zh/components/extensions/harness)
 
 ## 查看配置
 
@@ -183,10 +267,20 @@ veadk harness show
 该命令输出 `harness.yaml` 中已配置的参数，以及可通过 `veadk harness invoke` 在调用时覆盖的参数列表。
 
 <Note>
-  知识库、长期记忆、采样参数（temperature、top_p 等）和注册表（registry）等字段仅通过 HTTP API 覆盖，不作为 CLI 标志暴露。
+  知识库、长期记忆和采样参数使用 HTTP API 覆盖。`--registry` 等结构化选项虽然出现在命令帮助中，但 CLI 只传递文本，不解析 JSON 对象；使用 HTTP 请求体中的对应字段
 </Note>
 
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--path` | `str` | `.` | 包含 harness.yaml 的目录 |
+
+`show` 输出为配置原文，不会自动隐藏其中的密码或 API Key；分享输出前应删除敏感值
+
 ## 部署
+
+<Warning>
+部署会构建镜像并创建或更新云端运行资源，可能产生费用。先核对地域、Runtime 名称、模型访问权限和将写入 Runtime 的环境配置。更改线上服务前保留当前配置；失败时先查看已经创建的资源，再决定是否重试
+</Warning>
 
 ```bash lines
 veadk harness deploy
@@ -194,9 +288,18 @@ veadk harness deploy
 
 该命令读取 `harness.yaml`，将其转换为运行时环境变量，执行 AgentKit 云端构建和 Runtime 创建。部署完成后，Runtime 端点、Runtime ID 和 API Key 会记录到 `harness.json` 中。
 
-<Warning>
-  部署会创建云端运行资源。执行前应确认项目、地域与 Runtime 名称无误。销毁 Runtime 时执行 `veadk agentkit destroy` 会删除云端运行资源，操作前应保留需要的日志和数据。
-</Warning>
+
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `--volcengine-access-key` | `str` | `VOLCENGINE_ACCESS_KEY` | 部署 AK；优先使用环境变量 |
+| `--volcengine-secret-key` | `str` | `VOLCENGINE_SECRET_KEY` | 部署 SK；优先使用环境变量 |
+| `--region` | `str` | `VOLCENGINE_REGION`、`REGION`，最后为 `cn-beijing` | 部署地域 |
+| `--path` | `str` | `.` | 包含 harness.yaml 与 Dockerfile 的项目目录 |
+| `--discovery-url` | `str` | `auth.discovery_url` | OIDC 发现地址 |
+| `--allowed-id` | `str` | `auth.allowed_ids` | 允许的客户端 ID，逗号分隔 |
+
+`harness.json` 只在返回可用端点时写入。API Key 模式记录密钥；OAuth 模式记录发现地址和客户端，不保存用户 JWT。默认本地会话随进程结束而丢失，需要持久化时配置 MySQL 或 PostgreSQL
 
 ### 认证方式
 
@@ -221,17 +324,30 @@ veadk harness invoke --name my-harness --message "介绍你的能力"
 ### 调用参数
 
 | 参数 | 类型 | 默认值 | 说明 |
-| :--- | :--- | :--- | :--- |
-| `--name` | `str` | — | Harness 名称，从 `harness.json` 读取 URL 和 API Key |
-| `--message` / `-m` | `str` | — | 发送的消息 |
+| --- | --- | --- | --- |
+| `[MESSAGE]` | `str` | — | 消息；与 --message 至少提供一个 |
+| `--name` / `--harness` | `str` | — | 必填的 Harness 名称；用于读取 harness.json |
+| `--message` / `-m` | `str` | — | 发送的消息，优先于位置参数 |
 | `--user-id` | `str` | `cli-user` | 会话用户 ID |
-| `--session-id` | `str` | `cli-session` | 会话 ID |
-| `--max-llm-calls` | `int` | — | 覆盖本次调用的最大 LLM 调用次数 |
-| `--url` | `str` | `HARNESS_URL` | Harness URL |
-| `--key` | `str` | `HARNESS_KEY` | API Key |
-| `--path` | `str` | `.` | `harness.json` 所在目录 |
+| `--session-id` | `str` | `cli-session` | 会话 ID；不同独立调用使用不同值 |
+| `--max-llm-calls` | `int` | — | 仅覆盖本次调用的模型调用上限 |
+| `--url` | `str` | — | 显式地址优先，其次 HARNESS_URL，再读取 harness.json |
+| `--key` | `str` | — | Bearer 凭据；显式值优先，其次 HARNESS_KEY，再读取 harness.json；JWT 也通过此参数传入 |
+| `--path` | `str` | `.` | harness.json 所在目录 |
+| `--model-name` | `str` | — | 账号可调用的模型或端点 ID |
+| `--tools` | `str` | — | 内置工具名称，逗号分隔 |
+| `--builtin-tools` | `str` | — | 不解析 JSON 列表；结构化覆盖改用 HTTP builtin_tools |
+| `--mcp-router-id` | `str` | — | 本次调用的 MCP 工具集 ID |
+| `--skills` | `str` | — | Skill Hub slug 或 space: 前缀的技能空间引用，逗号分隔 |
+| `--selected-skills` | `str` | — | 不解析 JSON 列表；结构化覆盖改用 HTTP selected_skills |
+| `--mcp` | `str` | — | 不解析 JSON 列表；结构化覆盖改用 HTTP mcp |
+| `--system-prompt` | `str` | — | 系统提示词 |
+| `--runtime` | `str` | — | 运行后端：adk 或 codex |
+| `--registry` | `str` | — | 不解析 JSON 对象；结构化覆盖改用 HTTP registry |
 
-调用时可以使用覆盖标志在本次调用中覆盖已部署智能体的配置，例如 `--tools`、`--skills`、`--system-prompt`、`--model-name` 等。覆盖仅对本次调用生效，不修改 `harness.yaml`。
+覆盖项只作用于当前请求，不修改 `harness.yaml`。独立对话应设置不同的 `--session-id`；默认的 `cli-user` 与 `cli-session` 会复用同一组会话标识
+
+收到非空回答后，再确认工具、知识库和记忆符合预期。若 CLI 输出为空，使用 HTTP 接口检查响应中的 `error`；HTTP 200 本身不等于智能体执行成功
 
 ## HTTP API
 
@@ -262,7 +378,7 @@ Harness 服务支持在每次请求中覆盖已部署智能体的配置。覆盖
   "prompt": "整理一份研究报告",
   "harness_name": "my-harness",
   "harness": {
-    "model_name": "doubao-seed-1-6-250615",
+    "model_name": "your-model-name",
     "system_prompt": "你是一个研究助手。",
     "tools": "web_search,web_fetch",
     "temperature": 0.3
@@ -314,12 +430,20 @@ Harness 服务支持在每次请求中覆盖已部署智能体的配置。覆盖
   知识库和长期记忆的请求级覆盖通过 AgentKit 控制面资源 ID 解析为运行时配置。传入 `id` 时，Harness 服务会从 AgentKit 控制面获取对应资源的连接信息。
 </Note>
 
+HTTP 示例使用已部署端点和实际 Bearer 凭据。API Key 模式从本地 `harness.json` 读取密钥；OAuth 模式使用用户池颁发的有效 JWT
+
+```bash lines
+export HARNESS_URL="https://your-harness-endpoint"
+export HARNESS_KEY="your-api-key-or-user-jwt"
+```
+
 ### 创建会话
 
 ```bash lines
-curl -X POST "https://<harness-url>/apps/my-harness/users/user-1/sessions" \
+curl -X POST "$HARNESS_URL/apps/my-harness/users/user-1/sessions" \
+  -H "Authorization: Bearer $HARNESS_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"id": "session-1", "state": {"key": "value"}}'
+  -d '{"sessionId": "session-1", "state": {"key": "value"}}'
 ```
 
 请求体可包含以下字段：
@@ -334,7 +458,8 @@ curl -X POST "https://<harness-url>/apps/my-harness/users/user-1/sessions" \
 ### 查询默认配置
 
 ```bash lines
-curl "https://<harness-url>/get_agent_config?app_name=my-harness&user_id=user-1&session_id=session-1"
+curl "$HARNESS_URL/get_agent_config?app_name=my-harness&user_id=user-1&session_id=session-1" \
+  -H "Authorization: Bearer $HARNESS_KEY"
 ```
 
 返回当前 Harness 的默认配置，包含模型名称、运行时后端、最大 LLM 调用次数等信息。支持 camelCase 查询参数（`appName`、`userId`、`sessionId`），也支持 `POST` 方式提交请求体。
@@ -342,6 +467,8 @@ curl "https://<harness-url>/get_agent_config?app_name=my-harness&user_id=user-1&
 ## 环境变量
 
 Harness 服务通过环境变量配置运行时行为。`harness.yaml` 在部署时自动转换为对应的环境变量，也可以直接在运行时环境中设置。
+
+CLI 调用还支持 `HARNESS_URL`、`HARNESS_KEY` 和 `HARNESS_TIMEOUT`；超时默认 600 秒。前两者分别作为 `--url` 和 `--key` 的回退值，不会自动写入部署配置
 
 ### 模型与工具
 
@@ -361,9 +488,8 @@ Harness 服务通过环境变量配置运行时行为。`harness.yaml` 在部署
 | `TOOL_MCP_ROUTER_URL` | — | MCP Router 服务地址 |
 | `TOOL_MCP_ROUTER_API_KEY` | — | MCP Router 鉴权 API Key |
 | `AGENTKIT_TOOL_ID_SCRIPT` | — | `run_code` 工具的 AgentKit Tool ID |
-| `AGENTKIT_TOOL_REGION` | — | `run_code` 工具的地域 |
+| `AGENTKIT_TOOL_REGION` | — | `run_code` 与 `coding` 工具共用的地域 |
 | `AGENTKIT_TOOL_ID_OPENCODE` | — | `coding` 工具的 AgentKit Tool ID |
-| `AGENTKIT_TOOL_REGION` | — | `coding` 工具的地域 |
 
 ### 资源配置
 

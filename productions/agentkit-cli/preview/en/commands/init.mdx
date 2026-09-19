@@ -13,7 +13,7 @@ Create a project from a built-in template. When `--template` is omitted, the com
 | --- | --- | --- |
 | `[project_name]` | Project name. | `simple_agent` |
 | `-t, --template <template>` | Template ID, key, or name. Available keys: `basic`, `basic_stream`, `a2a`, `eino_a2a`, `agent_server`, `langchain_basic_stream`, `basic_go`, `a2a_go`. | Interactive selection |
-| `--directory <path>` | Target directory. | `.` |
+| `--directory <path>` | Output directory, resolved relative to the current directory; the project name is not appended | `.` |
 | `--agent-name <name>` | Agent name. | `Agent` |
 | `--description <text>` | Agent description. | Template default |
 | `--system-prompt <text>` | Agent system prompt. | Template default |
@@ -23,11 +23,15 @@ Create a project from a built-in template. When `--template` is omitted, the com
 | `--tools <list>` | Comma-separated tools to include. | — |
 | `--list-templates` | List template IDs, keys, and names, then exit. | `false` |
 
-```bash lines
-agentkit init my-agent --template basic
+`--model-api-key` writes the actual key to the generated `agentkit.yaml`. Create the project first, then follow the [Quickstart](/productions/agentkit-cli/preview/en/quickstart) to configure ignore files and model credentials so keys are not committed or packaged in the image
 
-agentkit init go-agent --template basic_go --directory ./apps
+```bash lines
+agentkit init my-agent --template basic --directory ./my-agent
+
+agentkit init go-agent --template basic_go --directory ./apps/go-agent
 ```
+
+Without `--directory`, files are written directly into the current directory. The examples above write to `./my-agent` and `./apps/go-agent`. Enter the corresponding directory before configuring or deploying
 
 ## init --from-agent
 
@@ -40,16 +44,17 @@ Wrap an existing Python file that defines a VeADK `Agent`. The CLI copies the so
 | `-f, --from-agent <path>` | Python file containing the `Agent` definition. | Required |
 | `--agent-var <name>` | `Agent` variable name in the file; auto-detected when omitted. | Auto-detected |
 | `--wrapper-type <type>` | Wrapper type: `basic`, `stream`, or `agent_server`; when used with `--template`, it must match the selected template. | `basic` |
-| `--directory <path>` | Target directory. | `.` |
+| `--directory <path>` | Output directory, resolved relative to the current directory; the project name is not appended | `.` |
 
 ```bash lines
-agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent
+agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent --directory ./wrapped-agent
 
-agentkit init wrapped-server --from-agent ./agent.py --template agent_server
+agentkit init wrapped-server --from-agent ./agent.py --template agent_server --directory ./wrapped-server
 ```
 
-After initialization, enter the project directory, review `agentkit.yaml`, then run:
+Enter the directory specified by `--directory`, then configure the cloud platform, model, and credentials using the [Quickstart](/productions/agentkit-cli/preview/en/quickstart) before deploying. For the `wrapped-agent` example:
 
 ```bash lines
+cd wrapped-agent
 agentkit launch
 ```

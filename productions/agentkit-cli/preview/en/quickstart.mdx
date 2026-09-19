@@ -3,29 +3,179 @@ title: "Quickstart"
 zh_link: "/productions/agentkit-cli/preview/zh/quickstart"
 ---
 
-## Install
+Install AgentKit CLI, configure cloud credentials, create a project, and deploy an agent that you can call from the terminal. A runtime is the cloud service that hosts your agent application
 
-No Node.js required — one command installs the standalone binary and puts `agentkit` (and its alias `ak`) on your PATH:
+This tutorial follows the public commands in AgentKit CLI 0.54.0. Terminal examples use Bash or zsh
+
+## Prerequisites
+
+- A Volcengine or BytePlus account with access to AgentKit and permission to create runtimes and related build resources in the target region
+- An available model name, model API address, and API key for that platform
+- Access to the cloud console or your organization's SSO address when using browser login
+
+Cloud management credentials create and manage resources. The model API key authorizes model calls made by the agent
+
+<span id="install" />
+
+## Install and check the version
+
+The installer downloads a standalone binary without requiring Node.js. Choose a download tool available on your computer:
 
 <Tabs>
-  <Tab title="wget">
-    ```bash lines
-    wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
-    ```
-  </Tab>
   <Tab title="curl">
     ```bash lines
     curl -fsSL https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
     ```
   </Tab>
+  <Tab title="wget">
+    ```bash lines
+    wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
+    ```
+  </Tab>
 </Tabs>
 
-Verify the install:
+The installer updates your shell startup configuration to make `agentkit` and its alias `ak` available. Follow its instructions to reload the configuration or open a new terminal, then check the version and help:
 
 ```bash lines
 agentkit --version
 agentkit --help
 ```
+
+Continue when the terminal displays a version number and command list. See Installation options on this page for installation paths and handling of existing Python commands
+
+<span id="authentication" />
+
+<span id="sign-in-through-the-console" />
+
+## Configure cloud credentials
+
+Choose a method for your target cloud platform. Replace the placeholders and run environment variable commands in the same terminal you will use for deployment:
+
+<Tabs>
+  <Tab title="Volcengine access keys">
+    ```bash lines
+    export VOLCENGINE_ACCESS_KEY="your-access-key"
+    export VOLCENGINE_SECRET_KEY="your-secret-key"
+    export VOLCENGINE_REGION="cn-beijing"
+    ```
+  </Tab>
+  <Tab title="BytePlus access keys">
+    ```bash lines
+    export BYTEPLUS_ACCESS_KEY="your-access-key"
+    export BYTEPLUS_SECRET_KEY="your-secret-key"
+    ```
+
+    After creating the project, explicitly select BytePlus and its region as shown below
+  </Tab>
+  <Tab title="Console login">
+    For a Volcengine account, run:
+
+    ```bash lines
+    agentkit --provider volcengine login --console
+    agentkit --provider volcengine whoami
+    ```
+
+    For a BytePlus account, run:
+
+    ```bash lines
+    agentkit --provider byteplus login --console
+    agentkit --provider byteplus whoami
+    ```
+
+    After browser authorization, `whoami` should display the identity for the selected cloud platform. On a remote server, use `login --remote` and follow the instructions to authorize on another device
+  </Tab>
+  <Tab title="Organization SSO">
+    Sign in with the SSO address supplied by your organization:
+
+    ```bash lines
+    agentkit login <sso-address>
+    agentkit whoami
+    ```
+
+    This path must obtain short-lived STS credentials that can manage cloud resources. Do not add `--identity-only` for this tutorial: it stores only an identity session and cannot authorize the deployment steps
+  </Tab>
+</Tabs>
+
+Valid access keys in the environment take precedence over cached login credentials. Login does not replace them. Sign in again when SSO credentials expire. See [Authentication](/productions/agentkit-cli/preview/en/commands/auth#console-login-and-credential-precedence) for cloud selection and credential precedence
+
+<span id="deploy-in-three-steps" />
+
+## Create and configure a project
+
+<Steps>
+  <Step title="Create the project directory">
+    Run these commands in the parent directory where you want to store the project. `--directory` sets the output location; the project name alone does not create a subdirectory:
+
+    ```bash lines
+    agentkit init my-agent --template basic --directory my-agent
+    cd my-agent
+    ```
+
+    The current directory should contain `my-agent.py`, `requirements.txt`, `agentkit.yaml`, and `.dockerignore`. Run the remaining configuration, deployment, and invocation commands from this directory
+  </Step>
+  <Step title="Select the cloud platform and model">
+    Choose the platform matching your credentials. Replace the model name and API key with values available to your account:
+
+    <Tabs>
+      <Tab title="Volcengine">
+        ```bash lines
+        agentkit config --launch_type cloud --cloud_provider volcengine --region cn-beijing
+        export MODEL_AGENT_NAME="your-ark-model-name"
+        export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+        export MODEL_AGENT_API_KEY="your-ark-api-key"
+        ```
+      </Tab>
+      <Tab title="BytePlus">
+        ```bash lines
+        agentkit config --launch_type cloud --cloud_provider byteplus --region ap-southeast-1
+        export MODEL_AGENT_NAME="your-modelark-model-name"
+        export MODEL_AGENT_API_BASE="https://ark.ap-southeast.bytepluses.com/api/v3"
+        export MODEL_AGENT_API_KEY="your-modelark-api-key"
+        ```
+      </Tab>
+    </Tabs>
+
+    `agentkit config` updates `agentkit.yaml` in the project root. This tutorial uses cloud build and deployment. See the [config command](/productions/agentkit-cli/preview/en/commands/config) for more settings
+  </Step>
+  <Step title="Pass model settings to the runtime">
+    <Warning>
+      The following command writes the current environment variable values, including the real model API key, to `agentkit.yaml`. Before running it, add `agentkit.yaml` and `.env` to both `.gitignore` and `.dockerignore` to keep credentials out of version control and the image. Create either ignore file if it does not exist
+    </Warning>
+
+    ```bash lines
+    agentkit config \
+      --runtime_envs "MODEL_AGENT_NAME=$MODEL_AGENT_NAME" \
+      --runtime_envs "MODEL_AGENT_API_BASE=$MODEL_AGENT_API_BASE" \
+      --runtime_envs "MODEL_AGENT_API_KEY=$MODEL_AGENT_API_KEY" \
+      --runtime_envs "MODEL_AGENT_PROVIDER=openai"
+    ```
+
+    Double quotes let the shell expand variables before running the command. Exporting model credentials locally does not automatically pass them to the cloud runtime; this configuration supplies its environment variables
+  </Step>
+</Steps>
+
+## Deploy and invoke
+
+<Warning>
+  `agentkit launch` builds an image and creates or updates the runtime and required resources in the selected cloud platform and region. These operations may incur charges. Check account permissions, region, model settings, and build resource settings first. Invoking the agent also consumes model usage
+</Warning>
+
+Build and deploy from the project directory:
+
+```bash lines
+agentkit launch
+```
+
+After deployment succeeds, check runtime status and send a test message:
+
+```bash lines
+agentkit status
+agentkit invoke run "hello"
+```
+
+`status` shows the state of the current project's runtime. Receiving an agent response confirms that the deployed application can handle a call. If the build or deployment fails, resolve the reported issue before invoking it. Creating local project files does not mean that cloud deployment succeeded
+
+## Installation options
 
 <Tip>
   The binary installs to `AGENTKIT_HOME` (`~/.agentkit` by default), with compatibility links for `agentkit` and `ak` in `AGENTKIT_BIN_DIR` (`~/.local/bin` by default). When overriding these directories, use absolute paths and keep them separate. The install directory also contains required runtime assets such as `templates/`, `lifecycle-templates/`, `harness/`, `skills/`, `im-proxies/`, and `vendor/`; when manually moving or extracting a standalone release, keep these directories beside `ak` in the same install directory. To install a specific version, set the `AGENTKIT_VERSION` environment variable (defaults to `latest`). If the current terminal still cannot find the command, reopen the terminal or source the shell configuration printed by the installer.
@@ -36,75 +186,3 @@ agentkit --help
 </Note>
 
 The installer retrieves the latest standalone release. Use `agentkit upgrade` to update an existing installation. This documentation covers the 0.54.0 release
-
-## Authentication
-
-The CLI signs every cloud OpenAPI request. Provide credentials for the cloud provider or login mode you use:
-
-<Tabs>
-  <Tab title="AK/SK">
-    Set these in your environment or a local `.env` (git-ignored):
-
-    ```bash lines
-    VOLCENGINE_ACCESS_KEY=...
-    VOLCENGINE_SECRET_KEY=...
-    VOLCENGINE_REGION=cn-beijing   # optional, defaults to cn-beijing
-    ```
-  </Tab>
-  <Tab title="BytePlus">
-    Set BytePlus credentials, then write the default cloud provider and region to user-wide config:
-
-    ```bash lines
-    BYTEPLUS_ACCESS_KEY=...
-    BYTEPLUS_SECRET_KEY=...
-    agentkit --provider byteplus config --global --region ap-southeast-1
-    ```
-  </Tab>
-  <Tab title="SSO">
-    Browser login that stores short-lived STS credentials.
-
-    ```bash lines
-    agentkit login <sso-address>
-    agentkit whoami
-    ```
-  </Tab>
-</Tabs>
-
-<Tip>
-  SSO login caches short-lived STS credentials. When AK/SK credentials are not explicitly configured, runtime, knowledge, memory, tool, and other cloud commands use valid credentials from the active login profile. Run `agentkit login` again after the credentials expire.
-</Tip>
-
-## Deploy in three steps
-
-<Steps>
-  <Step title="Scaffold a project">
-    ```bash lines
-    agentkit init my-agent --template basic
-    cd my-agent
-    ```
-  </Step>
-  <Step title="Build & deploy">
-    ```bash lines
-    agentkit launch
-    ```
-  </Step>
-  <Step title="Invoke the runtime">
-    ```bash lines
-    agentkit invoke run "hello"
-    ```
-  </Step>
-</Steps>
-
-See the [command reference](/productions/agentkit-cli/preview/en/commands), or run `agentkit tree`
-to print the command tree. To switch cloud provider or region, run `agentkit config --cloud_provider byteplus --region ap-southeast-1` in the project.
-
-## Sign in through the console
-
-Use console login to obtain temporary credentials without configuring access keys. `--console` explicitly selects console login when an SSO profile already exists
-
-```bash lines
-agentkit login --console
-agentkit --provider byteplus login --console
-```
-
-On a remote server, use `agentkit login --remote`. See [authentication](/productions/agentkit-cli/preview/en/commands/auth#console-login-and-credential-precedence) for credential precedence and automatic login

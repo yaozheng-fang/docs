@@ -8,7 +8,7 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/migrate"
 - Run a local structured migration for LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore projects and generate an AgentKit app.
 - Start a remote migration job for a Dify Workflow, Dify Chatflow, or another type of agent project, then download the generated VeADK project when the job finishes.
 
-```bash lines
+```text
 agentkit migrate [project-dir] --framework langchain|langgraph|adk|strands|agentcore --entry <file.py:object> [options]
 agentkit migrate [project-dir] --framework dify|any create|list|status [job-id] [options]
 ```
@@ -88,6 +88,8 @@ agentkit migrate . --framework adk --entry agent.py:root_agent
 agentkit migrate . --framework strands --entry agent.py:build_agent
 ```
 
+`--verify` imports the source project and generated app, which can execute module initialization. Install project dependencies and verify that the entry is importable and initialization has no unintended external effects before enabling it. Passing local checks does not mean cloud deployment succeeded
+
 ## migrate create
 
 Create a remote migration job for a Dify export or another agent project. The command uploads the source directory, creates a remote sandbox, returns the job ID, and leaves the job running in the background. If an active job already has the same workspace, source directory, and migration configuration, the command reuses it.
@@ -107,6 +109,8 @@ This operation uploads the source directory to a remote sandbox and may create b
 | `--model-base-url <url>` | Target model base URL for the generated app | — |
 | `--model-api-key-env <name>` | Name of the environment variable the generated app uses for its target model API key | — |
 | `-p, --project <name>` | AgentKit project used by the remote sandbox and generated configuration | `default` |
+| `-r, --region <region>` | Cloud region for the remote sandbox and generated configuration | Current provider's default region |
+| `--json` | Output job JSON | `false` |
 | `--codex-model <id>` | Model ID used by the remote migration sandbox | Cloud model service default |
 | `--codex-model-provider <provider>` | Model provider used by the remote migration sandbox | Determined by the current cloud provider |
 | `--codex-api-key-env <name>` | Name of the environment variable containing the remote migration model API key; if omitted, `AGENTKIT_MIGRATE_MODEL_API_KEY` is read | `AGENTKIT_MIGRATE_MODEL_API_KEY` |
@@ -130,6 +134,8 @@ agentkit migrate ./source-agent --framework any create \
   --codex-model ep-xxxxxxxx \
   --codex-api-key-env ARK_API_KEY
 ```
+
+`--output` resolves relative to the supplied project directory: `./dify-export` with `../agentkit-support` produces a sibling directory. Creation only confirms that the remote job has started. Retain its ID and run `migrate status` from the same workspace to retrieve the final delivery and report
 
 ## migrate list
 

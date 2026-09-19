@@ -767,6 +767,9 @@
                 }
               }
             }
+          },
+          "499": {
+            "description": "Execution was cancelled after the client disconnected; the closed connection can prevent the client from reading this status"
           }
         },
         "description": "Run one invocation and return all events as a JSON array after completion; streaming does not change this response format\n\nCreate the session first by default; `--auto_create_session` allows automatic creation. `appName` may be omitted when `ADK_DEFAULT_APP_NAME` is configured",
@@ -1097,7 +1100,8 @@
                 }
               ],
               "title": "Version"
-            }
+            },
+            "description": "Optional version number; omit it to read the latest version"
           }
         ],
         "responses": {
@@ -1140,7 +1144,7 @@
             }
           }
         },
-        "description": "Return the latest artifact as a Part; returns 404 when the artifact does not exist",
+        "description": "Return the latest artifact as a Part when version is omitted, or the selected version when the version query parameter is supplied; a missing artifact or version returns 404",
         "tags": [
           "Artifacts"
         ]
@@ -1751,7 +1755,7 @@
             }
           }
         },
-        "description": "Create an empty evaluation set using evalSet.eval_set_id; add cases through the corresponding endpoint\n\nAvailable only with the development UI enabled, such as `veadk web` or `adk api_server --with_ui`; the default `adk api_server` does not expose this endpoint"
+        "description": "Create an empty evaluation set using evalSet.eval_set_id. This endpoint does not import eval_cases from the request; add cases through the corresponding endpoint\n\nAvailable only with the development UI enabled, such as `veadk web` or `adk api_server --with_ui`; the default `adk api_server` does not expose this endpoint"
       },
       "get": {
         "tags": [
@@ -2213,7 +2217,7 @@
           "Evaluation · development server"
         ],
         "summary": "Run an evaluation",
-        "description": "Select cases with evalCaseIds; omit it or use an empty array to evaluate all cases. evalMetrics is required; the response includes per-case status and metric results\n\nAvailable only with the development UI enabled, such as `veadk web` or `adk api_server --with_ui`; the default `adk api_server` does not expose this endpoint",
+        "description": "Select cases with evalCaseIds; omission or an empty array falls back to evalIds. All cases are evaluated when neither selects cases. evalMetrics is required; the response includes per-case status and metric results\n\nAvailable only with the development UI enabled, such as `veadk web` or `adk api_server --with_ui`; the default `adk api_server` does not expose this endpoint",
         "operationId": "agentApiRunEvaluation",
         "parameters": [
           {
@@ -11262,7 +11266,7 @@
             },
             "type": "array",
             "title": "Evalcaseids",
-            "description": "Case IDs to evaluate; omitted or empty selects all cases"
+            "description": "Case IDs to evaluate; omission or an empty array falls back to evalIds. Evaluate all cases when neither selects cases"
           },
           "evalMetrics": {
             "items": {

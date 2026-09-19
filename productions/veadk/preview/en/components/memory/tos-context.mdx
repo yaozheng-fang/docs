@@ -99,6 +99,7 @@ async def main() -> None:
         user_id=USER_ID,
         session_id="session-1",
     )
+    assert completed_session is not None
     await memory.add_session_to_memory(completed_session)
 
     response = await runner.run(
@@ -147,6 +148,7 @@ memory = LongTermMemory(
 | `app_name` | `str` | `""` | Application name and the fallback value when `index` is not set. |
 | `top_k` | `int` | `5` | Maximum number of memories returned by each search. |
 | `backend_config` | `dict` | `{}` | Configuration passed to the selected backend. If the dictionary has no `index`, VeADK fills it from the outer `index` or `app_name`. |
+| `user_id` | `str` | `""` | Deprecated; use user_id from Session or search arguments |
 
 ### Backend configuration
 
@@ -204,3 +206,5 @@ Pass `infer=False` to `await memory.add_session_to_memory(session, infer=False)`
 - An existing ContextSet must have the memory scene enabled; otherwise saves and searches fail.
 - Memories are strictly isolated by `user_id`. If the application changes a user's `user_id`, new sessions cannot retrieve memories from the previous ContextSet.
 - This backend does not support `get_user_profile(user_id)`; the method returns an empty string.
+
+This backend uses `VOLCENGINE_*` credential fields. Global BytePlus configuration can map AK/SK, but does not thereby switch the ContextBucket endpoint; match the endpoint, region, and session token to the target service. Availability of ordinary TOS on BytePlus does not establish ContextBucket availability

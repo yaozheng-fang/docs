@@ -3,66 +3,91 @@ title: "Installation"
 zh_link: "/productions/veadk/preview/zh/get-started/installation"
 ---
 
+Install VeADK to create and run agents in Python. Start with a released PyPI package. Use a source installation when evaluating unreleased capabilities or changing the SDK
+
 ## Prerequisites
 
-- Python 3.10 through 3.13.
-- A Volcengine Ark API key for calling models, created in the [Ark console](https://console.volcengine.com/ark).
+- Python 3.10 through 3.13, with pip available in that environment
+- An available model and API key to run an agent; installing the package does not require model credentials. See the [Quickstart](/productions/veadk/preview/en/get-started/quickstart) for Volcengine and BytePlus configuration
 
-## Install the released baseline
+## Install a released version
 
-Install VeADK 1.0.9, the released baseline for this Preview, from [PyPI](https://pypi.org/project/veadk-python/):
+Create a virtual environment in your project directory to isolate its dependencies:
 
 ```bash lines
-pip install "veadk-python==1.0.9"
+python -m venv .venv
 ```
 
+Activate the environment:
+
+<Tabs>
+  <Tab title="macOS / Linux">
+    ```bash lines
+    source .venv/bin/activate
+    ```
+  </Tab>
+  <Tab title="Windows PowerShell">
+    ```powershell lines
+    .venv\Scripts\Activate.ps1
+    ```
+  </Tab>
+</Tabs>
+
+Install the latest release from [PyPI](https://pypi.org/project/veadk-python/) and check the installation:
+
+```bash lines
+python -m pip install --upgrade veadk-python
+python -c "from importlib.metadata import version; print(version('veadk-python'))"
+```
+
+The second command prints the VeADK version installed in the current Python environment. The Python requirements and extras on this page were checked against release 1.1.13. Pin a verified version in production projects
+
 <Note>
-  PyPI 1.0.9 does not contain capabilities listed under Unreleased in the changelog. Use the Preview source installation below to evaluate those capabilities.
+  Preview also describes capabilities marked as Unreleased in the [changelog](/productions/veadk/preview/en/changelog). Check the relevant page for version requirements and source installation instructions before using them. A capability documented in Preview may not yet be available on PyPI
 </Note>
 
 ## Optional dependency groups
 
-VeADK provides optional dependency groups (extras) for on-demand capabilities,
-installed individually as needed:
+Install extras for the integrations you need. For example, install `extensions` for Feishu, Cozeloop, or LlamaIndex:
 
 ```bash lines
-pip install "veadk-python[extensions]"
+python -m pip install --upgrade "veadk-python[extensions]"
 ```
 
-| Extra | Purpose |
-| --- | --- |
-| `github-cicd` | Encryption dependency required by Studio "Attach continuous delivery" to write GitHub Actions Secrets |
-| `extensions` | Feishu channel, Cozeloop, LlamaIndex, and related integrations |
-| `codex` | OpenAI Codex SDK and Codex CLI binary, used by the Codex runtime |
-| `database` | Redis, MySQL, Viking DB, mem0, and other storage backends |
-| `eval` | Evaluation via DeepEval and Google ADK |
-| `a2ui` | A2UI (agent-driven UI) |
-| `harness` | Harness servers and the Headroom integration |
-| `harness-sidecar` | AgentKit Python SDK required by the Harness Sidecar managed runtime |
-| `sandbox` | Anthropic SDK, python-dotenv, and httpx[socks] required by the self-hosted sandbox example |
-| `pdf` | Backward-compatible install alias; PDF rendering dependencies are installed by default starting in 1.0.5 |
+If you pin the base package, use the same version for extras, for example `veadk-python[extensions]==1.1.13`
 
-The `speech` and `cli` extras remain available for compatibility with existing install commands but add no dependencies starting in 1.0.5.
+| Extra | Included capabilities or dependencies |
+| --- | --- |
+| `github-cicd` | PyNaCl to encrypt GitHub Actions Secrets for Studio continuous delivery |
+| `extensions` | Feishu channel and OpenAPI SDKs, Cozeloop, LlamaIndex with OpenAI-compatible model and embedding adapters, and Redis / OpenSearch / Milvus retrieval adapters and clients |
+| `codex` | OpenAI Codex SDK, Codex CLI binary, FastAPI, and Uvicorn for the Codex runtime |
+| `database` | Redis, PyMySQL, Volcengine SDK, and Mem0 storage dependencies |
+| `eval` | DeepEval, Google ADK evaluation dependencies, and the Prometheus metrics client |
+| `a2ui` | A2UI Agent SDK for generating A2UI interface content |
+| `harness` | Headroom integration dependency |
+| `harness-sidecar` | AgentKit Python SDK for the Harness Sidecar managed runtime |
+| `sandbox` | Anthropic SDK, python-dotenv, and httpx SOCKS proxy support for the self-hosted sandbox example |
+| `dev` | pre-commit, pytest, pytest-asyncio, pytest-cov, and pytest-xdist for development and testing |
+| `pdf`, `speech`, `cli` | Empty extras retained for existing installation commands; PDF rendering dependencies have been included in the base package since 1.0.5 |
 
 ## Install the Preview source
 
-The Preview source is the current main line of the public VeADK repository. Create an isolated environment and install it with [uv](https://docs.astral.sh/uv/):
+Install Git and [uv](https://docs.astral.sh/uv/), then clone the public repository. Create an isolated environment inside the repository and install VeADK in editable mode:
 
 ```bash lines
-git clone --depth 1 https://github.com/volcengine/veadk-python.git
+git clone https://github.com/volcengine/veadk-python.git
 cd veadk-python
+```
 
-# Create a Python 3.12 virtual environment
+If the capability's page specifies a commit or tag, run `git checkout <ref>` first. Then create the environment and install:
+
+```bash lines
 uv venv --python 3.12
-
-# Install dependencies (add --extra <name> or --all-extras for extras)
-uv sync --all-extras
-
-# Install VeADK in editable mode
 uv pip install -e .
 ```
 
-The main line can continue to change and does not carry the compatibility guarantees of a released version. Use a pinned PyPI release in production; use the Preview source only to evaluate unreleased capabilities or contribute changes.
+To include an extra, replace the installation command with `uv pip install -e ".[extensions]"`
 
-Once installed, continue to the [Quickstart](/productions/veadk/preview/en/get-started/quickstart) to
-run your first agent.
+Activate the repository's `.venv` using the instructions above, then run the version check command. With an editable installation, changes to the repository's Python source apply to that environment
+
+The main branch continues to change. Use the source revision specified by the relevant page when evaluating an unreleased capability. To run your first agent, see the [Quickstart](/productions/veadk/preview/en/get-started/quickstart)

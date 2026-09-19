@@ -4,4 +4,12 @@ openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /harne
 en_link: "/productions/api-reference/preview/en/harness-runtime/invoke"
 ---
 
-`harness.tools` 支持的名称、用途与运行条件见[内置工具](/productions/api-reference/preview/zh/harness-runtime/tools)
+适用于 KeyAuth 部署，使用 `prompt` 提供文本，通过 `run_agent_request` 指定用户和会话。`harness_name` 是请求和响应中的名称，会话仍使用 `harness_agent` 应用；共享 OAuth 部署不提供此接口
+
+`harness` 只影响本次调用，字段省略时继承部署配置。`tools` 追加已注册的[内置工具](/productions/api-reference/preview/zh/harness-runtime/tools)，`mcp_servers` 替换远程 MCP 列表
+
+<Warning>
+本接口会运行智能体并保存会话事件，可能调用模型、工具和云资源。重试可能再次执行外部操作
+</Warning>
+
+响应在完成后一次性返回。检查 `error` 是否为 `null`，不要仅凭 HTTP `200` 或 `overwrite` 判断成功；失败时 `output` 为空字符串

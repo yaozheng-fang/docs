@@ -9,6 +9,10 @@ en_link: "/productions/agentkit-cli/preview/en/commands/chat"
 使用前需要先通过租户登录地址完成身份仅登录。共享 Harness 必须使用 `custom_jwt` 鉴权，并由管理员在同一个租户登录发现文档的 `shared_harnesses` 中发布。
 </Note>
 
+<Warning>
+对话会发送给组织发布的共享 Harness，并可能使用模型或外部工具。输入前确认当前租户与共享别名，避免发送不应交给该服务的数据
+</Warning>
+
 ```bash lines
 agentkit login https://login.example.com/team-a --identity-only
 agentkit chat harness
@@ -60,3 +64,9 @@ agentkit chat harness --session-id support-demo
 <Warning>
 Runtime 的 `custom_jwt` 鉴权只验证用户身份，不等同于员工或团队授权策略。若需要限制哪些已登录用户可以访问共享 Harness，请在 Runtime 前配置网关或策略执行点，并在请求进入 Harness 前拒绝未授权用户。
 </Warning>
+
+## 连接与会话检查
+
+首次单条调用成功后应看到智能体回复。需要继续上下文时，在后续命令中复用自己的 `--session-id`；省略时会生成新会话
+
+别名不存在时，检查 `agentkit auth profile show` 与管理员提供的别名。登录发现信息变更或会话失效时，重新使用该租户地址登录；不要尝试将别名替换为任意端点。身份仅登录适用于本页聊天，不提供部署或资源管理权限

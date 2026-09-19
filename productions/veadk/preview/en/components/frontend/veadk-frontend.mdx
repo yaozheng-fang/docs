@@ -7,7 +7,7 @@ VeADK ships a production-grade React frontend — an enterprise agent-applicatio
 
 ## What it can do
 
-- **Create agents**: custom configuration is the available project-creation flow, producing a runnable VeADK project (`agent.py`, `requirements.txt`, and so on) that you can preview, edit, and download. Intelligent, template, and workflow entries are marked as coming soon and cannot be selected.
+- **Create agents**: custom configuration is the available project-creation flow, producing a runnable VeADK project (`agent.py`, `requirements.txt`, and so on) that you can preview, edit, and download. See [Studio](/productions/veadk/preview/en/components/frontend/studio) for other creation flows and availability.
 - **Multimodal messages**: upload images, TXT, Markdown, PDF, and video; both user attachments and model-returned media can be previewed and restored from history.
 - **Chat and debug**: multi-turn conversations showing thinking, tool calls, sub-agent handoffs, token usage and timing; conversations render ECharts and Mermaid charts (with source-code switching and zoom), image zoom, video and audio playback, file previews, and long-running task progress; built-in tools (web search, image generation, video generation, memory retrieval, knowledge-base retrieval) display dedicated icons and running status while executing; conversations also render the [A2UI](/productions/veadk/preview/en/components/frontend/a2ui) rich-UI cards an agent returns.
 - **Stop generation**: while an agent is replying, the composer's send button becomes a stop button; clicking it cancels only the active response, preserves any content already received, and immediately enables the next turn in the same session. This applies to both the `veadk frontend` and `veadk studio` conversation pages, including sandbox conversations.
@@ -31,40 +31,31 @@ When an MCP or another tool needs OAuth credentials, Frontend displays an author
 
 The callback URL registered with the identity provider must match the tool configuration and point to an address that reaches the current Frontend. If the browser blocks the authorization window, allow pop-ups for the site and retry.
 
-## Run
+## Running
 
-Build the UI once, then serve the UI and the agent API together from a single process.
+Complete [installation](/productions/veadk/preview/en/get-started/installation) and [model configuration](/productions/veadk/preview/en/components/agent/model). The distribution includes the UI, so Node.js and a frontend build are not required. Prepare an agent directory with `agent.py`, `__init__.py`, and an exported `root_agent`. See [A2UI project setup](/productions/veadk/preview/en/components/frontend/a2ui#project-setup) for the layout
 
-<Steps>
-
-<Step title="Build the UI">
-
-```bash lines
-cd frontend && npm install && npm run build
+```bash
+veadk frontend --dev --agents-dir ./agents --open
 ```
 
-The build output is served as the UI by `veadk frontend`. When VeADK is installed via pip, a built UI is already bundled in the package, so you can run it directly.
+At `http://127.0.0.1:8000`, select a local agent, send text, and confirm a reply. `--agents-dir` alone does not select the local list; `--dev` is required. To use cloud Runtimes, omit `--dev` and configure the selected provider's AK/SK
 
-</Step>
-
-<Step title="Launch">
-
-```bash lines
-veadk frontend --agents-dir examples
-# open http://127.0.0.1:8000
-```
-
-</Step>
-
-</Steps>
+<Warning>
+Configure SSO or a trusted gateway before exposing the service to other devices. `gateway` mode relies on upstream verification; prevent direct access that bypasses the gateway
+</Warning>
 
 ### Dev mode (hot reload)
+
+Use this mode when editing frontend source. Start the backend from the VeADK source root, then start Vite in `frontend` from a separate terminal. Run `npm run build` for a production build and point `--frontend-dir` at the output
 
 Use `--vite` to serve only the API and allow CORS from the Vite dev server (`http://localhost:5173`, falling back to `http://localhost:5174`). Add `--dev` to load local agents instead of cloud AgentKit runtimes.
 
 ```bash lines
-veadk frontend --dev --vite --agents-dir examples   # API only, CORS for Vite
-cd frontend && npm run dev                    # http://localhost:5173, proxies API
+veadk frontend --dev --vite --agents-dir ./agents   # API only, CORS for Vite
+cd frontend
+npm install
+npm run dev                    # http://localhost:5173, proxies API
 ```
 
 ### Component preview
@@ -72,7 +63,9 @@ cd frontend && npm run dev                    # http://localhost:5173, proxies A
 The `frontend` directory includes a standalone component preview page for browsing the shared component library. The preview runs without a backend service, organized by primitives, composites, layouts, node components, and AI APP components, with design tokens, light/dark theme switching, and parameter tables generated from TypeScript interfaces. This entry point is independent of the Studio production build and does not replace existing pages.
 
 ```bash lines
-cd frontend && npm run dev:components
+cd frontend
+npm install
+npm run dev:components
 # open http://127.0.0.1:5186/components-preview/
 ```
 
@@ -97,6 +90,18 @@ cd frontend && npm run dev:components
 | `--auth-mode` | `frontend` | `frontend` runs OAuth2 in this service; `gateway` trusts a JWT validated and forwarded by an upstream gateway. |
 | `--generated-agent-test-run-ttl` | `1800` | Lifetime in seconds for temporary Studio-generated agent debug processes. |
 | `--open / --no-open` | `--no-open` | Whether to open the system browser after startup; ignored with `--vite`. |
+| `--site-title` | `VEADK_SITE_TITLE` | Site title, up to 16 characters |
+| `--site-logo` | `VEADK_SITE_LOGO` | Local image or HTTP(S) logo URL |
+| `--sandbox-chat-codex-tool-id` | `SANDBOX_CHAT_CODEX` | CodeEnv Tool ID for temporary chats |
+| `--sandbox-chat-openclaw-tool-id` | `SANDBOX_CHAT_OPENCLAW` | ArkClawEnv Tool ID for OpenClaw chats |
+| `--sandbox-chat-hermes-tool-id` | `SANDBOX_CHAT_HERMES` | HermesEnv Tool ID for Hermes chats |
+| `--sandbox-chat-codex-snapshot-tool-id` | `SANDBOX_CHAT_CODEX_SNAPSHOT` | Snapshot-enabled CodeEnv Tool ID for persistent chats |
+| `--sandbox-chat-openclaw-snapshot-tool-id` | `SANDBOX_CHAT_OPENCLAW_SNAPSHOT` | Snapshot-enabled Tool ID for persistent OpenClaw chats |
+| `--sandbox-chat-hermes-snapshot-tool-id` | `SANDBOX_CHAT_HERMES_SNAPSHOT` | Snapshot-enabled Tool ID for persistent Hermes chats |
+| `--super-admin` | `VEADK_STUDIO_SUPER_ADMIN` | Email or UID for initializing Identity-backed Studio roles |
+| `--admin` | `VEADK_STUDIO_ADMINS` | Local administrator list; see Studio role configuration |
+| `--developer` | `VEADK_STUDIO_DEVELOPERS` | Local developer list; see Studio role configuration |
+| `--help` | — | Show help for the installed version |
 
 <Note>
   If the built UI directory is missing, the command asks you to run `npm run build`. Use `--vite` while developing the React frontend, optionally with `--dev` for local agents.
@@ -237,8 +242,13 @@ register("RevenueChart", RevenueChart);
 import type { ComponentRendererProps } from "../../registry";
 
 export function RevenueChart({ node, ctx }: ComponentRendererProps) {
-  const series = ctx.resolve(node.series as any);
-  return <div className="corp-chart">{/* render series */}</div>;
+  const values = ctx.resolve(node.series);
+  const series = Array.isArray(values) ? values.filter(
+    (value): value is number => typeof value === "number"
+  ) : [];
+  return <ol>{series.map((value, index) => (
+    <li key={index}>{value.toLocaleString()}</li>
+  ))}</ol>;
 }
 ```
 

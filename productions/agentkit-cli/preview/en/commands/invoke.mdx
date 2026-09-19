@@ -9,6 +9,12 @@ The `invoke` command group sends one request to a deployed Runtime. By default i
   `agentkit invoke "hello"` is normalized to `agentkit invoke run "hello"` for compatibility. This reference uses `invoke run` as the explicit form. `-ak` is also normalized to `--apikey` for Python SDK-style arguments.
 </Note>
 
+Before invoking, confirm the runtime is ready and obtain its API key or user token. `--runtime-id` also requires management credentials; use `--endpoint` when you already have the address and invocation credentials
+
+<Warning>
+Messages and payloads are sent to the runtime and its models or tools and may incur usage charges. Keep restricted data out of test requests. Fixed default session identifiers suit examples; supply a different `session_id` for independent sessions
+</Warning>
+
 ## invoke run
 
 Send a message or custom JSON payload to a Runtime. With a plain message, the CLI sends `{ "prompt": "<message>" }`. With `--payload`, it sends the parsed JSON value unchanged.
@@ -97,3 +103,14 @@ agentkit invoke run "hello" \
 ```
 
 Identity-only login saves the OIDC session without creating AgentKit management credentials. If you also need to resolve a Runtime through `--runtime-id`, configure AK/SK separately or use regular `agentkit login` to obtain STS credentials.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Runtime not found or empty results | Verify `--provider`, `--region`, Runtime ID, and the management credential's account |
+| Authentication failure | Check `key_auth` versus `custom_jwt` and the validity of the API key or token |
+| Request succeeds without the expected answer | Inspect `--raw` output, runtime logs, and model settings |
+| Help flag reports an error | Use `agentkit invoke run --help`; `-h` means `--headers` for this command |
+
+`--show-reasoning` only displays reasoning fields present in the response; it does not make a model generate or disclose additional information

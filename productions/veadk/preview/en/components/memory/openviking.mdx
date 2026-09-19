@@ -11,7 +11,11 @@ The `openviking` long-term memory backend writes conversation messages to OpenVi
 
 ## Example
 
+The base installation includes `openviking-sdk`. Before running, provide an OpenViking service with user memory support and set `DATABASE_OPENVIKING_URL`, `DATABASE_OPENVIKING_API_KEY`, and `DATABASE_OPENVIKING_USER_ID`. Automatic and manual saves both send conversation content to that service; configure access and retention first
+
 ```python lines
+import os
+
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -21,7 +25,7 @@ memory = LongTermMemory(
     backend_config={
         "index": "support_app",
         "url": "https://openviking.example.com",
-        "api_key": "your-openviking-api-key",
+        "api_key": os.environ["DATABASE_OPENVIKING_API_KEY"],
         # Optional; defaults to default when omitted
         "openviking_user_id": "support_app",
         # Optional; explicitly sets the memory policy; when omitted the OpenViking service applies its official default
@@ -48,7 +52,7 @@ agent = Agent(
 | `backend` | `str` | `opensearch` | Set to `openviking` to use OpenViking. |
 | `backend_config` | `dict` | `{}` | Explicit OpenViking backend configuration. |
 | `top_k` | `int` | `5` | Number of memories returned by each retrieval. |
-| `index` | `str` | `""` | Application isolation key. Falls back to `app_name`, then `default_app`. |
+| `index` | `str` | `""` | Application-name fallback; retrieval isolation depends on openviking_user_id and peer_id, not index alone |
 | `app_name` | `str` | `""` | Application name and fallback value for `index`. |
 | `user_id` | `str` | `""` | Deprecated compatibility field. The runtime user comes from the session or `Runner.user_id`. |
 
@@ -61,7 +65,7 @@ agent = Agent(
 | `url` | `str` | `DATABASE_OPENVIKING_URL` | OpenViking service URL. Required. |
 | `api_key` | `str` | `DATABASE_OPENVIKING_API_KEY` | OpenViking API key. Required. |
 | `openviking_user_id` | `str` | `DATABASE_OPENVIKING_USER_ID` or `default` | OpenViking owner/context used to build the memory path. Allowed characters: letters, digits, `.`, `_`, `@`, `-`; cannot be `.` or `..`. |
-| `memory_policy` | `dict \| None` | `None` | OpenViking memory extraction policy. When unset, no policy is sent to OpenViking and the service applies its official default. |
+| `memory_policy` | `dict \| None` | `OpenVikingConfig.memory_policy` / `None` | OpenViking memory extraction policy. When unset, no policy is sent to OpenViking and the service applies its official default. |
 | `peer_id_resolver` | `Callable \| None` | Uses `user_id` | Maps `app_name` and `user_id` to an OpenViking peer ID. |
 | `timeout` | `float` | `30` | OpenViking request timeout in seconds. |
 
@@ -95,6 +99,8 @@ This example disables self-memory extraction and only extracts entities, events,
 Multi-tenant applications can provide `peer_id_resolver` to combine the application and user into one isolation key:
 
 ```python lines
+import os
+
 from veadk.memory.long_term_memory import LongTermMemory
 
 
@@ -107,10 +113,42 @@ memory = LongTermMemory(
     backend_config={
         "index": "support_app",
         "url": "https://openviking.example.com",
-        "api_key": "your-openviking-api-key",
+        "api_key": os.environ["DATABASE_OPENVIKING_API_KEY"],
         "peer_id_resolver": resolve_peer_id,
     },
 )
 ```
 
 The returned ID cannot be empty. It may contain only letters, digits, periods, underscores, `@`, and hyphens, and cannot be `.` or `..`. Changing the mapping after deployment leaves existing memories under the old peer path, so later retrievals may no longer find them.
+
+## Verify writes and retrieval
+
+After configuring the dependencies and credentials on this page, run this standalone example. It saves user text and searches for that user directly without calling a conversation model
+
+```python lines
+import asyncio
+
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
+from veadk.memory.long_term_memory import LongTermMemory
+
+async def main():
+    memory = LongTermMemory(backend="openviking", index="ltm_demo")
+    session = Session(
+        id="memory_check", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(session)
+    result = await memory.search_memory(
+        app_name="ltm_demo", user_id="user_42", query="preferred language"
+    )
+    for entry in result.memories:
+        print(entry.content)
+
+asyncio.run(main())
+```
+
+Results should contain the saved language preference. Managed services may extract memories asynchronously, so a completed write does not guarantee immediate retrieval. An empty result can also indicate permission, network, or service failure; check error logs and service records. The save method does not return a success Boolean

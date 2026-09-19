@@ -3,3 +3,7 @@ title: "Create a session using a path ID"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /apps/{app_name}/users/{user_id}/sessions/{session_id}"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/create-session-with-id"
 ---
+
+This deprecated endpoint remains available for existing clients. New integrations should use [Create a session](/productions/api-reference/preview/en/harness-runtime/create-session) and set `sessionId` in the request body
+
+The body of this endpoint is the initial state itself, such as `{"language":"zh"}`. When migrating, change it to `{"sessionId":"session-001","state":{"language":"zh"}}` and remove the session ID from the path

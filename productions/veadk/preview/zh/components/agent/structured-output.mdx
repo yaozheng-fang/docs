@@ -3,55 +3,86 @@ title: "结构化输出"
 en_link: "/productions/veadk/preview/en/components/agent/structured-output"
 ---
 
-将一个 Pydantic 模型传入 `output_schema`，智能体的回答会严格匹配该模型的结构，适合信息抽取、分类等需要直接解析结果的场景。
+结构化输出让智能体按预先定义的字段返回结果，适合信息抽取、分类和后续程序处理。将 Pydantic 模型传给 `output_schema` 后，运行时会向模型提供结构约束；应用仍应校验返回内容，处理空响应、格式错误和不满足业务规则的结果
 
 ## 定义 schema 并创建智能体
 
-```python lines
-from pydantic import BaseModel, Field
-from veadk import Agent
+先完成[安装与模型配置](/productions/veadk/preview/zh/get-started/quickstart)，选择支持结构化输出的模型。下面使用 `Literal` 限定分类和优先级；仅在字段描述中列出取值不能形成同等的校验约束
+
+```python ticket.py lines
+import asyncio
+from typing import Literal
+from pydantic import BaseModel, Field, ValidationError
+from veadk import Agent, Runner
 
 class Ticket(BaseModel):
-    summary: str = Field(description="问题的一句话摘要。")
-    category: str = Field(description="billing、bug、feature_request 或 other 之一。")
-    priority: str = Field(description="low、medium 或 high 之一。")
+    summary: str = Field(description="A one-sentence summary of the issue")
+    category: Literal["billing", "bug", "feature_request", "other"]
+    priority: Literal["low", "medium", "high"]
 
 agent = Agent(
     name="ticket_extractor",
-    instruction="从用户消息中抽取一张工单。",
+    instruction="Extract one support ticket from the user's message.",
     output_schema=Ticket,
 )
+
+async def main():
+    raw = await Runner(agent=agent, app_name="structured_output").run(
+        messages="The billing page crashes every time I open it. Please fix it urgently.",
+        session_id="ticket-demo",
+    )
+    try:
+        ticket = Ticket.model_validate_json(raw)
+    except ValidationError:
+        print("The response is not a valid ticket. Do not save it as a completed record.")
+        return
+    print(ticket.model_dump_json(indent=2))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## 解析返回结果
 
-`run` 返回的是符合该 schema 的 JSON 字符串，可直接用 Pydantic 解析：
+运行 `python ticket.py`。成功时输出类似以下 JSON，摘要措辞和分类判断可能随模型变化：
 
-```python lines
-from veadk import Runner
-
-raw = await Runner(agent=agent, app_name="structured_output").run(
-    messages="账单页面一打开就闪退，已经第三次了，请尽快处理。",
-    session_id="demo-session",
-)
-ticket = Ticket.model_validate_json(raw)
+```json  lines
+{
+  "summary": "The billing page crashes whenever it is opened",
+  "category": "bug",
+  "priority": "high"
+}
 ```
+
+`Runner.run` 返回文本，不会直接返回 `Ticket` 实例。`Ticket.model_validate_json(raw)` 同时完成 JSON 解析和字段校验。示例中的校验失败处理不涵盖模型请求异常；生产应用应分别处理请求失败和结果不合格，也应检查业务规则，例如工单是否包含足够的信息
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `output_schema` | Pydantic 模型类 | `None` | 最终回复的结构；传入 `Ticket`，而非 `Ticket()` |
+| `output_key` | `str \| None` | `None` | 将最终结果保存到会话状态；ADK 在配置 schema 时会解析并校验后保存 |
+| `enable_responses` | `bool` | `False` | 使用火山方舟 Responses API |
+| `enable_responses_cache` | `bool` | `True` | Responses 缓存开关；结构化输出示例中显式关闭 |
 
 ## 使用方舟原生结构化输出
 
-在上述基础上设置 `enable_responses=True`，VeADK 会改用火山方舟的 Responses 接口，将 `output_schema` 转换为方舟原生的 `json_schema`（`strict: true`），由模型侧强制约束输出。相比默认方式（依赖提示词引导模型生成 JSON），这种方式更为可靠。
+模型和端点需同时支持火山方舟 Responses API 与 JSON Schema。将上例中的 `agent` 定义替换为：
 
-```python lines
+```python  lines
 agent = Agent(
     name="ticket_extractor",
-    instruction="从用户消息中抽取一张工单。",
+    instruction="Extract one support ticket from the user's message.",
     output_schema=Ticket,
     enable_responses=True,
+    enable_responses_cache=False,
 )
 ```
 
-该方式依赖方舟的 Responses 接口，因此需使用方舟模型。
+VeADK 会将 schema 转换为 Responses API 的 `json_schema` 格式并设置 `strict: true`。服务是否接受该 schema、支持哪些约束，仍取决于所用模型和服务。不要将这种配置理解为请求永远成功或内容始终符合业务事实
 
-<Warning>
-  设置 `output_schema` 后，智能体只返回结构化结果，无法调用工具或转交给子智能体。
-</Warning>
+Responses 缓存与结构化输出存在兼容限制，VeADK 会在相关请求上移除冲突的缓存设置。显式设置 `enable_responses_cache=False` 可以让该选择更清楚，其他配置见[Responses API](/productions/veadk/preview/zh/components/agent/model#responses-api)
+
+## 工具与运行时限制
+
+- 使用默认的 `adk` 运行时；`codex` 和 `piagent` 运行时不支持 `output_schema`，配置时会报错
+- Google ADK 2.2 支持同时配置 `output_schema` 和工具，结构约束用于最终回答；工具调用和任务转交的实际兼容性仍需与所用模型、接口及 ADK 版本一起确认
+- 需要稳定地组合检索、工具和抽取时，可先完成工具任务，再由单独的结构化输出智能体生成最终记录

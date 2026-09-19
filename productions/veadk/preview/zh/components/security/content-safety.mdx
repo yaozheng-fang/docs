@@ -3,6 +3,12 @@ title: "内容安全护栏"
 en_link: "/productions/veadk/preview/en/components/security/content-safety"
 ---
 
+`content_safety` 在模型与工具调用前后向内容审查服务发送文本，按服务返回的拦截决策替换内容或阻止工具执行。适用于需要接入已有内容策略的智能体应用
+
+<Warning>
+本能力会把用户文本、模型回复和工具数据发送到配置的审查端点。VeADK 1.1.13 在 HTTP 非 200、超时或部分请求错误时记录日志并继续执行；这类失败不等于内容通过审查。需要审查失败即阻断的业务，应另外实施强制访问控制和错误处理
+</Warning>
+
 ## 功能说明
 
 对应工具标识 `content_safety`。
@@ -33,7 +39,7 @@ en_link: "/productions/veadk/preview/en/components/security/content-safety"
 
 ## 环境变量与前提
 
-使用前先购买实例、添加资产并获取 AppID，再通过环境变量或 `config.yaml` 配置访问信息。`content_safety` 在初始化时读取以下配置项。
+使用前先购买实例、添加资产并获取 AppID，再通过环境变量或 `config.yaml` 配置访问信息。`content_safety` 在初始化时读取以下配置项。AppID 必须在导入前配置，缺失时无法完成初始化。
 
 | 环境变量 | config.yaml 配置项 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
@@ -49,8 +55,13 @@ tool:
   llm_shield:
     app_id: <your_app_id>
     url: <your_llm_shield_url>
-    api_key: <your_api_key>
     region: cn-beijing
+```
+
+VeADK 启动时加载 `config.yaml` 中的区域配置。也可在启动 Python 前通过环境变量设置，环境变量优先：
+
+```bash
+export TOOL_LLM_SHIELD_REGION="cn-beijing"
 ```
 
 <Note>
@@ -67,6 +78,8 @@ tool:
 
 - 配置了 `TOOL_LLM_SHIELD_API_KEY` 时，使用 API Key 鉴权（请求头携带 `x-api-key`）。
 - 未配置 API Key 时，使用火山引擎 AK/SK 鉴权：优先读取环境变量 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`；若两者缺失，则从运行环境的 IAM 角色获取临时凭证。请求头携带服务区域与服务标识。
+
+当 `CLOUD_PROVIDER=byteplus` 时，全局配置可将 BytePlus AK/SK 映射到上述凭据配置。仍须确认目标审查服务接受该账号凭据；模型使用 BytePlus 不代表审查服务的端点、区域与权限已完成配置
 
 ### Lumen Moderate 端点
 
@@ -90,7 +103,6 @@ from veadk.tools.builtin_tools.llm_shield import content_safety
 
 agent = Agent(
     name="robot",
-    model_name="doubao-seed-2-1-pro-260628",
     description="A robot that helps the user.",
     instruction="Talk with the user in a friendly way.",
     before_model_callback=content_safety.before_model_callback,
@@ -102,11 +114,11 @@ agent = Agent(
 runner = Runner(agent=agent)
 
 response = asyncio.run(
-    runner.run("网上都说A地很多骗子和小偷，他们的典型伎俩……")
+    runner.run("请用一句话介绍你能提供的帮助")
 )
 
 print(response)
-# Your request has been blocked due to: Model Misuse. Please modify your input and try again.
+
 ```
 
 切换到 Lumen Moderate 端点时，在环境变量或 `config.yaml` 中指定对应的访问地址与 API Key 即可，调用方式不变：
@@ -116,5 +128,24 @@ tool:
   llm_shield:
     app_id: <your_app_id>
     url: https://<your-lumen-host>/OpenTOP/V1/Lumen/Moderate
-    api_key: <your_api_key>
 ```
+
+## 检查审查效果
+
+在导入 `content_safety` 前完成配置，并通过环境变量 `TOOL_LLM_SHIELD_API_KEY` 提供密钥。保存示例后执行 `python app.py`：普通输入应获得回复；用已在防火墙策略中配置的测试文本验证拦截，并同时检查审查服务的记录。不能仅凭固定示例句子保证命中某项策略
+
+模型输入审查检查当前请求最后一条用户内容的首个文本部分，模型输出审查检查首个文本部分；不会自动审查全部历史、图片、音频或所有多部分内容。工具回调审查序列化的参数与结果。默认请求超时为 `50` 秒
+
+### 调整请求超时
+
+在前述示例中，用以下配置片段替换 `content_safety` 的导入，保留同样的四个回调配置：
+
+```python
+from veadk.tools.builtin_tools.llm_shield import LLMShieldPlugin
+
+content_safety = LLMShieldPlugin(timeout=30)
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `timeout` | `int` | `50` | 单次内容审查请求的超时，单位为秒 |

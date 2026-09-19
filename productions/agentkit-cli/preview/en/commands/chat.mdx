@@ -9,6 +9,10 @@ The `chat` command connects to an OAuth-enabled shared Harness through an alias 
 Before using this command, log in with the tenant login address in identity-only mode. The shared Harness must use `custom_jwt` authentication and be published by an administrator in `shared_harnesses` on the same tenant login discovery document.
 </Note>
 
+<Warning>
+Conversations are sent to the organization's shared Harness and may use models or external tools. Confirm the tenant and shared alias before sending data to the service
+</Warning>
+
 ```bash lines
 agentkit login https://login.example.com/team-a --identity-only
 agentkit chat harness
@@ -60,3 +64,9 @@ Administrators publish non-secret bindings in the discovery document:
 <Warning>
 Runtime `custom_jwt` authentication verifies identity; it is not an employee or team authorization policy. To restrict which signed-in users may access the shared Harness, place a gateway or policy enforcement point before the Runtime and deny unauthorized requests before they reach the Harness.
 </Warning>
+
+## Check connections and sessions
+
+A successful one-message call displays the agent's response. Reuse your own `--session-id` in later commands to continue context; omitting it generates a new session
+
+For an unknown alias, check `agentkit auth profile show` and the alias supplied by your administrator. Sign in again through the tenant address after discovery changes or session expiry. Do not replace an alias with an arbitrary endpoint. Identity-only login supports this chat flow but grants no deployment or resource-management permissions

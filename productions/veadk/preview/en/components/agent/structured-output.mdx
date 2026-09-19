@@ -3,62 +3,86 @@ title: "Structured output"
 zh_link: "/productions/veadk/preview/zh/components/agent/structured-output"
 ---
 
-Pass a Pydantic model as `output_schema` and the agent's reply is guaranteed to
-match that model's structure — ideal for extraction and classification where you
-want to parse the result directly.
+Structured output asks an agent to return predefined fields for extraction, classification, and downstream processing. Pass a Pydantic model class to `output_schema` to provide structural constraints. Applications must still validate responses and handle empty output, invalid formats, and unmet business rules
 
-## Define a schema and create the agent
+## Define a schema and create an agent
 
-```python lines
-from pydantic import BaseModel, Field
-from veadk import Agent
+Complete [installation and model configuration](/productions/veadk/preview/en/get-started/quickstart) and select a model that supports structured output. This example uses `Literal` to constrain categories and priorities; listing values in a field description alone does not enforce them
+
+```python ticket.py lines
+import asyncio
+from typing import Literal
+from pydantic import BaseModel, Field, ValidationError
+from veadk import Agent, Runner
 
 class Ticket(BaseModel):
-    summary: str = Field(description="One-line summary of the issue.")
-    category: str = Field(description="One of: billing, bug, feature_request, other.")
-    priority: str = Field(description="One of: low, medium, high.")
+    summary: str = Field(description="A one-sentence summary of the issue")
+    category: Literal["billing", "bug", "feature_request", "other"]
+    priority: Literal["low", "medium", "high"]
 
 agent = Agent(
     name="ticket_extractor",
-    instruction="Extract a support ticket from the user's message.",
+    instruction="Extract one support ticket from the user's message.",
     output_schema=Ticket,
 )
+
+async def main():
+    raw = await Runner(agent=agent, app_name="structured_output").run(
+        messages="The billing page crashes every time I open it. Please fix it urgently.",
+        session_id="ticket-demo",
+    )
+    try:
+        ticket = Ticket.model_validate_json(raw)
+    except ValidationError:
+        print("The response is not a valid ticket. Do not save it as a completed record.")
+        return
+    print(ticket.model_dump_json(indent=2))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-## Parse the result
+## Parse the response
 
-`run` returns a JSON string that matches the schema, which you can parse
-directly with Pydantic:
+Run `python ticket.py`. A successful result resembles this JSON; wording and classification can vary:
 
-```python lines
-from veadk import Runner
-
-raw = await Runner(agent=agent, app_name="structured_output").run(
-    messages="The billing page crashes every time I open it — third time now, please fix it.",
-    session_id="demo-session",
-)
-ticket = Ticket.model_validate_json(raw)
+```json  lines
+{
+  "summary": "The billing page crashes whenever it is opened",
+  "category": "bug",
+  "priority": "high"
+}
 ```
 
-## Use Ark-native structured output
+`Runner.run` returns text, not a `Ticket` instance. `Ticket.model_validate_json(raw)` parses JSON and validates fields. The example handles validation failures, not model request exceptions. Production applications should distinguish request failures from invalid results and also check business rules, such as whether a ticket contains enough information
 
-Adding `enable_responses=True` to the above makes VeADK use Volcengine Ark's
-Responses API, converting `output_schema` into Ark's native `json_schema`
-(`strict: true`) enforced on the model side. This is more reliable than the
-default approach, which relies on prompting the model to produce JSON.
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `output_schema` | Pydantic model class | `None` | Structure of the final response; pass `Ticket`, not `Ticket()` |
+| `output_key` | `str \| None` | `None` | Stores the final result in session state; ADK parses and validates it when a schema is configured |
+| `enable_responses` | `bool` | `False` | Uses the Volcengine Ark Responses API |
+| `enable_responses_cache` | `bool` | `True` | Controls Responses caching; explicitly disabled in the structured output example |
 
-```python lines
+## Use native Ark structured output
+
+Both the model and endpoint must support the Ark Responses API and JSON Schema. Replace the `agent` definition above with:
+
+```python  lines
 agent = Agent(
     name="ticket_extractor",
-    instruction="Extract a support ticket from the user's message.",
+    instruction="Extract one support ticket from the user's message.",
     output_schema=Ticket,
     enable_responses=True,
+    enable_responses_cache=False,
 )
 ```
 
-This relies on Ark's Responses API and therefore requires an Ark model.
+VeADK converts the schema to the Responses API `json_schema` format with `strict: true`. Accepted schemas and supported constraints depend on the model and service. This does not guarantee successful requests or factually correct business data
 
-<Warning>
-  When `output_schema` is set, the agent returns only the structured result and
-  cannot call tools or transfer to sub-agents.
-</Warning>
+Responses caching has compatibility restrictions with structured output. VeADK removes conflicting cache settings from relevant requests. Setting `enable_responses_cache=False` makes this choice explicit. See [Responses API](/productions/veadk/preview/en/components/agent/model#responses-api) for other settings
+
+## Tool and runtime limitations
+
+- Use the default `adk` runtime; configuring `output_schema` with `codex` or `piagent` fails
+- Google ADK 2.2 supports `output_schema` alongside tools, applying structure to the final response; verify tool and transfer compatibility with your model, API, and ADK version
+- To separate tool work from extraction, complete retrieval or tool tasks first, then use a dedicated structured-output agent to produce the final record

@@ -26,7 +26,7 @@ List skills.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `-r, --region <region>` | Volcengine region | None |
+| `-r, --region <region>` | Region for the selected cloud provider | Current cloud environment |
 | `-p, --project <name>` | Project name | default |
 | `--json` | Output raw JSON | `false` |
 
@@ -41,7 +41,7 @@ Show a skill's details.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<id>` | Skill id (required) | None |
-| `-r, --region <region>` | Volcengine region | None |
+| `-r, --region <region>` | Region for the selected cloud provider | Current cloud environment |
 | `--json` | Output raw JSON | `false` |
 
 ```bash lines
@@ -55,7 +55,7 @@ List a skill's versions.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<id>` | Skill id (required) | None |
-| `-r, --region <region>` | Volcengine region | None |
+| `-r, --region <region>` | Region for the selected cloud provider | Current cloud environment |
 | `--json` | Output raw JSON | `false` |
 
 ```bash lines
@@ -68,7 +68,7 @@ List skill spaces.
 
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
-| `-r, --region <region>` | Volcengine region | None |
+| `-r, --region <region>` | Region for the selected cloud provider | Current cloud environment |
 | `--json` | Output raw JSON | `false` |
 
 ```bash lines
@@ -82,8 +82,12 @@ Delete a skill.
 | Flag / Argument | Description | Default |
 | --- | --- | --- |
 | `<id>` | Skill id (required) | None |
-| `-r, --region <region>` | Volcengine region | None |
+| `-r, --region <region>` | Region for the selected cloud provider | Current cloud environment |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
+
+<Warning>
+Before deletion, use `skill show` to verify the ID and confirm existing spaces and agents no longer need the skill. Deletion affects subsequent use, and `--yes` skips confirmation
+</Warning>
 
 ```bash lines
 agentkit skill delete sk-xxxxxxxx --yes
@@ -99,6 +103,18 @@ Generate secure Skill wrappers in bulk from a local skills directory. The source
 | `-o, --output <dir>` | Output directory. | Sibling `<sourceSkillsDir>-secure` |
 | `--force` | Overwrite existing generated files. | `false` |
 | `--json` | Output raw JSON. | `false` |
+
+For example, create `skills/report` and save this complete minimal skill file
+
+```markdown title="skills/report/SKILL.md" lines
+---
+name: report
+description: Summarize supplied project notes
+---
+Read the supplied notes and return a summary of completed work and open questions.
+```
+
+The following commands generate local wrappers without uploading skills or creating spaces. See `skills publish-secure` for binding the real skills to a sandbox
 
 ```bash lines
 agentkit skills secure ./skills

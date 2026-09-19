@@ -3,7 +3,7 @@ title: "Use local in-memory storage"
 zh_link: "/productions/veadk/preview/zh/components/knowledge/local"
 ---
 
-The `local` backend stores knowledge in an in-memory vector index from LlamaIndex. Knowledge text is embedded by an embedding model, written to an in-process vector index, and retrieved by similarity. It requires no external service, is the **default backend** for `KnowledgeBase`, and is ideal for local debugging and quick validation.
+The `local` backend stores knowledge in an in-memory vector index from LlamaIndex. Knowledge text is embedded by an embedding model, written to an in-process vector index, and retrieved by similarity. It requires no external database but does require an embedding service, is the **default backend** for `KnowledgeBase`, and is ideal for local debugging and quick validation.
 
 <Warning>
 Data lives only in process memory and is lost when the program exits. Use a persistent backend in production.
@@ -22,12 +22,16 @@ pip install "veadk-python[extensions]"
 
 ## Usage
 
+Before running, configure `MODEL_EMBEDDING_NAME`, `MODEL_EMBEDDING_DIM`, `MODEL_EMBEDDING_API_BASE`, and `MODEL_EMBEDDING_API_KEY`. The `extensions` extra includes llama-index, embedding adapters, and vector-store connectors. Text is sent to the configured embedding service. For BytePlus or another provider, explicitly set the matching endpoint, model, and credentials; the default Ark endpoint does not automatically switch
+
 ```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(backend="local", index="company_faq")
-kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+assert kb.add_from_text("The standard annual leave is 15 days per year, available after one year of service.")
+for entry in kb.search("annual leave", top_k=3):
+    print(entry.content)
 
 agent = Agent(
     name="demo",
@@ -56,6 +60,20 @@ kb = KnowledgeBase(
 ```
 
 ## Parameters
+
+### KnowledgeBase parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | Set to `local` or pass a backend instance |
+| `backend_config` | `dict` | `{}` | Must include index when nonempty; does not merge the outer index |
+| `index` | `str` | `""` | Index name; falls back to app_name when no configuration dictionary is supplied |
+| `app_name` | `str` | `""` | Fallback for index; not a user authorization filter |
+| `top_k` | `int` | `10` | Default result count; search(top_k=0) uses this value |
+| `name` | `str` | `"user_knowledgebase"` | Knowledge-base name shown to the agent |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | Explains the knowledge base to the agent |
+| `enable_profile` | `bool` | `False` | Enables document profiles; generate profile files first, or leave disabled for ordinary retrieval |
+| `query_with_user_profile` | `bool` | `False` | Uses the agent’s Viking long-term memory profile to guide queries; the knowledge backend itself need not be Viking |
 
 ### Constructor parameters
 
@@ -89,3 +107,5 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 <Note>
 The local backend depends only on an embedding model and requires no database connection config. Text is automatically split into chunks by file type before embedding.
 </Note>
+
+The example search should return the annual-leave policy. For empty results, check successful ingestion, matching embedding dimensions, completed server processing, network access, and permissions. Managed ingestion may not be immediately searchable. Running the configured Agent also requires model credentials

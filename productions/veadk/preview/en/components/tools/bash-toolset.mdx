@@ -3,6 +3,15 @@ title: "Bash Toolset"
 zh_link: "/productions/veadk/preview/zh/components/tools/bash-toolset"
 ---
 
+<Note>
+`BashToolset` is unreleased and is not included in PyPI 1.1.13. Use the verified source revision below to try it. Agent examples require model configuration; direct file reads do not need model credentials.
+</Note>
+
+```bash lines
+python -m pip install "veadk-python @ git+https://github.com/volcengine/veadk-python.git@adcdfdcc6a5a213b249a8caad435b939c01df7f6"
+```
+
+
 ## Overview
 
 `BashToolset` is a read-only filesystem toolset providing ten familiar shell commands for reading, without starting a shell process or accepting command-line options. All tools are implemented using the Python standard library and safely read files and directories within the configured permission scope.
@@ -38,15 +47,19 @@ Use `BashToolset` when the agent needs to read files in the working directory, b
 
 ```python title="bash_toolset_agent.py" lines
 import asyncio
+from pathlib import Path
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 from veadk.tools.builtin_tools.bash_toolset import BashToolset
 
+workspace = Path("reader_demo").resolve()
+workspace.mkdir(exist_ok=True)
+(workspace / "main.py").write_text("print(2 + 3)\n", encoding="utf-8")
+
 toolset = BashToolset(
-    working_directory="/workspace",
+    working_directory=workspace,
     allowed_tools=["cat", "find", "grep", "ls"],
-    exclude_patterns=[".env", ".env.*", ".ssh", "private"],
 )
 
 agent = Agent(
@@ -76,7 +89,6 @@ if __name__ == "__main__":
 ```python lines
 BashToolset(
     working_directory=None,
-    *,
     allowed_directories=None,
     allowed_tools=None,
     exclude_patterns=None,
@@ -211,16 +223,23 @@ Compare two text files using unified diff format. Each file is limited to 2000 l
 
 ```python title="bash_toolset_multi_root.py" lines
 import asyncio
+from pathlib import Path
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 from veadk.tools.builtin_tools.bash_toolset import BashToolset
 
+project = Path("reader_demo/project").resolve()
+docs = Path("reader_demo/docs").resolve()
+(project / "src").mkdir(parents=True, exist_ok=True)
+docs.mkdir(parents=True, exist_ok=True)
+(project / "src/main.py").write_text("print(2 + 3)\n", encoding="utf-8")
+(docs / "design.md").write_text("The program adds two numbers\n", encoding="utf-8")
+
 toolset = BashToolset(
-    working_directory="/workspace/project",
-    allowed_directories=["/workspace/project", "/workspace/docs"],
+    working_directory=project,
+    allowed_directories=[project, docs],
     allowed_tools=["cat", "ls", "find", "grep"],
-    exclude_patterns=[".env", ".env.*"],
     timeout=30.0,
     max_output_bytes=65536,
 )
@@ -237,7 +256,7 @@ runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
 
 
 async def main():
-    response = await runner.run("Compare src/main.py and docs/design.md")
+    response = await runner.run(f"Compare src/main.py with {docs / 'design.md'}")
     print(response)
 
 
@@ -250,6 +269,32 @@ if __name__ == "__main__":
 <Warning>
 - Permissions on `BashToolset` are fixed at creation time. Modifying the lists passed to the constructor after creation does not affect the toolset.
 - Application-level access control does not replace an OS-level sandbox. The host must control directory renames, hard links, and mounts inside the allowed roots.
-- File opens use descriptor-relative path traversal (`O_NOFOLLOW`) to reject symlink replacements between path validation and opening, but cannot prevent filesystem-level race conditions.
 - Timeouts cancel the caller and cooperatively stop the read worker; a blocked filesystem call cannot be forcibly interrupted by a Python thread.
 </Warning>
+
+## Local verification without a model
+
+This example creates a text file in a temporary directory, reads and prints `hello`, then removes the temporary directory. The application prepares the file; the reading tool does not modify it.
+
+```python lines
+import asyncio
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from veadk.tools.builtin_tools.bash_toolset import BashToolset
+
+async def main():
+    with TemporaryDirectory() as directory:
+        Path(directory, "sample.txt").write_text("hello\n", encoding="utf-8")
+        toolset = BashToolset(working_directory=directory, allowed_tools=["cat"])
+        try:
+            tool = (await toolset.get_tools())[0]
+            result = await tool.run_async(args={"path": "sample.txt"}, tool_context=None)
+            assert result["error"] is None
+            print(result["output"])
+        finally:
+            await toolset.close()
+
+asyncio.run(main())
+```
+
+Relative paths always resolve against `working_directory`, including with multiple allowed roots. Use an absolute path for another allowed directory. Custom `exclude_patterns` replace the defaults rather than merging with them. When `error` is present, nonempty `output` may be only a partial result.

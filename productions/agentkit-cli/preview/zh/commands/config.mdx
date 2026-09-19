@@ -56,6 +56,12 @@ en_link: "/productions/agentkit-cli/preview/en/commands/config"
 | `--runtime_gateway_mode <mode>` / `--runtime-gateway-mode <mode>` | 新运行时网关模式：`Shared` 或 `Exclusive` | 当前配置，未配置时 `Shared` |
 | `--runtime_gateway_instance_id <id>` / `--runtime-gateway-instance-id <id>` | 专属网关实例 ID，Exclusive 模式必填 | — |
 
+以下示例需要先在当前终端导出 `MODEL_AGENT_API_KEY`。双引号让终端展开变量；此生命周期配置不会将单引号内的 `${MODEL_AGENT_API_KEY}` 自动替换为环境变量值
+
+<Warning>
+配置命令会将展开后的模型 API Key 写入 `agentkit.yaml`。在执行前将该文件和 `.env` 加入 `.gitignore` 与 `.dockerignore`，避免提交凭证或将其复制进镜像
+</Warning>
+
 ```bash lines
 agentkit config --init \
   --agent_name support-agent \
@@ -63,7 +69,7 @@ agentkit config --init \
   --cloud_provider volcengine \
   --region cn-beijing \
   --project_name default \
-  --runtime_envs 'MODEL_AGENT_API_KEY=${MODEL_AGENT_API_KEY}'
+  --runtime_envs "MODEL_AGENT_API_KEY=$MODEL_AGENT_API_KEY"
 
 agentkit config \
   --launch_type cloud \

@@ -11,23 +11,30 @@ en_link: "/productions/veadk/preview/en/components/tools/load-knowledgebase"
 
 知识库的后端类型、初始化与数据写入，详见[知识库文档](/productions/veadk/preview/zh/components/knowledge)。
 
+## 前提条件
+
+安装 `python -m pip install "veadk-python[extensions]"`，完成[模型配置](/productions/veadk/preview/zh/components/agent/model)与[本地后端配置](/productions/veadk/preview/zh/components/knowledge/local)。本地存储仍会将文本发送到配置的 embedding 服务；首次检索前必须先写入数据
+
 ## 使用方法
 
 ```python lines
+import asyncio
 from veadk import Agent, Runner
 from veadk.knowledgebase import KnowledgeBase
 
-# 构建知识库（后端类型与数据写入见知识库文档）
 knowledgebase = KnowledgeBase(backend="local", index="company_faq")
-
+assert knowledgebase.add_from_text("Employees have 15 days of annual leave after one year of service")
 agent = Agent(
     name="kb_agent",
-    model_name="doubao-seed-2-1-pro-260628",
-    instruction="回答用户问题时，在需要的地方检索知识库。",
-    knowledgebase=knowledgebase,  # 传入后自动挂载 load_knowledgebase
+    instruction="Call load_knowledgebase to retrieve the leave policy before answering.",
+    knowledgebase=knowledgebase,
 )
-
 runner = Runner(agent=agent)
+
+async def main():
+    print(await runner.run("How many days of annual leave do employees receive?"))
+
+asyncio.run(main())
 ```
 
 ## 额外说明
@@ -35,3 +42,14 @@ runner = Runner(agent=agent)
 <Note>
 系统工具由框架自动管理：只需提供 `knowledgebase`，无需把 `load_knowledgebase` 显式加入 `tools` 列表。智能体会根据指令与用户输入自主决定何时调用它。
 </Note>
+
+## 检索输入与验证
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | 必填 | 智能体生成的检索关键词或问题 |
+| `tool_context` | `ToolContext` | 自动注入 | 当前调用上下文，不由模型填写 |
+
+结果中的 `knowledges` 列表包含召回的知识片段。示例预期回答包含每年 15 天的年假规则。知识库不会因传入用户 ID 而自动提供文档级权限过滤，多租户应用应在绑定知识库时限制可访问的数据
+
+工具是否实际调用仍由模型决定。若回答未体现数据，先检查工具调用事件与检索结果；直接检索失败时，应先排查写入状态、embedding 配置与后端权限

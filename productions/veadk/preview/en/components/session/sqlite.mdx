@@ -14,24 +14,36 @@ The `sqlite` backend persists sessions to a local SQLite file. It needs no exter
 ## Usage
 
 ```python lines
-from veadk import Agent, Runner
+import asyncio
+
 from veadk.memory.short_term_memory import ShortTermMemory
 
-stm = ShortTermMemory(
-    backend="sqlite",
-    local_database_path="./short_term_memory.db",  # DB file location
-)
+stm = ShortTermMemory(backend="sqlite", local_database_path="./short_term_memory.db")
 
-agent = Agent(name="demo")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+async def main():
+    try:
+        await stm.create_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        session = await stm.session_service.get_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        assert session is not None
+        print(session.id)
+    finally:
+        await stm.session_service.close()
+
+asyncio.run(main())
 ```
+
+The output is `chat_01`, confirming that the session was created and read back. This example does not call a model. For conversations, pass the same `stm` to `Runner(short_term_memory=stm, agent=agent)` and keep the app, user, and session identifiers consistent
 
 If the DB file doesn't exist, VeADK creates it automatically (including any parent directories) and resolves the path to an absolute one.
 
 You can also pass a connection string directly via `db_url`, in which case `backend` and `local_database_path` are both ignored:
 
 ```python lines
-stm = ShortTermMemory(db_url="sqlite:///./test.db")
+stm = ShortTermMemory(db_url="sqlite+aiosqlite:///./test.db")
 ```
 
 ## Parameters
@@ -42,13 +54,16 @@ stm = ShortTermMemory(db_url="sqlite:///./test.db")
 | :--- | :--- | :--- | :--- | :--- |
 | `backend` | `str` | `"local"` | Yes | Set to `"sqlite"` to select this backend. The deprecated value `"database"` is also mapped to `sqlite`. |
 | `local_database_path` | `str` | `/tmp/veadk_local_database.db` | Yes | SQLite file path; resolved to an absolute path. The file and parent directories are created if missing. |
-| `db_url` | `str` | `""` | Yes (override) | A connection string such as `sqlite:///./test.db`. Once set, `backend` and `local_database_path` are ignored. |
+| `db_url` | `str` | `""` | Yes (override) | A connection string such as `sqlite+aiosqlite:///./test.db`. Once set, `backend` and `local_database_path` are ignored. |
 | `backend_configs` | `dict` | `{}` | No | Not read by the `sqlite` backend (only `mysql`/`postgresql` use it). |
 | `db_kwargs` | `dict` | `{}` | No | Not forwarded by the `sqlite` backend; effective only with `db_url` or the `mysql`/`postgresql` backends. |
-| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Callback invoked after a session is loaded; receives the loaded `Session`. |
+| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Synchronous read callback; receives `Session` or `None` plus the query arguments. Use `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | Yes | Runs after `ShortTermMemory.create_session()` creates a new session; accepts the new `Session` and can be synchronous or asynchronous |
 
 ## Environment variables
 
 The `sqlite` backend reads no environment variables; all configuration comes from constructor parameters.
 
 Need distributed persistence? Use [MySQL](/productions/veadk/preview/en/components/session/mysql) or [PostgreSQL](/productions/veadk/preview/en/components/session/postgresql).
+
+Store the SQLite file in a writable persistent directory. Containers need a persistent volume to retain it across replacement. The default `/tmp` path may be cleaned by the operating system and is not a backup. Create parent directories yourself when connecting through `db_url`

@@ -5,6 +5,12 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/mcp"
 
 The `mcp service` command group manages AgentKit MCP services. An MCP service deploys a containerized MCP server as an AgentKit cloud resource with network and authentication settings. The current release supports listing, inspecting, creating, and deleting services. Creation supports only the `custom-private` backend and the MCP protocol.
 
+Sign in to the target provider with permissions to manage MCP services, pull images, and use the selected gateway. Image URLs below illustrate the format; replace them with uploaded, pullable images. For BytePlus, use `--provider byteplus` with its region and registry
+
+<Warning>
+Creating a service deploys a container and can enable billable monitoring and logs. The default `--network public` exposes a public endpoint. With inbound authentication configured, still check that the tools are appropriate for the intended callers
+</Warning>
+
 ## Command overview
 
 | Command | Description |
@@ -20,7 +26,7 @@ List MCP services in a project. When no region is specified, the CLI detects the
 
 | Flag | Description | Default |
 | --- | --- | --- |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `-p, --project <name>` | AgentKit project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 | `--gateway-instance-id <id>` | Filter by exclusive gateway instance ID | — |
@@ -36,7 +42,7 @@ Show an MCP service's status, backend type, protocol, access path, project, and 
 | Flag/argument | Description | Default |
 | --- | --- | --- |
 | `<service>` | MCP service name or ID. Required. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `-p, --project <name>` | AgentKit project name, used when resolving by name. | `default` |
 | `--json` | Output raw JSON, including network, authentication, and backend configuration. | `false` |
 
@@ -57,7 +63,7 @@ Only the `custom-private` backend and `mcp` protocol are currently available. `-
 | `--name <name>` | MCP service name. Required. | — |
 | `--description <text>` | Service description. | — |
 | `-p, --project <name>` | AgentKit project name. | `default` |
-| `-r, --region <region>` | Volcengine region. | environment setting |
+| `-r, --region <region>` | Region for the selected cloud provider. | environment setting |
 | `--client-token <token>` | Client token used to make repeated requests idempotent. | — |
 | `--backend-type <type>` | Backend type: `custom-private`, `custom-public`, `function`, `domain`, `ecs`, or `vke`. Only `custom-private` is currently supported. | `custom-private` |
 | `--image-url <url>` | Container image URL for the `custom-private` backend. Required. | — |
@@ -129,7 +135,7 @@ Deleting an MCP service cannot be undone. Verify the name or ID, project, and re
 | Flag/argument | Description | Default |
 | --- | --- | --- |
 | `<service>` | MCP service name or ID. Required. | — |
-| `-r, --region <region>` | Volcengine region. | auto-detect |
+| `-r, --region <region>` | Region for the selected cloud provider. | auto-detect |
 | `-p, --project <name>` | AgentKit project name, used when resolving by name. | `default` |
 | `-y, --yes` | Skip the deletion confirmation. | `false` |
 
@@ -158,3 +164,5 @@ agentkit mcp service create \
 ```
 
 After creation, run `agentkit mcp service show internal-tools` to verify gateway and backend access settings
+
+After the create request succeeds, use `mcp service show` to inspect state and the access address, then verify tool discovery and a call from the client. If a ready service rejects calls, distinguish its inbound API key/JWT from outbound credentials used by tools to access external systems

@@ -89,7 +89,7 @@ For tasks that require retrieval, specialized skills, knowledge bases, tool call
 3. Call create_agents in a single call including every required sub-agent, specifying in handoff_to the agent that should actually complete the user's task.
 4. create_agents transfers the task directly to that agent; do not repeat the answer yourself.
 
-If the user explicitly prohibits network, knowledge-base, or external-resource access, skip collect_resources and call create_agents directly with an empty string as collection_id, leaving every LLM node's resources as an empty list.
+If the user prohibits external resource retrieval but allows model-service calls, skip collect_resources and call create_agents directly with an empty string as collection_id, leaving every LLM node's resources as an empty list.
 """,
     tools=[create_agent],
 )
@@ -121,7 +121,7 @@ The `collection_id` returned after collection must be passed unchanged to the su
 
 ### Offline mode
 
-When the user explicitly prohibits network, knowledge-base, or external-resource access, the main agent can skip `collect_resources` and call `create_agents` directly with an empty string as `collection_id`. Every LLM node's `resources` must then be an empty list, and sub-agents rely solely on their own model capabilities. No Skill Hub keyword search or resource-source calls are made in offline mode.
+When the user prohibits external resource retrieval but allows model-service calls, the main agent can skip `collect_resources` and call `create_agents` directly with an empty string as `collection_id`. Every LLM node's `resources` must then be an empty list, and sub-agents rely solely on their own model capabilities. No Skill Hub keyword search or resource-source calls are made in offline mode.
 
 ### Agent blueprints
 
@@ -211,5 +211,22 @@ Constructor parameters of `CreateAgentToolset`:
 - `create_agents` must run within an active agent invocation driven by a `Runner`, otherwise it cannot register sub-agents and complete the handoff.
 - Each `collect_resources` result requires exactly one `create_agents` call that includes every required sub-agent; after it completes or sets `handoff_to`, it should not be called again.
 - Multiple `collect_resources` calls within the same session overwrite the previous resource snapshot for that session; snapshots are held in an in-process bounded cache (up to 128), and `create_agents` reads a snapshot without invalidating it, so the same snapshot can be reused by subsequent calls with the same request fingerprint.
-- Dynamically created sub-agents are registered in the agent tree of the current session and are not retained after the session ends.
+- Dynamically created sub-agents are not persisted deployments. Call `await create_agent.close()` when the application ends. Collecting resources again for the same session releases its previous registrations; closing a chat page does not itself guarantee connection cleanup.
 - `python_tools` run in the current process without sandbox isolation.
+
+## Call parameters and completion checks
+
+| Tool | Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `collect_resources` | `skill_hub_keywords` | `list[str] \| None` | `None` | Public Skill Hub queries, usually 2–5 short phrases; omitted keywords skip keyword search |
+| `collect_resources` | `tool_context` | `ToolContext \| None` | `None` | Injected context associating the user and session |
+| `create_agents` | `collection_id` | `str` | Required | Resource collection ID for the current user; empty for resource-free operation |
+| `create_agents` | `agents` | `list` | Required | Complete blueprints using the structures above |
+| `create_agents` | `handoff_to` | `str` | Required | Name of the blueprint agent responsible for completing the task |
+| `create_agents` | `tool_context` | `ToolContext \| None` | `None` | An active agent context is required to perform handoff |
+
+“Offline mode” skips resource collection; it does not replace a cloud model with a local model. Inference may still use the network. Fully network-free execution requires a separately configured offline model and environment.
+
+Submitting all required blueprints once after collection is the recommended workflow. Request deduplication does not mean a snapshot can only be read once. A new collection replaces the current session's snapshot; do not treat an old `collection_id` as a permanent resource reference.
+
+Creation results may include failed items. Inspect each `results` entry and the returned `handoff_to`; without a valid handoff target, execution has not successfully started. Custom `resource_sources`, `leaf_factory`, or `knowledge_factory` implementations must match the current interfaces; ordinary integrations should keep the defaults.

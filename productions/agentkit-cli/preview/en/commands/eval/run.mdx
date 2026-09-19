@@ -5,12 +5,19 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/eval/run"
 
 `eval run` is the core command that ties the evaluation loop together: it takes an evaluation dataset and one or more evaluators, then submits an experiment against a deployed Runtime or TEA source evaluation target. The dataset, evaluators, and target can all be specified by ID or name, and field mapping is automatic by default.
 
+Prepare a dataset, evaluators, and an available target on the same backend; submit evaluator versions first on TEA. The first example previews the request. `--dry-run` still resolves resources over the network, but does not submit an experiment or auto-publish a dataset draft
+
+<Warning>
+Removing `--dry-run` invokes the target and judge models, may incur usage charges, and sends cases and outputs to the evaluation platform. Without a committed dataset version, submission can also publish the current draft automatically
+</Warning>
+
 ```bash lines
 agentkit eval run \
   --dataset qa-set \
   --evaluator relevance \
   --evaluator-version 0.0.1 \
-  --target my-agent
+  --target my-agent \
+  --dry-run
 ```
 
 <Note>
@@ -53,8 +60,6 @@ An experiment has three layers of data to align: dataset fields, target input an
 
 - The target Runtime typically uses `user_input` as its input field and `actual_output` as its output field; the dataset's primary input field, such as `input`, is passed to the target's `user_input`.
 - The evaluator field that represents the model answer, such as `output`, is supplied by the target output `actual_output`; the remaining fields, such as `input` and `reference_output`, are taken from the dataset by matching name.
-
-An experiment has three layers of data to align: dataset fields, target input and output, and evaluator inputs. By default, the CLI passes the dataset's primary input to the target input and passes the target output to the evaluator answer field. Use `--map` when field names differ.
 
 ### `--map` Syntax
 

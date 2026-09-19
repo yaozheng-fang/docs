@@ -3,3 +3,11 @@ title: "Add a session using the compatibility path"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /dev/apps/{app_name}/eval_sets/{eval_set_id}/add_session"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/add-session-to-eval-set-legacy"
 ---
+
+This underscore path uses the same request and response as its hyphenated counterpart and remains available to existing clients. Confirm that the session and set exist, and review the conversation data that will be saved as a sample
+
+<Warning>
+Writing or deleting evaluation samples changes the actual evaluation set
+</Warning>
+
+See the [corresponding evaluation endpoint](/productions/api-reference/preview/en/harness-runtime/add-session-to-eval-set) for the replacement and its complete requirements

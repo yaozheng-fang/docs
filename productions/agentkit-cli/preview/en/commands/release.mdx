@@ -5,6 +5,10 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/release"
 
 `release` runs the full `.agentkit/agentkit.yaml` release pipeline: scaffold release config, build the image in the cloud, create or update the AgentKit Runtime, and optionally release Feishu, WeCom, DingTalk proxies or a frontend BFF. If you use the root `agentkit.yaml` lifecycle config, use [`launch`](/productions/agentkit-cli/preview/en/commands/launch) instead.
 
+Run from the application project root with management credentials and permissions for builds, the registry, object storage, and runtimes. This flow does not read model environment variables from the root lifecycle configuration; declare them explicitly in `.agentkit/agentkit.yaml` under `envs`
+
+The generated Python Dockerfile starts `main.py` by default. For another entry file, update its startup command in `.agentkit/Dockerfile`. An existing root Dockerfile takes precedence
+
 ## release
 
 Without a subcommand, `release` runs the full pipeline. If `.agentkit/agentkit.yaml` is missing, it first generates the config and asks you to review it before running the command again.
@@ -19,13 +23,15 @@ Without a subcommand, `release` runs the full pipeline. If `.agentkit/agentkit.y
 | `--im-feishu-app-secret <secret>` | Feishu App Secret for the proxy; prefer `FEISHU_APP_SECRET`. | `im.feishu.app_secret` or `FEISHU_APP_SECRET` |
 | `--json` | Emit machine-readable NDJSON events for a managed Harness Sidecar release. | `false` |
 
+<Warning>
+`release` creates or updates cloud runtimes and may create VeFaaS functions, gateways, container registry resources, TOS objects, and identity configuration. Confirm `.agentkit/agentkit.yaml`, credentials, region, and project before running it.
+</Warning>
+
 ```bash lines
 agentkit release --name my-agent --region cn-beijing --project default
 ```
 
-<Warning>
-`release` creates or updates cloud runtimes and may create VeFaaS functions, gateways, container registry resources, TOS objects, and identity configuration. Confirm `.agentkit/agentkit.yaml`, credentials, region, and project before running it.
-</Warning>
+
 
 `--json` is only for managed Sidecar releases where `.agentkit/agentkit.yaml` resolves a `harness_sidecar` configuration. Using this flag with a standard release configuration returns a failure result. Output is newline-delimited JSON with `progress`, `runtime`, and terminal `result` events, so Studio or CI can render build, deploy, and publish status by phase.
 
@@ -45,7 +51,7 @@ Generate `.agentkit/agentkit.yaml` and a Dockerfile.
 | `-f, --force` | Overwrite existing generated files. | `false` |
 
 ```bash lines
-agentkit release config --name my-agent --force
+agentkit release config --name my-agent
 ```
 
 ## release build
@@ -95,3 +101,7 @@ AGENTKIT_RUNTIME_READY_TIMEOUT_MS=1200000 agentkit release apply
 ```
 
 Managed Sidecar supports Beijing deployments, private-only gateway bindings, and existing header-based API-key authentication. Builds resolve the image digest into the artifact record and fail if the image is not visible in the registry. Temporary TOS source archives are cleaned up at the end; cleanup failure after a successful build is also reported as an error
+
+Scaffolding writes local files only. A successful `release build` produces an artifact; a successful `release apply` completes publication. Finally, inspect `agentkit runtime show <name>` and verify a real call. If a messaging proxy or frontend step fails, inspect runtimes and functions already created rather than assuming the entire flow left no resources
+
+`release config --force` overwrites generated release configuration and the applicable Dockerfile. Save custom fields and changes before regenerating

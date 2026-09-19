@@ -3,3 +3,9 @@ title: "Update session state"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json PATCH /apps/{app_name}/users/{user_id}/sessions/{session_id}"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/update-session"
 ---
+
+Use `stateDelta` to update selected state keys; unspecified keys are retained. The service records the state change and returns the updated session without running the agent
+
+<Warning>
+This operation changes an existing session, and subsequent invocations use the updated state. Confirm the application, user, session, and values to overwrite before sending the request
+</Warning>

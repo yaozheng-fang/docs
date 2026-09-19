@@ -3,31 +3,44 @@ title: "评测"
 en_link: "/productions/api-reference/preview/en/evaluation"
 ---
 
-管理评测集与评测用例，执行评测并读取结果
+评测集保存用于检验智能体行为的用例，评测运行会重新执行这些用例并记录指标结果。本页索引 Agent API Server 的开发评测接口
 
-<Note>
-这些接口使用 `/dev/...` 路径，需要启动开发服务。普通 `adk api_server` 不提供这些接口；启动方式见 [Agent API Server 概览](/productions/api-reference/preview/zh/agent-api-server/overview)
-</Note>
+这些 `/dev/...` 接口需要启用开发界面，并安装评测依赖，见 [Agent API Server 概述](/productions/api-reference/preview/zh/agent-api-server/overview)。Harness 部署使用[对应评测接口](/productions/api-reference/preview/zh/harness-runtime/create-eval-set)
+
+<Warning>
+评测可能调用模型和工具，产生费用或执行外部操作。准备样本时应检查用户数据、工具权限和指标配置
+</Warning>
+
+## 评测工作流
+
+先创建评测集，从已有会话添加用例，再选择指标运行评测。用例可以单独读取、替换或删除；运行后根据逐用例状态与指标结果判断是否通过
+
+| 方法 | 路径 | 接口 |
+| --- | --- | --- |
+| POST | `/dev/apps/{app_name}/eval-sets` | [创建评测集](/productions/api-reference/preview/zh/agent-api-server/create-eval-set) |
+| GET | `/dev/apps/{app_name}/eval-sets` | [列出评测集](/productions/api-reference/preview/zh/agent-api-server/list-eval-sets) |
+| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/add-session` | [从会话添加评测用例](/productions/api-reference/preview/zh/agent-api-server/add-session-to-eval-set) |
+| GET | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals` | [列出评测用例](/productions/api-reference/preview/zh/agent-api-server/list-eval-cases) |
+| GET | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [获取评测用例](/productions/api-reference/preview/zh/agent-api-server/get-eval-case) |
+| PUT | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [更新评测用例](/productions/api-reference/preview/zh/agent-api-server/update-eval-case) |
+| DELETE | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [删除评测用例](/productions/api-reference/preview/zh/agent-api-server/delete-eval-case) |
+| GET | `/dev/apps/{app_name}/metrics-info` | [列出评测指标](/productions/api-reference/preview/zh/agent-api-server/list-eval-metrics) |
+| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/run` | [运行评测](/productions/api-reference/preview/zh/agent-api-server/run-evaluation) |
+| GET | `/dev/apps/{app_name}/eval-results` | [列出评测结果](/productions/api-reference/preview/zh/agent-api-server/list-eval-results) |
+| GET | `/dev/apps/{app_name}/eval-results/{eval_result_id}` | [获取评测结果](/productions/api-reference/preview/zh/agent-api-server/get-eval-result) |
+
+## 兼容入口
+
+以下接口供已有调用方继续使用。迁移时需检查各页的请求和响应差异，不能只替换 URL；列出评测用例目前仅提供上表中的下划线路径
 
 | 方法 | 路径 | 接口 |
 | --- | --- | --- |
 | PUT | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}` | [更新评测用例兼容接口](/productions/api-reference/preview/zh/agent-api-server/update-eval-case-legacy) |
-| GET | `/dev/apps/{app_name}/eval-sets` | [列出评测集](/productions/api-reference/preview/zh/agent-api-server/list-eval-sets) |
-| GET | `/dev/apps/{app_name}/eval-results/{eval_result_id}` | [获取评测结果](/productions/api-reference/preview/zh/agent-api-server/get-eval-result) |
 | POST | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/run_eval` | [运行评测兼容接口](/productions/api-reference/preview/zh/agent-api-server/run-evaluation-legacy) |
 | GET | `/dev/apps/{app_name}/eval_results` | [列出评测结果兼容接口](/productions/api-reference/preview/zh/agent-api-server/list-eval-results-legacy) |
 | POST | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/add_session` | [添加评测用例兼容接口](/productions/api-reference/preview/zh/agent-api-server/add-session-to-eval-set-legacy) |
-| GET | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals` | [列出评测用例](/productions/api-reference/preview/zh/agent-api-server/list-eval-cases) |
-| GET | `/dev/apps/{app_name}/metrics-info` | [列出评测指标](/productions/api-reference/preview/zh/agent-api-server/list-eval-metrics) |
 | DELETE | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}` | [删除评测用例兼容接口](/productions/api-reference/preview/zh/agent-api-server/delete-eval-case-legacy) |
 | GET | `/dev/apps/{app_name}/eval_sets/{eval_set_id}/evals/{eval_case_id}` | [获取评测用例兼容接口](/productions/api-reference/preview/zh/agent-api-server/get-eval-case-legacy) |
-| DELETE | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [删除评测用例](/productions/api-reference/preview/zh/agent-api-server/delete-eval-case) |
-| POST | `/dev/apps/{app_name}/eval-sets` | [创建评测集](/productions/api-reference/preview/zh/agent-api-server/create-eval-set) |
 | GET | `/dev/apps/{app_name}/eval_results/{eval_result_id}` | [获取评测结果兼容接口](/productions/api-reference/preview/zh/agent-api-server/get-eval-result-legacy) |
-| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/add-session` | [从会话添加评测用例](/productions/api-reference/preview/zh/agent-api-server/add-session-to-eval-set) |
-| POST | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/run` | [运行评测](/productions/api-reference/preview/zh/agent-api-server/run-evaluation) |
 | POST | `/dev/apps/{app_name}/eval_sets/{eval_set_id}` | [创建评测集兼容接口](/productions/api-reference/preview/zh/agent-api-server/create-eval-set-legacy) |
-| GET | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [获取评测用例](/productions/api-reference/preview/zh/agent-api-server/get-eval-case) |
-| PUT | `/dev/apps/{app_name}/eval-sets/{eval_set_id}/eval-cases/{eval_case_id}` | [更新评测用例](/productions/api-reference/preview/zh/agent-api-server/update-eval-case) |
-| GET | `/dev/apps/{app_name}/eval-results` | [列出评测结果](/productions/api-reference/preview/zh/agent-api-server/list-eval-results) |
 | GET | `/dev/apps/{app_name}/eval_sets` | [列出评测集兼容接口](/productions/api-reference/preview/zh/agent-api-server/list-eval-sets-legacy) |

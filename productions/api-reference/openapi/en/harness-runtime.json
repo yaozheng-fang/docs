@@ -923,6 +923,9 @@
                 }
               }
             }
+          },
+          "499": {
+            "description": "Execution was cancelled after the client disconnected; the closed connection can prevent the client from reading this status"
           }
         },
         "description": "Wait for completion and return all events as a JSON array. Create a session under harness_agent first. General Harness overrides are not supported; harness.mcp_servers can replace the remote MCP servers for this request. streaming does not change the JSON response format",
@@ -1389,7 +1392,8 @@
                 }
               ],
               "title": "Version"
-            }
+            },
+            "description": "Optional version number; omit it to read the latest version"
           }
         ],
         "responses": {
@@ -1432,7 +1436,7 @@
             }
           }
         },
-        "description": "Return the latest artifact as a Part; returns 404 when the artifact does not exist",
+        "description": "Return the latest artifact as a Part when version is omitted, or the selected version when the version query parameter is supplied; a missing artifact or version returns 404",
         "tags": [
           "Artifacts"
         ]
@@ -2115,7 +2119,7 @@
             }
           }
         },
-        "description": "Create an empty evaluation set using evalSet.eval_set_id; add cases through the corresponding endpoint\n\nExposed by the verified SDK/ADK versions for trusted development and debugging. Paths depend on the installed ADK version and should not be used as public application entry points"
+        "description": "Create an empty evaluation set using evalSet.eval_set_id. This endpoint does not import eval_cases from the request; add cases through the corresponding endpoint\n\nExposed by the verified SDK/ADK versions for trusted development and debugging. Paths depend on the installed ADK version and should not be used as public application entry points"
       },
       "get": {
         "tags": [
@@ -2649,7 +2653,7 @@
           "Evaluation · development server"
         ],
         "summary": "Run an evaluation",
-        "description": "Select cases with evalCaseIds; omit it or use an empty array to evaluate all cases. evalMetrics is required; the response includes per-case status and metric results\n\nExposed by the verified SDK/ADK versions for trusted development and debugging. Paths depend on the installed ADK version and should not be used as public application entry points",
+        "description": "Select cases with evalCaseIds; omission or an empty array falls back to evalIds. All cases are evaluated when neither selects cases. evalMetrics is required; the response includes per-case status and metric results\n\nExposed by the verified SDK/ADK versions for trusted development and debugging. Paths depend on the installed ADK version and should not be used as public application entry points",
         "operationId": "harnessRuntimeRunEvaluation",
         "parameters": [
           {
@@ -13173,7 +13177,7 @@
             },
             "type": "array",
             "title": "Evalcaseids",
-            "description": "Case IDs to evaluate; omitted or empty selects all cases"
+            "description": "Case IDs to evaluate; omission or an empty array falls back to evalIds. Evaluate all cases when neither selects cases"
           },
           "evalMetrics": {
             "items": {
@@ -15324,7 +15328,7 @@
               }
             ],
             "title": "Appname",
-            "description": "Application name; falls back to ADK_DEFAULT_APP_NAME when omitted and returns 400 if no default is configured"
+            "description": "Application name; explicitly provide harness_agent for standard calls. This endpoint does not use ADK_DEFAULT_APP_NAME as a fallback"
           },
           "user_id": {
             "type": "string",
@@ -15417,7 +15421,7 @@
                 "type": "null"
               }
             ],
-            "description": "Model-call limit, at least 1; run_agent_request takes precedence over harness overrides, followed by the deployed configuration"
+            "description": "Applies only with general Harness overrides on KeyAuth deployments. The top-level value takes precedence over harness.max_llm_calls, followed by deployment configuration. Standard calls and MCP-only overrides do not apply this field"
           }
         },
         "type": "object",
@@ -15480,7 +15484,7 @@
             "type": "boolean",
             "title": "Streaming",
             "default": false,
-            "description": "Request incremental model streaming; defaults to false"
+            "description": "This endpoint still returns a single JSON event array; this field does not enable streaming"
           },
           "stateDelta": {
             "anyOf": [

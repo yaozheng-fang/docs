@@ -3,11 +3,11 @@ title: "Observability"
 zh_link: "/productions/veadk/preview/zh/components/observability"
 ---
 
-Observability records the full execution path of an agent so you can understand its internal behavior, debug issues, analyze performance, and keep optimizing. VeADK's built-in tracing captures each request — from receiving user input, through model inference, tool calls, memory and knowledge-base reads/writes, to producing a response — as structured span data, and reports it to Volcengine or third-party platforms through exporters.
+VeADK provides application logs and traces to diagnose model calls, tools, and agent execution. Logs record individual events; traces connect operations within a request so you can inspect timing and relationships
 
-VeADK tracing follows the [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) generative-AI semantic conventions, with field names aligned to standard span attributes. Trace data can therefore be imported directly into any OpenTelemetry-compatible system for analysis and visualization.
+Tracing uses [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) spans and generative AI attributes. Coverage depends on the instrumentation provided by the runtime and tools. External backends also require compatible protocols, endpoints, and credentials
 
-Runtime logs use Python's standard `logging` package. See [Application logging](/productions/veadk/preview/en/components/observability/logging) for levels, formatting, and trace correlation.
+See [Application logging](/productions/veadk/preview/en/components/observability/logging) for log levels and formatting
 
 ## Core concepts
 
@@ -30,30 +30,35 @@ An exporter sends span data to a specific backend platform. Each exporter target
 | TLS | `TLSExporter` | Volcengine TLS log service | [TLS](/productions/veadk/preview/en/components/observability/tls) |
 | In-memory | `InMemoryExporter` | In-process memory, local debugging and dumping | [In-memory exporter](/productions/veadk/preview/en/components/observability/inmemory) |
 
+
+<Warning>
+Traces may contain user input, model responses, and tool data. Before enabling external exporters, confirm the destination, access controls, and retention policy. `force_export()` requests a flush; it does not prove that the backend received the data
+</Warning>
+
 ## Attaching a tracer to an agent
 
-Tracing is wired in through the `tracers` field of `Agent`. Construct an exporter for the target backend, hand it to `OpentelemetryTracer`, then attach the tracer to the agent:
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model) first. This example stores traces locally and does not require an external observability backend. Running it prints a model response and the path to a JSON trace file
 
-```python lines
+```python title="app.py" lines
 import asyncio
+from pathlib import Path
 
 from veadk import Agent, Runner
-from veadk.memory.short_term_memory import ShortTermMemory
-from veadk.tools.demo_tools import get_city_weather
-from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
-exporters = [APMPlusExporter()]
-tracer = OpentelemetryTracer(exporters=exporters)
-
-agent = Agent(tools=[get_city_weather], tracers=[tracer])
-
-runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
-
-asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="session_id_demo"))
+tracer = OpentelemetryTracer()
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("Explain the purpose of an agent in one sentence", session_id="demo-session")
+)
+print(response)
+Path("traces").mkdir(exist_ok=True)
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(path)
 ```
 
-A single tracer can hold multiple exporters, reporting the same spans to several platforms:
+After configuring each backend's endpoint, credentials, and target resource, one tracer can report to multiple platforms. This configuration fragment replaces the tracer above:
 
 ```python lines
 from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
@@ -74,30 +79,19 @@ tracer = OpentelemetryTracer(
 | :--- | :--- | :--- | :--- |
 | `name` | `str` | `veadk_opentelemetry_tracer` | Tracer identifier, used for logging and naming dump files. |
 | `exporters` | `list[BaseExporter]` | `[]` | List of exporters. `InMemoryExporter` may not be added explicitly, or validation fails; the in-memory exporter is attached automatically. |
-| `apmplus_managed_externally` | `bool` | — | Read-only property. Whether a global `TracerProvider` already existed at initialization. When `True`, VeADK reuses the external provider instead of overriding it and automatically removes `APMPlusExporter`. |
+| `apmplus_managed_externally` | `bool` | — | Read-only property. Whether a global `TracerProvider` already existed at initialization. When `True`, VeADK reuses the external provider instead of overriding it and skips registering the APMPlus span processor; this does not establish that the external provider reports to APMPlus. |
 
 <Note>
-`InMemoryExporter` is managed automatically by `OpentelemetryTracer` and records every span. Do not add it to the `exporters` list manually, or initialization fails.
+`InMemoryExporter` is managed automatically by `OpentelemetryTracer` and retains completed, sampled spans. Do not add it to the `exporters` list manually, or initialization fails.
 </Note>
 
 ### Reusing a preconfigured global TracerProvider
 
 By default, `OpentelemetryTracer` creates and sets the global `TracerProvider` during initialization. If a global `TracerProvider` already exists at that point (for example, set by another library or the application itself), VeADK reuses it instead of overriding it.
 
-In this case VeADK automatically removes `APMPlusExporter` from the exporters list, because the existing provider is assumed to be responsible for APMPlus trace reporting. Other exporters (such as `CozeloopExporter` and `TLSExporter`) are still registered with that provider. The VeADK in-memory exporter is also attached as usual.
+When a global provider already exists, the `APMPlusExporter` object remains in the exporter list, but its span processor is not registered by this tracer. Cozeloop, TLS, and in-memory exporters are still attached. This also applies to exporters created with `ENABLE_APMPLUS=true`
 
-<Note>
-This behavior also applies when `ENABLE_APMPLUS=true` auto-creates the exporter: if a global `TracerProvider` already exists, the auto-created `APMPlusExporter` is also removed.
-</Note>
-
-You can check the `apmplus_managed_externally` property to determine whether the tracer detected an external provider:
-
-```python lines
-tracer = OpentelemetryTracer(exporters=[APMPlusExporter()])
-if tracer.apmplus_managed_externally:
-    # VeADK reused an existing global TracerProvider; APMPlusExporter was removed
-    pass
-```
+`apmplus_managed_externally` only indicates that a provider already existed at initialization. It does not inspect that provider's destination or confirm delivery to APMPlus. If your application already configures OpenTelemetry, configure the APMPlus destination there and verify the Trace ID in the backend
 
 ## Enabling exporters via environment variables
 
@@ -115,11 +109,11 @@ When all three variables are `false` (the default), `Agent` creates no tracer. T
 
 ## Content tracing
 
-By default, spans record the input and output content of the agent, model, and tools. In scenarios involving sensitive data, you can disable content capture and keep only the non-content span structure and timing. This is controlled by `OpenTelemetryConfig.trace_content`.
+By default, spans record the input and output content of the agent, model, and tools. In scenarios involving sensitive data, you can disable content capture and reduce content captured by VeADK. This is controlled by `OpenTelemetryConfig.trace_content`.
 
 | Config | Environment variable | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | Whether to write prompt, completion, and tool input/output content into spans. Set to `false` to keep only non-content trace information. |
+| `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | Whether to write prompt, completion, and tool input/output content into spans. Set to `false` to disable these content fields; configure third-party instrumentation and application logs separately. |
 
 ```bash lines
 # Disable content capture
@@ -131,7 +125,7 @@ export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
 The in-memory exporter built into `OpentelemetryTracer` retains spans by `session_id`. Call `dump` to export the current session's spans to a local JSON file for offline analysis:
 
 ```python lines
-path = tracer.dump(user_id="user-1", session_id="session_id_demo")
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
 print(f"trace written to {path}")
 ```
 

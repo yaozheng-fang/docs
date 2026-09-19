@@ -17,7 +17,7 @@ en_link: "/productions/veadk/preview/en/components/tools/las"
 3. 配置 LAS 服务的 DatasetId 与 URL（[URL 获取方式](https://www.volcengine.com/mcp-marketplace/detail?name=LAS%20MCP)）。
 </Warning>
 
-环境变量（**必须配置在环境变量中**）：
+环境变量：
 
 - `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
 - `TOOL_LAS_URL`：LAS MCP Server 服务地址
@@ -27,6 +27,7 @@ en_link: "/productions/veadk/preview/en/components/tools/las"
 
 ```python title="examples/tools/las/agent.py" lines
 import asyncio
+import os
 
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
@@ -37,7 +38,7 @@ agent = Agent(
     model_name="doubao-seed-2-1-pro-260628",
     description="使用 LAS 中的数据作答。",
     instruction=(
-        "你是一个诗人。先用 las 工具在 ds_public 数据集中检索相关内容，"
+        f"你是一个诗人。先用 las 工具在 {os.environ['TOOL_LAS_DATASET_ID']} 数据集中检索相关内容，"
         "再基于检索结果写一首诗词。"
     ),
     tools=[las],
@@ -49,6 +50,30 @@ runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
 async def main():
     response = await runner.run("写一首国风、与木头和爱情相关的诗词")
     print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 数据集与连接验证
+
+在导入 `las` 前设置服务地址。`TOOL_LAS_DATASET_ID` 不会自动作为每次工具调用的过滤条件，必须在指令或工具参数中明确选定数据集；它也不能代替服务端的数据访问权限。示例使用已配置数据集，需预先写入可检索的数据
+
+以下检查只列出服务提供的工具。连接成功但查询为空时，继续检查所选数据集、已导入内容与访问权限。服务地址取自 `TOOL_LAS_URL`，不因 `CLOUD_PROVIDER` 自动切换
+
+```python lines
+import asyncio
+
+from veadk.tools.builtin_tools.las import las
+
+
+async def main():
+    try:
+        tools = await las.get_tools()
+        print([tool.name for tool in tools])
+    finally:
+        await las.close()
 
 
 if __name__ == "__main__":

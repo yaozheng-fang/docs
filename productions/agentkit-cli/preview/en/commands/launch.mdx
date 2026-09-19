@@ -5,6 +5,12 @@ zh_link: "/productions/agentkit-cli/preview/zh/commands/launch"
 
 `launch` runs build and deploy in one command. It reads the lifecycle config, runs `build`, then runs `deploy` if the build succeeds, making it the normal command for publishing a new project or updated code.
 
+Run in a project containing the lifecycle file `agentkit.yaml`. Configure the provider, region, and runtime environment variables using the [Quickstart](/productions/agentkit-cli/preview/en/quickstart); `local` and `hybrid` also require local Docker
+
+<Warning>
+Cloud publication builds an image and creates or updates a runtime, potentially incurring build, storage, and runtime charges. Check the target project and release timing for an existing service
+</Warning>
+
 ## launch
 
 | Flag / Argument | Description | Default |
@@ -18,3 +24,12 @@ agentkit launch --config-file agentkit.yaml --preflight-mode fail
 ```
 
 `prompt` asks before continuing in an interactive terminal; `fail` exits when preflight checks fail; `warn` prints warnings and continues; `skip` disables preflight checks.
+
+Verify the application after publication:
+
+```bash lines
+agentkit status
+agentkit invoke run "hello"
+```
+
+Use `--preflight-mode fail` for unattended publication. `warn` and `skip` do not grant missing service permissions, so a later build or deployment can still fail

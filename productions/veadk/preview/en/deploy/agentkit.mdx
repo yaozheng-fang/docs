@@ -7,23 +7,28 @@ VeADK can deploy a local agent as an AgentKit Runtime. Shared AgentKit applicati
 
 ## Prerequisites
 
-- Install `veadk-python==1.0.8`.
-- Sign in or configure Volcengine access credentials.
+- Install `veadk-python`.
+- Configure cloud and model credentials for the target provider.
 - Export an importable `root_agent` from the project.
 - Do not commit `.env`, API keys, or access credentials to source control.
+
+<Warning>
+Deployment creates or updates cloud Runtime, build, and registry resources and may incur charges. Confirm the account, region, authentication, and session storage first. In-memory sessions disappear when the process exits; configure persistent sessions for multiple instances
+</Warning>
 
 ## Create the application
 
 Studio-generated projects call `create_agentkit_app`. Manually created projects can use the same entry point:
 
 ```python title="app.py" lines
-from agents.customer_support.agent import root_agent
-from veadk.integrations.agentkit import create_agentkit_app
+from veadk import Agent
+from veadk.integrations.agentkit import create_agentkit_app, run_agentkit_app
 
-app = create_agentkit_app(
-    root_agent,
-    {root_agent.name: "Customer support"},
-)
+root_agent = Agent(name="customer_support", instruction="Answer support questions clearly.")
+app = create_agentkit_app(root_agent, {root_agent.name: "Customer support"})
+
+if __name__ == "__main__":
+    run_agentkit_app(app, host="127.0.0.1", port=8000)
 ```
 
 The application exposes AgentKit conversation APIs and these public endpoints:
@@ -34,6 +39,8 @@ The application exposes AgentKit conversation APIs and these public endpoints:
 | `/web/agent-info/{app_name}` | Agent name, description, model, instruction, sub-agents, tools, skills, and mounted components. |
 | `/web/agent-graph` | Agent topology; each node includes skills, components, path, and whether it can be selected in a conversation. |
 | `/` | Built-in Web UI. |
+
+Save as `app.py`, run `python app.py`, and use another terminal to run `curl --fail http://127.0.0.1:8000/ping`. Expect `{"status":"ok"}`. This checks application health, not model, tool, or storage connectivity; send a real request before deployment. Later examples are alternative configurations using the `root_agent` defined above
 
 ## Runtime identity binding
 
@@ -47,7 +54,9 @@ VeADK excludes the `/ping` health-check endpoint from identity binding; that end
 
 ```python title="app.py" lines
 from agentkit.identity import RuntimeIdentity
-from agents.customer_support.agent import root_agent
+from veadk import Agent
+
+root_agent = Agent(name="customer_support", instruction="Answer support questions clearly.")
 from veadk.integrations.agentkit import create_agentkit_app
 
 app = create_agentkit_app(
@@ -69,7 +78,7 @@ Applications built with `create_agentkit_app` override the standard AgentKit run
 
 Studio can expose local or intranet-only tools to a compatible AgentKit Runtime through a reverse channel, without giving the Studio BFF a public address. Tool manifests and executors remain in the Studio BFF; the Runtime never receives the executor implementation or its credentials.
 
-Build the Runtime app with `create_agentkit_app(..., enable_studio_tools=True)` to mount one generic `StudioExternalToolset`. It contains no concrete executor and is hidden from Agent introspection. During a Studio-channel run, an async-local immutable snapshot supplies only the tools selected for that run; ordinary `/run_sse` requests see an empty snapshot. With the option disabled (the default), the Runtime advertises `enabled=false` and does not mount the Toolset or tool-channel execution endpoints.
+Build the Runtime app with `create_agentkit_app(..., enable_studio_tools=True)` to mount one generic `StudioExternalToolset`. It contains no concrete executor and is hidden from Agent introspection. During a Studio-channel run, only explicitly selected tools are available; ordinary `/run_sse` requests see an empty snapshot. With the option disabled (the default), the Runtime advertises `enabled=false` and does not mount the Toolset or tool-channel execution endpoints.
 
 <Note>
 When the root agent is a workflow agent (`SequentialAgent`, `ParallelAgent`, or `LoopAgent`), `enable_studio_tools=True` is automatically overridden and disabled. Workflow root agents do not perform tool calls, so the Studio BFF dynamic tools host is not needed.
@@ -90,12 +99,14 @@ For each remote `run_sse` request, the BFF first tries an outbound WSS connectio
 
 In the Studio UI, a compatible remote Runtime's agent information rail exposes **Add Studio tools to this conversation** below the agent's static tools. New chats start with every Studio tool disabled; the browser sends an explicit `platform_tools` list on each Runtime run, and an empty or omitted list uses the ordinary `/run_sse` path. The BFF validates the submitted tool IDs and freezes an immutable catalog-and-executor snapshot for that run, so simultaneous users and sessions cannot add tools to one another.
 
-Studio always registers the canonical functions from `veadk/tools/builtin_tools` in its BFF catalog. The BFF supplies the ADK `ToolContext`, keeps state isolated by Runtime, app, user, and session, and publishes generated ADK artifacts through Studio media storage so downloads remain available after execution moves out of Runtime. Studio-owned tools that do not belong in VeADK's built-in catalog live in the Studio `studio_tools/extensions` directory. Studio discovers every public Python module in that directory at startup and calls its `register_tools(registry)` function. Adding one of these tools requires no environment variable or Runtime change; restart Studio after changing the module.
+Studio provides a built-in tool catalog and uses the tools selected for the current conversation. Generated files remain downloadable through Studio media or artifact storage; Studio configuration controls access and retention. Ensure the serving Studio instance has loaded any added or changed tool configuration
 
 ### Example
 
 ```python title="app.py" lines
-from agents.customer_support.agent import root_agent
+from veadk import Agent
+
+root_agent = Agent(name="customer_support", instruction="Answer support questions clearly.")
 from veadk.integrations.agentkit import create_agentkit_app
 
 app = create_agentkit_app(
@@ -133,7 +144,9 @@ Runtimes without the dynamic-route opt-in keep their native Skill catalog handle
 ### Example
 
 ```python title="app.py" lines
-from agents.customer_support.agent import root_agent
+from veadk import Agent
+
+root_agent = Agent(name="customer_support", instruction="Answer support questions clearly.")
 from veadk.integrations.agentkit import create_agentkit_app
 
 app = create_agentkit_app(
@@ -173,11 +186,25 @@ After deployment, inspect the Runtime and invoke it:
 
 ```bash lines
 veadk agentkit status
-veadk agentkit invoke -m "Describe your capabilities"
+veadk agentkit invoke "Describe your capabilities"
 ```
 
-`veadk agentkit` uses the same project configuration and workflows as AgentKit CLI. See the [AgentKit CLI documentation](/productions/agentkit-cli/preview/en) for complete commands, flags, and destructive-operation guidance.
+`veadk agentkit` invokes commands bundled with the Python AgentKit SDK. Its options and project configuration depend on the SDK version; it is not the separately installed Node.js AgentKit CLI. Check `veadk agentkit --help` and subcommand help before use. For the standalone CLI, follow its [workflow](/productions/agentkit-cli/preview/en/quickstart) and avoid mixing configuration assumptions in one project
 
 <Warning>
   Destroying a Runtime removes its cloud execution resources. Before running `veadk agentkit destroy`, verify the project, region, and Runtime identifier and retain any logs or data you need.
 </Warning>
+
+## Application parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `root_agent` | `BaseAgent` | `None` | Root agent; mutually exclusive with app |
+| `display_names` | `Mapping[str, str]` | `None` | Display names keyed by agent name |
+| `app` | `App` | `None` | ADK application; preserves its plugins |
+| `agent_draft` | `Mapping` | `None` | Sanitized read-only editing metadata; do not include credentials |
+| `enable_feishu` | `bool` | `False` | Start the Feishu channel using FEISHU_APP_ID and FEISHU_APP_SECRET |
+| `enable_studio_tools` | `bool` | `False` | Enable Studio conversation tools; disabled for workflow roots |
+| `enable_studio_routes` | `bool` | `False` | Delegate skill-catalog queries to Studio |
+| `identity` | `RuntimeIdentity` | `None` | Optional request identity binding; requires compatible SDK |
+| `harness_extension` | `HarnessExtension` | `None` | Expose prepared extension status and close it on application shutdown |

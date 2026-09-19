@@ -3,3 +3,7 @@ title: "创建评测集"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /dev/apps/{app_name}/eval-sets"
 en_link: "/productions/api-reference/preview/en/harness-runtime/create-eval-set"
 ---
+
+需要当前服务提供开发评测接口。使用 `evalSet.eval_set_id` 创建空评测集；本接口不会导入请求中附带的 `eval_cases`，添加已有会话请使用[从会话添加评测用例](/productions/api-reference/preview/zh/harness-runtime/add-session-to-eval-set)
+
+返回的评测集应具有指定 ID。重复 ID 或无效输入可能返回 `400`，此操作不会运行智能体

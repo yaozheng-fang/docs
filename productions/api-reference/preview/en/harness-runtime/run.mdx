@@ -3,3 +3,11 @@ title: "Run an agent"
 openapi: "/productions/api-reference/openapi/en/harness-runtime.json POST /run"
 zh_link: "/productions/api-reference/preview/zh/harness-runtime/run"
 ---
+
+[Create a session](/productions/api-reference/preview/en/harness-runtime/create-session) under `harness_agent` first. This endpoint waits for completion and returns an event array. It supports only `harness.mcp_servers` overrides; use [Invoke Harness](/productions/api-reference/preview/en/harness-runtime/invoke) for model, tool, skill, and instruction overrides
+
+<Warning>
+Execution saves session events and can call models, tools, and external resources. Repeating a request can execute these actions again
+</Warning>
+
+`streaming` does not change the JSON response format. See [Harness Runtime overview](/productions/api-reference/preview/en/harness-runtime/overview) for authentication and shared OAuth restrictions

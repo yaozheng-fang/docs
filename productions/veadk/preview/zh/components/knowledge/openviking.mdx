@@ -31,6 +31,8 @@ export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ## 使用示例
 
 ```python lines
+import os
+
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -40,12 +42,14 @@ kb = KnowledgeBase(
     backend_config={
         "index": "product_docs",
         "url": "https://openviking.example.com",
-        "api_key": "填入 OpenViking API Key",
+        "api_key": os.environ["DATABASE_OPENVIKING_API_KEY"],
         # 可选；不传时默认 default
         "openviking_user_id": "product_app",
     },
 )
-kb.add_from_directory("./docs")
+kb.add_from_text("Annual leave is 15 days per year")
+for entry in kb.search("annual leave"):
+    print(entry.content)
 
 agent = Agent(knowledgebase=kb)
 ```
@@ -68,22 +72,38 @@ kb.close()
 
 ## 参数
 
+### KnowledgeBase 参数
+
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `index` | `str` | 无 | 知识库名称，同时用于生成默认资源目录。不能为空。 |
-| `openviking_user_id` | `str \| None` | `DATABASE_OPENVIKING_USER_ID` 或 `default` | OpenViking owner/context 标识，用于构建默认资源目录。只允许字母、数字、`.`、`_`、`@`、`-`，不能为 `.` 或 `..`。 |
-| `url` | `str \| None` | 环境变量配置 | OpenViking 服务地址。 |
-| `api_key` | `str \| None` | 环境变量配置 | OpenViking API Key。 |
-| `account` | `str \| None` | 环境变量配置 | OpenViking 账号。 |
-| `user` | `str \| None` | 环境变量配置 | OpenViking 用户。 |
-| `actor_peer_id` | `str \| None` | 环境变量配置 | 执行资源操作的身份标识。 |
-| `target_uri` | `str \| None` | `viking://user/<openviking_user_id>/resources/<index>/` | 导入与检索使用的资源目录。显式配置时直接使用该值。 |
-| `wait` | `bool` | `true` | 导入资源时是否等待处理完成。 |
-| `import_timeout` | `float \| None` | `300` | 等待资源导入完成的超时秒数。 |
-| `hydrate_results` | `bool` | `true` | 是否读取命中资源的完整内容。 |
-| `read_limit` | `int` | `200` | 读取单个命中资源时的最大内容长度。 |
-| `score_threshold` | `float \| None` | `None` | 检索结果的最低相关性分数。 |
-| `use_context_search` | `bool` | `false` | 是否使用 OpenViking 的上下文检索模式。 |
+| `backend` | `str \| BaseKnowledgebaseBackend` | `"local"` | 本页设为 `openviking`；也可传后端实例 |
+| `backend_config` | `dict` | `{}` | 非空时必须包含 index；不会自动合并外层 index |
+| `index` | `str` | `""` | 索引名称；无配置字典时回退到 app_name |
+| `app_name` | `str` | `""` | index 的回退值，不是检索时的用户权限过滤器 |
+| `top_k` | `int` | `10` | 默认检索数量；search(top_k=0) 使用此值 |
+| `name` | `str` | `"user_knowledgebase"` | 向智能体描述的知识库名称 |
+| `description` | `str` | `"This knowledgebase stores some user-related information."` | 向智能体说明用途 |
+| `enable_profile` | `bool` | `False` | 启用资料画像；需先生成画像文件，普通检索保持关闭 |
+| `query_with_user_profile` | `bool` | `False` | 借助智能体绑定的 Viking 长期记忆画像生成查询；不要求知识库本身使用 Viking |
+
+### 后端配置
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `index` | `str` | 无 | 知识库名称，用于默认资源目录；非空且只含字母、数字、点、下划线、@、连字符，不能为 . 或 .. |
+| `openviking_user_id` | `str \| None` | `DATABASE_OPENVIKING_USER_ID` 或 `default` | OpenViking owner/context 标识，用于构建默认资源目录。只允许字母、数字、`.`、`_`、`@`、`-`，不能为 `.` 或 `..` |
+| `url` | `str \| None` | 环境变量配置 | OpenViking 服务地址 |
+| `api_key` | `str \| None` | 环境变量配置 | OpenViking API Key |
+| `account` | `str \| None` | 环境变量配置 | OpenViking 账号 |
+| `user` | `str \| None` | 环境变量配置 | OpenViking 用户 |
+| `actor_peer_id` | `str \| None` | 环境变量配置 | 执行资源操作的身份标识 |
+| `target_uri` | `str \| None` | `viking://user/<openviking_user_id>/resources/<index>/` | 导入与检索使用的资源目录。显式配置时直接使用该值 |
+| `wait` | `bool` | `true` | 导入资源时是否等待处理完成 |
+| `import_timeout` | `float \| None` | `300` | 等待资源导入完成的超时秒数 |
+| `hydrate_results` | `bool` | `true` | 是否读取命中资源的完整内容 |
+| `read_limit` | `int` | `200` | 读取单个命中资源时的最大内容长度 |
+| `score_threshold` | `float \| None` | `None` | 检索结果的最低相关性分数 |
+| `use_context_search` | `bool` | `false` | 是否使用 OpenViking 的上下文检索模式 |
 
 `openviking_user_id` 未配置时按 `DATABASE_OPENVIKING_USER_ID`、`OPENVIKING_USER_ID` 的顺序查找环境变量，都未配置时使用 `default`。`user_id` 作为兼容别名仍可使用，与 `openviking_user_id` 等效。
 
@@ -93,17 +113,21 @@ kb.close()
 
 ## 操作级覆盖参数
 
-构造参数提供默认行为；下列参数可以在单次导入或检索中通过关键字参数覆盖。
+构造参数提供默认行为；下列参数可以在单次导入或检索中通过关键字参数覆盖
 
 | 方法 | 参数 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `add_from_directory` | `target_uri`、`wait`、`timeout` | 使用实例配置 | 覆盖目标目录、等待行为与超时时间。 |
-| `add_from_directory` | `strict`、`directly_upload_media`、`preserve_structure`、`telemetry` | `false`、`true`、`true`、`false` | 控制严格模式、媒体上传、目录结构保留与遥测。 |
-| `add_from_directory` | `ignore_dirs`、`include`、`exclude`、`args` | `None` | 控制目录和文件筛选，并传递额外导入参数。 |
-| `add_from_directory` | `watch_interval` | `0` | 目录监听间隔；`0` 表示不持续监听。 |
-| `add_from_files` | `target_uri`、`wait`、`timeout` | 使用实例配置 | 覆盖目标目录、等待行为与超时时间。 |
-| `add_from_files` | `strict`、`reason`、`instruction`、`directly_upload_media`、`telemetry` | `false`、`""`、`""`、`true`、`false` | 控制单文件导入行为。 |
-| `search` | `target_uri`、`score_threshold`、`use_context_search` | 使用实例配置 | 覆盖检索范围、阈值与搜索方式。 |
-| `search` | `filter`、`context_type`、`tags` | `None` | 向 OpenViking 传递检索过滤条件。 |
-| `search` | `session`、`session_id` | `None` | 使用上下文搜索时提供会话信息。 |
-| `search` | `telemetry` | `false` | 是否为本次检索启用 OpenViking 遥测。 |
+| `add_from_directory` | `target_uri`、`wait`、`timeout` | 使用实例配置 | 覆盖目标目录、等待行为与超时时间 |
+| `add_from_directory` | `strict`、`directly_upload_media`、`preserve_structure`、`telemetry` | `false`、`true`、`true`、`false` | 控制严格模式、媒体上传、目录结构保留与遥测 |
+| `add_from_directory` | `ignore_dirs`、`include`、`exclude`、`args` | `None` | 控制目录和文件筛选，并传递额外导入参数 |
+| `add_from_directory` | `watch_interval` | `0` | 目录监听间隔；`0` 表示不持续监听 |
+| `add_from_files` | `target_uri`、`wait`、`timeout` | 使用实例配置 | 覆盖目标目录、等待行为与超时时间 |
+| `add_from_files` | `strict`、`reason`、`instruction`、`directly_upload_media`、`telemetry` | `false`、`""`、`""`、`true`、`false` | 控制单文件导入行为 |
+| `search` | `target_uri`、`score_threshold`、`use_context_search` | 使用实例配置 | 覆盖检索范围、阈值与搜索方式 |
+| `search` | `filter`、`context_type`、`tags` | `None` | 向 OpenViking 传递检索过滤条件 |
+| `search` | `session`、`session_id` | `None` | 使用上下文搜索时提供会话信息 |
+| `search` | `telemetry` | `false` | 是否为本次检索启用 OpenViking 遥测 |
+
+使用 `wait=False` 只确认提交导入，不能确认知识已可检索。`hydrate_results=True` 会额外读取命中资源，受 `read_limit` 限制，不保证完整文档全部返回。`Runner.user_id` 不会自动改变知识库的资源目录；面向不同租户时显式配置目录与服务端访问权限
+
+示例检索结果应包含年假规则。若返回为空，先确认写入返回成功、模型维度一致及服务端处理完成，再检查网络与权限；托管后端不保证导入后立即可检索。绑定 Agent 后仍需完成模型配置才能运行问答

@@ -1,58 +1,111 @@
 ---
-title: "System prompt"
+title: "System prompts"
 zh_link: "/productions/veadk/preview/zh/components/agent/system-prompt"
 ---
 
-An agent's system prompt is set through the `instruction` parameter, which
-governs the model's behavior, tone, and how it answers.
+System prompts define an agent's task, response style, and behavioral boundaries. Set `Agent.instruction` to fixed text, a template that reads session state, or a function that builds instructions from the current context
 
-## Set instruction
+Complete [installation and model configuration](/productions/veadk/preview/en/get-started/quickstart) before running these examples. Save each script with the indicated filename and run it with `python filename.py`
 
-The simplest form is a plain string:
+## Static prompts
 
-```python lines
-from veadk import Agent
+Use a string for a fixed task. Specify the task, information to clarify, and data the agent must not request
+
+```python main.py lines
+import asyncio
+from veadk import Agent, Runner
 
 agent = Agent(
-    name="assistant",
-    instruction="You are a professional support assistant. Answer concisely and politely.",
+    name="support_assistant",
+    instruction=(
+        "You help users troubleshoot billing issues. "
+        "Ask for missing details before suggesting a solution. "
+        "Do not ask for passwords or payment card numbers."
+    ),
 )
+
+async def main():
+    result = await Runner(agent=agent).run(
+        messages="My invoice total is different from last month.",
+        session_id="prompt-demo",
+    )
+    print(result)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
+
+The script prints a response to the billing question. The exact wording depends on the model
 
 ## Dynamic prompts
 
-When the prompt needs to vary with runtime context, there are two options.
+### Use session state
 
-**Placeholders**: use `{variable_name}` in the string; at runtime it is filled
-from the matching value in session state.
+A `{name}` placeholder in a string instruction reads the matching key from session state. This example creates the session with an initial name and language before running the agent
 
-```python lines
+```python state_prompt.py lines
+import asyncio
+from veadk import Agent, Runner
+
 agent = Agent(
-    instruction="You are serving user {user_name}. Answer concisely and politely.",
+    name="personal_assistant",
+    instruction="Address the user as {user_name}. Answer in {language}.",
 )
+
+async def main():
+    runner = Runner(agent=agent, app_name="prompt_demo", user_id="demo-user")
+    await runner.session_service.create_session(
+        app_name="prompt_demo",
+        user_id="demo-user",
+        session_id="state-demo",
+        state={"user_name": "Alex", "language": "English"},
+    )
+    print(await runner.run(messages="Introduce yourself.", session_id="state-demo"))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-**InstructionProvider**: pass a function that receives the runtime context and
-returns the prompt string, letting you read session state to build the prompt
-yourself. The function can also be an `async` function.
+| Syntax | Behavior |
+| :--- | :--- |
+| `{user_name}` | Reads a required key; a missing key causes the run to fail |
+| `{user_name?}` | Reads an optional key; a missing key becomes an empty string |
+| `{app:language}`, `{user:language}`, `{temp:language}` | Reads a state key in the corresponding namespace |
 
-```python lines
+A state value of `None` also becomes an empty string. Tools and other agents can update state during a run. See [session management](/productions/veadk/preview/en/components/session/index)
+
+### Use an InstructionProvider
+
+Pass a function to `instruction` when you need defaults, conditional logic, or several state values. The function receives a `ReadonlyContext` and returns a string. Async functions defined with `async def` are also supported
+
+```python dynamic_prompt.py lines
+import asyncio
 from google.adk.agents.readonly_context import ReadonlyContext
-from veadk import Agent
+from veadk import Agent, Runner
 
-def build_instruction(ctx: ReadonlyContext) -> str:
-    user_name = ctx.state.get("user_name", "there")
-    return f"You are serving {user_name}. Answer concisely and politely."
+def build_instruction(context: ReadonlyContext) -> str:
+    language = context.state.get("language", "English")
+    return f"Answer in {language}. Keep the explanation concise and factual."
 
-agent = Agent(instruction=build_instruction)
+agent = Agent(name="assistant", instruction=build_instruction)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="What is a session?", session_id="provider-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-`ctx` also exposes `user_id`, `user_content`, and `session`; session state is
-written by the session and tools during a run.
+`context.state` is read-only. Other useful fields include `user_id`, `user_content`, `session`, and `agent_name`. Placeholders in a function's return value are not automatically substituted: build the string in the function. To reuse ADK template substitution, call `await inject_session_state(template, context)` from an async function, importing it from `google.adk.utils.instructions_utils`
 
-## instruction vs. description
+## instruction and description
 
-- `instruction`: the system prompt that guides how the model reasons and answers.
-- `description`: a short summary of the agent's capabilities, used mainly for
-  routing and selection in multi-agent scenarios — it does not act as the system
-  prompt.
+| Parameter | Type | Default | Purpose |
+| :--- | :--- | :--- | :--- |
+| `instruction` | `str` or `InstructionProvider` | VeADK general task instructions | Guides the current agent's task and response |
+| `description` | `str` | VeADK general capability description | Helps other agents select a transfer target |
+| `prompt_manager` | `BasePromptManager \| None` | `None` | Provides `instruction` through a manager, overriding explicitly supplied instructions |
+
+Give each agent specific instructions and a concise description in a multi-agent application. To maintain prompts in an external service, see [prompt management](/productions/veadk/preview/en/components/agent/prompt-management)

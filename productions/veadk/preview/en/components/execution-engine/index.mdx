@@ -3,125 +3,136 @@ title: "Execution engine"
 zh_link: "/productions/veadk/preview/zh/components/execution-engine"
 ---
 
-`Runner` is the core of the execution engine: it coordinates the agent, tools,
-and callbacks to respond to user input, while managing the flow of information,
-state changes, and interactions with the model, tools, and storage. VeADK's
-execution engine is fully compatible with Google ADK's `Runner`; see the
-[Google ADK runtime docs](https://google.github.io/adk-docs/runtime/) for its
-full mechanics.
-
-## Multi-tenant isolation
-
-For enterprise multi-tenant scenarios, `Runner` isolates data along three
-dimensions — `app_name`, `user_id`, and `session_id`:
-
-| Data | Isolation dimensions |
-| --- | --- |
-| Short-term session | `app_name`, `user_id`, `session_id` |
-| Long-term memory | `app_name`, `user_id` |
-| Knowledge base | `app_name` |
+`Runner` executes an agent and connects it to sessions, tools, and tracing. VeADK adds the convenient `run()` entry point on top of Google ADK's event execution interface. Use `run_async()` when you need to process individual events
 
 ## Minimal run
 
-`Runner.run()` runs an agent directly, handling input and returning the final
-text response — convenient for local testing:
+Complete [installation](/productions/veadk/preview/en/get-started/installation) and [model configuration](/productions/veadk/preview/en/components/agent/model). Save as `app.py` and run `python app.py`; the terminal should print the model's text response
 
-```python lines
+```python title="app.py" lines
 import asyncio
 from veadk import Agent, Runner
 
-agent = Agent()
-runner = Runner(agent=agent)
-
-response = asyncio.run(runner.run("What's the weather in Beijing?"))
-print(response)
-```
-
-<Note>
-  `run()` is high-level. When the `Runner` has a short-term session configured, it
-  creates the session on demand. For finer-grained control over execution, use
-  `run_async()`.
-</Note>
-
-## Streaming events
-
-`Runner.run_async()` returns an async generator that yields the events produced
-during the agent's run. Unlike `run()`, which only returns the final text,
-iterating over events gives you the reasoning, tool calls and results, and
-streaming increments — useful for building your own logic on top.
-
-```python lines
-import asyncio
-from google.genai.types import Content, Part
-from veadk import Agent, Runner
-
-APP_NAME, USER_ID, SESSION_ID = "app", "user", "session"
-
-agent = Agent()
-runner = Runner(agent=agent, app_name=APP_NAME, user_id=USER_ID)
-
-message = Content(role="user", parts=[Part(text="What's the weather in Beijing?")])
+agent = Agent(name="assistant")
+runner = Runner(agent=agent, app_name="demo", user_id="demo-user")
 
 async def main():
-    async for event in runner.run_async(
-        user_id=USER_ID,
-        session_id=SESSION_ID,
-        new_message=message,
-    ):
-        ...  # see "Parsing events" below
+    response = await runner.run(
+        "Explain the purpose of an agent in one sentence", session_id="demo-session"
+    )
+    print(response)
 
 asyncio.run(main())
 ```
 
+`run()` is asynchronous: call it with `await` or `asyncio.run()`. Sessions use process memory by default. Reusing the application, user, and session identifiers continues a conversation; in-memory sessions disappear when the process exits
+
 <Note>
-  `run_async()` requires the session to exist beforehand. If you call it directly,
-  make sure the session for `session_id` has been created.
+Assign an explicit `session_id` to each conversation instead of relying on the default temporary value to generate independent sessions. `run()` returns the last retained text part and may return an empty string. Use `run_async()` for multipart output, tool events, and complete structured results
 </Note>
+
+## Multi-tenant isolation
+
+`app_name`, `user_id`, and `session_id` locate data; they do not authenticate users or authorize access. Obtain user identifiers from verified request identities instead of trusting arbitrary client-provided `user_id` values
+
+| Data | Identifiers and scope |
+| --- | --- |
+| Short-term sessions | Located by `app_name`, `user_id`, and `session_id`; persistence depends on the [session backend](/productions/veadk/preview/en/components/session) |
+| Long-term memory | User filtering depends on the [memory backend](/productions/veadk/preview/en/components/memory); the local backend does not isolate by `user_id` |
+| Knowledge bases | Scope depends on the selected knowledge base, collection, and backend query; `app_name` does not automatically enforce tenant authorization |
+
+## Streaming events
+
+`run_async()` returns an asynchronous event stream. Unlike `run()`, it requires an existing session. This example requests streaming with `StreamingMode.SSE` but prints only complete responses to avoid displaying both partial chunks and the same complete text
+
+```python title="stream.py" lines
+import asyncio
+from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.genai.types import Content, Part
+from veadk import Agent, Runner
+
+APP_NAME, USER_ID, SESSION_ID = "stream_demo", "demo-user", "demo-session"
+runner = Runner(
+    agent=Agent(name="assistant"), app_name=APP_NAME, user_id=USER_ID
+)
+
+async def main():
+    await runner.session_service.create_session(
+        app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
+    )
+    message = Content(role="user", parts=[Part(text="Explain the purpose of an agent in one sentence")])
+    async for event in runner.run_async(
+        user_id=USER_ID,
+        session_id=SESSION_ID,
+        new_message=message,
+        run_config=RunConfig(streaming_mode=StreamingMode.SSE),
+    ):
+        if event.error_code:
+            print("Error:", event.error_code, event.error_message)
+        for call in event.get_function_calls():
+            print("Tool call:", call.name)
+        for result in event.get_function_responses():
+            print("Tool result:", result.name)
+        if event.partial:
+            continue
+        if event.is_final_response() and event.content:
+            text = "".join(
+                part.text for part in (event.content.parts or [])
+                if part.text and not part.thought
+            )
+            if text:
+                print(text)
+
+asyncio.run(main())
+```
+
+Save as `stream.py` and run `python stream.py`. If tools are configured, the terminal also displays tool call and result names. Incremental output depends on model and runtime support; consuming events does not mean every runtime returns individual tokens
+
+To display text incrementally, use `partial=True` events to update the current response and replace it with the complete text when that event arrives. Do not append both forms to the same output
 
 ## Parsing events
 
-Each event describes one step of the run. Its common fields:
-
-| Field | Description |
+| Field or method | Description |
 | --- | --- |
-| `author` | Name of the agent or tool that produced the event |
-| `content` | Event content, with a `role` and a `parts` list |
-| `partial` | Whether this is a streaming increment |
-| `usage_metadata` | Token usage for this step |
-| `invocation_id` | Identifier of this invocation |
+| `author` | Event producer |
+| `content.parts` | Text, tool calls, tool results, or multimodal data; may be empty |
+| `partial` | Whether this is an incomplete incremental chunk |
+| `usage_metadata` | Usage reported by the model; may be absent |
+| `invocation_id` | Identifier for this execution |
+| `error_code`, `error_message` | Error details carried by an event; execution can also raise an error directly |
+| `is_final_response()` | Whether the event is a complete response suitable for display; multi-agent flows can produce several responses |
+| `get_function_calls()` | Tool calls in this event |
+| `get_function_responses()` | Tool results in this event |
 
-Each `part` in `content.parts` may be a different type; branch on it:
+`part.text` contains text, `part.thought` marks reasoning content, and `part.function_call` and `part.function_response` represent tool calls and results. Handle each content type separately when displaying results. Avoid printing complete tool arguments that may contain credentials or sensitive data
 
-| part field | Meaning |
-| --- | --- |
-| `text` | Text output by the model |
-| `thought` | Marks the part as the model's reasoning |
-| `function_call` | A tool call from the model, with `name` and `args` |
-| `function_response` | A tool result, with `name` and `response` |
+## Parameters and behavior
 
-The event also offers helpers: `is_final_response()` tells whether it is the
-final reply, and `get_function_calls()` / `get_function_responses()` extract the
-tool calls and results from the event.
+### Runner constructor
 
-```python lines
-async for event in runner.run_async(
-    user_id=USER_ID, session_id=SESSION_ID, new_message=message,
-):
-    # Tool calls and results
-    for call in event.get_function_calls():
-        print("tool call:", call.name, call.args)
-    for resp in event.get_function_responses():
-        print("tool result:", resp.name, resp.response)
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `agent` | `BaseAgent` | `None` | Agent to execute; normally a VeADK `Agent` |
+| `short_term_memory` | `ShortTermMemory` | From the agent, otherwise in-memory sessions | Pass explicitly when the root agent is not a VeADK agent |
+| `app_name` | `str` | `veadk_default_app` | Application identifier; an explicit ADK `app` supplies its own name |
+| `user_id` | `str` | `veadk_default_user` | Default user for `run()` |
+| `upload_inline_data_to_tos` | `bool` | `False` | Upload inline media to TOS; requires credentials and resource permissions and may incur charges |
+| `run_processor` | `BaseRunProcessor` | Agent configuration, otherwise no interception | Runner-level processor; see [Outbound authentication](/productions/veadk/preview/en/components/security/outbound) for authentication use |
 
-    # Distinguish reasoning from text
-    if event.content:
-        for part in event.content.parts:
-            if part.thought:
-                continue  # the model's reasoning; display if desired
-            if part.text:
-                print(part.text)
+ADK's `session_service`, `memory_service`, and `credential_service` can be supplied as keyword arguments. Explicit services take precedence over agent configuration. When supplying a session service, create sessions through that service and use `run_async()` so creation and reads use the same backend. See the [Runner reference](https://google.github.io/adk-docs/api-reference/python/google-adk.html#google.adk.runners.Runner) for other ADK parameters
 
-    # Final reply
-    if event.is_final_response() and event.content:
-        final_text = "".join(p.text for p in event.content.parts if p.text)
-```
+### run parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `messages` | `str`, `MediaMessage`, or a list of either | Required | User input; lists run sequentially |
+| `user_id` | `str` | Empty string | Uses the Runner user when empty |
+| `session_id` | `str` | Temporary identifier | Supply explicitly; reuse it to continue a conversation |
+| `run_config` | `RunConfig` | `None` | If omitted, the model-call limit uses `MODEL_AGENT_MAX_LLM_CALLS`, default `100` |
+| `save_tracing_data` | `bool` | `False` | Save data from configured tracers after execution |
+| `upload_inline_data_to_tos` | `bool` | `False` | Enable media upload for this call |
+| `run_processor` | `BaseRunProcessor` | `None` | Per-call processor, taking precedence over the Runner setting |
+
+<Note>
+VeADK `run()` returns an empty string when the model-call limit is reached. To distinguish this from a response without text or other failures, consume `run_async()` events and handle execution errors
+</Note>

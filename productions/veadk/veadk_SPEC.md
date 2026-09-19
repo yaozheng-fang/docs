@@ -173,7 +173,7 @@ Studio 新增或调整资源选择器时，正文必须覆盖 Studio 默认值�
 
 ## 排版与组件
 
-- YAML frontmatter 只包含 `title`。
+- YAML frontmatter 提供 `title`，保留并维护语言切换使用的 `en_link` / `zh_link`，不添加 `description` 或页面副标题。
 - 标题使用描述性短语，不使用数字序号。
 - 产品名、类名、构造参数、配置键、环境变量、模型名和协议名使用反引号或原文。
 - 优先用普通 Markdown 表格承载参数、依赖组、后端能力矩阵和环境变量。

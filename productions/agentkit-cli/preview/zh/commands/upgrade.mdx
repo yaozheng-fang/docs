@@ -14,6 +14,10 @@ en_link: "/productions/agentkit-cli/preview/en/commands/upgrade"
 | `--check` | 仅检查，不安装；提示可用的更新与安装命令 | `false` |
 | `--json` | 以 JSON 输出检查结果（`{ current, latest, behind }`） | `false` |
 
+<Warning>
+确认升级后会运行安装脚本并替换本机 CLI。若需要保留可复现的发布环境，先记录当前 `agentkit --version`，使用 `--check` 或 `--json` 检查而不安装
+</Warning>
+
 ```bash lines
 # 检查，并在确认后升级
 agentkit upgrade
@@ -26,5 +30,5 @@ agentkit update --json
 ```
 
 <Note>
-升级通过官方发布渠道的安装脚本完成（等价于运行 `wget -qO- <release>/install.sh | sh`）。若无法联网访问发布渠道，检查会失败；此时可参照 `--check` 打印的命令手动安装。
+升级通过官方发布渠道的安装脚本完成（等价于运行 `wget -qO- <release>/install.sh | sh`）。若无法联网访问发布渠道，检查会失败。恢复网络后重新运行 `--check`，再按输出的安装命令处理。
 </Note>

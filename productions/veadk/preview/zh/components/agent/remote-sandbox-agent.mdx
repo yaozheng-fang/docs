@@ -1,179 +1,161 @@
 ---
-title: "远端沙箱子智能体"
+title: "远端沙箱智能体"
 en_link: "/productions/veadk/preview/en/components/agent/remote-sandbox-agent"
 ---
 
-## 功能说明
+`AgentkitRemoteSandboxAgent` 将一个文本任务交给 AgentKit 中的 Skill 或 CodeEnv 沙箱执行，并返回进度、工具事件和结果。它可以直接作为根智能体，也可以作为协调智能体的子智能体
 
-`AgentkitRemoteSandboxAgent` 是一个原生的 ADK 子智能体，将托管在 AgentKit 中的 Skill 或 CodeEnv 沙箱会话包装为一个独立的智能体。它可以作为应用的根智能体直接运行，也可以注册到 `Agent` 的 `sub_agents` 列表中，由协调智能体通过 `transfer_to_agent` 将任务委派给它。
-
-与[代码沙箱工具](/productions/veadk/preview/zh/components/tools/code-sandbox)的区别在于：沙箱工具（如 `run_code`、`execute_skills`）以独立工具的形式挂载到智能体上，由模型在推理过程中逐次调用；而 `AgentkitRemoteSandboxAgent` 作为一个完整的子智能体，接收一个文本任务并在远端沙箱中端到端执行，执行过程中的工具调用、流式进度和最终结果直接以事件形式返回，无需本地协调智能体逐工具编排。
-
-<Note>
-`AgentkitRemoteSandboxAgent` 复用代码沙箱的基础设施与凭证配置。环境变量、Tool ID 等前提条件与[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)页面中的说明一致，此处不再重复。
-</Note>
-
-## 何时使用
-
-适合以下场景：
-
-- 需要将完整的编码、技能执行或文件操作任务委派给远端沙箱，而非拆分为多次工具调用；
-- 需要一个能够接收任务转交并直接返回结果的子智能体，与协调智能体组成多智能体拓扑；
-- 沙箱任务执行时间较长，希望以流式事件观察执行进度。
+与[代码沙箱工具](/productions/veadk/preview/zh/components/tools/code-sandbox)相比，这个入口委派完整任务，由远端智能体决定执行步骤；`run_code`、`execute_skills` 则作为工具供当前智能体调用
 
 ## 依赖与前提
 
-<Warning>
-使用前请确认：
+- 安装 VeADK，并准备有权访问的 AgentKit Tool ID、地域和账号凭证
+- Skill 沙箱需提供兼容的 A2A 服务；CodeEnv 镜像需支持 Codex Worker 协议 v1 和 `tool_events`
+- 运行环境能够访问 AgentKit 控制面和返回的沙箱会话端点
+- 使用本地协调智能体时，还需完成[模型配置](/productions/veadk/preview/zh/get-started/quickstart)；直接运行远端智能体时，模型能力由远端服务提供
 
-1. 配置火山引擎 AK / SK；
-2. 配置 AgentKit Tool ID；
-3. 远端沙箱镜像或技能服务满足协议要求。
+<Warning>
+运行示例会创建或复用云端沙箱会话，可能产生资源费用。沙箱可执行代码、命令和文件操作，并访问其网络可达的服务。请使用可信镜像，限制数据、网络和权限，并确认任务内容可以发送到该沙箱
 </Warning>
 
-导入路径：
+以下为火山引擎配置，将 `CodeEnv` 替换为实际工具类型：
 
-```python lines
-from veadk import AgentkitRemoteSandboxAgent
+```bash  lines
+export VOLCENGINE_ACCESS_KEY="<access-key>"
+export VOLCENGINE_SECRET_KEY="<secret-key>"
+export AGENTKIT_TOOL_REGION="cn-beijing"
+export AGENTKIT_TOOL_ID="<tool-id>"
+export AGENTKIT_TOOL_TYPE="CodeEnv"
 ```
 
-`AgentkitRemoteSandboxAgent` 在构造时不发起网络请求；网络连接在首次运行时按需建立。
+BytePlus 使用时应设置 `CLOUD_PROVIDER=byteplus` 和对应地域，并确认账号已开通兼容的 Tool 服务。当前入口读取凭证的变量名仍为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY`，不会仅因平台切换而改读 `BYTEPLUS_*`；需要在这些变量中提供目标平台的凭证。端点覆盖选项见下方环境变量表
+
+构造智能体不会发起网络请求；首次运行时才连接沙箱
 
 ## 使用方法
 
-### 作为子智能体
+### 作为根智能体
 
-将 `AgentkitRemoteSandboxAgent` 注册到协调智能体的 `sub_agents` 列表中。协调智能体在推理过程中通过 `transfer_to_agent` 将任务委派给沙箱子智能体，后者在远端沙箱中执行任务并直接返回结果。
+将以下代码保存为 `remote_sandbox.py`，在已配置凭证的终端运行 `python remote_sandbox.py`：
 
-```python title="remote_sandbox_subagent.py" lines
+```python remote_sandbox.py lines
+import asyncio
 import os
-
-from veadk import Agent, Runner
+from veadk import AgentkitRemoteSandboxAgent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
-from veadk import AgentkitRemoteSandboxAgent
 
 sandbox = AgentkitRemoteSandboxAgent(
-    name="sandbox",
-    description="执行需要远端技能、Python、命令或文件操作的任务，并报告执行过程和结果。",
-    tool_id=os.getenv("AGENTKIT_TOOL_ID"),
+    name="remote_sandbox",
+    description="Run code and skills in the remote sandbox.",
+    tool_id=os.environ["AGENTKIT_TOOL_ID"],
     tool_type=os.getenv("AGENTKIT_TOOL_TYPE") or None,
 )
 
+async def main():
+    runner = Runner(agent=sandbox, short_term_memory=ShortTermMemory())
+    print(await runner.run(
+        messages="Calculate the sum of integers from 1 to 100 using Python.",
+        session_id="remote-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+成功时输出远端任务的最终结果，示例中的求和结果应为 `5050`。示例显式配置短期会话存储，以便 `Runner` 为这个根智能体创建会话
+
+### 作为子智能体
+
+协调智能体根据任务选择是否转交。为沙箱填写具体的 `description`，帮助协调智能体识别适合它的任务
+
+```python coordinator.py lines
+import asyncio
+import os
+from veadk import Agent, AgentkitRemoteSandboxAgent, Runner
+
+sandbox = AgentkitRemoteSandboxAgent(
+    name="sandbox",
+    description="Execute tasks that require remote code, files, or skills.",
+    tool_id=os.environ["AGENTKIT_TOOL_ID"],
+    tool_type=os.getenv("AGENTKIT_TOOL_TYPE") or None,
+)
 coordinator = Agent(
     name="coordinator",
     instruction=(
-        "理解用户的请求。需要运行代码、操作文件或使用沙箱技能时，"
-        "使用 transfer_to_agent 将任务交给 sandbox。"
-        "sandbox 会直接展示工具过程并回答用户，无需重复总结。"
+        "Answer general questions directly. Transfer tasks that need code "
+        "execution to sandbox using transfer_to_agent."
     ),
     sub_agents=[sandbox],
 )
 
-runner = Runner(agent=coordinator, short_term_memory=ShortTermMemory())
+async def main():
+    print(await Runner(agent=coordinator).run(
+        messages="Use Python to calculate the sum of integers from 1 to 100.",
+        session_id="coordinator-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-### 作为根智能体
-
-也可以将 `AgentkitRemoteSandboxAgent` 直接作为应用的根智能体。此模式下没有本地协调智能体，用户发送的文本任务直接在远端沙箱中执行。
-
-```python title="remote_sandbox_root.py" lines
-import os
-
-from veadk import AgentkitRemoteSandboxAgent
-
-root_agent = AgentkitRemoteSandboxAgent(
-    name="remote_sandbox",
-    description="执行远端技能、Python、命令或文件操作，并报告执行过程和结果。",
-    tool_id=os.getenv("AGENTKIT_TOOL_ID"),
-    tool_type=os.getenv("AGENTKIT_TOOL_TYPE") or None,
-)
-```
+运行 `python coordinator.py` 后，协调智能体可通过 `transfer_to_agent` 转交，沙箱直接返回结果。任务是否转交由模型决定；必须交给沙箱的任务应使用根智能体入口
 
 ## 沙箱类型
 
-`AgentkitRemoteSandboxAgent` 支持两种远端沙箱类型，由 `tool_type` 参数指定。未显式指定时，框架通过 AgentKit 控制面的 `GetTool` 接口自动发现。
-
-| 类型 | 说明 |
+| `tool_type` | 说明 |
 | :--- | :--- |
-| `Skill` | 通过 A2A 协议与技能沙箱交互，适用于托管在 AgentKit Skills Sandbox 中的技能工作流。 |
-| `CodeEnv` | 通过 Codex Worker 协议与代码执行沙箱交互，适用于代码生成、命令执行和文件操作。CodeEnv 沙箱镜像需支持 Codex Worker 协议 v1 和 `tool_events` 能力。 |
+| `Skill` | 通过 A2A 协议执行技能工作流 |
+| `CodeEnv` | 通过 Codex Worker 协议执行代码、命令和文件任务 |
 
-<Note>
-私有工具必须显式指定 `tool_type`。自动发现仅适用于控制面返回 `Skill` 或 `CodeEnv` 类型的工具；对于兼容但类型不同的自定义工具，需显式指定匹配的类型。
-</Note>
+未指定 `tool_type` 时，通过 AgentKit `GetTool` 自动发现。私有工具或兼容但返回其他类型的自定义工具应显式指定类型。`AGENTKIT_TOOL_TYPE` 是示例显式读取的变量，智能体不会自动读取它
 
 ## 参数
 
-`AgentkitRemoteSandboxAgent` 继承自 `BaseAgent`，以下为构造参数：
-
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `name` | `str` | — | 智能体名称，在应用内唯一。 |
-| `description` | `str` | — | 智能体描述，供协调智能体判断何时转交任务。 |
-| `tool_id` | `str \| None` | `None` | AgentKit Tool ID。未指定时从 `AGENTKIT_TOOL_ID` 环境变量读取。 |
-| `tool_type` | `Literal["Skill", "CodeEnv"] \| None` | `None` | 沙箱类型。未指定时自动发现。 |
-| `request_timeout` | `float` | `900` | 单次任务执行的超时时间，单位为秒。取值范围为 0–86000。 |
-| `expiry_buffer` | `float` | `90` | 会话租约过期缓冲时间，单位为秒。取值范围为 0–86400。 |
-| `ready_timeout` | `float` | `120` | 等待沙箱会话就绪的超时时间，单位为秒。必须大于 0。 |
-| `ttl` | `int` | `1800` | 沙箱会话的存活时间，单位为秒。取值范围为 60–86400。 |
-| `prefer_internal_endpoint` | `bool` | `False` | 是否优先使用内部端点连接沙箱。 |
-| `endpoint` | `str \| None` | `None` | 预置的会话端点地址，用于本地测试。指定时必须同时显式设置 `tool_type`，并跳过控制面会话管理。 |
-| `api_key` | `SecretStr \| None` | `None` | 沙箱 API Key，用于数据面鉴权。设置后以 `X-API-Key` 请求头发送。 |
+| `name` | `str` | 必填 | 应用内唯一的智能体名称 |
+| `description` | `str` | `""` | 供协调智能体选择任务转交目标的能力描述 |
+| `tool_id` | `str \| None` | `None` | 未指定时读取 `AGENTKIT_TOOL_ID` |
+| `tool_type` | `Literal["Skill", "CodeEnv"] \| None` | `None` | 未指定时自动发现 |
+| `request_timeout` | `float` | `900` | 任务执行超时秒数，大于 0 且小于 86000 |
+| `expiry_buffer` | `float` | `90` | 会话租约的安全余量秒数，大于等于 0 且小于 86400 |
+| `ready_timeout` | `float` | `120` | 等待会话就绪的超时秒数，必须大于 0 |
+| `ttl` | `int` | `1800` | 会话存活时间秒数，范围 60–86400 |
+| `prefer_internal_endpoint` | `bool` | `False` | 优先连接内部端点，要求运行环境可达 |
+| `endpoint` | `str \| None` | `None` | 已准备好的会话端点，适用于测试或自管会话；必须同时指定 `tool_type`，不再自动管理控制面会话 |
+| `api_key` | `SecretStr \| None` | `None` | 数据面访问 Key，通过 `X-API-Key` 请求头发送 |
 
-<Warning>
-- `request_timeout + expiry_buffer + 2 * ready_timeout` 必须小于 86400 秒，否则构造时会报错。
-- 指定 `endpoint` 时必须同时显式设置 `tool_type`，否则构造时会报错。
-</Warning>
+`request_timeout + expiry_buffer + 2 * ready_timeout` 必须小于 86400 秒，否则初始化失败。以上列出任务接入相关参数；还可使用 ADK `BaseAgent` 的通用回调配置
 
 ## 环境变量
 
-`AgentkitRemoteSandboxAgent` 使用以下环境变量，与[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)共享同一套凭证和端点配置：
-
 | 环境变量 | 默认值 | 说明 |
 | :--- | :--- | :--- |
-| `AGENTKIT_TOOL_ID` | — | AgentKit Tool ID，作为沙箱会话的默认 Tool ID。 |
-| `AGENTKIT_TOOL_TYPE` | — | 沙箱类型，取值为 `Skill` 或 `CodeEnv`。 |
-| `AGENTKIT_TOOL_REGION` | `cn-beijing` | AgentKit 控制面地域。 |
-| `AGENTKIT_TOOL_HOST` | — | AgentKit 控制面地址，用于覆盖默认端点。 |
-| `AGENTKIT_TOOL_SERVICE_CODE` | — | AgentKit 控制面 ServiceCode，用于指定 PPE / STG 等环境。 |
-| `AGENTKIT_TOOL_SCHEME` | — | AgentKit 控制面协议，取值为 `http` 或 `https`。 |
-| `VOLCENGINE_ACCESS_KEY` | — | 火山引擎 AccessKey。 |
-| `VOLCENGINE_SECRET_KEY` | — | 火山引擎 SecretKey。 |
+| `AGENTKIT_TOOL_ID` | 未设置 | 默认 Tool ID |
+| `AGENTKIT_TOOL_REGION` | 火山引擎 `cn-beijing`；BytePlus `ap-southeast-1` | 控制面地域；火山引擎还可继承 `REGION` |
+| `AGENTKIT_TOOL_HOST` | SDK 对应环境的端点 | 显式覆盖控制面地址，应使用服务提供的地址 |
+| `AGENTKIT_TOOL_SERVICE_CODE` | `agentkit` | 控制面服务标识，覆盖时也影响派生端点 |
+| `AGENTKIT_TOOL_SCHEME` | `https` | 控制面协议，支持 `http` 或 `https` |
+| `VOLCENGINE_ACCESS_KEY` | 未设置 | 该入口使用的 AccessKey 变量 |
+| `VOLCENGINE_SECRET_KEY` | 未设置 | 该入口使用的 SecretKey 变量 |
+| `CLOUD_PROVIDER` | 火山引擎 | 设置为 `byteplus` 时选择 BytePlus 默认地域 |
+
+凭证依次从会话状态、环境变量和运行环境 IAM Role 获取。临时凭证可通过绑定的 IAM Role 提供；不要将会话状态中的云凭证作为普通业务数据向用户展示
 
 ## 会话管理
 
-`AgentkitRemoteSandboxAgent` 在运行时自动管理远端沙箱会话：
+同一应用、用户、会话和智能体可以复用有效的远端会话，保留沙箱中的文件与运行状态。`ttl` 默认为 30 分钟，最长为 24 小时；会话到期或被替换后，不应假定文件仍然存在，需将要保留的结果保存到持久存储
 
-- 按应用名称、用户标识和会话标识生成稳定的逻辑会话键，在沙箱侧创建或复用对应的物理会话；
-- 会话使用 `ttl` 参数控制存活时间，到期后自动释放；
-- 同一逻辑会话的并发调用会被串行化，避免同一会话上的重复执行；
-- 会话就绪等待时间由 `ready_timeout` 控制，超时后报错。
-
-<Note>
-沙箱会话的默认存活时间为 1800 秒（30 分钟），最长支持 86400 秒（24 小时）。会话在存活期内可复用，跨调用保持沙箱内的文件和运行环境状态。
-</Note>
+同一智能体实例不接受同一逻辑会话的重叠调用，会直接报错，不会自动排队。应用需按会话串行提交任务。等待就绪与执行分别受 `ready_timeout`、`request_timeout` 控制
 
 ## 入站身份凭证
 
-当协调智能体的运行上下文中存在入站身份凭证时，`AgentkitRemoteSandboxAgent` 会以 `inbound_auth` 请求头将凭证转发给远端沙箱，使沙箱中的工作流能够以原始用户身份执行。当前请求未携带入站凭证时不附加该请求头，沙箱以匿名方式执行。
+当前上下文存在入站凭证时，智能体会通过 `inbound_auth` 请求头转发给沙箱，用于延续原始用户身份。没有入站凭证时不发送该头，这不代表绕过沙箱自身的访问认证；`api_key` 配置的 `X-API-Key` 与转发用户身份是不同用途
 
-<Note>
-入站身份凭证的来源与配置方式参见[入站认证](/productions/veadk/preview/zh/components/security/inbound)。
-</Note>
-
-## 安全边界
-
-<Warning>
-远端沙箱可以执行任意代码、命令和文件操作，并可访问沙箱网络可达的服务。运行前应确认沙箱来源可信，并限制沙箱可访问的数据、网络和权限。不要在任务指令或环境变量中写入长期凭证；需要凭证时使用沙箱支持的凭据托管方式。
-</Warning>
+应只向受信任的沙箱转发身份凭证，配置方式见[入站认证](/productions/veadk/preview/zh/components/security/inbound)
 
 ## 错误处理
 
-沙箱执行过程中发生的错误以事件形式返回，不会导致应用崩溃。常见错误情况包括：
+会话就绪超时、执行超时和协议不兼容等执行失败通常以带 `error_message` 的事件返回。并发调用冲突、初始化错误和取消仍可能向调用方传播，应用需要同时处理事件错误与调用异常
 
-- 沙箱会话未在就绪时间内变为可用状态；
-- 任务执行超时；
-- 沙箱镜像协议不兼容；
-- 同一会话上已有正在执行的调用。
-
-当任务因超时或取消而中断时，框架会尝试通知远端沙箱取消当前任务，避免无效执行。
+`Runner.run` 只提供文本结果；需要区分失败与普通回答或观察过程时，使用 `Runner.run_async` 检查事件。超时或取消后会尝试通知远端停止，但不能据此认定远端操作一定未执行；重试有副作用的任务前先确认执行状态

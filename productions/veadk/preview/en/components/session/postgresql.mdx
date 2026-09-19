@@ -10,19 +10,48 @@ The `postgresql` backend stores sessions in a PostgreSQL database. Multiple agen
 - Production, multi-instance, or distributed deployments;
 - Teams already using PostgreSQL as shared storage.
 
+## Prerequisites
+
+The `veadk-python` installation includes the required database drivers. Before running the example, create the database and account, grant permissions to create and read/write session tables, and make the database reachable. VeADK does not provision the database service or database itself
+
+Provide connection settings through environment variables and inject the password from your deployment secret configuration
+
+```bash
+export DATABASE_POSTGRESQL_HOST="127.0.0.1"
+export DATABASE_POSTGRESQL_USER="veadk"
+export DATABASE_POSTGRESQL_DATABASE="veadk_sessions"
+```
+
+Also set `DATABASE_POSTGRESQL_PASSWORD`. These settings work with reachable self-managed, Volcengine, or BytePlus database instances; they do not automatically select a cloud provider or region
+
 ## Usage
 
 Provide connection details via `config.yaml` (or the matching environment variables) — never hard-code the password.
 
 ```python lines
-from veadk import Agent, Runner
+import asyncio
+
 from veadk.memory.short_term_memory import ShortTermMemory
 
-stm = ShortTermMemory(backend="postgresql")  # connection details from config.yaml / env
+stm = ShortTermMemory(backend="postgresql")
 
-agent = Agent(name="demo")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+async def main():
+    try:
+        await stm.create_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        session = await stm.session_service.get_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        assert session is not None
+        print(session.id)
+    finally:
+        await stm.session_service.close()
+
+asyncio.run(main())
 ```
+
+The output is `chat_01`, confirming that the session was created and read back. This example does not call a model. For conversations, pass the same `stm` to `Runner(short_term_memory=stm, agent=agent)` and keep the app, user, and session identifiers consistent
 
 To forward SQLAlchemy driver args such as connection pooling, use `db_kwargs`:
 
@@ -66,7 +95,8 @@ stm = ShortTermMemory(
 | `db_kwargs` | `dict` | `{}` | Yes | Passed to the SQLAlchemy engine; commonly used for pool settings such as `pool_size`, `pool_recycle`, `pool_pre_ping`. |
 | `db_url` | `str` | `""` | Yes (override) | A connection string. Once set, `backend` and `backend_configs` are ignored, and `db_url` is used with `db_kwargs`. |
 | `local_database_path` | `str` | `/tmp/veadk_local_database.db` | No | Used only by `sqlite`. |
-| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Callback invoked after a session is loaded; receives the loaded `Session`. |
+| `after_load_memory_callback` | `Callable \| None` | `None` | Yes | Synchronous read callback; receives `Session` or `None` plus the query arguments. Use `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | Yes | Runs after `ShortTermMemory.create_session()` creates a new session; accepts the new `Session` and can be synchronous or asynchronous |
 
 ### PostgreSqlConfig fields and environment variables
 
@@ -90,7 +120,7 @@ database:
 | `user` | `DATABASE_POSTGRESQL_USER` | `str` | `""` | Username. |
 | `password` | `DATABASE_POSTGRESQL_PASSWORD` | `str` | `""` | Password. |
 | `database` | `DATABASE_POSTGRESQL_DATABASE` | `str` | `""` | Database name. |
-| `schema` | `DATABASE_POSTGRESQL_SCHEMA` | `str` | `""` | Optional PostgreSQL schema. VeADK creates it when needed and keeps session tables inside it. Added in 1.0.2. |
+| `schema` | `DATABASE_POSTGRESQL_SCHEMA` | `str` | `""` | Optional PostgreSQL schema. VeADK creates it when needed during connection and keeps session tables inside it; the account needs the corresponding schema creation and usage permissions |
 | `secret_token` | `DATABASE_POSTGRESQL_SECRET_TOKEN` | `str` | `""` | STS token for PostgreSQL auth; not supported yet. |
 
 <Note>

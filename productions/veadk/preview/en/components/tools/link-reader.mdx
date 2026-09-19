@@ -47,3 +47,25 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Inputs, results, and service scope
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `url_list` | `list[str]` | Required | URLs to read; submit at most three per call |
+
+Await the call. Successful results contain page titles and content; an empty list can mean no usable content or a failed read. Credentials must authorize the Volcengine Ark LinkReader service. An arbitrary third-party model API key cannot authorize this service, and `CLOUD_PROVIDER=byteplus` does not switch its endpoint.
+
+```python lines
+import asyncio
+from veadk.tools.builtin_tools.link_reader import link_reader
+
+async def main():
+    pages = await link_reader(["https://www.volcengine.com/docs/85508/1650263"])
+    if not pages:
+        print("No readable pages returned; check access and service configuration")
+    for page in pages:
+        print(page)
+
+asyncio.run(main())
+```

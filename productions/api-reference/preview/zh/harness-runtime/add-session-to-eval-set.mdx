@@ -3,3 +3,9 @@ title: "从会话添加评测用例"
 openapi: "/productions/api-reference/openapi/zh/harness-runtime.json POST /dev/apps/{app_name}/eval-sets/{eval_set_id}/add-session"
 en_link: "/productions/api-reference/preview/en/harness-runtime/add-session-to-eval-set"
 ---
+
+先创建目标评测集，并确认 `userId` 与 `sessionId` 对应的会话存在。服务将该会话的交互转换成新用例，使用 `evalId` 标识；适合把已有调试对话保存为回归评测样本
+
+<Warning>
+此操作把会话内容复制到评测集，可能包含用户消息与工具结果。添加前检查样本内容，成功后通过获取评测用例接口确认保存结果
+</Warning>

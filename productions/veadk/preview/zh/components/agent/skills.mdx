@@ -3,61 +3,165 @@ title: "技能"
 en_link: "/productions/veadk/preview/en/components/agent/skills"
 ---
 
-技能是一种可复用的提示词包，用于为智能体注入特定的领域知识、操作流程与脚本。技能与 Google ADK 兼容：本地技能推荐通过 ADK 的 `SkillToolset` 接入，云端技能空间推荐通过 VeADK 的 `VeSkillRegistry` 接入。
+技能将任务说明、参考资料和可选脚本组织为可复用目录。智能体可以先发现技能，再按任务读取完整说明。只有技能包含脚本且已配置执行器时，才涉及代码执行
+
+| 使用场景 | 接入方式 |
+| :--- | :--- |
+| 随应用维护的本地技能 | `load_skill_from_dir` 和 `SkillToolset` |
+| 按需读取云端技能空间 | `VeSkillRegistry` 和 `SkillToolset` |
+| 部署 Harness 并配置共享技能 | Harness 的 `skills` 配置 |
+| 在远端沙箱执行技能工作流 | `skills_sandbox` 模式或[远端沙箱智能体](/productions/veadk/preview/zh/components/agent/remote-sandbox-agent) |
+
+以下 `SkillToolset` 示例按 Google ADK 2.2 接口编写。先完成[安装与模型配置](/productions/veadk/preview/zh/get-started/quickstart)
 
 ## 本地技能
 
-用 ADK 的 `load_skill_from_dir` 加载本地技能目录，并作为标准工具集传给智能体：
+在项目中创建 `skills/incident-summary/SKILL.md`：
 
-```python lines
-from google.adk.skills import load_skill_from_dir
-from google.adk.tools.skill_toolset import SkillToolset
-from veadk import Agent
+```markdown skills/incident-summary/SKILL.md lines
+---
+name: incident-summary
+description: Summarize incident notes into impact, timeline, and follow-up actions
+---
 
-skill = load_skill_from_dir("/abs/path/to/skills/kb-skill")
-agent = Agent(tools=[SkillToolset(skills=[skill])])
+# Incident summary
+
+Read the notes provided by the user and return three sections:
+
+- Impact: describe affected users and services
+- Timeline: list only times explicitly present in the notes
+- Follow-up actions: distinguish completed work from proposed work
+
+Mark missing information as unknown. Do not invent causes or timestamps.
 ```
 
-技能加载、提示词注入与工具暴露均由 ADK 处理，模型可见的工具包括 `list_skills`、`load_skill`、`load_skill_resource` 和 `run_skill_script`。如果技能依赖 `scripts/` 中的脚本执行，直接使用 ADK 的 `SkillToolset` 构造工具集时需要在 `SkillToolset` 或智能体上显式配置合适的 `code_executor`。
+在项目根目录创建并运行 `main.py`：
 
-<Note>
-通过 Harness、CLI 生成的智能体代码或 AgentKit 会话能力服务加载技能时，VeADK 会自动为 `SkillToolset` 配置本地代码执行器，技能中的脚本可直接运行，无需额外配置。
-</Note>
+```python main.py lines
+import asyncio
+from pathlib import Path
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent, Runner
+
+skill_dir = Path(__file__).parent / "skills" / "incident-summary"
+skill = load_skill_from_dir(skill_dir)
+agent = Agent(
+    name="incident_assistant",
+    instruction="Use the incident-summary skill to summarize incident notes.",
+    tools=[SkillToolset(skills=[skill])],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="At 09:10 invoice downloads failed. At 09:25 a rollback restored service. The cause is unknown.",
+        session_id="skills-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+回答应按影响、时间线和后续措施组织，并将缺失信息标为未知。此技能只处理用户提供的文字，不需要代码执行器
+
+默认工具包括 `list_skills`、`load_skill`、`load_skill_resource` 和 `run_skill_script`；配置 registry 后还会提供 `search_skills`
+
+### SkillToolset 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `skills` | `list[Skill] \| None` | `None` | 已加载的本地技能，名称不能重复 |
+| `registry` | `SkillRegistry \| None` | `None` | 按需查找和加载技能的来源 |
+| `code_executor` | `BaseCodeExecutor \| None` | `None` | 技能脚本执行器；未指定时尝试使用智能体的执行器 |
+| `script_timeout` | `int` | `300` | Shell 脚本超时秒数，不限制执行器中直接执行的 Python 脚本 |
+| `additional_tools` | `list[ToolUnion] \| None` | `None` | 根据技能 `metadata.adk_additional_tools` 激活的工具 |
+| `tool_name_prefix` | `str \| None` | `None` | 技能工具名称的前缀 |
+| `tool_filter` | `ToolPredicate \| list[str] \| None` | `None` | 按条件或名称限制可用工具 |
+
+### 执行技能脚本
+
+<Warning>
+`UnsafeLocalCodeExecutor` 在当前进程所在环境执行技能代码，不提供沙箱隔离。仅为已审查且可信的技能启用；代码可访问该进程的文件、网络和凭证。需要隔离时使用受限容器或远端沙箱
+</Warning>
+
+若技能包含需要执行的 `scripts/`，在上例加载 `skill` 后，用以下片段替换工具集和智能体配置：
+
+```python  lines
+from google.adk.code_executors import UnsafeLocalCodeExecutor
+
+toolset = SkillToolset(
+    skills=[skill],
+    code_executor=UnsafeLocalCodeExecutor(),
+    script_timeout=300,
+)
+agent = Agent(name="skills_assistant", tools=[toolset])
+```
+
+直接创建 `SkillToolset` 不会自动安装脚本依赖。Harness、CLI 生成代码和 AgentKit 会话能力服务的相应加载入口会配置本地执行器；使用这些入口前同样需要审查技能来源
 
 ## 云端技能空间
 
-云端技能空间通过 `VeSkillRegistry` 接入，再交给 `SkillToolset`：
+先准备有读取权限的技能来源 ID，以及读取技能列表和下载文件所需的账号凭证。`SKILL_SOURCE_ID` 是以下示例自定义的环境变量；每个 `VeSkillRegistry` 只接受一个来源 ID，不能传逗号分隔列表
 
-```python lines
-from google.adk.tools.skill_toolset import SkillToolset
-from veadk import Agent
-from veadk.skills import VeSkillRegistry
+| 配置 | 火山引擎 | BytePlus |
+| :--- | :--- | :--- |
+| `CLOUD_PROVIDER` | `volcengine`，默认 | `byteplus` |
+| AccessKey | `VOLCENGINE_ACCESS_KEY` | `BYTEPLUS_ACCESS_KEY` |
+| SecretKey | `VOLCENGINE_SECRET_KEY` | `BYTEPLUS_SECRET_KEY` |
+| 临时凭证 Token | `VOLCENGINE_SESSION_TOKEN` | `BYTEPLUS_SESSION_TOKEN` |
+| AgentKit 技能空间默认地域 | `cn-beijing` | `ap-southeast-1` |
 
-registry = VeSkillRegistry(skill_source_id=skill_space_id)
-agent = Agent(tools=[SkillToolset(registry=registry)])
+未提供完整 AK/SK 时会尝试运行环境绑定的 IAM Role 凭证。AgentKit 技能空间可用 `AGENTKIT_TOOL_REGION` 指定地域；资源、凭证、区域与平台必须匹配。SkillHub 与 AgentKit 技能空间的服务可用性分别以账号实际开通情况为准
+
+```bash lines
+export SKILL_SOURCE_ID="<skill-space-id>"
 ```
 
-该方式不会在初始化时全量下载技能：`search_skills` 实时拉取远端技能列表，`get_skill` 在需要某个技能时按需下载并加载；远端版本变化后会按新版本重新下载。
+```python cloud_skills.py lines
+import asyncio
+import os
+from google.adk.tools.skill_toolset import SkillToolset
+from veadk import Agent, Runner
+from veadk.skills import VeSkillRegistry
 
-<Note>
-`VeSkillRegistry` 加载技能时容忍 `SKILL.md` frontmatter 中的非标准字段（社区扩展），如 `allowed-tools`、`triggers`、`requires` 等。这些字段不会导致加载失败，而是保留在技能 frontmatter 的 `metadata` 中。
-</Note>
+registry = VeSkillRegistry(skill_source_id=os.environ["SKILL_SOURCE_ID"])
+agent = Agent(
+    name="skills_assistant",
+    instruction="Search available skills and load the relevant instructions before answering.",
+    tools=[SkillToolset(registry=registry)],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="List the available skills and explain what they help with.",
+        session_id="registry-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+运行 `python cloud_skills.py` 查看当前可发现的技能
+
+| VeSkillRegistry 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `skill_source_id` | `str` | 必填 | 一个来源 ID；`sp-` 前缀用于 SkillHub 技能空间，其他 ID 按 AgentKit 技能空间处理 |
+| `cache_dir` | `Path \| None` | `None` | 下载缓存目录；未指定时读取 `VEADK_SKILLS_CACHE_DIR`，否则使用系统临时目录下的 `veadk/skills` |
+
+初始化 registry 不会全量下载技能。`search_skills` 拉取来源中的全部技能元信息，目前不按搜索词过滤；`get_skill` 刷新元信息并按名称下载所需技能。相同版本可复用缓存，版本变化后重新下载。缓存目录必须可写
+
+云端技能中非标准的 frontmatter 字段，例如 `allowed-tools`、`triggers` 和 `requires`，会保存在 `metadata` 中。保留这些字段不代表自动执行其权限或依赖声明
 
 ## Harness 技能中心
 
-Harness 可以同时加载 Skill Hub 技能和 AgentKit 技能中心的技能空间。`skills` 中的普通名称或 slug 表示 Skill Hub 技能；`space:` 前缀表示技能中心的技能空间 ID。
+先按 [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness) 创建项目并配置部署凭证，再将下方示例名称和 ID 替换为可访问的技能。普通名称或 slug 表示 Skill Hub 技能，`space:` 前缀表示 AgentKit 技能空间
 
-Harness 服务的创建、配置和部署见 [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness)。
-
-技能中心需要可读取该技能空间及其对象存储内容的火山引擎凭证。本地运行时设置 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`，使用临时凭证时同时设置 `VOLCENGINE_SESSION_TOKEN`；VeFaaS 中也可以使用绑定 IAM Role 的临时凭证。
-
-```bash lines
+```bash  lines
 cd my-harness
-veadk harness add \
-  --skills "data-visualization-cloud,space:ss-example"
+veadk harness add --skills "data-visualization-cloud,space:ss-example"
 ```
 
-生成的 `harness.yaml` 使用列表保存技能来源：
+生成的 `harness.yaml` 使用列表保存来源：
 
 ```yaml lines
 skills:
@@ -65,68 +169,72 @@ skills:
   - space:ss-example
 ```
 
-Harness 启动时会下载并加载基础配置中的技能。`space:ss-example` 会加载该技能空间中的全部技能，并与 Skill Hub 技能组成一个 `SkillToolset`。调用时也可以临时增加技能空间：
+Harness 启动时加载基础配置中的技能；`space:` 来源会加载空间内的全部技能。调用时可以追加本次所需技能：
 
-```bash lines
-veadk harness invoke \
-  --name research-agent \
-  --message "整理一份研究报告" \
-  --skills "space:ss-example"
+```bash  lines
+veadk harness invoke   --name research-agent   --message "Summarize the supplied incident notes"   --skills "space:ss-example"
 ```
 
-调用级 `--skills` 在基础 Harness 配置上增加本次所需技能，不会修改 `harness.yaml`。如果任一技能无法下载、缺少有效的 `SKILL.md` 或不符合 ADK 技能格式，Harness 会终止本次加载，不会以不完整的技能集合继续运行。
+| 示例选项 | 用途 |
+| :--- | :--- |
+| `add --skills` | 保存 Harness 的基础技能来源 |
+| `invoke --name` | 选择要调用的 Harness 智能体 |
+| `invoke --message` | 本次任务文本 |
+| `invoke --skills` | 在基础配置上追加本次技能，不修改 `harness.yaml` |
+
+任一技能无法下载、缺少有效 `SKILL.md` 或格式无效时，加载会失败，不会继续使用不完整的集合。技能中心需要读取空间及其对象存储内容的权限
 
 ## 技能目录结构
 
-一个本地技能由独立目录构成，包含一个 `SKILL.md` 文件，并可包含 `references/`、`assets/`、`scripts/` 等子目录：
+每个技能使用独立目录，至少包含 `SKILL.md`；`name` 应与目录名一致，并填写说明用途的 `description`
 
 ```text lines
 skills/
-└── kb-skill/
+└── incident-summary/
     ├── SKILL.md
     ├── references/
     ├── assets/
     └── scripts/
 ```
 
-`SKILL.md` 需在 frontmatter 中声明 `name` 与 `description`，且目录名必须与 `name` 一致：
-
-```markdown SKILL.md lines
----
-name: kb-skill
-description: 查询知识库并整理答案的技能。
----
-
-正文部分……
-```
+`references/` 保存按需读取的参考资料，`assets/` 保存模板或素材，`scripts/` 保存脚本。仅在需要时创建这些可选目录，技能说明应明确何时使用其中的文件
 
 ## 旧本地入口（已废弃）
 
-VeADK 旧的 `Agent(skills=..., skills_mode="local")` 本地入口仍保持兼容，但已废弃，建议迁移到上文的 `SkillToolset`。`skills_sandbox` 与 `aio_sandbox` 两种沙箱模式不受影响，仍按原方式使用：
+`Agent(skills=..., skills_mode="local")` 保持兼容，但已废弃；本地技能应迁移到 `SkillToolset`
 
-| 模式 | 说明 |
-| --- | --- |
-| `local` | 已废弃。由 VeADK 旧路径加载本地技能，建议迁移到 ADK `SkillToolset`。 |
-| `skills_sandbox` | 技能托管在云端技能空间，通过 `execute_skills` 工具在沙箱中执行。 |
-| `aio_sandbox` | All-in-one 沙箱模式，适用于 AgentKit 托管的工具运行时。 |
+| `skills_mode` | 行为 |
+| :--- | :--- |
+| `local` | 旧本地入口，建议迁移 |
+| `skills_sandbox` | 通过 `execute_skills` 在远端技能沙箱执行 |
+| `aio_sandbox` | 用于 AgentKit All-in-one 工具沙箱 |
 
-沙箱模式示例：
+沙箱模式仍可使用。运行以下示例前，配置 `SKILL_SOURCE_ID`、模型及[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)要求的凭证和 Tool ID，并确认沙箱具备所需技能及网络权限：
 
-```python lines
-from veadk import Agent
+```python sandbox_skills.py lines
+import asyncio
+import os
+from veadk import Agent, Runner
 from veadk.tools.builtin_tools.execute_skills import execute_skills
 
 agent = Agent(
-    skills=[skill_space_id],
+    name="sandbox_assistant",
+    skills=[os.environ["SKILL_SOURCE_ID"]],
     skills_mode="skills_sandbox",
     tools=[execute_skills],
 )
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="List your available skills.", session_id="sandbox-skills"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ### 动态加载技能
 
-设置 `enable_dynamic_load_skills=True` 后，智能体在每轮开始前重新从配置的技能来源（本地目录或云端技能空间）加载技能，检测新增、修改或删除的技能后自动更新技能列表、指令和工具集，无需重启。
+`enable_dynamic_load_skills=True` 用于 `Agent.skills` 旧入口，在每轮开始前重新读取来源并更新技能列表、说明和工具。即使初始 `skills` 为空，也会初始化对应工具集；共享同一个可变智能体进行并发调用时，应用需管理刷新与调用之间的并发
 
-<Note>
-`enable_dynamic_load_skills` 可独立于 `skills` 使用：即使未配置初始技能列表，启用后仍会初始化技能工具集并注册刷新回调。
-</Note>
+该开关不会热重载直接传给 `SkillToolset(skills=[...])` 的本地对象。云端 registry 的按需加载也不依赖此开关。外部运行时与旧技能模式的兼容限制见[运行时](/productions/veadk/preview/zh/components/agent/runtime#运行时兼容性)

@@ -3,3 +3,9 @@ title: "保存制品"
 openapi: "/productions/api-reference/openapi/zh/agent-api-server.json POST /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts"
 en_link: "/productions/api-reference/preview/en/agent-api-server/save-artifact"
 ---
+
+<Warning>
+此操作会向当前制品存储写入一个新版本，重复发送相同请求也可能产生新版本。提交前确认内容与目标应用、用户和会话
+</Warning>
+
+文本使用 `artifact.text`；二进制内容使用 `artifact.inlineData`，并提供 `mimeType` 与 Base64 编码的 `data`。保存后使用响应中的 `version` 读取确切版本，`canonicalUri` 是否可直接访问取决于存储后端与访问权限

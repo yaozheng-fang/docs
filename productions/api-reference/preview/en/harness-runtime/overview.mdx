@@ -22,7 +22,13 @@ Sessions use the application name `harness_agent`. The deployed Harness name ide
 
 ## Connect to the service
 
-Use the access URL returned by deployment for a cloud Runtime. A local server typically uses `http://localhost:8000`
+Start the local development server from a configured Harness project. See [Harness commands](/productions/agentkit-cli/preview/en/commands/harness) to prepare model credentials, dependencies, and `harness.yaml`
+
+```bash lines
+agentkit harness dev --host 127.0.0.1 --port 8000
+```
+
+The local URL is `http://localhost:8000`. For cloud calls, use the Runtime URL returned by `agentkit harness deploy` and the authentication required by that deployment
 
 The following example targets a KeyAuth deployment with a Runtime API key. Set `HARNESS_URL` to the Runtime URL and `HARNESS_API_KEY` to its access credential. This credential is separate from model API keys and MCP service credentials
 
@@ -54,7 +60,7 @@ Only fields explicitly supplied in `harness` apply to the request. Omitted field
 | `skills` | Comma-separated Skill Hub slugs, skill-space IDs, or space:skill references, appended for this request |
 | `mcp_servers` | Replace the full list; omission inherits it and an empty array disables remote MCP for the request |
 | `registry_space_id`, `registry_endpoint`, `registry_region`, `registry_top_k` | Override the agent registry settings for this request |
-| `max_llm_calls` | Model-call limit, at least 1; `run_agent_request` takes precedence over `harness`, followed by deployment configuration |
+| `max_llm_calls` | Model-call limit, at least 1. `/harness/invoke` prefers the value in `run_agent_request`; general overrides on `/run_sse` prefer the top-level value, followed by `harness` and deployment configuration |
 
 MCP servers use the following structure. `protocol` defaults to `streamable-http` and also supports `sse`. `endpoint` must be an HTTP(S) URL without user information or a fragment; `api_key` is optional and must not contain line breaks
 

@@ -23,7 +23,7 @@ agentkit eval backend --json
 
 ## Evaluation Gateway Configuration
 
-The default evaluation gateway uses `agentkit.cn-beijing.volcengineapi.com`, signing service `agentkit`, and region `cn-beijing`. Set these environment variables when you need to point evaluation commands at a test environment.
+The default evaluation gateway uses `agentkit.cn-beijing.volcengineapi.com`, signing service `agentkit`, and region `cn-beijing`. Override these variables only with connection settings supplied by the service provider. The global cloud-provider option does not replace evaluation gateway configuration.
 
 | Environment variable | Description | Default |
 | --- | --- | --- |
@@ -34,9 +34,7 @@ The default evaluation gateway uses `agentkit.cn-beijing.volcengineapi.com`, sig
 | `EXTRA_HEADER` | Additional request headers, separated with semicolons and formatted as `Name: Value`. | — |
 
 ```bash lines
-AGENTKIT_EVAL_HOST=agentkit-ppe.cn-beijing.volcengineapi.com \
-AGENTKIT_EVAL_SERVICE=agentkit_ppe \
-agentkit eval backend --json
+agentkit eval --cache-refresh backend --json
 ```
 
 ## Debug Options
@@ -52,3 +50,7 @@ The `eval` command group and top-level `dataset` command group support these deb
 agentkit eval --cache-refresh backend
 agentkit eval --verbose dataset list
 ```
+
+Authenticate for cloud management, then run this command to check the backend assigned to your account. Successful resolution does not enable every feature: `target`, draft updates, and explicit version management require TEA. Do not mix resource IDs, project settings, or field mappings across Coze and TEA
+
+Full requests printed by `--verbose` can contain cases, prompts, or business data even though the session cookie is masked. Inspect diagnostic logs before sharing. Refresh the backend cache after changing accounts, gateways, or backend settings

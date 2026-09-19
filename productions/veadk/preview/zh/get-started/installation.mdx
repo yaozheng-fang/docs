@@ -3,64 +3,91 @@ title: "安装"
 en_link: "/productions/veadk/preview/en/get-started/installation"
 ---
 
+安装 VeADK 后，可以使用 Python 创建和运行智能体。首次使用建议安装 PyPI 已发布版本；需要验证未发布能力或修改 SDK 时，再使用源码安装
+
 ## 前置条件
 
-- Python 3.10 至 3.13 版本。
-- 火山方舟 API Key，用于调用模型，可在[火山引擎方舟控制台](https://console.volcengine.com/ark)创建。
+- Python 3.10 至 3.13，以及对应环境中的 pip
+- 调用模型时需要可用的模型和 API Key；安装软件包本身不需要模型凭证。火山引擎和 BytePlus 的配置见[快速开始](/productions/veadk/preview/zh/get-started/quickstart)
 
 ## 安装已发布版本
 
-从 [PyPI](https://pypi.org/project/veadk-python/) 安装 Preview 当前采用的已发布基线 VeADK 1.0.9：
+在项目目录中创建虚拟环境，避免与其他项目的依赖冲突：
 
 ```bash lines
-pip install "veadk-python==1.0.9"
+python -m venv .venv
 ```
 
+激活该环境：
+
+<Tabs>
+  <Tab title="macOS / Linux">
+    ```bash lines
+    source .venv/bin/activate
+    ```
+  </Tab>
+  <Tab title="Windows PowerShell">
+    ```powershell lines
+    .venv\Scripts\Activate.ps1
+    ```
+  </Tab>
+</Tabs>
+
+从 [PyPI](https://pypi.org/project/veadk-python/) 安装最新已发布版本，并检查安装结果：
+
+```bash lines
+python -m pip install --upgrade veadk-python
+python -c "from importlib.metadata import version; print(version('veadk-python'))"
+```
+
+第二条命令输出当前 Python 环境中的 VeADK 版本号。本页的 Python 版本要求和可选依赖组按已发布的 1.1.13 核对；生产项目应固定经过验证的版本
+
 <Note>
-  PyPI 1.0.9 不包含更新日志「未发布」分节中的能力。需要验证这些能力时，请使用下方的 Preview 源码安装方式。
+  Preview 还包含[更新日志](/productions/veadk/preview/zh/changelog)中标记为「未发布」的能力。使用这些能力前，查看对应页面的版本条件和源码安装说明，不能仅凭 Preview 中存在说明就认定 PyPI 版本已经支持
 </Note>
 
 ## 可选依赖组
 
-VeADK 通过可选依赖组提供按需能力，可根据用途单独安装：
+根据需要安装可选依赖组。例如，接入飞书、Cozeloop 或 LlamaIndex 时安装 `extensions`：
 
 ```bash lines
-pip install "veadk-python[extensions]"
+python -m pip install --upgrade "veadk-python[extensions]"
 ```
 
-| 依赖组 | 用途 |
-| --- | --- |
-| `github-cicd` | Studio「挂载持续交付」写入 GitHub Actions Secret 所需的加密依赖 |
-| `extensions` | 飞书渠道、Cozeloop、LlamaIndex 等集成 |
-| `codex` | OpenAI Codex SDK 与 Codex CLI 二进制文件，用于 Codex 运行时 |
-| `database` | Redis、MySQL、Viking DB、mem0 等存储后端 |
-| `eval` | 基于 DeepEval 与 Google ADK 的评测 |
-| `a2ui` | A2UI |
-| `harness` | Harness 服务与 Headroom 集成 |
-| `harness-sidecar` | Harness Sidecar 受控运行时所需的 AgentKit Python SDK |
-| `sandbox` | 自建沙箱示例所需的 Anthropic SDK、python-dotenv 和 httpx[socks] |
-| `pdf` | 向后兼容的安装别名；自 1.0.5 起默认安装 PDF 页面渲染依赖 |
+固定主包版本时，可选依赖组也应使用相同版本，例如 `veadk-python[extensions]==1.1.13`
 
-`speech` 与 `cli` 依赖组为兼容已有安装命令而保留，自 1.0.5 起不会增加额外依赖。
+| 依赖组 | 包含的能力或依赖 |
+| --- | --- |
+| `github-cicd` | PyNaCl，用于 Studio 持续交付时加密 GitHub Actions Secret |
+| `extensions` | 飞书渠道 SDK、飞书 OpenAPI SDK、Cozeloop、LlamaIndex 及其 OpenAI 兼容模型与嵌入适配、Redis / OpenSearch / Milvus 检索适配与客户端 |
+| `codex` | OpenAI Codex SDK、Codex CLI 二进制文件、FastAPI 和 Uvicorn，用于 Codex 运行时 |
+| `database` | Redis、PyMySQL、火山引擎 SDK 和 Mem0 存储依赖 |
+| `eval` | DeepEval、Google ADK 评测依赖和 Prometheus 指标客户端 |
+| `a2ui` | A2UI Agent SDK，用于生成 A2UI 界面内容 |
+| `harness` | Headroom 集成依赖 |
+| `harness-sidecar` | Harness Sidecar 受控运行时所需的 AgentKit Python SDK |
+| `sandbox` | 自建沙箱示例所需的 Anthropic SDK、python-dotenv 和 httpx SOCKS 代理支持 |
+| `dev` | pre-commit、pytest、pytest-asyncio、pytest-cov 和 pytest-xdist，用于开发与测试 |
+| `pdf`、`speech`、`cli` | 兼容已有安装命令的空依赖组，不增加额外依赖；PDF 页面渲染依赖自 1.0.5 起随主包安装 |
 
 ## 安装 Preview 源码
 
-Preview 源码来自 VeADK 公开仓库的当前主线。使用 [uv](https://docs.astral.sh/uv/) 创建独立环境并安装：
+需要 Git 和 [uv](https://docs.astral.sh/uv/)。克隆公开仓库，在仓库目录中创建独立环境并以可编辑模式安装：
 
 ```bash lines
-git clone --depth 1 https://github.com/volcengine/veadk-python.git
+git clone https://github.com/volcengine/veadk-python.git
 cd veadk-python
+```
 
-# 创建 Python 3.12 虚拟环境
+如果目标页面指定了提交或 tag，先执行 `git checkout <ref>` 切换到该版本，再创建环境并安装：
+
+```bash lines
 uv venv --python 3.12
-
-# 安装依赖（如需可选依赖组，使用 --extra <name> 或 --all-extras）
-uv sync --all-extras
-
-# 以可编辑模式安装 VeADK
 uv pip install -e .
 ```
 
-主线源码可能继续变化，不提供已发布版本的兼容性承诺。生产环境使用固定的 PyPI 版本；Preview 源码仅用于验证未发布能力和参与开发。
+需要可选依赖组时，将安装命令改为 `uv pip install -e ".[extensions]"`
 
-安装完成后，即可进入[快速开始](/productions/veadk/preview/zh/get-started/quickstart)运行第一个智能体。
+使用前激活仓库中的 `.venv`，激活方式与上文相同，再执行版本检查命令。可编辑安装后，对仓库中 Python 源码的修改会作用于该环境
+
+主线源码会继续变化。验证特定未发布能力时，使用对应页面指定的源码版本；运行第一个智能体见[快速开始](/productions/veadk/preview/zh/get-started/quickstart)

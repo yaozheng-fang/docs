@@ -15,15 +15,47 @@ AgentKit Studio 使用与 VeADK Frontend 相同的服务和完整界面，提供
   发送消息或调试运行智能体时，Studio 通过流式接口接收回复。若 30 秒内未收到首个流式事件，Studio 会中止该流并提示检查共享公网出口等网络配置后重试，避免请求长时间无响应地挂起。
 </Note>
 
+## 按任务查找
+
+| 任务 | 说明 |
+| --- | --- |
+| 启动并连接云端智能体 | [启动并连接云端智能体](#在本地启动) |
+| 创建或导入项目 | [创建或导入项目](#创建智能体) |
+| 迁移已有应用 | [迁移已有应用](#从存量项目迁移) |
+| 配置存储 | [配置存储](#studio-持久化存储) |
+| 部署 Studio 本身 | [部署 Studio 本身](#部署到-vefaas) |
+| 升级已部署工作台 | [升级已部署工作台](#更新已部署的-studio) |
+
+## 版本与可用范围
+
+本页同时说明 VeADK 1.1.13 已发布能力与下一版本 Preview。API Key 状态及模型权限筛选、迁移首页布局、会话产物、GitLab MR 自动评审、MCP 凭据编辑以及 Studio 新部署资源默认值属于 1.1.13 之后的增量，普通 PyPI 安装不包含这些增量
+
+以下命令可在独立虚拟环境中复现本页 Preview，固定源码版本用于保证界面和行为一致。已使用发行包的读者可直接跳至本地启动
+
+```bash
+git clone https://github.com/volcengine/veadk-python.git veadk-preview
+cd veadk-preview
+git checkout adcdfdcc6a5a213b249a8caad435b939c01df7f6
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+cd frontend
+npm ci
+npm run build
+cd ..
+```
+
+需要 Python 与 Node.js 环境，依赖要求见[安装](/productions/veadk/preview/zh/get-started/installation)。从该源码目录启动时可通过 `--frontend-dir ./frontend/dist` 明确使用刚构建的界面
+
 ## 在本地启动
 
-从智能体目录的上一级目录运行：
+先安装 VeADK，并准备当前云账号的访问凭据。以下命令启动工作台并加载云端 Runtime：
 
 ```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
-veadk studio --agents-dir ./agents --open
+veadk studio --provider volcengine --open
 ```
 
 `--open` 会在服务就绪后打开 `http://127.0.0.1:8000`。未传入该选项时，Studio 只启动服务，不自动打开浏览器。
@@ -32,6 +64,20 @@ veadk studio --agents-dir ./agents --open
 
 使用 BytePlus 作为云服务商时，传入 `--provider byteplus`，并通过 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 和可选的 `BYTEPLUS_SESSION_TOKEN` 环境变量提供凭证；Runtime 列表默认查询的地域为 `BYTEPLUS_REGION` 或 `ap-southeast-1`。未显式指定 `--provider` 时，依次读取 `AGENTKIT_CLOUD_PROVIDER` 与 `CLOUD_PROVIDER` 环境变量确定云服务商，均未设置时使用火山引擎。
 
+
+
+
+BytePlus 的完整启动示例：
+
+```bash
+export BYTEPLUS_ACCESS_KEY="your-access-key"
+export BYTEPLUS_SECRET_KEY="your-secret-key"
+veadk studio --provider byteplus --open
+```
+
+需要调试本地智能体时使用 `veadk studio --dev --agents-dir ./agents --open`，目录结构见 [VeADK Web](/productions/veadk/preview/zh/components/frontend/veadk-web#启动)。`--dev` 决定列表来源，`--agents-dir` 只指定本地目录
+
+服务启动后应能打开首页；再选择一个可用智能体发送消息确认模型和 Runtime 连接。云端列表为空时检查云服务商、地域和访问权限，不要先改动本地智能体目录
 
 ## Studio 持久化存储
 
@@ -111,7 +157,7 @@ Studio 支持简体中文（`zh-CN`）和英文（`en-US`）两种界面语言�
   部署进入构建镜像阶段时，Studio 会在部署进度卡片中实时展示构建日志。日志在服务端完成凭据脱敏与篇幅截断后下发到浏览器，面板显示同步状态（同步中、已同步或读取失败）与行数，可展开、收起并复制内容；日志支持语法高亮，并默认自动滚动到末尾，手动向上滚动后暂停跟随，回到底部时恢复跟随；构建失败时，Studio 会重试同步最终构建日志并标记为失败状态，便于在日志末尾定位真实失败原因。日志同步依赖部署所用的火山引擎凭证，无法读取时面板显示失败状态，不影响部署继续进行。自定义创建和代码包部署均支持该能力。
 </Note>
 <Note>
-  部署过程中因连接中断导致无法确认最终状态时，Studio 将该任务标记为「部署状态待确认」，在工作台和部署进度卡片中显示独立的状态图标与提示横幅，并禁用部署或更新按钮以避免重复部署。提示用户前往 AgentKit 或 Code Pipeline 查看同一任务的状态。此前这种情况会显示为「部署失败」。
+  部署过程中因连接中断导致无法确认最终状态时，Studio 将该任务标记为「部署状态待确认」，在工作台和部署进度卡片中显示独立的状态图标与提示横幅，并禁用部署或更新按钮以避免重复部署。提示用户前往 AgentKit 或 Code Pipeline 查看同一任务的状态。
 </Note>
 <Note>
   部署进行期间，工作台详情页聚焦于部署进度：保留智能体标题并展示可滚动的部署进度面板，同时隐藏其余详情标签与内容；部署结束后恢复显示常规详情标签。自定义创建、代码包部署与更新已部署智能体均遵循该行为。
@@ -1813,7 +1859,7 @@ veadk studio --agents-dir ./agents --open
 切换到「技能优化」后，先从 AgentKit SkillSpace 中选择需要优化的技能空间与技能，再在输入框中描述优化目标，例如「增强对中文列名的兼容性」。发送后 Studio 跳转到技能中心工作台，对所选技能执行优化并可覆盖发布到原技能空间。
 
 <Note>
-  技能定制的生成与优化流程、Dev Sandbox 会话管理、候选方案对比与发布方式与[技能中心](#技能中心)一致，工作区仅作为快捷入口。浏览 AgentKit SkillSpace 由 Studio 服务端使用自身配置的火山引擎凭证完成，浏览器不接触凭据。
+  技能定制的生成与优化流程、Dev Sandbox 会话管理、候选方案对比与发布方式与[技能中心](#技能库)一致，工作区仅作为快捷入口。浏览 AgentKit SkillSpace 由 Studio 服务端使用自身配置的火山引擎凭证完成，浏览器不接触凭据。
 </Note>
 
 ## 视频创作
@@ -2001,7 +2047,7 @@ Studio 侧边栏的「自动化」页面提供研发工具和消息渠道的自�
 
 启用角色权限控制时，配置 Coding Agents 需要 `developer` 或 `admin` 角色。
 
-模板项目导入和 AgentKit Runtime 持续交付的地域选项、默认地域、模型 API 地址默认值和所需 GitHub Secrets 名称均随 Studio 当前云服务商变化。火山引擎模式下地域可选 `cn-beijing`、`cn-shanghai`（默认 `cn-beijing`），Secrets 为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 与可选的 `VOLCENGINE_SESSION_TOKEN`；BytePlus 模式下地域为 `ap-southeast-1`，Secrets 为 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 与可选的 `BYTEPLUS_SESSION_TOKEN`。云服务商由 `--provider` 或 `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` 环境变量确定，未设置时为火山引擎。PR 自动评审通过 GitHub App 触发，不依赖 GitHub Actions 工作流和 GitHub Secrets，其配置方式见[PR 自动评审](#pr-自动评审)。
+模板项目导入和 AgentKit Runtime 持续交付的地域选项、默认地域、模型 API 地址默认值和所需 GitHub Secrets 名称均随 Studio 当前云服务商变化。火山引擎模式下地域可选 `cn-beijing`、`cn-shanghai`（默认 `cn-beijing`），Secrets 为 `VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY` 与可选的 `VOLCENGINE_SESSION_TOKEN`；BytePlus 模式下地域为 `ap-southeast-1`，Secrets 为 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 与可选的 `BYTEPLUS_SESSION_TOKEN`。云服务商由 `--provider` 或 `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER` 环境变量确定，未设置时为火山引擎。PR 自动评审通过 GitHub App 触发，不依赖 GitHub Actions 工作流和 GitHub Secrets，其配置方式见[PR 自动评审](#github-pr-自动评审)。
 
 ### 模板项目导入
 
@@ -2609,8 +2655,20 @@ Studio 计算加权总分，并附带各维度的评分理由、风险点和建�
 | `--developer` | `str \| None` | `None` | 逗号分隔的开发者名单（用户名或 OAuth 邮箱）。仅在本地未配置 Identity 用户池时生效。也可通过 `VEADK_STUDIO_DEVELOPERS` 设置。 |
 | `--generated-agent-test-run-ttl` | `int` | `1800` | 生成智能体的临时测试进程保留秒数。 |
 | `--open` / `--no-open` | `bool` | `--no-open` | 服务就绪后是否打开默认浏览器；`--vite` 模式下忽略。 |
+| `--sandbox-chat-codex-tool-id` | `str` | `SANDBOX_CHAT_CODEX` | 临时会话使用的 CodeEnv Tool ID |
+| `--sandbox-chat-openclaw-tool-id` | `str` | `SANDBOX_CHAT_OPENCLAW` | OpenClaw 会话的 ArkClawEnv Tool ID |
+| `--sandbox-chat-hermes-tool-id` | `str` | `SANDBOX_CHAT_HERMES` | Hermes 会话的 HermesEnv Tool ID |
+| `--sandbox-chat-codex-snapshot-tool-id` | `str` | `SANDBOX_CHAT_CODEX_SNAPSHOT` | 持久化会话的 CodeEnv Tool ID |
+| `--sandbox-chat-openclaw-snapshot-tool-id` | `str` | `SANDBOX_CHAT_OPENCLAW_SNAPSHOT` | 持久化 OpenClaw 会话的 Tool ID |
+| `--sandbox-chat-hermes-snapshot-tool-id` | `str` | `SANDBOX_CHAT_HERMES_SNAPSHOT` | 持久化 Hermes 会话的 Tool ID |
+| `--help` | `bool` | — | 查看当前安装版本的命令帮助 |
 
 ## 部署到 VeFaaS
+
+<Note>
+当前 Preview 部署 Studio 本身时，默认使用 8 vCPU、16 GB 内存和 1 个实例，火山引擎与 BytePlus 一致。这是工作台服务的规格，不是 Studio 内创建的智能体 Runtime 规格；后者仍按项目部署配置处理
+</Note>
+
 
 `veadk studio deploy` 将 Studio 部署为 VeFaaS 应用，并接入 VeIdentity 登录。部署命令会创建或复用 Serverless API Gateway；未指定 IAM Role 时，还会创建或复用 `VeADKFrontendServiceRole` 及 `VeADKFrontendPolicy`。未指定 `--user-pool-id` 与 `--allowed-client-id` 时，命令会在部署地域自动创建或复用同名的 VeIdentity 用户池与 Web 客户端。部署完成后，命令会把公网回调地址注册到用户池客户端并更新应用配置。
 
@@ -2620,7 +2678,7 @@ Studio 计算加权总分，并附带各维度的评分理由、风险点和建�
   此操作会创建或修改 VeFaaS、API Gateway、IAM 和 VeIdentity 资源，可能产生费用并影响线上访问。默认 Role 具备用于创建和管理 AgentKit Runtime 及相关云资源的广泛权限。生产环境部署前应由管理员审查权限范围；需要收敛权限时，通过 `--iam-role` 使用预先配置的 Role。
 </Warning>
 
-准备符合权限要求的火山引擎凭证，然后执行：
+从上方已安装并构建的 VeADK Preview 源码根目录执行。准备符合权限要求的火山引擎凭证，`--from-source` 会构建该目录的代码并部署：
 
 ```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
@@ -2821,7 +2879,7 @@ python -m pip download --no-deps \
   此操作会创建或修改 VeFaaS 函数、APIG Gateway、IAM Role 和 VeIdentity 资源，可能产生费用并影响线上访问。部署前确认凭证具备所需权限，并确认目标 VeStack 环境的网络可达性。
 </Warning>
 
-准备符合权限要求的火山引擎凭证，然后执行：
+从上方已安装并构建的 VeADK Preview 源码根目录执行。准备符合权限要求的火山引擎凭证，`--from-source` 会构建该目录的代码并部署：
 
 ```bash title="bash" lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"

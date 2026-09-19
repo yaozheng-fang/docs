@@ -35,3 +35,11 @@ VeADK 的工具按接入方式与用途分为以下几类。
 <Note>
 内置工具与内置 MCP 工具多依赖火山引擎相关服务，使用前请开通对应服务并完成 AK/SK、API Key 等鉴权配置；系统工具由框架自动管理，无需手动加入 `tools` 列表。
 </Note>
+
+## 调用前准备与结果验证
+
+先完成[安装](/productions/veadk/preview/zh/get-started/installation)与[模型配置](/productions/veadk/preview/zh/components/agent/model)，再按工具页面开通对应服务并设置凭证。模型 API Key 与工具使用的 AK/SK、服务 API Key 相互独立；仅设置 `CLOUD_PROVIDER` 不会让所有工具自动切换服务端点
+
+`Agent(tools=[...])` 只注册能力，不会执行工具。通过 `Runner.run()` 发起请求后，在执行事件或工具结果中确认实际调用以及返回状态；模型生成一段回答并不能证明外部操作成功。同步工具直接返回普通值，异步工具需要等待结果，MCP 工具集还需要在应用退出时调用 `await toolset.close()` 释放连接
+
+首次验证可先使用[自定义计算器](/productions/veadk/preview/zh/components/tools/custom-function)验证调用流程；连接 MCP 服务时先列出工具，再在所需权限范围内调用具体能力。代码沙箱、手机操作与第三方服务工具可能产生真实的文件或账户变更，应在工具指令中写明允许的操作

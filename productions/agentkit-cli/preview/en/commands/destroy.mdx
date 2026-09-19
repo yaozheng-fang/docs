@@ -17,6 +17,9 @@ This command deletes the container or cloud Runtime selected by the lifecycle co
 | `--force` | Skip the confirmation prompt and delete immediately. | `false` |
 
 ```bash lines
-agentkit destroy
-agentkit destroy --config-file ./agentkit.yaml --force
+agentkit destroy --config-file ./agentkit.yaml
 ```
+
+In automation, add `--force` only after checking the target configuration. After completion, inspect the deployment record with `agentkit status --config-file ./agentkit.yaml`; for cloud targets, also check `agentkit runtime list`
+
+This command destroys a runtime rather than cleaning up every project resource. Check and manage registries, build artifacts, knowledge bases, memory collections, and release-created messaging proxies separately

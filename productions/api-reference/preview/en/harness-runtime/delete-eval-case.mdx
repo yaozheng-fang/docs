@@ -5,5 +5,7 @@ zh_link: "/productions/api-reference/preview/zh/harness-runtime/delete-eval-case
 ---
 
 <Warning>
-This operation deletes or replaces existing data. Confirm the target and preserve any content you need before sending the request
+This operation removes one case from the specified evaluation set. Subsequent runs of the whole set exclude it. Preserve any sample you need first; this endpoint provides no restore operation
 </Warning>
+
+Success returns JSON `null`. A missing evaluation set or case returns `404`

@@ -14,24 +14,36 @@ en_link: "/productions/veadk/preview/en/components/session/sqlite"
 ## 使用示例
 
 ```python lines
-from veadk import Agent, Runner
+import asyncio
+
 from veadk.memory.short_term_memory import ShortTermMemory
 
-stm = ShortTermMemory(
-    backend="sqlite",
-    local_database_path="./short_term_memory.db",  # 数据库文件位置
-)
+stm = ShortTermMemory(backend="sqlite", local_database_path="./short_term_memory.db")
 
-agent = Agent(name="demo")
-runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
+async def main():
+    try:
+        await stm.create_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        session = await stm.session_service.get_session(
+            app_name="memory_demo", user_id="user_42", session_id="chat_01"
+        )
+        assert session is not None
+        print(session.id)
+    finally:
+        await stm.session_service.close()
+
+asyncio.run(main())
 ```
+
+成功后输出 `chat_01`，表示会话已创建并可读回；示例不调用模型。实际对话时将同一 `stm` 传给 `Runner(short_term_memory=stm, agent=agent)`，并保持应用、用户和会话标识一致
 
 若数据库文件不存在，VeADK 会自动创建（包括所需的父目录），并把路径解析为绝对路径。
 
 也可以用 `db_url` 直接给出连接串，此时 `backend` 与 `local_database_path` 都会被忽略：
 
 ```python lines
-stm = ShortTermMemory(db_url="sqlite:///./test.db")
+stm = ShortTermMemory(db_url="sqlite+aiosqlite:///./test.db")
 ```
 
 ## 参数
@@ -40,15 +52,18 @@ stm = ShortTermMemory(db_url="sqlite:///./test.db")
 
 | 参数 | 类型 | 默认值 | 对 sqlite 是否生效 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
-| `backend` | `str` | `"local"` | 生效 | 设为 `"sqlite"` 选择本后端。传入已废弃的 `"database"` 也会被自动转为 `sqlite`。 |
-| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 生效 | SQLite 文件路径，会被解析为绝对路径；文件与父目录不存在时自动创建。 |
-| `db_url` | `str` | `""` | 生效（覆盖） | 直接给出连接串（如 `sqlite:///./test.db`）。一旦设置，将忽略 `backend` 与 `local_database_path`。 |
-| `backend_configs` | `dict` | `{}` | 不生效 | `sqlite` 后端不读取此项（仅 `mysql`/`postgresql` 使用）。 |
-| `db_kwargs` | `dict` | `{}` | 不生效 | `sqlite` 后端不透传此项；仅在使用 `db_url` 或 `mysql`/`postgresql` 时生效。 |
-| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 读取会话后触发的回调，入参为加载到的 `Session`。 |
+| `backend` | `str` | `"local"` | 生效 | 设为 `"sqlite"` 选择本后端。传入已废弃的 `"database"` 也会被自动转为 `sqlite` |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 生效 | SQLite 文件路径，会被解析为绝对路径；文件与父目录不存在时自动创建 |
+| `db_url` | `str` | `""` | 生效（覆盖） | 直接给出连接串（如 `sqlite+aiosqlite:///./test.db`）。一旦设置，将忽略 `backend` 与 `local_database_path` |
+| `backend_configs` | `dict` | `{}` | 不生效 | `sqlite` 后端不读取此项（仅 `mysql`/`postgresql` 使用） |
+| `db_kwargs` | `dict` | `{}` | 不生效 | `sqlite` 后端不透传此项；仅在使用 `db_url` 或 `mysql`/`postgresql` 时生效 |
+| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 同步读取回调；接收 `Session` 或 `None`，以及查询时的参数，建议使用 `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | 生效 | 通过 `ShortTermMemory.create_session()` 首次创建会话后触发；支持同步或异步回调，接收新建的 `Session` |
 
 ## 环境变量
 
 `sqlite` 后端不读取任何环境变量，所有配置均通过构造参数提供。
 
 需要分布式持久化？请改用 [MySQL](/productions/veadk/preview/zh/components/session/mysql) 或 [PostgreSQL](/productions/veadk/preview/zh/components/session/postgresql)。
+
+SQLite 文件应位于可写且持久的目录；容器重建后保留数据需要挂载持久卷。默认 `/tmp` 路径可能被系统清理，不能视为长期备份。通过 `db_url` 连接时应自行创建父目录

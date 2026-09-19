@@ -56,7 +56,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
       --command "cd /home/gem/my-app && codex"
     ```
 
-    Press Ctrl-] to detach. Run the same command again to return to the session. After saving the tool name in `.agentkit/sandbox.yaml`, later commands can omit `--tool-name`.
+    Press Ctrl-] to detach. Reconnect with `agentkit sandbox exec --tool-name dev-sandbox --session-id dev --mode tmux` to avoid uploading over remote edits again. After saving the tool name in `.agentkit/sandbox.yaml`, later commands can omit `--tool-name`.
   </Step>
 
   <Step title="Transfer files">
@@ -72,13 +72,15 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
   </Step>
 
   <Step title="Open a web preview">
-    Start a web server that listens on an externally accessible port in the persistent terminal, then open its preview:
+    Start a web server in the persistent terminal, for example on `127.0.0.1:3000` inside the sandbox. The following command opens the sandbox browser interface, initially showing the session file directory:
 
     ```bash lines
     agentkit sandbox web --tool-name dev-sandbox --session-id dev
     ```
 
-    Add `--no-open` when a browser should not open automatically; the command outputs the preview URL.
+    In the sandbox browser, navigate to `http://127.0.0.1:3000`. This address belongs to the remote sandbox and is not reachable through your local browser's loopback interface. `sandbox web` returns the sandbox browser interface URL; it does not publish an arbitrary application port as a public URL
+
+    Add `--no-open` to return the interface URL without opening a browser
   </Step>
 
   <Step title="Clean up resources">

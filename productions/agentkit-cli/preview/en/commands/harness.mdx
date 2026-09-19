@@ -18,7 +18,10 @@ Create a harness directory (`harness.yaml` + `.env.example`) for a Harness.
 | `--mcp-server <json>` | Remote MCP server JSON; repeatable, or pass `[]` alone to clear the list | No override |
 
 ```bash lines
+# Volcengine
 agentkit harness init my-harness
+
+# BytePlus: choose this command instead
 agentkit --provider byteplus harness init my-harness --region ap-southeast-1
 ```
 
@@ -28,19 +31,11 @@ agentkit --provider byteplus harness init my-harness --region ap-southeast-1
 # =============================================================================
 # AgentKit harness configuration (code-free agent).
 #
-# `agentkit harness deploy` converts this file into the runtime's environment
-# variables: top-level fields and `model` are flattened (model.name -> MODEL_NAME,
-# tools -> TOOLS, ...); each component's `type` selects its backend, and the
-# component's other params map to the env vars that backend reads (e.g. viking
-# `project` -> DATABASE_VIKING_PROJECT). Empty values are skipped, so the server
-# falls back to its own defaults.
-#
 # Configure with `agentkit harness set ...` or by editing this file. For a
 # component, uncomment the params under the backend you set as `type`.
 # =============================================================================
 
 # Harness / runtime name (also the knowledgebase & long-term-memory index name).
-#   env: HARNESS_NAME          flag: --name
 harness_name: "my-harness"
 
 # Deployment cloud selected by `agentkit harness init`.
@@ -62,7 +57,6 @@ cloud:
 # For a shared OAuth Harness, obo_broker sends a short-lived user+Runtime TIP to
 # a fixed APIG model egress; the gateway/Broker replaces it with the hosted
 # downstream credential, so the real provider key never enters this process.
-#   env: MODEL_*               flag: --model-name
 model:
   name: ""
   # provider: openai
@@ -95,28 +89,23 @@ capacity:
   # session_db_pool_timeout_seconds: 10
   # session_db_pool_recycle_seconds: 300
 
-# Built-in tool names.   env: TOOLS   flag: --tools (comma-separated)
+# Built-in tool names; configure with --tools (comma-separated)
 tools: []
 mcp_servers: []
 
 # Skill Hub slugs, ss-... spaces, or ss-...:s-... refs.
-#   env: SKILLS  flag: --skills (comma-separated)
 skills: []
 
 # Agent instruction (empty = server default).
-#   env: SYSTEM_PROMPT         flag: --system-prompt
 system_prompt: ""
 
 # Agent description, used by discovery and generated AgentCards.
-#   env: DESCRIPTION           flag: --description
 description: ""
 
 # Agent runtime backend: adk (default) | codex.
-#   env: RUNTIME               flag: --runtime
 runtime: adk
 
 # Per-run defaults. Both can be overridden by `agentkit harness invoke` flags.
-#   env: MAX_LLM_CALLS         flag: --max-llm-calls
 # max_llm_calls: 20
 
 # Tool-call behavior.
@@ -276,7 +265,7 @@ The following fields are edited directly in `harness.yaml`; `harness set` does n
 | `capacity.session_db_pool_recycle_seconds` | integer | — | Shared session database connection recycle seconds, from `30` to `3600`. |
 
 <Note>
-  Expansion: `harness deploy` flattens top-level fields and `model` into environment variables (e.g. `model.name` → `MODEL_NAME`) and maps component params to the `DATABASE_<BACKEND>_*` variables that backend reads; empty values are skipped and the server falls back to its defaults. `auth`, `cloud`, `capacity`, and Sidecar configuration are used by the deployment control plane rather than being passed as ordinary user configuration into the agent process. The `.env.example` written by `harness init` contains only optional cloud-provider AK/SK placeholders — all agent configuration lives in `harness.yaml`.
+`harness deploy` and `harness dev` load the project `.env` and resolve `${VAR}` in `harness.yaml`; existing shell environment values take precedence. Use variable references for database passwords and other secrets, and exclude `.env` from version control. `.env.example` contains optional cloud credential placeholders; configure models, components, networking, and capacity in `harness.yaml`
 </Note>
 
 ## harness set
@@ -326,6 +315,7 @@ Set fields in `harness.yaml` (partial update; only the flags you pass are change
 | `--short-term-memory-database <value>` | short_term_memory database | None |
 | `--short-term-memory-charset <value>` | short_term_memory charset | None |
 | `--short-term-memory-port <value>` | short_term_memory port | None |
+| `--short-term-memory-schema <value>` | PostgreSQL schema name | None |
 | `--discovery-url <url>` | OAuth2/JWT OIDC discovery URL (enables custom_jwt) | None |
 | `--allowed-id <ids>` | Comma-separated allowed client IDs | None |
 | `--structured-tool-calls` | Use structured tool calls. | Current config |
@@ -341,7 +331,7 @@ Set fields in `harness.yaml` (partial update; only the flags you pass are change
 | `--mcp-server <json>` | Remote MCP server JSON; repeatable, or pass `[]` alone to clear the list | No override |
 
 ```bash lines
-agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
+agentkit harness set --name my-harness --model-name "your-model-name" --runtime adk
 
 agentkit harness set --registry default --registry-space-name Default --registry-top-k 3
 ```
@@ -361,6 +351,10 @@ Start the Harness service locally from `harness.yaml` for development and debugg
 | `--reload` | Restart when the service code changes. | `false` |
 | `--python <bin>` | Python interpreter used to start the service. | `python3` |
 
+Prepare Python 3 and the Harness server dependencies first. Startup output identifies the dependency file; if modules are missing, install that file with the same `--python` interpreter and retry. This command does not create a Python environment or install dependencies. Restart after editing `harness.yaml`; `--reload` watches server code
+
+A local listener does not make calls offline: models, MCP services, knowledge bases, and remote databases still require their own credentials and network access and may incur charges
+
 ```bash lines
 agentkit harness dev --reload --port 8000
 ```
@@ -378,6 +372,10 @@ Build the harness image and create or update the runtime from `harness.yaml`.
 | `--cronjob` | Enable persistent scheduled tasks | `false` |
 | `--cronjob-tos-bucket <bucket>` | Existing TOS bucket for task definitions, state, and results | `cronjob.tos_bucket` |
 | `--cronjob-tos-region <region>` | TOS bucket region | Runtime region |
+
+<Warning>
+Deployment requires control-plane credentials for the selected provider. It builds an image and creates or updates a cloud Runtime, which may incur charges and change production behavior. Verify model availability, component connections, region, and project first. Replace `your-model-name` in examples with a model or endpoint ID available to your account
+</Warning>
 
 ```bash lines
 agentkit harness deploy --project default --region cn-beijing
@@ -434,7 +432,7 @@ Invoke a deployed Harness and optionally override its model, system prompt, tool
 agentkit harness invoke my-harness "Hello, introduce yourself"
 
 agentkit harness invoke my-harness "Summarize this session" \
-  --model-name doubao-pro \
+  --model-name "your-model-name" \
   --max-llm-calls 10 \
   --registry default
 ```
@@ -548,3 +546,9 @@ Model, tools, skills, system prompt, and runtime settings may also appear at the
 ## Scheduled tasks
 
 With `cronjob` enabled, use `harness cronjob` to create recurring or one-time invocations, inspect results, and pause, resume, or cancel work. See [Harness scheduled tasks](/productions/agentkit-cli/preview/en/commands/harness-cronjob) for configuration, options, and limitations
+
+## Verification and session storage
+
+After deployment, run `agentkit runtime show my-harness` to check the active version, then invoke it with `agentkit harness invoke my-harness "hello"`. Runtime readiness alone does not verify model credentials, MCP services, or databases. Inspect `agentkit runtime logs my-harness --limit 200` if invocation fails
+
+In-memory sessions disappear when the process ends; SQLite sessions depend on one instance's files. Before scaling a shared OAuth Harness across replicas, configure MySQL or PostgreSQL short-term memory and reachable private networking. See [Harness Sidecar](/productions/agentkit-cli/preview/en/agentkit-yaml#harness-sidecar) for managed Sidecar region, capacity, and authentication limits

@@ -3,206 +3,243 @@ title: "模型"
 en_link: "/productions/veadk/preview/en/components/agent/model"
 ---
 
-智能体默认使用全局配置的模型，即通过环境变量或 `config.yaml` 设置的模型（参见[快速开始](/productions/veadk/preview/zh/get-started/quickstart)）。当前默认推理模型为 `doubao-seed-2-1-pro-260628`。也可以在创建智能体时为其单独指定模型。
+模型负责理解输入、选择工具并生成回答。智能体默认读取环境变量或 `config.yaml` 中的全局模型配置，也可以通过 `Agent` 参数为不同智能体分别配置模型、端点和凭证
 
 ## 为单个智能体指定模型
 
-通过 `model_name` 与 `model_provider` 覆盖全局默认模型：
+先完成[安装](/productions/veadk/preview/zh/get-started/installation)，并选择以下一种平台配置。模型需已在对应账号中开通；也可以将名称替换为有权访问的模型或推理接入点
 
-```python lines
-from veadk import Agent
-
-agent = Agent(
-    model_name="doubao-seed-2-1-pro-260628",
-    model_provider="openai",
-)
+<Tabs>
+<Tab title="火山引擎">
+```bash  lines
+export CLOUD_PROVIDER="volcengine"
+export MODEL_AGENT_NAME="doubao-seed-2-1-pro-260628"
+export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+export MODEL_AGENT_API_KEY="<model-api-key>"
 ```
 
-未显式传入时，`model_provider`、`model_api_base`、`model_api_key` 均沿用全局配置。
+</Tab>
+<Tab title="BytePlus">
+```bash  lines
+export CLOUD_PROVIDER="byteplus"
+export MODEL_AGENT_NAME="seed-2-0-lite-260228"
+export MODEL_AGENT_API_BASE="https://ark.ap-southeast.bytepluses.com/api/v3"
+export MODEL_AGENT_API_KEY="<model-api-key>"
+```
 
-使用非原生模型接口（即设置了 `model_provider`）时，VeADK 会在模型尚未输出任何内容的阶段自动对 HTTP 429 限流错误重试一次。重试延迟优先读取响应头中的 `Retry-After`，上限为 2 秒，未提供时使用 0.5 秒。一旦模型已经开始输出内容，不再进行重试，以避免重复输出。
+</Tab>
+</Tabs>
+
+在同一终端运行以下 `main.py`：
+
+```python main.py lines
+import asyncio
+import os
+from veadk import Agent, Runner
+
+agent = Agent(
+    name="assistant",
+    model_name=os.environ["MODEL_AGENT_NAME"],
+    model_provider="openai",
+    model_api_base=os.environ["MODEL_AGENT_API_BASE"],
+    model_api_key=os.environ["MODEL_AGENT_API_KEY"],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain what an AI agent does in one paragraph.",
+        session_id="model-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+执行 `python main.py` 后会输出模型回答。若所有智能体共用上述配置，可以直接使用 `Agent(name="assistant")`
+
+### 模型参数与全局配置
+
+显式构造参数覆盖对应的全局配置；未传入的字段沿用全局值。`config.yaml` 从当前目录向上查找，已有环境变量优先于配置文件中的同名设置。配置文件写法见[快速开始](/productions/veadk/preview/zh/get-started/quickstart)
+
+| 参数 | 类型 | 默认值 | 对应环境变量或说明 |
+| :--- | :--- | :--- | :--- |
+| `model_name` | `str \| list[str]` | 平台默认模型 | `MODEL_AGENT_NAME`；列表用于模型回退 |
+| `model_provider` | `str` | `"openai"` | `MODEL_AGENT_PROVIDER`；LiteLLM 提供商标识，兼容 OpenAI 协议的方舟端点使用 `openai` |
+| `model_api_base` | `str` | 平台默认端点 | `MODEL_AGENT_API_BASE` |
+| `model_api_key` | `str` | `""`，初始化时解析 | `MODEL_AGENT_API_KEY` |
+| `model_api_key_name` | `str` | `""` | `MODEL_AGENT_API_KEY_NAME`；按名称查询方舟 API Key |
+| `model_fallbacks` | `list[str \| ModelFallbackEndpoint]` | `[]` | 追加的回退模型或端点，也接受匹配字段的字典 |
+| `model_extra_config` | `dict` | `{}` | 模型请求的额外配置；可用字段取决于所用接口 |
+| `enable_responses` | `bool` | `False` | 启用火山方舟 Responses API |
+| `enable_responses_cache` | `bool` | `True` | Responses 模式下的缓存开关 |
+
+未覆盖全局默认值时，火山引擎使用 `doubao-seed-2-1-pro-260628` 和 `https://ark.cn-beijing.volces.com/api/v3/`；设置 `CLOUD_PROVIDER=byteplus` 后使用 `seed-2-0-lite-260228` 和 `https://ark.ap-southeast.bytepluses.com/api/v3`。切换平台前请同时检查原有 `MODEL_AGENT_*` 环境变量，避免继续使用另一平台的配置
 
 ### 按名称解析 API Key
 
-除直接设置 `MODEL_AGENT_API_KEY` 外，还可以设置 `MODEL_AGENT_API_KEY_NAME`，让 VeADK 按名称获取火山方舟 API Key。显式提供的 Key 始终优先：
+API Key 的解析顺序为：非空 `model_api_key`、`MODEL_AGENT_API_KEY`、`model_api_key_name` 或 `MODEL_AGENT_API_KEY_NAME` 指定的名称，最后使用账号中默认查询到的 Key
 
 ```bash lines
 export MODEL_AGENT_API_KEY_NAME="production-key"
 ```
 
-创建智能体时也可传入 `model_api_key_name`。该能力从 VeADK 1.0.2 开始提供。
+按名称查询需要有权读取方舟 API Key 的账号凭证；该名称不是密钥值。已有 Key 值时不会再按名称查询。该能力从 VeADK 1.0.2 开始提供
+
+### 限流重试
+
+默认 `adk` 运行时、未启用 Responses 且未传入自定义 `model` 时，VeADK 会对尚未产生任何模型响应的 HTTP 429 错误重试一次。延迟取有效的 `Retry-After` 数值，上限为 2 秒；缺失或无效时使用 0.5 秒。已开始输出的请求不会由这层重试重新执行
 
 ## 配置回退模型
 
-`model_name` 也接受一个列表：第一个为主模型，其余作为回退模型；当主模型不可用时，依次尝试后续模型。
+在前面的示例中额外设置 `BACKUP_MODEL_NAME`，并将 `agent` 定义替换为：
 
-```python lines
+```python  lines
 agent = Agent(
-    model_name=["doubao-seed-2-1-pro-260628", "deepseek-r1-250528"],
+    name="assistant",
+    model_name=[os.environ["MODEL_AGENT_NAME"], os.environ["BACKUP_MODEL_NAME"]],
 )
 ```
 
-回退模型同时适用于默认模型接口与 `enable_responses=True` 的 Responses API。
+列表第一项为主模型，其余按顺序作为回退候选，共用提供商、端点和凭证。也可以使用 `model_fallbacks=["备用模型名称"]` 追加同提供商模型；若两处均有配置，先尝试 `model_name` 列表中的候选，再尝试 `model_fallbacks`
+
+默认模型接口与 Responses API 均可配置同提供商名称回退，候选模型必须支持同一请求所用的工具、多模态或输出格式。回退用于处理请求失败，不会因回答质量不佳自动切换模型
 
 ## 配置跨提供商回退模型
 
-`model_name` 列表只能指定同一提供商下的回退模型。当回退模型使用不同的提供商、API 地址或 API Key 时，通过 `model_fallbacks` 参数指定。`model_fallbacks` 接受字符串或 `ModelFallbackEndpoint` 对象的列表，VeADK 会将其与 `model_name` 列表中的回退条目合并后一并传给 LiteLLM。
+备用模型使用不同提供商、端点或凭证时，使用 `ModelFallbackEndpoint`。运行前除主模型配置外，还需设置 `BACKUP_MODEL_NAME`、`BACKUP_MODEL_PROVIDER`、`BACKUP_MODEL_API_BASE` 和 `BACKUP_MODEL_API_KEY` 为备用服务的实际配置
 
-字符串条目按主模型的 `model_provider` 自动添加提供商前缀，等价于在 `model_name` 列表中追加同提供商模型名称：
-
-```python lines
-from veadk import Agent
-
-agent = Agent(
-    model_name="doubao-seed-2-1-pro-260628",
-    model_provider="ark",
-    model_fallbacks=["deepseek-r1-250528"],
-)
-```
-
-需要跨提供商回退时，使用 `ModelFallbackEndpoint` 为每个回退端点单独指定提供商、API 地址与凭证。`ModelFallbackEndpoint` 已从 `veadk` 顶层包导出：
-
-```python lines
-from veadk import Agent, ModelFallbackEndpoint
+```python fallback.py lines
+import asyncio
+import os
+from veadk import Agent, ModelFallbackEndpoint, Runner
 
 agent = Agent(
-    model_name="doubao-seed-2-1-pro-260628",
-    model_provider="ark",
-    model_api_key="primary-key",
-    model_api_base="https://ark.example.com/api/v3",
+    name="assistant",
     model_fallbacks=[
         ModelFallbackEndpoint(
-            model_provider="openai",
-            model_name="gpt-4o-mini",
-            model_api_base="https://api.openai.com/v1",
+            model_name=os.environ["BACKUP_MODEL_NAME"],
+            model_provider=os.environ["BACKUP_MODEL_PROVIDER"],
+            model_api_base=os.environ["BACKUP_MODEL_API_BASE"],
             model_api_key_env="BACKUP_MODEL_API_KEY",
         ),
     ],
 )
-```
 
-也可以传入与 `ModelFallbackEndpoint` 字段匹配的字典。VeADK 同时接受完整字段名与 LiteLLM 风格的别名：
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain model fallback briefly.", session_id="fallback-demo"
+    ))
 
-```python lines
-agent = Agent(
-    model_name="doubao-seed-2-1-pro-260628",
-    model_provider="ark",
-    model_api_key="primary-key",
-    model_api_base="https://ark.example.com/api/v3",
-    model_fallbacks=[
-        {
-            "model": "openai/gpt-4o-mini",
-            "api_key": "openai-key",
-            "api_base": "https://api.openai.com/v1",
-        }
-    ],
-)
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ### `ModelFallbackEndpoint` 参数
 
 | 参数 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
-| `model_name` | `str` | — | 回退模型名称。不包含提供商前缀时，若未设置 `model_provider` 则使用主模型的 `model_provider`。 |
-| `model_provider` | `Optional[str]` | `None` | 回退模型的提供商。与主模型不同时视为跨提供商回退，需单独提供凭证与 API 地址。 |
-| `model_api_base` | `Optional[str]` | `None` | 回退模型的 API 地址。跨提供商回退时必须设置。 |
-| `model_api_key` | `Optional[str]` | `None` | 回退模型的 API Key，直接以值传入。 |
-| `model_api_key_env` | `Optional[str]` | `None` | 回退模型 API Key 的环境变量名称，VeADK 在运行时读取该环境变量的值。 |
-| `model_extra_config` | `dict` | `{}` | 传递给 LiteLLM 的额外配置。其中 `extra_headers` 和 `extra_body` 会与主模型的 `model_extra_config` 中对应字段深度合并，其余字段以回退端点的值为准。 |
+| `model_name` | `str` | 必填 | 模型名称；不带前缀且未指定提供商时使用主模型提供商 |
+| `model_provider` | `str \| None` | `None` | 备用提供商；使用不同提供商时不会沿用主模型端点和凭证 |
+| `model_api_base` | `str \| None` | `None` | 备用端点；跨提供商未设置时由 LiteLLM 使用提供商默认地址，并非所有提供商都有默认地址 |
+| `model_api_key` | `str \| None` | `None` | 备用 Key 值，优先于 `model_api_key_env` |
+| `model_api_key_env` | `str \| None` | `None` | 保存备用 Key 的环境变量名称，创建智能体时读取；缺失时由 LiteLLM 尝试提供商默认凭证 |
+| `model_extra_config` | `dict` | `{}` | 备用请求配置；显式提供的 `extra_headers`、`extra_body` 字典与主模型对应字典按键合并，备用值覆盖同名键，不递归合并嵌套对象 |
 
-<Note>
-  `ModelFallbackEndpoint` 同时接受 LiteLLM 风格的别名：`model`、`provider`、`api_base`（或 `base_url`）、`api_key`、`api_key_env`、`extra_config`。
-</Note>
+可以使用字典代替对象，支持 `model`、`provider`、`api_base` 或 `base_url`、`api_key`、`api_key_env`、`extra_config` 别名。跨提供商时建议明确填写 `model_provider`、端点和凭证，避免继承不适用的配置
 
-<Warning>
-  使用 `enable_responses=True`（Responses API）时，`model_fallbacks` 仅支持字符串条目（同一提供商的模型名称）。传入 `ModelFallbackEndpoint` 或字典形式的端点会报错。
-</Warning>
+### 回退限制
 
-<Note>
-  在 `codex` 或 `piagent` 运行时中配置 `model_fallbacks` 时，回退链会被忽略，因为外部运行时不构建 LiteLLM 客户端。如需回退能力，请使用默认的 ADK 运行时。详见[运行时](/productions/veadk/preview/zh/components/agent/runtime#切换执行后端)。
-</Note>
-
-<Note>
-  当同时传入 `model`（自定义 LiteLLM 客户端）与 `model_fallbacks` 时，`model_fallbacks` 不会生效；请在自定义模型对象上配置回退。
-</Note>
-
-
+- `enable_responses=True` 只接受字符串形式的同提供商回退；端点对象或字典会导致初始化失败
+- `codex` 和 `piagent` 运行时忽略回退链；需要该能力时使用 `adk`，参见[运行时](/productions/veadk/preview/zh/components/agent/runtime#切换执行后端)
+- 在默认运行时显式传入自定义 `model` 对象时，`model_fallbacks` 不生效，应在该对象上配置回退
 
 ## Responses API
 
-Responses API 是火山方舟推出的接口，原生支持高效的上下文管理，输入输出格式更简洁，并具备更强的工具调用与多模态能力。在 VeADK 中启用后，智能体的每一轮对话都会经由该接口，从而获得原生的上下文缓存与图片、视频、文档理解能力。
+Responses API 提供多轮上下文衔接、多模态输入和结构化输出。使用前确认目标端点与模型支持火山方舟 Responses 协议；普通的 OpenAI 兼容端点不代表支持本节全部能力
 
 ### 启用
 
-在创建智能体时设置 `enable_responses=True`：
-
-```python lines
-from veadk import Agent
-
-agent = Agent(enable_responses=True)
-```
-
-启用 Responses API 要求 `google-adk>=1.34.0`，且所用模型需支持该接口（豆包系列 0615 版本之后默认支持）。
+需要 `google-adk>=1.34.0`。在模型已经配置好的基础上设置 `Agent(enable_responses=True)`；默认关闭该功能。BytePlus 应使用该账号可用且明确支持对应能力的模型与端点，不能仅通过切换开关获得支持
 
 ### 多模态理解
 
-除文本外，Responses API 还支持图片、视频与文档理解。通过 `google.genai.types.FileData` 传入多模态数据，`file_uri` 支持三种来源：
+`FileData.file_uri` 支持以下来源，`mime_type` 应与文件内容一致：
 
-- **本地文件路径**：`file://{本地路径}`，底层自动经 Files API 上传。
-- **Files API 资源**：`file_id://{file_id}`，用于已上传的文件。
-- **网络地址**：直接传入 `https://` 链接，按 `mime_type` 识别类型。
+| 来源 | 写法 | 使用条件 |
+| :--- | :--- | :--- |
+| 本地文件 | `file:///绝对路径/example.png` | 运行进程可读取文件；VeADK 通过 Files API 上传 |
+| 已上传文件 | `file_id://文件标识` | 文件属于可访问的 Files API 资源 |
+| 网络地址 | `https://...` | 模型服务可访问该地址 |
 
-以本地图片为例：
+<Note>
+本地文件会发送到模型服务。运行前确认文件内容适合上传，并检查服务支持的格式与大小限制
+</Note>
 
-```python lines
-import os
+将一张 PNG 图片保存为当前目录的 `example.png`，然后运行 `python image_reader.py`：
+
+```python image_reader.py lines
+import asyncio
+from pathlib import Path
 from google.genai import types
-from google.genai.types import FileData
+from veadk import Agent, Runner
 
-local_path = os.path.abspath("example.png")
-message = types.UserContent(
-    parts=[
-        types.Part(text="描述一下这张图片"),
-        types.Part(
-            file_data=FileData(
-                file_uri=f"file://{local_path}",
-                mime_type="image/png",
-            )
-        ),
-    ],
+async def main():
+    image_path = Path("example.png").resolve(strict=True)
+    agent = Agent(name="image_reader", enable_responses=True)
+    runner = Runner(agent=agent, app_name="image_demo", user_id="demo-user")
+    await runner.session_service.create_session(
+        app_name="image_demo", user_id="demo-user", session_id="image-session"
+    )
+    message = types.Content(role="user", parts=[
+        types.Part(text="Describe this image."),
+        types.Part(file_data=types.FileData(
+            file_uri=image_path.as_uri(), mime_type="image/png"
+        )),
+    ])
+    async for event in runner.run_async(
+        user_id="demo-user", session_id="image-session", new_message=message
+    ):
+        if event.is_final_response() and event.content:
+            print("".join(part.text or "" for part in event.content.parts or []))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+视频元数据应设置在 `types.Part` 上，与 `file_data` 并列。以下片段可替换图片 Part，抽帧频率的可用范围以模型服务为准：
+
+```python  lines
+video_part = types.Part(
+    file_data=types.FileData(
+        file_uri=Path("example.mp4").resolve(strict=True).as_uri(),
+        mime_type="video/mp4",
+    ),
+    video_metadata=types.VideoMetadata(fps=1),
 )
 ```
 
-视频还可在 `FileData` 中附带 `video_metadata`，用 `fps` 控制抽帧频率（默认 1，可在 0.2–5 之间调整）。
-
 ### 配置方舟上下文管理
 
-启用 Responses API 时，可通过 `model_extra_config` 传入方舟支持的 `context_management` 配置。以下示例会清理较早的思维内容，仅保留最近一个思维轮次：
+对于支持 `context_management` 的模型，可通过 `model_extra_config` 提供配置。以下片段请求清理较早的思维内容，仅保留最近一个思维轮次：
 
-```python lines
-from veadk import Agent
-
+```python  lines
 agent = Agent(
     enable_responses=True,
     model_extra_config={
         "context_management": {
-            "edits": [
-                {
-                    "type": "clear_thinking",
-                    "keep": {"type": "thinking_turns", "value": 1},
-                }
-            ]
-        }
+            "edits": [{
+                "type": "clear_thinking",
+                "keep": {"type": "thinking_turns", "value": 1},
+            }],
+        },
     },
 )
 ```
 
 ### 上下文缓存
 
-Responses API 模式下默认开启会话缓存：系统自动存储初始上下文，并在每轮对话中动态更新，后续请求会将缓存内容与新输入合并后再送入模型。这对多轮对话、复杂工具调用等长上下文场景可显著降低重复 token 的开销。
+Responses 模式默认启用缓存。缓存命中取决于服务及请求内容，不保证每次都降低用量。可设置 `enable_responses_cache=False` 关闭
 
-缓存命中情况可通过返回事件的 `usage_metadata` 查看，其中 `cached_content_token_count` 为命中缓存的 token 数，`prompt_token_count` 为输入总 token 数，缓存命中率即两者之比。
+返回事件的 `usage_metadata.cached_content_token_count` 表示缓存命中的 token 数，`prompt_token_count` 表示输入 token 总数；后者大于零时才可计算两者之比。使用 `Runner.run_async` 读取事件以检查用量
 
-<Warning>
-  当智能体设置了 `output_schema` 时，该字段与缓存机制冲突，VeADK 会自动关闭上下文缓存。
-</Warning>
+配置 `output_schema` 时，VeADK 会移除与结构化输出冲突的缓存设置，示例见[结构化输出](/productions/veadk/preview/zh/components/agent/structured-output)
