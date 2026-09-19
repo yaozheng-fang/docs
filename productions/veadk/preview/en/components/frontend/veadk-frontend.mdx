@@ -60,7 +60,7 @@ npm run dev                    # http://localhost:5173, proxies API
 
 ### Component preview
 
-The `frontend` directory includes a standalone component preview page for browsing the shared component library. The preview runs without a backend service, organized by primitives, composites, layouts, node components, and AI APP components, with design tokens, light/dark theme switching, and parameter tables generated from TypeScript interfaces. This entry point is independent of the Studio production build and does not replace existing pages.
+The `frontend` directory includes a standalone component preview page for browsing the shared component library. The preview runs without a backend service, organized into Foundation, Base, Block, AI App, Node, and Layout groups, sorted by component name within each group. Foundation includes a frontend development specification page and design tokens. Each component page provides an in-page table of contents with `#component/section` links for jumping to variant sub-sections and the parameter table. The preview also offers light/dark theme switching and parameter tables generated from TypeScript interfaces. This entry point is independent of the Studio production build and does not replace existing pages.
 
 ```bash lines
 cd frontend

@@ -60,7 +60,7 @@ npm run dev                    # http://localhost:5173，代理 API
 
 ### 组件预览
 
-`frontend` 目录包含一个独立的组件预览页面，用于浏览共享组件库中的组件实现。预览页面不依赖后端服务，按基础组件、复合组件、布局、节点组件和 AI APP 分组展示，包含设计 Token、明暗主题切换和从 TypeScript 接口生成的参数表。此入口独立于 Studio 生产构建，不替换现有业务页面。
+`frontend` 目录包含一个独立的组件预览页面，用于浏览共享组件库中的组件实现。预览页面不依赖后端服务，按 Foundation、Base、Block、AI App、Node、Layout 分组展示，组内按组件名称排序；Foundation 下包含前端开发规范页面和设计 Token，每个组件页面提供本页目录，支持通过 `#组件/小节` 链接跳转到变种子节和参数区。预览页面还提供明暗主题切换和从 TypeScript 接口生成的参数表。此入口独立于 Studio 生产构建，不替换现有业务页面。
 
 ```bash lines
 cd frontend
