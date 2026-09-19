@@ -1,5 +1,6 @@
 ---
 title: "配置云厂商"
+en_link: "/productions/agentkit-cli/archives/0.50.9/en/commands/config"
 ---
 
 `config` 用于查看或修改当前项目的云厂商与区域，也可以管理用户级默认值。项目配置写入 `.agentkit/agentkit.yaml`；全局配置写入 `~/.agentkit/config.yaml`。
@@ -18,7 +19,7 @@ title: "配置云厂商"
 | `-r, --region <region>` | 设置云区域。 | 当前云厂商的默认区域 |
 | `-s, --show` | 显示配置范围、文件路径、云厂商和区域，不修改文件。 | `false` |
 
-```bash
+```bash lines
 # 查看当前项目
 agentkit config --show
 

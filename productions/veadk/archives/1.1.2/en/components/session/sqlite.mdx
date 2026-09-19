@@ -1,5 +1,6 @@
 ---
 title: "Use SQLite storage"
+zh_link: "/productions/veadk/archives/1.1.2/zh/components/session/sqlite"
 ---
 
 The `sqlite` backend persists sessions to a local SQLite file. It needs no external database service, but unlike `local`, sessions are written to disk and therefore survive across processes and restarts.
@@ -12,7 +13,7 @@ The `sqlite` backend persists sessions to a local SQLite file. It needs no exter
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 
@@ -29,7 +30,7 @@ If the DB file doesn't exist, VeADK creates it automatically (including any pare
 
 You can also pass a connection string directly via `db_url`, in which case `backend` and `local_database_path` are both ignored:
 
-```python
+```python lines
 stm = ShortTermMemory(db_url="sqlite:///./test.db")
 ```
 

@@ -1,5 +1,6 @@
 ---
 title: "Migrate an existing agent"
+zh_link: "/productions/agentkit-cli/archives/0.52.0/zh/commands/migrate"
 ---
 
 `migrate` supports two migration modes:
@@ -7,7 +8,7 @@ title: "Migrate an existing agent"
 - Run a local structured migration for LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore projects and generate an AgentKit app.
 - Start a remote migration job for a Dify Workflow, Dify Chatflow, or another type of agent project, then download the generated VeADK project when the job finishes.
 
-```bash
+```bash lines
 agentkit migrate [project-dir] --framework langchain|langgraph|adk|strands|agentcore --entry <file.py:object> [options]
 agentkit migrate [project-dir] --framework dify|any create|list|status [job-id] [options]
 ```
@@ -54,7 +55,7 @@ This command modifies the source project. `--force` overwrites existing generate
 | `-f, --force` | Overwrite existing generated files | `false` |
 | `--json` | Output the migration plan as raw JSON | `false` |
 
-```bash
+```bash lines
 # LangChain agent
 agentkit migrate . --framework langchain --entry agent.py:agent --name support-agent
 
@@ -108,7 +109,7 @@ This operation uploads the source directory to a remote sandbox and may create b
 | `--codex-model-provider <provider>` | Model provider used by the remote migration sandbox | Determined by the current cloud provider |
 | `--codex-api-key-env <name>` | Name of the environment variable containing the remote migration model API key; if omitted, `AGENTKIT_MIGRATE_MODEL_API_KEY` is read | `AGENTKIT_MIGRATE_MODEL_API_KEY` |
 
-```bash
+```bash lines
 export ARK_API_KEY="<your-api-key>"
 
 # Migrate a Dify export
@@ -139,7 +140,7 @@ List locally stored Dify or Any migration job metadata for the selected workspac
 | `[migrate-action]` | Remote action; use `list` to list jobs (required) | — |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit migrate ./dify-export --framework dify list
 agentkit migrate ./source-agent --framework any list --json
 ```
@@ -162,7 +163,7 @@ Query a remote job. After a job succeeds, partially succeeds, or fails, this com
 | `--overwrite` | Replace an existing local result directory | `false` |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit migrate ./dify-export --framework dify status <job-id>
 agentkit migrate ./source-agent --framework any status --job-id <job-id> --json
 ```

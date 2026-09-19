@@ -1,5 +1,6 @@
 ---
 title: "远程技能代理"
+en_link: "/productions/veadk/archives/1.1.6/en/components/tools/remote-skills"
 ---
 
 ## 功能说明
@@ -20,7 +21,7 @@ title: "远程技能代理"
 
 导入路径：
 
-```python
+```python lines
 from veadk.tools.builtin_tools.remote_skills import (
     RemoteSkillDefinition,
     load_remote_skill_definitions,
@@ -35,7 +36,7 @@ from veadk.tools.builtin_tools.remote_skills import (
 3. 调用 `build_remote_skill_tools` 将定义转换为工具函数列表；
 4. 将工具函数注册到 `Agent` 的 `tools` 参数。
 
-```python title="remote_skills_agent.py"
+```python title="remote_skills_agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -69,7 +70,7 @@ if __name__ == "__main__":
 
 也可以直接传入 JSON 字符串而非文件路径：
 
-```python
+```python lines
 definitions = load_remote_skill_definitions(
     '{"remote_skills": [{"name": "report_writer", "description": "生成技术报告", "input_schema": {"type": "object"}}]}'
 )
@@ -80,7 +81,7 @@ tools = build_remote_skill_tools(definitions)
 
 清单为一个 JSON 对象，包含 `remote_skills` 数组，每个元素描述一个远端技能：
 
-```json title="remote-skills.json"
+```json title="remote-skills.json" lines
 {
   "remote_skills": [
     {
@@ -123,7 +124,7 @@ tools = build_remote_skill_tools(definitions)
 
 `build_remote_skill_tools` 为每个 `RemoteSkillDefinition` 生成一个工具函数。函数名取自技能的 `name`，函数 Docstring 包含技能描述和输入 Schema。生成的工具函数签名如下：
 
-```python
+```python lines
 def remote_skill(
     query: str,
     arguments: dict[str, Any] | None = None,
@@ -160,7 +161,7 @@ def remote_skill(
 
 ### load_remote_skill_definitions
 
-```python
+```python lines
 def load_remote_skill_definitions(
     value: str | os.PathLike[str],
 ) -> list[RemoteSkillDefinition]:
@@ -175,7 +176,7 @@ def load_remote_skill_definitions(
 
 ### build_remote_skill_tools
 
-```python
+```python lines
 def build_remote_skill_tools(
     definitions: list[RemoteSkillDefinition],
     *,

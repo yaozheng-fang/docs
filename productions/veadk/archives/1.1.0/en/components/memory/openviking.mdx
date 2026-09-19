@@ -1,5 +1,6 @@
 ---
 title: "Use OpenViking storage"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/memory/openviking"
 ---
 
 The `openviking` long-term memory backend writes conversation messages to OpenViking user memory and retrieves entities, events, and preferences by user identity. It is available in VeADK 1.0.3 and later.
@@ -10,7 +11,7 @@ The `openviking` long-term memory backend writes conversation messages to OpenVi
 
 ## Example
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -70,7 +71,7 @@ When `openviking_user_id` is not configured, VeADK checks `DATABASE_OPENVIKING_U
 
 When `memory_policy` is unset, VeADK sends no policy to OpenViking and the OpenViking service applies its official default. To explicitly control the extraction scope and isolation, pass a valid `memory_policy` whose structure follows the OpenViking session API. For example:
 
-```json
+```json lines
 {"self": {"enabled": false}, "peer": {"enabled": true}, "memory_types": ["entities", "events", "preferences"]}
 ```
 
@@ -93,7 +94,7 @@ This example disables self-memory extraction and only extracts entities, events,
 
 Multi-tenant applications can provide `peer_id_resolver` to combine the application and user into one isolation key:
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 

@@ -1,5 +1,6 @@
 ---
 title: "Runtime"
+zh_link: "/productions/veadk/archives/1.1.12/zh/components/agent/runtime"
 ---
 
 The runtime determines how an agent's inner loop runs — how each turn calls the
@@ -12,7 +13,7 @@ changing the agent itself.
 
 The ADK runtime is the default and needs no extra configuration:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(name="assistant")  # uses the ADK runtime by default
@@ -22,7 +23,7 @@ agent = Agent(name="assistant")  # uses the ADK runtime by default
 
 In the default ADK runtime, when the model issues multiple synchronous tool calls within the same turn, they execute serially and block the event loop. By configuring a thread pool through the `Agent` `tool_thread_pool_config` parameter, synchronous tools (such as `run_code`) can run in separate threads in parallel without blocking the event loop.
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent
 from google.adk.agents.run_config import ToolThreadPoolConfig
 
@@ -52,7 +53,7 @@ When a thread pool is configured and multiple `run_code` calls occur in the same
 
 Use `runtime` to select the inner-loop execution backend:
 
-```python
+```python lines
 agent = Agent(name="assistant", runtime="codex")
 ```
 
@@ -74,7 +75,7 @@ The Codex runtime requires the optional `codex` dependency group, which is not
 installed with VeADK by default. Install the required dependencies before using
 it:
 
-```bash
+```bash lines
 pip install "veadk-python[codex]"
 ```
 
@@ -83,7 +84,7 @@ The `codex` extra includes the OpenAI Codex SDK and the Codex CLI binary.
 The model name, API endpoint, and API key still come from the agent's model
 configuration:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -110,7 +111,7 @@ operations. Broader access must be enabled explicitly.
 Pass a `CodexRuntimeConfig` through the `Agent` `codex_runtime_config`
 parameter:
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent
 from veadk.runtime.codex import CodexRuntimeConfig
 
@@ -171,7 +172,7 @@ twice by default. Use these environment variables to change the behavior:
 
 ### Use PiAgent
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -231,7 +232,7 @@ targets nor given transfer instructions.
 The following example uses a multi-agent tree with the `codex` runtime, where
 the root agent can transfer to its sub-agents:
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent
 
 researcher = Agent(
@@ -283,7 +284,7 @@ The following example uses `SequentialAgent` to chain two agents: the planner's
 output is written to session state via `output_key="plan"`, and the writer reads
 that state in the same session:
 
-```python title="pipeline.py"
+```python title="pipeline.py" lines
 from veadk import Agent
 planner = Agent(
     name="planner",
@@ -341,7 +342,7 @@ Callbacks may be synchronous or asynchronous (`async def`). The following
 example uses `before_model_callback` in the Codex runtime to render PDF
 attachments into images so a vision-capable model can read the document:
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent
 from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
 
@@ -356,7 +357,7 @@ agent = Agent(
 Use `on_model_error_callback` to return a fallback response when the model call
 fails, instead of letting the exception propagate to the caller:
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
@@ -400,7 +401,7 @@ VeADK exposes the following public classes:
 The following example dispatches every non-MCP tool to a remote runtime; MCP
 tools retain their original ADK implementation:
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent, Runner
 from veadk.runtime import DispatchRuntimeProvider, ToolCall
 
@@ -428,7 +429,7 @@ To register directly on an `Agent` instead of through the `Runner` `plugins`
 parameter, pass the `DispatchRuntimeProvider`'s `before_tool_callback` to the
 `Agent`'s `before_tool_callback` parameter:
 
-```python title="agent.py"
+```python title="agent.py" lines
 agent = Agent(
     name="assistant",
     tools=[bash, read_file],
@@ -468,7 +469,7 @@ Without touching business logic, you can inject shared cross-cutting processing
 into each run. Pass a processor to `run_processor`, for example to enforce login
 via identity authentication:
 
-```python
+```python lines
 from veadk import Agent
 from veadk.integrations.ve_identity import AuthRequestProcessor
 
@@ -488,7 +489,7 @@ wrapping the run's event stream, letting you:
 - **intercept, rewrite, or inject** events produced during the run;
 - build control logic such as retries on top of that.
 
-```python
+```python lines
 from veadk.processors.base_run_processor import BaseRunProcessor
 
 class LoggingProcessor(BaseRunProcessor):

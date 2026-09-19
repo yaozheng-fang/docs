@@ -1,5 +1,6 @@
 ---
 title: "Content-safety guardrail"
+zh_link: "/productions/veadk/archives/1.1.13/zh/components/security/content-safety"
 ---
 
 ## Overview
@@ -43,7 +44,7 @@ Before using `content_safety`, purchase an instance, add assets, and obtain its 
 
 Configure in `config.yaml`:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   llm_shield:
     app_id: <your_app_id>
@@ -81,7 +82,7 @@ Compared with the default endpoint, the Lumen Moderate endpoint attaches the cur
 
 Hook the `content_safety` callbacks onto the agent to audit its execution:
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -110,7 +111,7 @@ print(response)
 
 To switch to the Lumen Moderate endpoint, specify the corresponding access address and API key in environment variables or `config.yaml`; the calling code stays the same:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   llm_shield:
     app_id: <your_app_id>

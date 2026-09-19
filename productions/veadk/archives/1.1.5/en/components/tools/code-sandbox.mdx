@@ -1,5 +1,6 @@
 ---
 title: "Code sandboxes"
+zh_link: "/productions/veadk/archives/1.1.5/zh/components/tools/code-sandbox"
 ---
 
 ## Overview
@@ -44,7 +45,7 @@ Environment variables:
 
 `config.yaml` keys:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 agentkit:
   tool_id: your-default-tool-id
   tool_id_script: your-script-tool-id
@@ -68,7 +69,7 @@ After creation, obtain the sandbox ID from the console (looks like `t-ye8dj82xxx
 
 ## Usage
 
-```python title="examples/tools/run_code/agent.py"
+```python title="examples/tools/run_code/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -114,7 +115,7 @@ Shell execution reuses the sandbox ID and credential configuration of `run_code`
 
 The full signature of `run_code`:
 
-```python
+```python lines
 def run_code(
     code: str,
     language: str,
@@ -143,7 +144,7 @@ def run_code(
 
 ### Example
 
-```python title="run_code_bash.py"
+```python title="run_code_bash.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext
@@ -211,7 +212,7 @@ Injected variables are merged with the framework-managed variables that VeADK se
 
 The following example wraps the call as a function tool. `Runner` injects `tool_context` when it invokes a function tool, while the application sets the environment variables for each execution in the wrapper:
 
-```python title="sandbox_env.py"
+```python title="sandbox_env.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext
@@ -267,7 +268,7 @@ For the source and configuration of inbound identity credentials, see [Inbound a
 
 The full signature of `execute_skills`:
 
-```python
+```python lines
 def execute_skills(
     workflow_prompt: str,
     tool_context: ToolContext,
@@ -290,7 +291,7 @@ def execute_skills(
 
 ### Example
 
-```python title="execute_skills_timeout.py"
+```python title="execute_skills_timeout.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext

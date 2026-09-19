@@ -1,5 +1,6 @@
 ---
 title: "构建与部署"
+en_link: "/productions/agentkit-cli/archives/0.50.3/en/commands/deploy"
 ---
 
 `deploy` 命令用于构建并将项目部署到 AgentKit，依次执行配置、构建与应用的完整流程。同时，该流程的各个阶段也以独立子命令的形式提供。
@@ -17,7 +18,7 @@ title: "构建与部署"
 | `--im-feishu-app-id <id>` | 代理所用的飞书 app id。 | — |
 | `--im-feishu-app-secret <secret>` | 代理所用的飞书 app secret。 | — |
 
-```bash
+```bash lines
 agentkit deploy --name my-agent --region cn-beijing --project demo
 ```
 
@@ -34,7 +35,7 @@ agentkit deploy --name my-agent --region cn-beijing --project demo
 | `-p, --project <name>` | AgentKit 项目。 | default |
 | `-f, --force` | 覆盖已生成的文件。 | `false` |
 
-```bash
+```bash lines
 agentkit deploy config --name my-agent --force
 ```
 
@@ -44,7 +45,7 @@ agentkit deploy config --name my-agent --force
 
 `deploy` 不涉及入口点配置——运行时如何启动，完全由构建镜像所用的 Dockerfile 决定。模板 Dockerfile 以 `CMD` 指定启动命令：
 
-```dockerfile
+```dockerfile lines
 EXPOSE 8000
 CMD ["python", "main.py"]
 ```
@@ -57,7 +58,7 @@ CMD ["python", "main.py"]
 
 本地部署时，把变量导出（或放进本机 `.env`，不提交）后再部署：
 
-```bash
+```bash lines
 export MODEL_AGENT_API_KEY=sk-...
 agentkit deploy
 ```
@@ -72,7 +73,7 @@ agentkit deploy
 | --- | --- | --- |
 | _（无选项）_ | 该子命令不接受任何选项。 | — |
 
-```bash
+```bash lines
 agentkit deploy build
 ```
 
@@ -84,6 +85,6 @@ agentkit deploy build
 | --- | --- | --- |
 | _（无选项）_ | 该子命令不接受任何选项。 | — |
 
-```bash
+```bash lines
 agentkit deploy apply
 ```

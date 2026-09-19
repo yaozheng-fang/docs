@@ -1,5 +1,6 @@
 ---
 title: "Build & deploy"
+zh_link: "/productions/agentkit-cli/archives/0.46.6/zh/commands/deploy"
 ---
 
 The `deploy` command builds and deploys the project to AgentKit, running the full pipeline of configuration, build, and apply. It also exposes each stage as a dedicated subcommand.
@@ -17,7 +18,7 @@ Run the full deployment pipeline (config → build → apply). The top-level opt
 | `--im-feishu-app-id <id>` | Feishu app id for the proxy. | — |
 | `--im-feishu-app-secret <secret>` | Feishu app secret for the proxy. | — |
 
-```bash
+```bash lines
 agentkit deploy --name my-agent --region cn-beijing --project demo
 ```
 
@@ -34,7 +35,7 @@ Scaffold the `.agentkit/` directory, generating `agentkit.yaml` and a `Dockerfil
 | `-p, --project <name>` | AgentKit project. | default |
 | `-f, --force` | Overwrite existing generated files. | `false` |
 
-```bash
+```bash lines
 agentkit deploy config --name my-agent --force
 ```
 
@@ -44,7 +45,7 @@ The generated `agentkit.yaml` is the single source of deploy configuration — b
 
 `deploy` has no entrypoint setting — how the runtime starts is determined entirely by the Dockerfile used to build the image. The template Dockerfile sets the start command via `CMD`:
 
-```dockerfile
+```dockerfile lines
 EXPOSE 8000
 CMD ["python", "main.py"]
 ```
@@ -57,7 +58,7 @@ Runtime environment variables are declared in `agentkit.yaml`'s `envs`, with val
 
 For a local deploy, export the variables (or keep them in a local, uncommitted `.env`), then deploy:
 
-```bash
+```bash lines
 export MODEL_AGENT_API_KEY=sk-...
 agentkit deploy
 ```
@@ -72,7 +73,7 @@ Build the image in the cloud and write the artifact.
 | --- | --- | --- |
 | _(no options)_ | This subcommand takes no options. | — |
 
-```bash
+```bash lines
 agentkit deploy build
 ```
 
@@ -84,6 +85,6 @@ Create or update the runtime from the latest built artifact.
 | --- | --- | --- |
 | _(no options)_ | This subcommand takes no options. | — |
 
-```bash
+```bash lines
 agentkit deploy apply
 ```

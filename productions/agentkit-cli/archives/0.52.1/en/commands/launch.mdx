@@ -1,5 +1,6 @@
 ---
 title: "Launch"
+zh_link: "/productions/agentkit-cli/archives/0.52.1/zh/commands/launch"
 ---
 
 `launch` runs build and deploy in one command. It reads the lifecycle config, runs `build`, then runs `deploy` if the build succeeds, making it the normal command for publishing a new project or updated code.
@@ -12,7 +13,7 @@ title: "Launch"
 | `--platform <platform>` | Build platform; `auto` lets the CLI choose. | `auto` |
 | `--preflight-mode <mode>` | Preflight behavior: `prompt`, `fail`, `warn`, or `skip`. | Global `defaults.preflight_mode`, or `prompt` when unset |
 
-```bash
+```bash lines
 agentkit launch --config-file agentkit.yaml --preflight-mode fail
 ```
 

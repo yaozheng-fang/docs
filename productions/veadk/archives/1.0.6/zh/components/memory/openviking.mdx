@@ -1,12 +1,13 @@
 ---
 title: "使用 OpenViking 存储"
+en_link: "/productions/veadk/archives/1.0.6/en/components/memory/openviking"
 ---
 
 `openviking` 长期记忆后端把会话消息写入 OpenViking 的用户记忆，并按用户身份检索实体、事件和偏好。该后端从 VeADK 1.0.3 开始提供。
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -60,7 +61,7 @@ agent = Agent(
 
 多租户应用可以提供 `peer_id_resolver`，把应用和用户组合成单个隔离标识：
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 

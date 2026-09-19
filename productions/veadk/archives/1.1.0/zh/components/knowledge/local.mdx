@@ -1,5 +1,6 @@
 ---
 title: "使用本地内存存储"
+en_link: "/productions/veadk/archives/1.1.0/en/components/knowledge/local"
 ---
 
 `local` 后端使用 LlamaIndex 的内存向量索引存储知识。知识文本先经 embedding 模型向量化，再写入进程内的向量索引，检索时按相似度召回。它无需任何外部服务，是 `KnowledgeBase` 的**默认后端**，最适合本地调试与快速验证。
@@ -15,13 +16,13 @@ title: "使用本地内存存储"
 
 ## 依赖
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -37,7 +38,7 @@ agent = Agent(
 
 也可以通过 `backend_config` 显式传入 embedding 配置：
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 from veadk.configs.model_configs import EmbeddingModelConfig
 
@@ -78,7 +79,7 @@ kb = KnowledgeBase(
 
 ## 环境变量配置
 
-```bash
+```bash lines
 # embedding 模型
 export MODEL_EMBEDDING_NAME="doubao-embedding-vision-250615"
 export MODEL_EMBEDDING_DIM=2048

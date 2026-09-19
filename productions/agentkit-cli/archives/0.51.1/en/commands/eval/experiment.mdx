@@ -1,5 +1,6 @@
 ---
 title: "View experiments and results"
+zh_link: "/productions/agentkit-cli/archives/0.51.1/zh/commands/eval/experiment"
 ---
 
 The `eval experiment` command group (alias `exp`) is used to view experiments submitted by [`eval run`](/productions/agentkit-cli/archives/0.51.1/en/commands/eval/run): list experiments, view an experiment's status and aggregate scores, and fetch per-case results.
@@ -13,7 +14,7 @@ List the experiments in a project: id, name, status, start time, and aggregate s
 | `-p, --project <name>` | Project name | `default` |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit eval experiment list
 ```
 
@@ -27,11 +28,11 @@ Show details of an experiment: status, dataset, target, weighted overall score, 
 | `-p, --project <name>` | Project name | `default` |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit eval experiment get 75901xxxxxxxxxxxxx
 ```
 
-```text
+```text lines
 ID              75901xxxxxxxxxxxxx
 Name            qa-set-2026-07-03-12-16-21
 Status          Success
@@ -57,7 +58,7 @@ Fetch per-case results: each dataset case, the target output, and each evaluator
 | `--page <n>` | Page number | `1` |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit eval experiment results 75901xxxxxxxxxxxxx --json
 ```
 

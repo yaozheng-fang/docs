@@ -1,5 +1,6 @@
 ---
 title: "部署到 AgentKit"
+en_link: "/productions/veadk/archives/1.0.9/en/deploy/agentkit"
 ---
 
 VeADK 可以把本地智能体部署为 AgentKit Runtime，并通过统一的 AgentKit 应用组件提供对话接口、健康检查、智能体拓扑、内置 Web UI、短期会话默认配置和可选的飞书生命周期。
@@ -15,7 +16,7 @@ VeADK 可以把本地智能体部署为 AgentKit Runtime，并通过统一的 Ag
 
 Studio 生成的项目会调用 `create_agentkit_app`。手动创建项目时也可以使用相同入口：
 
-```python title="app.py"
+```python title="app.py" lines
 from agents.customer_support.agent import root_agent
 from veadk.integrations.agentkit import create_agentkit_app
 
@@ -73,7 +74,7 @@ VeADK 1.0.9 起，通过 `create_agentkit_app` 构建的应用会在 `/harness` 
 
 为会话挂载一个内置工具：
 
-```bash
+```bash lines
 curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/capabilities" \
   -H "Content-Type: application/json" \
   -d '{
@@ -85,7 +86,7 @@ curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/
 
 返回示例：
 
-```json
+```json lines
 {
   "schema_version": 1,
   "revision": 1,
@@ -99,7 +100,7 @@ curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/
 
 挂载一个来自 AgentKit Skill 中心的远程技能：
 
-```bash
+```bash lines
 curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/capabilities" \
   -H "Content-Type: application/json" \
   -d '{
@@ -113,7 +114,7 @@ curl -X POST "$RUNTIME_URL/harness/apps/customer_support/users/u-1/sessions/s-1/
 
 运行应用了叠加内容的智能体：
 
-```bash
+```bash lines
 curl -N -X POST "$RUNTIME_URL/harness/run_sse" \
   -H "Content-Type: application/json" \
   -d '{
@@ -162,7 +163,7 @@ curl -N -X POST "$RUNTIME_URL/harness/run_sse" \
 
 在项目目录中运行：
 
-```bash
+```bash lines
 veadk agentkit init
 veadk agentkit config
 veadk agentkit launch
@@ -170,7 +171,7 @@ veadk agentkit launch
 
 部署完成后检查状态并调用 Runtime：
 
-```bash
+```bash lines
 veadk agentkit status
 veadk agentkit invoke -m "介绍你的能力"
 ```

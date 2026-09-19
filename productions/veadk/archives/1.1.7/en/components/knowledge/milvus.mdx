@@ -1,12 +1,13 @@
 ---
 title: "Use Milvus storage"
+zh_link: "/productions/veadk/archives/1.1.7/zh/components/knowledge/milvus"
 ---
 
 The `milvus` backend stores knowledge-chunk embeddings in a Milvus collection. It can connect to Milvus or Zilliz Cloud, or use a local Milvus Lite file. This backend is available in VeADK 1.0.3 and later.
 
 ## Dependencies
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
@@ -14,7 +15,7 @@ pip install "veadk-python[extensions]"
 
 For local validation, point `DATABASE_MILVUS_URI` to a Milvus Lite data file and configure an embedding model:
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="./data/product_docs.db"
 export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 ```
@@ -23,7 +24,7 @@ The first run creates the data file. Later runs can retrieve existing content by
 
 ## Example
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 

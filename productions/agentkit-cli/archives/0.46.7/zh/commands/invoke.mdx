@@ -1,5 +1,6 @@
 ---
 title: "调用运行时"
+en_link: "/productions/agentkit-cli/archives/0.46.7/en/commands/invoke"
 ---
 
 `invoke` 命令按名称或 ID 调用一个已部署的运行时，自动解析其访问端点与鉴权信息后发送消息。
@@ -20,6 +21,6 @@ title: "调用运行时"
 | `--path <path>` | 强制指定端点路径 | 自动检测（ADK 用 `/run_sse`，否则用 `/invoke`） |
 | `--json` | 打印完整 JSON 响应 | `false` |
 
-```bash
+```bash lines
 agentkit invoke my-agent -m "你好，介绍一下你自己"
 ```

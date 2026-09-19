@@ -1,5 +1,6 @@
 ---
 title: "远端沙箱子智能体"
+en_link: "/productions/veadk/archives/1.1.13/en/components/agent/remote-sandbox-agent"
 ---
 
 ## 功能说明
@@ -32,7 +33,7 @@ title: "远端沙箱子智能体"
 
 导入路径：
 
-```python
+```python lines
 from veadk import AgentkitRemoteSandboxAgent
 ```
 
@@ -44,7 +45,7 @@ from veadk import AgentkitRemoteSandboxAgent
 
 将 `AgentkitRemoteSandboxAgent` 注册到协调智能体的 `sub_agents` 列表中。协调智能体在推理过程中通过 `transfer_to_agent` 将任务委派给沙箱子智能体，后者在远端沙箱中执行任务并直接返回结果。
 
-```python title="remote_sandbox_subagent.py"
+```python title="remote_sandbox_subagent.py" lines
 import os
 
 from veadk import Agent, Runner
@@ -75,7 +76,7 @@ runner = Runner(agent=coordinator, short_term_memory=ShortTermMemory())
 
 也可以将 `AgentkitRemoteSandboxAgent` 直接作为应用的根智能体。此模式下没有本地协调智能体，用户发送的文本任务直接在远端沙箱中执行。
 
-```python title="remote_sandbox_root.py"
+```python title="remote_sandbox_root.py" lines
 import os
 
 from veadk import AgentkitRemoteSandboxAgent

@@ -1,5 +1,6 @@
 ---
 title: "Skills"
+zh_link: "/productions/veadk/archives/1.0.2/zh/components/agent/skills"
 ---
 
 A skill is a reusable prompt package that injects specific domain knowledge,
@@ -12,7 +13,7 @@ through VeADK's `VeSkillRegistry`.
 Load a local skill directory with ADK's `load_skill_from_dir` and pass it as a
 standard toolset to the agent:
 
-```python
+```python lines
 from google.adk.skills import load_skill_from_dir
 from google.adk.tools.skill_toolset import SkillToolset
 from veadk import Agent
@@ -32,7 +33,7 @@ agent — VeADK does not create a local code executor by default.
 Connect a cloud skill space through `VeSkillRegistry`, then hand it to
 `SkillToolset`:
 
-```python
+```python lines
 from google.adk.tools.skill_toolset import SkillToolset
 from veadk import Agent
 from veadk.skills import VeSkillRegistry
@@ -50,7 +51,7 @@ demand; when the remote version changes, the new version is re-downloaded.
 A local skill is a directory containing a `SKILL.md` file, and may include
 `references/`, `assets/`, and `scripts/` subdirectories:
 
-```
+```text lines
 skills/
 └── kb-skill/
     ├── SKILL.md
@@ -62,7 +63,7 @@ skills/
 `SKILL.md` must declare `name` and `description` in frontmatter, and the
 directory name must match `name`:
 
-```markdown SKILL.md
+```markdown SKILL.md lines
 ---
 name: kb-skill
 description: A skill that queries the knowledge base and composes an answer.
@@ -85,7 +86,7 @@ is deprecated; migrate to `SkillToolset` above. The `skills_sandbox` and
 
 Sandbox mode example:
 
-```python
+```python lines
 from veadk import Agent
 from veadk.tools.builtin_tools.execute_skills import execute_skills
 

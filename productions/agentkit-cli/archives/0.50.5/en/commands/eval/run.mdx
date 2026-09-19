@@ -1,10 +1,11 @@
 ---
 title: "Run an experiment"
+zh_link: "/productions/agentkit-cli/archives/0.50.5/zh/commands/eval/run"
 ---
 
 `eval run` is the core command that ties the evaluation loop together: it takes an **evaluation dataset** and one or more **evaluators**, and submits an experiment against a **deployed runtime** (the eval target). The dataset, evaluators, and target can all be specified by id or name, and field mapping is done automatically by default.
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator relevance --target my-agent
 ```
 
@@ -39,7 +40,7 @@ Most scenarios need no manual mapping. When field names differ, use `--map` to o
 | `evaluatorField=target:targetOutput` | Evaluator input ← target output field |
 | `target:targetInput=datasetField` | Target input ← dataset field |
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator relevance --target my-agent \
   --map "output=target:actual_output" \
   --map "target:user_input=question"
@@ -49,7 +50,7 @@ agentkit eval run --dataset qa-set --evaluator relevance --target my-agent \
 
 It is strongly recommended to add `--dry-run` before your first run, to confirm the resolved dataset version, target, and field mapping are correct:
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator relevance --target my-agent --dry-run
 ```
 
@@ -59,7 +60,7 @@ An experiment requires the dataset to have a **committed version**. If the datas
 
 Once submitted successfully it returns an experiment id, which you can track with [`eval experiment get`](/productions/agentkit-cli/archives/0.50.5/en/commands/eval/experiment):
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator relevance --target my-agent --json
 # → { "experimentId": "75901...", "name": "qa-set-2026-07-03-12-16-21" }
 ```

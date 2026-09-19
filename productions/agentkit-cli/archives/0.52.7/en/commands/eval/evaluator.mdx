@@ -1,5 +1,6 @@
 ---
 title: "Manage evaluators"
+zh_link: "/productions/agentkit-cli/archives/0.52.7/zh/commands/eval/evaluator"
 ---
 
 The `eval evaluator` command group manages evaluators: browse built-in templates, list and show existing evaluators, create evaluators, update TEA drafts, submit TEA versions, and delete evaluators. An evaluator is typically a rubric prompt backed by a judge model; it receives input fields and produces a score or distribution.
@@ -19,7 +20,7 @@ List built-in evaluator templates. `evaluator templates` is a compatibility entr
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator template list
 agentkit eval evaluator templates --type prompt
 ```
@@ -37,7 +38,7 @@ Show a built-in evaluator template, including its prompt and input fields.
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator template show relevance
 ```
 
@@ -50,7 +51,7 @@ List evaluators in the current project or workspace.
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator list
 ```
 
@@ -65,7 +66,7 @@ Show an evaluator's details: rubric prompt, model configuration, and input field
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator show relevance
 
 agentkit eval evaluator show relevance --evaluator-version 0.0.1
@@ -88,14 +89,14 @@ Create an evaluator. You can clone rubric and input schema from a built-in templ
 
 On Coze, provide at least one of `--from-template` or `--prompt-file`. On TEA, you can create from a template or from a custom prompt and input fields.
 
-```bash
+```bash lines
 agentkit eval evaluator create \
   --name relevance \
   --from-template relevance \
   --model "Doubao 2.0 Pro"
 ```
 
-```bash
+```bash lines
 agentkit eval evaluator create \
   --name custom-score \
   --prompt-file ./rubric.txt \
@@ -125,7 +126,7 @@ Update a TEA evaluator draft. When `--evaluator-content-file` is passed, that JS
 | `--evaluator-type <type>` | Evaluator type; unchanged when omitted. | Unchanged |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator update-draft <evaluator-id> \
   --prompt-file ./rubric.txt \
   --input-schemas-json '[{"key":"input"},{"key":"output"},{"key":"reference_output"}]'
@@ -141,7 +142,7 @@ List TEA evaluator versions.
 | `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator version list --evaluator relevance
 ```
 
@@ -158,7 +159,7 @@ Submit a TEA evaluator draft as a version.
 | `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator version submit 0.0.2 --evaluator relevance --description "Update rubric"
 ```
 
@@ -176,6 +177,6 @@ This command deletes the evaluator. Check the target first; the CLI prompts for 
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator delete relevance -y
 ```

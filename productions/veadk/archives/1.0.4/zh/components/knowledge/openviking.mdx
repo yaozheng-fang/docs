@@ -1,5 +1,6 @@
 ---
 title: "使用 OpenViking 存储"
+en_link: "/productions/veadk/archives/1.0.4/en/components/knowledge/openviking"
 ---
 
 `openviking` 后端把 VeADK 知识库映射到 OpenViking 资源目录。文档解析、索引和检索由 OpenViking 服务完成，因此不需要配置本地 embedding 模型。默认目标目录为 `viking://resources/{index}/`。
@@ -16,12 +17,12 @@ title: "使用 OpenViking 存储"
 
 ## 配置并导入文档
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -37,7 +38,7 @@ agent = Agent(
 
 `add_from_directory` 默认等待 OpenViking 完成解析与索引，最长等待 300 秒。导入完成后可以直接验证检索：
 
-```python
+```python lines
 for entry in kb.search("年假政策", top_k=3):
     print(entry.content)
     print(entry.metadata.get("uri"), entry.metadata.get("score"))
@@ -63,7 +64,7 @@ for entry in kb.search("年假政策", top_k=3):
 
 也可以通过 `backend_config` 显式传入参数：
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(

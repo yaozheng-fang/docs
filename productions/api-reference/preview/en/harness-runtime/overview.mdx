@@ -1,5 +1,6 @@
 ---
 title: "Harness Runtime overview"
+zh_link: "/productions/api-reference/preview/zh/harness-runtime/overview"
 ---
 
 This section covers Harness Runtime deployed with AgentKit CLI `agentkit harness deploy`, including invocation, sessions, artifacts, memory, and optional scheduled tasks
@@ -25,7 +26,7 @@ Use the access URL returned by deployment for a cloud Runtime. A local server ty
 
 The following example targets a KeyAuth deployment with a Runtime API key. Set `HARNESS_URL` to the Runtime URL and `HARNESS_API_KEY` to its access credential. This credential is separate from model API keys and MCP service credentials
 
-```bash
+```bash lines
 curl "$HARNESS_URL/list-apps" \
   -H "Authorization: Bearer $HARNESS_API_KEY"
 
@@ -57,7 +58,7 @@ Only fields explicitly supplied in `harness` apply to the request. Omitted field
 
 MCP servers use the following structure. `protocol` defaults to `streamable-http` and also supports `sse`. `endpoint` must be an HTTP(S) URL without user information or a fragment; `api_key` is optional and must not contain line breaks
 
-```json
+```json lines
 {
   "harness": {
     "mcp_servers": [

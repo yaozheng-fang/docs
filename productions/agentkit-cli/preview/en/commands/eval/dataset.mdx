@@ -1,5 +1,6 @@
 ---
 title: "Manage datasets"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/eval/dataset"
 ---
 
 The `eval dataset` command group manages evaluation sets: list, show, create, update, and delete datasets, add or remove cases, and manage TEA dataset versions. A dataset is the data source for an experiment; its fields, such as `input` and `reference_output`, are mapped to the evaluation target and evaluator during [`eval run`](/productions/agentkit-cli/preview/en/commands/eval/run).
@@ -18,7 +19,7 @@ List evaluation datasets.
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset list
 ```
 
@@ -35,7 +36,7 @@ Show details of an evaluation dataset, including schema, version information, an
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset show qa-set --items 50
 
 agentkit dataset show qa-set --dataset-version 0.0.1 --json
@@ -54,7 +55,7 @@ Create an evaluation dataset. The schema is fixed once created, and a case's key
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset create --name qa-set --schema "input,reference_output"
 ```
 
@@ -78,7 +79,7 @@ Update the name or description of a TEA evaluation dataset.
 | `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset update <dataset-id> --name qa-set-v2 --description "Customer-support QA set"
 ```
 
@@ -96,12 +97,12 @@ Add one or more cases to an evaluation dataset. The Coze backend accepts flat `{
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset add qa-set --field "input=What is the capital of France?" --field "reference_output=Paris"
 agentkit dataset add qa-set --file cases.json
 ```
 
-```json title="items.json"
+```json title="items.json" lines
 [
   {
     "turns": [
@@ -123,7 +124,7 @@ agentkit dataset add qa-set --file cases.json
 ]
 ```
 
-```bash
+```bash lines
 agentkit dataset add qa-set --file ./items.json
 ```
 
@@ -144,7 +145,7 @@ This command removes the selected cases from the dataset. Check the dataset and 
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset remove qa-set item-1 item-2 -y
 ```
 
@@ -163,7 +164,7 @@ This command deletes the entire dataset. Check the target first; the CLI prompts
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 agentkit dataset delete qa-set -y
 ```
 
@@ -181,7 +182,7 @@ List TEA dataset versions.
 | `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset version list --dataset qa-set
 ```
 
@@ -198,6 +199,6 @@ Create a committed version for a TEA evaluation dataset.
 | `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset version create 0.0.2 --dataset qa-set --description "Add edge cases"
 ```

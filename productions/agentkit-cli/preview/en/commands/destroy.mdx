@@ -1,5 +1,6 @@
 ---
 title: "Destroy a runtime"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/destroy"
 ---
 
 `destroy` removes the current deployment described by the root lifecycle configuration, `agentkit.yaml`. In `local` mode it stops and removes the local container. In `cloud` and `hybrid` modes it deletes the recorded AgentKit Runtime and clears the corresponding deployment state.
@@ -15,7 +16,7 @@ This command deletes the container or cloud Runtime selected by the lifecycle co
 | `--config-file <path>` | Lifecycle configuration path. | `agentkit.yaml` |
 | `--force` | Skip the confirmation prompt and delete immediately. | `false` |
 
-```bash
+```bash lines
 agentkit destroy
 agentkit destroy --config-file ./agentkit.yaml --force
 ```

@@ -1,5 +1,6 @@
 ---
 title: "Use Context Search storage"
+zh_link: "/productions/veadk/preview/zh/components/knowledge/context-search"
 ---
 
 The `context_search` backend integrates with the managed Volcengine Context Search service. Files are uploaded to TOS (object storage) via pre-signed URLs, then registered into a Context Search RAG scene; splitting, embedding, and retrieval all run server-side, so **no local embedding is required**.
@@ -16,7 +17,7 @@ The `context_search` backend integrates with the managed Volcengine Context Sear
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -33,7 +34,7 @@ agent = Agent(
 
 You can also pass credentials and engine info explicitly via `backend_config`:
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(
@@ -74,7 +75,7 @@ kb = KnowledgeBase(
 
 ## Environment variables
 
-```bash
+```bash lines
 # Volcengine credentials
 export VOLCENGINE_ACCESS_KEY="your-ak"
 export VOLCENGINE_SECRET_KEY="your-sk"

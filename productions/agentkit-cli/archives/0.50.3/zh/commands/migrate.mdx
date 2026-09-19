@@ -1,5 +1,6 @@
 ---
 title: "迁移已有智能体"
+en_link: "/productions/agentkit-cli/archives/0.50.3/en/commands/migrate"
 ---
 
 `migrate` 支持两种迁移方式：
@@ -7,7 +8,7 @@ title: "迁移已有智能体"
 - 对 LangChain、LangGraph、ADK、Strands 和 Bedrock AgentCore 项目执行本地结构化迁移，生成 AgentKit 应用文件。
 - 对 Dify 导出项目或其他类型的智能体项目启动远程迁移任务，并在任务结束后下载生成的 VeADK 项目。
 
-```bash
+```bash lines
 agentkit migrate [project-dir] --framework langchain|langgraph|adk|strands|agentcore --entry <file.py:object> [options]
 agentkit migrate [project-dir] --framework dify|any create|list|status [job-id] [options]
 ```
@@ -43,7 +44,7 @@ agentkit migrate [project-dir] --framework dify|any create|list|status [job-id] 
 | `-f, --force` | 覆盖已存在的生成文件 | `false` |
 | `--json` | 以原始 JSON 输出迁移计划 | `false` |
 
-```bash
+```bash lines
 # LangChain 智能体
 agentkit migrate . --framework langchain --entry agent.py:agent --name support-agent
 
@@ -97,7 +98,7 @@ agentkit migrate . --framework strands --entry agent.py:build_agent
 | `--codex-model-provider <provider>` | 远程迁移沙箱使用的模型服务 | `model_square` |
 | `--codex-api-key-env <name>` | 保存远程迁移模型 API Key 的环境变量名称；未指定时读取 `AGENTKIT_MIGRATE_MODEL_API_KEY` | `AGENTKIT_MIGRATE_MODEL_API_KEY` |
 
-```bash
+```bash lines
 export ARK_API_KEY="<your-api-key>"
 
 # 迁移 Dify 导出项目
@@ -128,7 +129,7 @@ agentkit migrate ./source-agent --framework any create \
 | `[migrate-action]` | 远程操作，列出任务时为 `list`（必填） | — |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit migrate ./dify-export --framework dify list
 agentkit migrate ./source-agent --framework any list --json
 ```
@@ -151,7 +152,7 @@ agentkit migrate ./source-agent --framework any list --json
 | `--overwrite` | 替换已经存在的本地结果目录 | `false` |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit migrate ./dify-export --framework dify status <job-id>
 agentkit migrate ./source-agent --framework any status --job-id <job-id> --json
 ```

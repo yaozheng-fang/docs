@@ -5,34 +5,52 @@
    are "subject to change" — may need small adjustments on major upgrades.
    ========================================================================= */
 
-/* 1) Reorder the top switchers to:  Logo / Product / Version / Language.
-   The topbar left area is a flex row: [logo] [box: Version, Language] [Product].
-   Push the Version/Language box to AFTER the Product button (order:1) while the
-   logo (order:0, first in DOM) and Product (order:0) keep their spots — giving
-   logo, product, version, language. */
-div:has(> #localization-select-trigger) {
-  order: 1;
+/* Keep the logo on the left, and group language, search and theme
+   controls on the right without changing their DOM or keyboard focus order
+   Preserve Mintlify's collapsed navigation below its desktop breakpoint */
+@media (min-width: 1024px) {
+  #navbar div:has(> div > #localization-select-trigger),
+  #navbar div:has(> #localization-select-trigger) {
+    display: contents;
+  }
+
+  #navbar #localization-select-trigger {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  #navbar div:has(> #search-bar-entry) {
+    flex: 0 0 auto;
+    width: 16rem;
+    margin-left: 0;
+  }
+
+  #navbar #search-bar-entry {
+    width: 100%;
+  }
+
+  #navbar div:has(> #search-bar-entry) + div {
+    flex: 0 0 auto;
+    margin-left: 0;
+  }
+
+  /* Keep the version menu accessible while scrolling the page navigation */
+  #sidebar-content .nav-dropdown-trigger {
+    position: sticky;
+    top: 1rem;
+    z-index: 20;
+    background-color: rgb(var(--background-light));
+  }
+
+  .dark #sidebar-content .nav-dropdown-trigger {
+    background-color: rgb(var(--background-dark));
+  }
 }
 
-/* 2) Move the search box to the far right of the navbar, just left of the
-   theme-toggle icon. The search section is normally a centered flex-1 block;
-   make it compact and give it margin-left:auto so it (and the theme toggle
-   that follows it in the DOM) are pushed to the right edge. */
-div:has(> #search-bar-entry) {
-  flex: 0 0 auto;
-  width: 16rem;
-  margin-left: auto;
-}
-#search-bar-entry {
-  width: 16rem;
-}
-
-/* The theme-toggle section is the sibling right after the search section.
-   Cancel its own auto-margin/grow so it sits snug against the search box
-   instead of leaving a gap. */
-div:has(> #search-bar-entry) + div {
-  flex: 0 0 auto;
-  margin-left: 0;
+/* Version names provide the menu labels without repeated decorative icons */
+.nav-dropdown-trigger .nav-dropdown-item-icon,
+[role="menu"] a[href^="/productions/"] .nav-dropdown-item-icon {
+  display: none;
 }
 
 /* 3) Lock the navbar logo to a consistent size across products / route changes.
@@ -42,4 +60,72 @@ div:has(> #search-bar-entry) + div {
   height: 1.75rem !important;
   width: auto !important;
   max-height: 1.75rem;
+}
+
+/* Maple Mono v7.9 — https://github.com/subframe7536/maple-font
+   Self-hosted under SIL OFL 1.1; license included with the font files */
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/maple-mono/MapleMono-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/maple-mono/MapleMono-SemiBold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/maple-mono/MapleMono-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/maple-mono/MapleMono-Italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Maple Mono";
+  src: url("/fonts/maple-mono/MapleMono-BoldItalic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+}
+
+pre,
+code,
+kbd,
+samp {
+  font-family: "Maple Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+/* OpenAPI request and response examples do not expose fenced-code options */
+#content-side-layout [data-component-part="code-block-root"]:not(.has-line-numbers) pre.shiki > code {
+  counter-reset: api-code-line;
+}
+
+#content-side-layout [data-component-part="code-block-root"]:not(.has-line-numbers) pre.shiki > code > .line::before {
+  content: counter(api-code-line);
+  counter-increment: api-code-line;
+  display: inline-block;
+  width: 3ch;
+  margin-right: 1.1rem;
+  text-align: right;
+  color: inherit;
+  opacity: 0.4;
+  user-select: none;
+  -webkit-user-select: none;
 }

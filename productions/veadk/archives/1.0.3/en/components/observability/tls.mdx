@@ -1,5 +1,6 @@
 ---
 title: "TLS log service"
+zh_link: "/productions/veadk/archives/1.0.3/zh/components/observability/tls"
 ---
 
 `TLSExporter` reports span data to the Volcengine TLS log service over OTLP (HTTP). Data is organized by TLS topic, which suits centralized storage, long-term retention, and cross-service trace analysis.
@@ -14,7 +15,7 @@ title: "TLS log service"
 
 Connecting to TLS is usually two steps: create a log project and tracing instance with the `VeTLS` client, then report data with `TLSExporter`.
 
-```python
+```python lines
 import asyncio
 from os import getenv
 
@@ -51,7 +52,7 @@ asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="se
 
 When `config` is omitted, `topic_id` fetches the tracing topic ID automatically by default:
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
 
 exporter = TLSExporter()
@@ -87,7 +88,7 @@ When `topic_id` is not provided via `OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAM
 
 ## Environment variables
 
-```bash
+```bash lines
 export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT="https://tls-cn-beijing.volces.com:4318/v1/traces"
 export OBSERVABILITY_OPENTELEMETRY_TLS_REGION="cn-beijing"
 export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME="your-tls-trace-topic"
@@ -99,7 +100,7 @@ export VOLCENGINE_SECRET_KEY="your-secret-key"
 
 You can also let `Agent` attach the TLS exporter automatically from an environment variable, without constructing it explicitly:
 
-```bash
+```bash lines
 export ENABLE_TLS=true
 ```
 

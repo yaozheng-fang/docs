@@ -1,5 +1,6 @@
 ---
 title: "Custom tools"
+zh_link: "/productions/veadk/archives/1.0.1/zh/components/tools/custom-function"
 ---
 
 ## Overview
@@ -32,7 +33,7 @@ Put the function in the agent's `tools` list.
 
 The calculator below illustrates this. Note the `divide` branch: on division by zero it returns `status: "error"` with no `result`, consistent with the `status: "success"` of the other branches.
 
-```python title="examples/tools/function_tools/simple_function_tool.py"
+```python title="examples/tools/function_tools/simple_function_tool.py" lines
 import asyncio
 from typing import Any, Dict
 
@@ -82,7 +83,7 @@ print(response)
 
 ### Context-aware functions
 
-```python title="examples/tools/function_tools/tool_context_usage.py"
+```python title="examples/tools/function_tools/tool_context_usage.py" lines
 import asyncio
 
 from google.adk.tools.tool_context import ToolContext
@@ -122,7 +123,7 @@ The tool function can read and update shared session state through `tool_context
 
 Here's a complete, runnable example: the tool returns `pending`, the run loop captures the long-running call, then a `FunctionResponse` feeds back a `finish` status so the agent can produce its final reply.
 
-```python title="examples/tools/function_tools/long_running_tool.py"
+```python title="examples/tools/function_tools/long_running_tool.py" lines
 import asyncio
 from typing import Any
 

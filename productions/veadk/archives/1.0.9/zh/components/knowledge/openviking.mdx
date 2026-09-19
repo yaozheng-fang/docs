@@ -1,5 +1,6 @@
 ---
 title: "使用 OpenViking 存储"
+en_link: "/productions/veadk/archives/1.0.9/en/components/knowledge/openviking"
 ---
 
 `openviking` 后端使用 OpenViking 服务解析、索引和检索资源，无需在 VeADK 进程中配置 embedding 模型。每个 `index` 默认对应 `viking://resources/<index>/` 资源目录。该后端从 VeADK 1.0.3 开始提供。
@@ -8,13 +9,13 @@ title: "使用 OpenViking 存储"
 
 OpenViking SDK 已包含在 VeADK 的基础依赖中：
 
-```bash
+```bash lines
 pip install veadk-python
 ```
 
 准备可访问的 OpenViking 服务和 service owner API Key。生产环境应通过环境变量或密钥管理服务注入凭证：
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
@@ -25,7 +26,7 @@ export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 

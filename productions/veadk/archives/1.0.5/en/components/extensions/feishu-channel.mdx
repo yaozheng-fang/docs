@@ -1,5 +1,6 @@
 ---
 title: "Feishu"
+zh_link: "/productions/veadk/archives/1.0.5/zh/components/extensions/feishu-channel"
 ---
 
 ## Overview
@@ -16,13 +17,13 @@ It listens for the bot's message events and maps Feishu's session identity onto 
 
 Installation:
 
-```bash
+```bash lines
 pip install veadk-python[extensions]
 ```
 
 If you only want this capability, install it on its own:
 
-```bash
+```bash lines
 pip install lark-oapi
 ```
 
@@ -36,7 +37,7 @@ Environment variables:
 
 Or configure in `config.yaml`:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   feishu_channel:
     app_id: cli_xxx
@@ -48,7 +49,7 @@ tool:
 
 ## Usage
 
-```python title="examples/channel/feishu_bot.py"
+```python title="examples/channel/feishu_bot.py" lines
 import asyncio
 
 from veadk import Agent, Runner

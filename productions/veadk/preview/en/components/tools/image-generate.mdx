@@ -1,5 +1,6 @@
 ---
 title: "Image generation"
+zh_link: "/productions/veadk/preview/zh/components/tools/image-generate"
 ---
 
 ## Overview
@@ -32,7 +33,7 @@ Credentials are resolved at tool execution time, not at import time. Importing t
 
 `config.yaml` keys:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 model:
   image:
     name: doubao-seedream-5-0-260128
@@ -42,7 +43,7 @@ model:
 
 ## Usage
 
-```python title="examples/tools/image_generate/agent.py"
+```python title="examples/tools/image_generate/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

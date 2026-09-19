@@ -1,5 +1,6 @@
 ---
 title: "Evaluation loop"
+zh_link: "/productions/agentkit-cli/archives/0.52.5/zh/workflows/evaluation"
 ---
 
 Evaluation closes the "develop → deploy → evaluate → tune" loop: use a fixed dataset and one or more evaluators to score a deployed runtime, then iterate on the quantified results. This page walks through the full flow from initializing a project to viewing evaluation results using a question-answering agent as the example. For details on each command, see [View evaluation backend](/productions/agentkit-cli/preview/en/commands/eval/backend), [Manage datasets](/productions/agentkit-cli/preview/en/commands/eval/dataset), [Manage evaluators](/productions/agentkit-cli/preview/en/commands/eval/evaluator), [Manage evaluation targets](/productions/agentkit-cli/preview/en/commands/eval/target), [Run an experiment](/productions/agentkit-cli/preview/en/commands/eval/run), and [View experiments and results](/productions/agentkit-cli/preview/en/commands/eval/experiment).
@@ -14,7 +15,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
   <Step title="Initialize and deploy an agent">
     Create the project and deploy it to obtain a target runtime to evaluate:
 
-    ```bash
+    ```bash lines
     agentkit init qa-agent --template basic
     cd qa-agent
     agentkit launch
@@ -26,7 +27,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
   <Step title="Create a dataset and add cases">
     The dataset is the data source for an experiment. Create it with the `input` and `reference_output` fields, then add cases one at a time or in bulk:
 
-    ```bash
+    ```bash lines
     agentkit eval dataset create --name qa-set --schema "input,reference_output"
 
     # Add one at a time
@@ -40,7 +41,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
 
     `cases.json` is an array of `{field: value}` objects:
 
-    ```json cases.json
+    ```json cases.json lines
     [
       { "input": "What is the capital of France?", "reference_output": "Paris" },
       { "input": "What is the chemical formula of water?", "reference_output": "H2O" }
@@ -53,7 +54,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
   <Step title="Create an evaluator">
     An evaluator is the judging model that assigns scores. Derive one from a built-in template and point it at your own Ark model endpoint:
 
-    ```bash
+    ```bash lines
     # Browse built-in templates
     agentkit eval evaluator template list
 
@@ -66,7 +67,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
 
     The TEA backend requires an evaluator version when submitting an experiment. After creating or updating the draft, submit a version:
 
-    ```bash
+    ```bash lines
     agentkit eval evaluator version submit 0.0.1 --evaluator relevance
     ```
   </Step>
@@ -74,7 +75,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
   <Step title="Run an experiment">
     Submit the dataset, evaluator, and target runtime as one experiment. On the first run, add `--dry-run` to confirm the resolved dataset version, evaluator version, target, and field mapping are correct:
 
-    ```bash
+    ```bash lines
     # Check first
     agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target qa-agent --dry-run
 
@@ -91,7 +92,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
   <Step title="View results">
     Use the returned experiment id to view the aggregate scores and per-case results:
 
-    ```bash
+    ```bash lines
     # Status, weighted overall score, and per-evaluator averages
     agentkit eval experiment show 75901xxxxxxxxxxxxx
 
@@ -103,7 +104,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
   <Step title="Iterate">
     Improve the agent's prompt, tools, or model based on the results, redeploy, then run the experiment again with the same dataset and evaluator. Compare the aggregate scores and per-case results of the two runs to judge whether the change is an improvement or a regression:
 
-    ```bash
+    ```bash lines
     agentkit launch
     agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target qa-agent
     ```
@@ -114,7 +115,7 @@ Before you start, configure Volcengine AK/SK credentials or obtain valid short-l
 
 The evaluation commands need no browser login and all support `--json`, so they can be orchestrated directly in a CI pipeline: the `experimentId` returned by `eval run` feeds into `eval experiment show` or `results`.
 
-```bash
+```bash lines
 # A minimal loop you can drop into CI
 EXP=$(agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target qa-agent --json | jq -r .experimentId)
 agentkit eval experiment show "$EXP" --json

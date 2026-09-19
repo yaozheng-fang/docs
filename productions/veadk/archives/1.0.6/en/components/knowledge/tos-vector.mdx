@@ -1,5 +1,6 @@
 ---
 title: "Use TOS Vector storage"
+zh_link: "/productions/veadk/archives/1.0.6/zh/components/knowledge/tos-vector"
 ---
 
 The `tos_vector` backend uses a **vector bucket** in Volcengine TOS (object storage) as the vector store. Knowledge text is embedded locally by an embedding model, written to a TOS vector index, and retrieved by cosine similarity. On first use, the vector bucket and index are created automatically if they do not exist.
@@ -11,13 +12,13 @@ The `tos_vector` backend uses a **vector bucket** in Volcengine TOS (object stor
 
 ## Dependencies
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -33,7 +34,7 @@ agent = Agent(
 
 You can also pass credentials and config explicitly via `backend_config`:
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 from veadk.configs.database_configs import TOSVectorConfig
 
@@ -104,7 +105,7 @@ kb = KnowledgeBase(
 
 ## Environment variables
 
-```bash
+```bash lines
 # Volcengine credentials and TOS vector bucket
 export VOLCENGINE_ACCESS_KEY="your-ak"
 export VOLCENGINE_SECRET_KEY="your-sk"

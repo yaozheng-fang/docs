@@ -1,5 +1,6 @@
 ---
 title: "Prompt management"
+zh_link: "/productions/veadk/archives/1.0.9/zh/components/agent/prompt-management"
 ---
 
 In production, system prompts often need versioning and dynamic delivery. Prompt
@@ -15,20 +16,20 @@ CozeLoop's cloud prompt management.
 
 Install the CozeLoop Python SDK:
 
-```bash
+```bash lines
 pip install cozeloop
 ```
 
 Provide credentials via environment variables rather than hardcoding them:
 
-```bash
+```bash lines
 export COZELOOP_WORKSPACE_ID="<your Workspace ID>"
 export COZELOOP_TOKEN="<your CozeLoop token>"
 ```
 
 Create the manager and pass it to the agent:
 
-```python
+```python lines
 import os
 from veadk import Agent
 from veadk.prompts.prompt_manager import CozeloopPromptManager

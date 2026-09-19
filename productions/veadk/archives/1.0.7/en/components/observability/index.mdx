@@ -1,5 +1,6 @@
 ---
 title: "Observability"
+zh_link: "/productions/veadk/archives/1.0.7/zh/components/observability"
 ---
 
 Observability records the full execution path of an agent so you can understand its internal behavior, debug issues, analyze performance, and keep optimizing. VeADK's built-in tracing captures each request — from receiving user input, through model inference, tool calls, memory and knowledge-base reads/writes, to producing a response — as structured span data, and reports it to Volcengine or third-party platforms through exporters.
@@ -33,7 +34,7 @@ An exporter sends span data to a specific backend platform. Each exporter target
 
 Tracing is wired in through the `tracers` field of `Agent`. Construct an exporter for the target backend, hand it to `OpentelemetryTracer`, then attach the tracer to the agent:
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -54,7 +55,7 @@ asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="se
 
 A single tracer can hold multiple exporters, reporting the same spans to several platforms:
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
 from veadk.tracing.telemetry.exporters.cozeloop_exporter import CozeloopExporter
 from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
@@ -100,7 +101,7 @@ By default, spans record the input and output content of the agent, model, and t
 | :--- | :--- | :--- | :--- | :--- |
 | `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | Whether to write prompt, completion, and tool input/output content into spans. Set to `false` to keep only non-content trace information. |
 
-```bash
+```bash lines
 # Disable content capture
 export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
 ```
@@ -109,7 +110,7 @@ export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
 
 The in-memory exporter built into `OpentelemetryTracer` retains spans by `session_id`. Call `dump` to export the current session's spans to a local JSON file for offline analysis:
 
-```python
+```python lines
 path = tracer.dump(user_id="user-1", session_id="session_id_demo")
 print(f"trace written to {path}")
 ```

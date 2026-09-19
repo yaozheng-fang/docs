@@ -1,5 +1,6 @@
 ---
 title: "发布"
+en_link: "/productions/agentkit-cli/archives/0.51.2/en/commands/release"
 ---
 
 `release` 使用 `.agentkit/agentkit.yaml` 执行完整发布流程：生成发布配置、云端构建镜像、创建或更新 AgentKit Runtime，并按配置发布飞书、企业微信、钉钉代理或前端 BFF。若只使用根目录 `agentkit.yaml` 的生命周期配置，请使用 [`launch`](/productions/agentkit-cli/preview/zh/commands/launch)。
@@ -17,7 +18,7 @@ title: "发布"
 | `--im-feishu-app-id <id>` | 飞书代理使用的 App ID。 | `im.feishu.app_id` 或 `FEISHU_APP_ID` |
 | `--im-feishu-app-secret <secret>` | 飞书代理使用的 App Secret；推荐改用 `FEISHU_APP_SECRET`。 | `im.feishu.app_secret` 或 `FEISHU_APP_SECRET` |
 
-```bash
+```bash lines
 agentkit release --name my-agent --region cn-beijing --project default
 ```
 
@@ -36,7 +37,7 @@ agentkit release --name my-agent --region cn-beijing --project default
 | `-p, --project <name>` | AgentKit 项目。 | `default` |
 | `-f, --force` | 覆盖已有生成文件。 | `false` |
 
-```bash
+```bash lines
 agentkit release config --name my-agent --force
 ```
 
@@ -48,7 +49,7 @@ agentkit release config --name my-agent --force
 | --- | --- | --- |
 | _（无选项）_ | 该子命令不接受任何选项。 | — |
 
-```bash
+```bash lines
 agentkit release build
 ```
 
@@ -60,7 +61,7 @@ agentkit release build
 | --- | --- | --- |
 | _（无选项）_ | 该子命令不接受任何选项。 | — |
 
-```bash
+```bash lines
 agentkit release apply
 ```
 

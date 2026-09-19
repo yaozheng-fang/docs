@@ -1,5 +1,6 @@
 ---
 title: "Shared chat"
+zh_link: "/productions/agentkit-cli/archives/0.52.5/zh/commands/chat"
 ---
 
 The `chat` command connects to an OAuth-enabled shared Harness through an alias published by the tenant login discovery document. It is intended for many users sharing one Harness Runtime without sharing chat history: users provide only a trusted alias, and the CLI refreshes tenant discovery, resolves the Runtime endpoint, and obtains a fresh `id_token` from the current OIDC session for each message.
@@ -8,7 +9,7 @@ The `chat` command connects to an OAuth-enabled shared Harness through an alias 
 Before using this command, log in with the tenant login address in identity-only mode. The shared Harness must use `custom_jwt` authentication and be published by an administrator in `shared_harnesses` on the same tenant login discovery document.
 </Note>
 
-```bash
+```bash lines
 agentkit login https://login.example.com/team-a --identity-only
 agentkit chat harness
 ```
@@ -23,7 +24,7 @@ Chat with a shared Harness once or in an interactive session. Passing `[message]
 | `[message]` | One user message to send; omit it for an interactive session. | — |
 | `--session-id <id>` | Resume one of your chat sessions; 1 to 128 characters, starting with a letter or digit, followed by letters, digits, `.`, `_`, `:`, or `-`. | Generated |
 
-```bash
+```bash lines
 agentkit chat harness "Summarize this conversation context"
 
 agentkit chat harness --session-id support-demo
@@ -35,7 +36,7 @@ Shared Harness aliases are resolved only from the tenant login control plane sto
 
 Administrators publish non-secret bindings in the discovery document:
 
-```json
+```json lines
 {
   "shared_harnesses": {
     "harness": {

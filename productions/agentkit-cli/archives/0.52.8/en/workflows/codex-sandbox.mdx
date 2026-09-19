@@ -1,5 +1,6 @@
 ---
 title: "Develop apps in a Codex sandbox"
+zh_link: "/productions/agentkit-cli/archives/0.52.8/zh/workflows/codex-sandbox"
 ---
 
 AgentKit sandboxes provide cloud development environments where you can build applications with coding agents such as Codex. A tool defines environment properties such as compute and networking, while a session retains the files and running state for one development flow. See [Use sandboxes](/productions/agentkit-cli/preview/en/commands/sandbox) for all options.
@@ -18,7 +19,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
   <Step title="Create a development tool">
     Create a `CodeEnv` tool. The CLI waits for it to become ready and writes its ID and name to `.agentkit/sandbox.yaml` in the current project.
 
-    ```bash
+    ```bash lines
     agentkit sandbox create --tool-type CodeEnv --tool-name dev-sandbox
     ```
 
@@ -32,7 +33,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
     `sandbox codex-login` copies local subscription credentials to a remote session. Do not share that session, and delete the session or tool after use. Add `--dry-run` first to inspect the redacted injection operation.
     </Warning>
 
-    ```bash
+    ```bash lines
     agentkit sandbox codex-login \
       --tool-name dev-sandbox \
       --session-id dev \
@@ -46,7 +47,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
   <Step title="Upload the project and open a terminal">
     `sandbox exec` provides an interactive terminal. `--copy` uploads the project before connection, and `--mode tmux` creates or attaches to a persistent terminal named after the session ID.
 
-    ```bash
+    ```bash lines
     agentkit sandbox exec \
       --tool-name dev-sandbox \
       --session-id dev \
@@ -61,7 +62,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
   <Step title="Transfer files">
     After the session exists, use `sandbox scp` to copy files or directories between local and sandbox paths. Prefix remote paths with `sandbox:`.
 
-    ```bash
+    ```bash lines
     # Upload
     agentkit sandbox scp ./local.txt sandbox:/home/gem/my-app/local.txt --session-id dev
 
@@ -73,7 +74,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
   <Step title="Open a web preview">
     Start a web server that listens on an externally accessible port in the persistent terminal, then open its preview:
 
-    ```bash
+    ```bash lines
     agentkit sandbox web --tool-name dev-sandbox --session-id dev
     ```
 
@@ -83,7 +84,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
   <Step title="Clean up resources">
     Confirm that required files have been downloaded. To delete only the development session, identify both the tool and session. To delete the entire tool, omit the session ID.
 
-    ```bash
+    ```bash lines
     # Delete the session
     agentkit sandbox delete --tool-name dev-sandbox --session-id dev --force
 
@@ -97,7 +98,7 @@ Creating a sandbox tool allocates cloud compute resources and may incur charges.
 
 `sandbox shell` runs one non-interactive command in a session and outputs JSON, making it suitable for scripts:
 
-```bash
+```bash lines
 agentkit sandbox shell \
   --tool-name dev-sandbox \
   --session-id dev \

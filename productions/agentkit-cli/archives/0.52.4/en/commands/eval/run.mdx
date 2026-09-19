@@ -1,10 +1,11 @@
 ---
 title: "Run an experiment"
+zh_link: "/productions/agentkit-cli/archives/0.52.4/zh/commands/eval/run"
 ---
 
 `eval run` is the core command that ties the evaluation loop together: it takes an evaluation dataset and one or more evaluators, then submits an experiment against a deployed Runtime or TEA source evaluation target. The dataset, evaluators, and target can all be specified by ID or name, and field mapping is automatic by default.
 
-```bash
+```bash lines
 agentkit eval run \
   --dataset qa-set \
   --evaluator relevance \
@@ -35,7 +36,7 @@ The CLI first resolves the evaluation backend for the current account. On TEA, e
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval run \
   --dataset qa-set \
   --dataset-version 0.0.1 \
@@ -65,7 +66,7 @@ The TEA backend uses prefixed arrow syntax:
 | `evaluator.<field> <- target.<field>` | Evaluator input comes from a target output field. |
 | `target.<field> <- dataset.<field>` | Target input comes from a dataset field. |
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target my-agent \
   --map "evaluator.output <- target.actual_output" \
   --map "target.user_input <- dataset.question"
@@ -83,7 +84,7 @@ The Coze backend uses equals syntax:
 
 It is recommended to add `--dry-run` before your first run, to confirm the resolved dataset version, evaluator versions, target version, and field mapping:
 
-```bash
+```bash lines
 agentkit eval run \
   --dataset qa-set \
   --evaluator relevance \
@@ -98,7 +99,7 @@ An experiment requires a committed dataset version. When `--dataset-version` is 
 
 Once submitted successfully it returns an experiment ID; on TEA it also returns a run ID. Track it with [`eval experiment show`](/productions/agentkit-cli/preview/en/commands/eval/experiment#eval-experiment-show):
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator relevance --evaluator-version 0.0.1 --target my-agent --json
 # → { "experimentId": "75901...", "runId": "75902...", "name": "qa-set-<timestamp>" }
 ```

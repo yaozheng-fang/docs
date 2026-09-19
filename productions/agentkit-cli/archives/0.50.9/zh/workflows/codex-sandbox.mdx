@@ -1,5 +1,6 @@
 ---
 title: "使用 Codex 沙箱开发应用"
+en_link: "/productions/agentkit-cli/archives/0.50.9/en/workflows/codex-sandbox"
 ---
 
 AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智能体开发应用。工具定义计算规格与网络等环境属性；会话保存一次开发过程的文件和运行状态。完整参数见[使用沙箱](/productions/agentkit-cli/archives/0.50.9/zh/commands/sandbox)。
@@ -18,7 +19,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
   <Step title="创建开发工具">
     创建一个 `CodeEnv` 工具。CLI 会等待工具就绪，并把工具 ID 与名称写入当前项目的 `.agentkit/sandbox.yaml`。
 
-    ```bash
+    ```bash lines
     agentkit sandbox create --tool-type CodeEnv --tool-name dev-sandbox
     ```
 
@@ -32,7 +33,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
     `sandbox codex-login` 会把本地订阅凭据复制到远端会话。不要共享该会话；使用完成后删除会话或工具。可先加 `--dry-run` 查看脱敏后的注入操作。
     </Warning>
 
-    ```bash
+    ```bash lines
     agentkit sandbox codex-login \
       --tool-name dev-sandbox \
       --session-id dev \
@@ -45,7 +46,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
   <Step title="上传项目并进入终端">
     `sandbox exec` 提供交互终端。`--copy` 在连接前上传项目，`--mode tmux` 创建或接入与会话 ID 同名的持久终端。
 
-    ```bash
+    ```bash lines
     agentkit sandbox exec \
       --tool-name dev-sandbox \
       --session-id dev \
@@ -60,7 +61,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
   <Step title="传输文件">
     会话建立后，用 `sandbox scp` 在本地和沙箱之间复制文件或目录。远端路径以 `sandbox:` 开头。
 
-    ```bash
+    ```bash lines
     # 上传
     agentkit sandbox scp ./local.txt sandbox:/home/gem/my-app/local.txt --session-id dev
 
@@ -72,7 +73,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
   <Step title="打开 Web 预览">
     在持久终端中启动监听公网可访问端口的 Web 服务，然后打开预览地址：
 
-    ```bash
+    ```bash lines
     agentkit sandbox web --tool-name dev-sandbox --session-id dev
     ```
 
@@ -82,7 +83,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
   <Step title="清理资源">
     先确认所需文件已下载。只删除开发会话时同时指定工具与会话；不再使用工具时省略会话 ID，删除整个工具。
 
-    ```bash
+    ```bash lines
     # 删除会话
     agentkit sandbox delete --tool-name dev-sandbox --session-id dev --force
 
@@ -96,7 +97,7 @@ AgentKit 沙箱提供云端开发环境，可在其中使用 Codex 等编码智�
 
 `sandbox shell` 在会话中执行单条非交互命令并输出 JSON，适合脚本调用：
 
-```bash
+```bash lines
 agentkit sandbox shell \
   --tool-name dev-sandbox \
   --session-id dev \

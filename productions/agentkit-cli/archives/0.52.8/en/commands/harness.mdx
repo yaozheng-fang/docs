@@ -1,5 +1,6 @@
 ---
 title: "Harness"
+zh_link: "/productions/agentkit-cli/archives/0.52.8/zh/commands/harness"
 ---
 
 The `harness` command group creates an agent without writing any application code: initialize a `harness.yaml`, set its fields, then deploy it directly as a runtime.
@@ -15,14 +16,14 @@ Create a harness directory (`harness.yaml` + `.env.example`) for a Harness.
 | `-y, --yes` | Skip prompts and use defaults | `false` |
 | `-f, --force` | Scaffold into a non-empty directory / overwrite `harness.yaml` | `false` |
 
-```bash
+```bash lines
 agentkit harness init my-harness
 agentkit --provider byteplus harness init my-harness --region ap-southeast-1
 ```
 
 `harness.yaml` is the single source of configuration for a code-free agent; `harness deploy` expands it into the runtime's environment variables. In the generated file, common fields are active and each component's optional params are shown commented-out, grouped by backend — set a component's `type`, then uncomment the params under that backend. The complete file looks like this:
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 # =============================================================================
 # AgentKit harness configuration (code-free agent).
 #
@@ -336,7 +337,7 @@ Set fields in `harness.yaml` (partial update; only the flags you pass are change
 | `--registry-endpoint <url>` | AgentKit A2A registry endpoint. | Current cloud environment's AgentKit endpoint |
 | `--registry-region <region>` | AgentKit A2A registry region. | `cloud.region` |
 
-```bash
+```bash lines
 agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
 
 agentkit harness set --registry default --registry-space-name Default --registry-top-k 3
@@ -357,7 +358,7 @@ Start the Harness service locally from `harness.yaml` for development and debugg
 | `--reload` | Restart when the service code changes. | `false` |
 | `--python <bin>` | Python interpreter used to start the service. | `python3` |
 
-```bash
+```bash lines
 agentkit harness dev --reload --port 8000
 ```
 
@@ -372,13 +373,13 @@ Build the harness image and create or update the runtime from `harness.yaml`.
 | `--discovery-url <url>` | OIDC discovery URL (enables OAuth2/JWT, overrides `harness.yaml`) | None |
 | `--allowed-id <ids>` | Comma-separated allowed client IDs (overrides `harness.yaml`) | None |
 
-```bash
+```bash lines
 agentkit harness deploy --project default --region cn-beijing
 ```
 
 When `auth` is configured, deployment creates a `custom_jwt` Runtime. After deployment, publish the returned Runtime ID and HTTPS endpoint in `shared_harnesses` on the tenant login discovery document; users can then access it with [`agentkit chat <alias>`](/productions/agentkit-cli/preview/en/commands/chat).
 
-```json
+```json lines
 {
   "shared_harnesses": {
     "harness": {
@@ -419,7 +420,7 @@ Invoke a deployed Harness and optionally override its model, system prompt, tool
 | `--registry-region <region>` | A2A registry region. | Runtime region |
 | `--protocol <protocol>` | Transport protocol: `invoke` or `run_sse`. | `run_sse` |
 
-```bash
+```bash lines
 agentkit harness invoke my-harness "Hello, introduce yourself"
 
 agentkit harness invoke my-harness "Summarize this session" \
@@ -438,7 +439,7 @@ Print the Harness Sidecar Product Component Catalog. This command only prints JS
 | --- | --- | --- |
 | `--profile <profile>` | Product Component profile: `default` or `ops`. | `ops` |
 
-```bash
+```bash lines
 agentkit harness sidecar catalog --profile ops
 ```
 
@@ -456,7 +457,7 @@ Resolve a profile and component switches into a deterministic Harness Sidecar pl
 | `--catalog-version <version>` | Expected Catalog version. | `2026.07.1` |
 | `--runtime-version <version>` | Target managed Runtime version; omitted to let the platform choose. | — |
 
-```bash
+```bash lines
 agentkit harness sidecar resolve \
   --profile default \
   --component context_engine=true \

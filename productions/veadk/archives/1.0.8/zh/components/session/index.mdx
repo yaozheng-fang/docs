@@ -1,5 +1,6 @@
 ---
 title: "概览"
+en_link: "/productions/veadk/archives/1.0.8/en/components/session"
 ---
 
 短期记忆保存会话级上下文，让智能体在多轮交互中记住之前说过的话。它本质上就是发送给模型的对话上下文——系统提示词加历史消息——VeADK 用 `session_id` 来标识：复用同一个 `session_id`，智能体就能记住之前的轮次。
@@ -14,7 +15,7 @@ title: "概览"
 
 无论使用哪种后端，均通过统一的 `veadk.memory.short_term_memory.ShortTermMemory` 接入。它根据 `backend`（或 `db_url`）选择存储方式，并提供统一的会话管理能力。
 
-```python
+```python lines
 from veadk.memory.short_term_memory import ShortTermMemory
 
 # 通过 backend 选择实现
@@ -57,7 +58,7 @@ stm = ShortTermMemory(backend="sqlite", local_database_path="./stm.db")
 
 短期记忆通常传给 `Runner`，由 `Runner` 自动创建或恢复会话。运行时复用相同的 `session_id` 即可延续上下文。
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -98,7 +99,7 @@ asyncio.run(main())
 
 配置后，`Runner` 会在每次达到间隔时自动压缩会话历史。
 
-```python
+```python lines
 from google.adk.apps.app import App, EventsCompactionConfig
 
 from veadk import Agent
@@ -122,7 +123,7 @@ app = App(
 
 用 `LlmEventSummarizer` 指定压缩使用的模型和提示词模板。模型的 API Key 与 API Base 通过环境变量提供，这里从 `os.environ` 读取，不要硬编码：
 
-```python
+```python lines
 import os
 
 from google.adk.apps.app import App, EventsCompactionConfig

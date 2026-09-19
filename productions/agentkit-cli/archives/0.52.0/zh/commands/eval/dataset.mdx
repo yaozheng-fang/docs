@@ -1,5 +1,6 @@
 ---
 title: "管理评测集"
+en_link: "/productions/agentkit-cli/archives/0.52.0/en/commands/eval/dataset"
 ---
 
 `eval dataset` 命令组用于管理评测集：列出、查看、创建、删除评测集，以及为评测集增删用例。评测集是实验的数据来源，其字段（如 `input`、`reference_output`）会在 [`eval run`](/productions/agentkit-cli/preview/zh/commands/eval/run) 中被映射到目标与评估器。
@@ -18,7 +19,7 @@ title: "管理评测集"
 | `-p, --project <name>` | 项目名称。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset list
 ```
 
@@ -34,7 +35,7 @@ agentkit dataset list
 | `-p, --project <name>` | 项目名称。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset show qa-set --items 50
 ```
 
@@ -51,7 +52,7 @@ agentkit dataset show qa-set --items 50
 | `-p, --project <name>` | 项目名称。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset create --name qa-set --schema "input,reference_output"
 ```
 
@@ -72,7 +73,7 @@ agentkit dataset create --name qa-set --schema "input,reference_output"
 | `-p, --project <name>` | 项目名称。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset add qa-set --field "input=法国的首都是？" --field "reference_output=巴黎"
 ```
 
@@ -93,7 +94,7 @@ agentkit dataset add qa-set --field "input=法国的首都是？" --field "refer
 | `-y, --yes` | 跳过确认提示 | `false` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset remove qa-set item-1 item-2 -y
 ```
 
@@ -112,6 +113,6 @@ agentkit dataset remove qa-set item-1 item-2 -y
 | `-p, --project <name>` | 项目名称。 | `default` |
 | `-y, --yes` | 跳过确认提示 | `false` |
 
-```bash
+```bash lines
 agentkit dataset delete qa-set -y
 ```

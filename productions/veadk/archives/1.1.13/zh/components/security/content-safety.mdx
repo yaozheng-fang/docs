@@ -1,5 +1,6 @@
 ---
 title: "内容安全护栏"
+en_link: "/productions/veadk/archives/1.1.13/en/components/security/content-safety"
 ---
 
 ## 功能说明
@@ -43,7 +44,7 @@ title: "内容安全护栏"
 
 在 `config.yaml` 中配置：
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   llm_shield:
     app_id: <your_app_id>
@@ -81,7 +82,7 @@ tool:
 
 把 `content_safety` 的回调挂到智能体上，即可对执行过程进行审计：
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -110,7 +111,7 @@ print(response)
 
 切换到 Lumen Moderate 端点时，在环境变量或 `config.yaml` 中指定对应的访问地址与 API Key 即可，调用方式不变：
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   llm_shield:
     app_id: <your_app_id>

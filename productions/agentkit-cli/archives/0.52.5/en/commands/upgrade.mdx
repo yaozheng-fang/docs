@@ -1,5 +1,6 @@
 ---
 title: "Check for updates"
+zh_link: "/productions/agentkit-cli/archives/0.52.5/zh/commands/upgrade"
 ---
 
 The `upgrade` command (alias `update`) checks whether the current CLI is behind the latest published version and, when it is, installs the latest version after confirmation.
@@ -13,7 +14,7 @@ Check and upgrade the AgentKit CLI to the latest published version. Run without 
 | `--check` | Only check; do not install. Prints the available update and the install command | `false` |
 | `--json` | Print the check result as JSON (`{ current, latest, behind }`) | `false` |
 
-```bash
+```bash lines
 # Check, then upgrade after confirmation
 agentkit upgrade
 

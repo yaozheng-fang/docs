@@ -1,5 +1,6 @@
 ---
 title: "模型"
+en_link: "/productions/veadk/archives/1.0.0/en/components/agent/model"
 ---
 
 智能体默认使用全局配置的模型，即通过环境变量或 `config.yaml` 设置的模型（参见[快速开始](/productions/veadk/archives/1.0.0/zh/get-started/quickstart)）。也可以在创建智能体时为其单独指定模型。
@@ -10,7 +11,7 @@ title: "模型"
 
 通过 `model_name` 与 `model_provider` 覆盖全局默认模型：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -25,7 +26,7 @@ agent = Agent(
 
 `model_name` 也接受一个列表：第一个为主模型，其余作为回退模型；当主模型不可用时，依次尝试后续模型。
 
-```python
+```python lines
 agent = Agent(
     model_name=["doubao-seed-1-8-251228", "deepseek-r1-250528"],
 )
@@ -43,7 +44,7 @@ Responses API 是火山方舟推出的接口，原生支持高效的上下文管
 
 在创建智能体时设置 `enable_responses=True`：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(enable_responses=True)
@@ -61,7 +62,7 @@ agent = Agent(enable_responses=True)
 
 以本地图片为例：
 
-```python
+```python lines
 import os
 from google.genai import types
 from google.genai.types import FileData

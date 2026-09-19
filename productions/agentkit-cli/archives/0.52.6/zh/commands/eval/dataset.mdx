@@ -1,5 +1,6 @@
 ---
 title: "管理评测集"
+en_link: "/productions/agentkit-cli/archives/0.52.6/en/commands/eval/dataset"
 ---
 
 `eval dataset` 命令组用于管理评测集：列出、查看、创建、更新和删除评测集，为评测集增删用例，并管理 TEA 评测集版本。评测集是实验的数据来源，其字段（如 `input`、`reference_output`）会在 [`eval run`](/productions/agentkit-cli/preview/zh/commands/eval/run) 中映射到评测目标与评估器。
@@ -18,7 +19,7 @@ title: "管理评测集"
 | `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset list
 ```
 
@@ -35,7 +36,7 @@ agentkit dataset list
 | `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset show qa-set --items 50
 
 agentkit dataset show qa-set --dataset-version 0.0.1 --json
@@ -54,7 +55,7 @@ agentkit dataset show qa-set --dataset-version 0.0.1 --json
 | `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset create --name qa-set --schema "input,reference_output"
 ```
 
@@ -78,7 +79,7 @@ agentkit dataset create --name qa-set --schema "input,reference_output"
 | `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset update <dataset-id> --name qa-set-v2 --description "客服问答评测集"
 ```
 
@@ -96,11 +97,11 @@ agentkit dataset update <dataset-id> --name qa-set-v2 --description "客服问�
 | `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset add qa-set --field "input=法国的首都是？" --field "reference_output=巴黎"
 ```
 
-```json title="items.json"
+```json title="items.json" lines
 [
   {
     "turns": [
@@ -122,7 +123,7 @@ agentkit dataset add qa-set --field "input=法国的首都是？" --field "refer
 ]
 ```
 
-```bash
+```bash lines
 agentkit dataset add qa-set --file ./items.json
 ```
 
@@ -143,7 +144,7 @@ agentkit dataset add qa-set --file ./items.json
 | `-y, --yes` | 跳过确认提示。 | `false` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset remove qa-set item-1 item-2 -y
 ```
 
@@ -162,7 +163,7 @@ agentkit dataset remove qa-set item-1 item-2 -y
 | `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset delete qa-set -y
 ```
 
@@ -180,7 +181,7 @@ agentkit dataset delete qa-set -y
 | `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset version list --dataset qa-set
 ```
 
@@ -197,6 +198,6 @@ agentkit dataset version list --dataset qa-set
 | `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit dataset version create 0.0.2 --dataset qa-set --description "补充边界用例"
 ```

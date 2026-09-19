@@ -1,5 +1,6 @@
 ---
 title: "Manage datasets"
+zh_link: "/productions/agentkit-cli/archives/0.50.5/zh/commands/eval/dataset"
 ---
 
 The `eval dataset` command group manages evaluation sets: list, show, create, and delete datasets, and add or remove cases within a dataset. A dataset is the data source for an experiment; its fields (such as `input` and `reference_output`) are mapped to the target and the evaluator during [`eval run`](/productions/agentkit-cli/archives/0.50.5/en/commands/eval/run).
@@ -12,7 +13,7 @@ These subcommands are also available as top-level aliases, so the `eval` prefix 
 
 List evaluation datasets.
 
-```bash
+```bash lines
 agentkit dataset list
 ```
 
@@ -25,7 +26,7 @@ Show details of an evaluation dataset, including its case items.
 | `<id>` | Evaluation set id or name (required) | None |
 | `--items <n>` | List up to N case items (0 to skip) | `20` |
 
-```bash
+```bash lines
 agentkit dataset show qa-set --items 50
 ```
 
@@ -39,7 +40,7 @@ Create an evaluation dataset. The schema is fixed once created, and a case's key
 | `--schema <fields>` | Comma-separated field names | `input,reference_output,output` |
 | `--description <text>` | Dataset description | None |
 
-```bash
+```bash lines
 agentkit dataset create --name qa-set --schema "input,reference_output"
 ```
 
@@ -57,7 +58,7 @@ Add one or more cases to an evaluation dataset.
 | `--field <key=value>` | Case field (repeatable) | None |
 | `--file <path>` | JSON file: an object, or an array of `{field: value}` objects | None |
 
-```bash
+```bash lines
 agentkit dataset add qa-set --field "input=What is the capital of France?" --field "reference_output=Paris"
 ```
 
@@ -71,7 +72,7 @@ Remove one or more cases from an evaluation dataset.
 | `<itemIds...>` | Case item id(s) to remove (one or more, required) | None |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 
-```bash
+```bash lines
 agentkit dataset remove qa-set item-1 item-2 -y
 ```
 
@@ -84,6 +85,6 @@ Delete an evaluation dataset.
 | `<id>` | Evaluation set id or name (required) | None |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 
-```bash
+```bash lines
 agentkit dataset delete qa-set -y
 ```

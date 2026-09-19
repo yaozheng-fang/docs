@@ -1,5 +1,6 @@
 ---
 title: "技能"
+en_link: "/productions/veadk/archives/1.0.7/en/components/agent/skills"
 ---
 
 技能是一种可复用的提示词包，用于为智能体注入特定的领域知识、操作流程与脚本。技能与 Google ADK 兼容：本地技能推荐通过 ADK 的 `SkillToolset` 接入，云端技能空间推荐通过 VeADK 的 `VeSkillRegistry` 接入。
@@ -8,7 +9,7 @@ title: "技能"
 
 用 ADK 的 `load_skill_from_dir` 加载本地技能目录，并作为标准工具集传给智能体：
 
-```python
+```python lines
 from google.adk.skills import load_skill_from_dir
 from google.adk.tools.skill_toolset import SkillToolset
 from veadk import Agent
@@ -23,7 +24,7 @@ agent = Agent(tools=[SkillToolset(skills=[skill])])
 
 云端技能空间通过 `VeSkillRegistry` 接入，再交给 `SkillToolset`：
 
-```python
+```python lines
 from google.adk.tools.skill_toolset import SkillToolset
 from veadk import Agent
 from veadk.skills import VeSkillRegistry
@@ -40,7 +41,7 @@ Harness 可以同时加载 Skill Hub 技能和 AgentKit 技能中心的技能空
 
 技能中心需要可读取该技能空间及其对象存储内容的火山引擎凭证。本地运行时设置 `VOLCENGINE_ACCESS_KEY` 与 `VOLCENGINE_SECRET_KEY`，使用临时凭证时同时设置 `VOLCENGINE_SESSION_TOKEN`；VeFaaS 中也可以使用绑定 IAM Role 的临时凭证。
 
-```bash
+```bash lines
 cd my-harness
 veadk harness add \
   --skills "data-visualization-cloud,space:ss-example"
@@ -48,7 +49,7 @@ veadk harness add \
 
 生成的 `harness.yaml` 使用列表保存技能来源：
 
-```yaml
+```yaml lines
 skills:
   - data-visualization-cloud
   - space:ss-example
@@ -56,7 +57,7 @@ skills:
 
 Harness 启动时会下载并加载基础配置中的技能。`space:ss-example` 会加载该技能空间中的全部技能，并与 Skill Hub 技能组成一个 `SkillToolset`。调用时也可以临时增加技能空间：
 
-```bash
+```bash lines
 veadk harness invoke \
   --name research-agent \
   --message "整理一份研究报告" \
@@ -69,7 +70,7 @@ veadk harness invoke \
 
 一个本地技能由独立目录构成，包含一个 `SKILL.md` 文件，并可包含 `references/`、`assets/`、`scripts/` 等子目录：
 
-```
+```text lines
 skills/
 └── kb-skill/
     ├── SKILL.md
@@ -80,7 +81,7 @@ skills/
 
 `SKILL.md` 需在 frontmatter 中声明 `name` 与 `description`，且目录名必须与 `name` 一致：
 
-```markdown SKILL.md
+```markdown SKILL.md lines
 ---
 name: kb-skill
 description: 查询知识库并整理答案的技能。
@@ -101,7 +102,7 @@ VeADK 旧的 `Agent(skills=..., skills_mode="local")` 本地入口仍保持兼�
 
 沙箱模式示例：
 
-```python
+```python lines
 from veadk import Agent
 from veadk.tools.builtin_tools.execute_skills import execute_skills
 

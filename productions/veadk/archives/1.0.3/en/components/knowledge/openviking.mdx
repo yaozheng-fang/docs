@@ -1,5 +1,6 @@
 ---
 title: "Store knowledge in OpenViking"
+zh_link: "/productions/veadk/archives/1.0.3/zh/components/knowledge/openviking"
 ---
 
 The `openviking` backend manages knowledge files and text as OpenViking
@@ -12,14 +13,14 @@ an embedding model for this backend. Each `KnowledgeBase.index` maps to
 Prepare a reachable OpenViking service and an API key. VeADK 1.0.3 includes
 `openviking-sdk>=0.1.3` in its base dependencies.
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="${OPENVIKING_API_KEY}"
 ```
 
 ## Example
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 knowledgebase = KnowledgeBase(

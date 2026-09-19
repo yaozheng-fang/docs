@@ -1,5 +1,6 @@
 ---
 title: "Harness Runtime 概述"
+en_link: "/productions/api-reference/preview/en/harness-runtime/overview"
 ---
 
 本章描述通过 AgentKit CLI `agentkit harness deploy` 部署的 Harness Runtime，包括智能体调用、会话、制品、记忆和可选定时任务接口
@@ -25,7 +26,7 @@ title: "Harness Runtime 概述"
 
 下例适用于配置了 Runtime API Key 的 KeyAuth 部署。环境变量 `HARNESS_URL` 为 Runtime 地址，`HARNESS_API_KEY` 为 Runtime 访问凭证；它不是模型 API Key，也不是 MCP 服务凭证
 
-```bash
+```bash lines
 curl "$HARNESS_URL/list-apps" \
   -H "Authorization: Bearer $HARNESS_API_KEY"
 
@@ -57,7 +58,7 @@ curl -N "$HARNESS_URL/run_sse" \
 
 MCP 服务使用以下结构，`protocol` 默认 `streamable-http`，也可选择 `sse`。`endpoint` 必须是 HTTP(S) 地址，不能包含用户名密码或片段标识；`api_key` 可省略，不允许换行
 
-```json
+```json lines
 {
   "harness": {
     "mcp_servers": [

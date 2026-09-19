@@ -1,5 +1,6 @@
 ---
 title: "使用 OpenViking 存储"
+en_link: "/productions/veadk/archives/1.0.4/en/components/memory/openviking"
 ---
 
 `openviking` 后端将会话提交给 OpenViking，由服务提取用户相关的实体、事件和偏好，并在后续会话中按用户检索。它会同时保留用户消息和智能体回复，以便 OpenViking 从完整对话中生成记忆。
@@ -16,12 +17,12 @@ title: "使用 OpenViking 存储"
 
 ## 配置长期记忆
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -67,7 +68,7 @@ agent = Agent(
 
 显式配置示例：
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 memory = LongTermMemory(
@@ -87,7 +88,7 @@ memory = LongTermMemory(
 
 默认情况下，OpenViking peer 标识等于 VeADK 的 `user_id`。多租户应用可以提供 `peer_id_resolver`，把租户和用户组合成单个安全标识：
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 

@@ -1,5 +1,6 @@
 ---
 title: "agentkit.yaml"
+zh_link: "/productions/agentkit-cli/archives/0.52.5/zh/agentkit-yaml"
 ---
 
 AgentKit CLI currently uses two `agentkit.yaml` files:
@@ -13,7 +14,7 @@ This page covers the root lifecycle config first, then the `.agentkit/agentkit.y
 
 Root `agentkit.yaml` describes how an agent application is built, deployed, and inspected. `common.launch_type` selects the active strategy: `local` means local Docker build and local container deploy, `cloud` means cloud build and cloud runtime deploy, and `hybrid` means local build followed by cloud runtime deploy.
 
-```yaml title="agentkit.yaml"
+```yaml title="agentkit.yaml" lines
 common:
   agent_name: my-agent
   entry_point: agent.py
@@ -148,7 +149,7 @@ The CLI loads the project's `.env` (from the working directory) before resolving
 
 ## Release Config Full Example
 
-```yaml title=".agentkit/agentkit.yaml"
+```yaml title=".agentkit/agentkit.yaml" lines
 # agentkit.yaml — AgentKit release configuration (fully yaml-driven).
 #
 # `agentkit release` reads everything from this file — no flags required.
@@ -339,7 +340,7 @@ The `runtime` block configures compute resources and the scaling policy.
 Managed Harness Sidecar currently supports only Volcengine `cn-shanghai`, CPython 3.12, `linux/amd64`, and exactly one runtime instance, so both `runtime.min_instance` and `runtime.max_instance` must be `1`. It also requires the release environment to provide the platform-managed Sidecar base image configuration; release fails in ordinary local environments where that configuration is unavailable. Sidecar releases must use the default `key_auth` gateway auth and cannot be combined with `custom_jwt` or frontend BFF-derived auth.
 </Warning>
 
-```yaml
+```yaml lines
 runtime:
   region: cn-shanghai
   min_instance: 1
@@ -401,7 +402,7 @@ Use [`harness sidecar resolve`](/productions/agentkit-cli/preview/en/commands/ha
 
 `envs` declares the environment variables injected into the runtime. To keep secrets out of the repository, reference the deploy environment with `${VAR}` (syntax at the top of this page); the CLI resolves them at deploy time.
 
-```yaml
+```yaml lines
 envs:
   MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY:?set MODEL_AGENT_API_KEY in your env}
   LOG_LEVEL: ${LOG_LEVEL:-info}

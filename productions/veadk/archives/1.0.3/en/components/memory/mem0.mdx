@@ -1,5 +1,6 @@
 ---
 title: "Use Mem0 storage"
+zh_link: "/productions/veadk/archives/1.0.3/zh/components/memory/mem0"
 ---
 
 The `mem0` backend uses [Mem0](https://mem0.ai/) as long-term storage. It is a managed service where Mem0 handles memory extraction, storage, and retrieval, requiring no self-hosted vector store or local embedding — **recommended for production**.
@@ -12,13 +13,13 @@ The `mem0` backend uses [Mem0](https://mem0.ai/) as long-term storage. It is a m
 
 ## Dependencies
 
-```bash
+```bash lines
 pip install mem0
 ```
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -33,7 +34,7 @@ agent = Agent(
 
 You can also pass config explicitly via `backend_config`:
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 from veadk.configs.database_configs import Mem0Config
 
@@ -78,7 +79,7 @@ If `api_key` is provided directly, it is used as is; otherwise VeADK tries to fe
 
 ## Environment variables
 
-```bash
+```bash lines
 # Option 1: provide the API key directly
 export DATABASE_MEM0_API_KEY="your-mem0-api-key"
 export DATABASE_MEM0_BASE_URL="https://api.mem0.ai/v1"

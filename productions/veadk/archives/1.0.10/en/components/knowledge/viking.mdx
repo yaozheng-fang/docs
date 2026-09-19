@@ -1,5 +1,6 @@
 ---
 title: "Use VikingDB storage"
+zh_link: "/productions/veadk/archives/1.0.10/zh/components/knowledge/viking"
 ---
 
 The `viking` backend integrates with the managed Volcengine VikingDB knowledge base service. Files are first uploaded to TOS (object storage), then registered into a VikingDB collection; splitting, embedding, and retrieval all run server-side, so **no local embedding is required**. It is the recommended backend for production.
@@ -18,7 +19,7 @@ The `viking` backend integrates with the managed Volcengine VikingDB knowledge b
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -35,7 +36,7 @@ agent = Agent(
 
 You can also pass project and credentials explicitly via `backend_config`:
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 from veadk.configs.database_configs import TOSConfig
 
@@ -98,7 +99,7 @@ Besides `query` and `top_k`, the `search` method also supports:
 
 ## Environment variables
 
-```bash
+```bash lines
 # Volcengine credentials
 export VOLCENGINE_ACCESS_KEY="your-ak"
 export VOLCENGINE_SECRET_KEY="your-sk"

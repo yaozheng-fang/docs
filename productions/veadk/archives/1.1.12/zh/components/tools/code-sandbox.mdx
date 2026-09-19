@@ -1,5 +1,6 @@
 ---
 title: "代码沙箱"
+en_link: "/productions/veadk/archives/1.1.12/en/components/tools/code-sandbox"
 ---
 
 ## 功能说明
@@ -53,7 +54,7 @@ VeADK 提供一组在 [AgentKit 沙箱](https://console.volcengine.com/agentkit)
 
 `config.yaml` 配置项：
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 agentkit:
   tool_id: your-default-tool-id
   tool_id_script: your-script-tool-id
@@ -77,7 +78,7 @@ agentkit:
 
 ## 使用方法
 
-```python title="examples/tools/run_code/agent.py"
+```python title="examples/tools/run_code/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -122,7 +123,7 @@ if __name__ == "__main__":
 
 `run_code` 的完整签名如下：
 
-```python
+```python lines
 def run_code(
     code: str,
     language: str,
@@ -151,7 +152,7 @@ def run_code(
 
 ### 使用示例
 
-```python title="run_code_bash.py"
+```python title="run_code_bash.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext
@@ -219,7 +220,7 @@ if __name__ == "__main__":
 
 下面的示例将调用封装为函数工具。`Runner` 调用函数工具时会注入 `tool_context`，应用只需在封装函数中设置本次执行需要的环境变量：
 
-```python title="sandbox_env.py"
+```python title="sandbox_env.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext
@@ -275,7 +276,7 @@ if __name__ == "__main__":
 
 `execute_skills` 的完整签名如下：
 
-```python
+```python lines
 def execute_skills(
     workflow_prompt: str,
     tool_context: ToolContext,
@@ -298,7 +299,7 @@ def execute_skills(
 
 ### 使用示例
 
-```python title="execute_skills_timeout.py"
+```python title="execute_skills_timeout.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext

@@ -1,10 +1,11 @@
 ---
 title: "运行评测实验"
+en_link: "/productions/agentkit-cli/archives/0.52.2/en/commands/eval/run"
 ---
 
 `eval run` 是串联评测闭环的核心命令：它以一个评测集、一个或多个评估器，对一个已部署的运行时或 TEA 源评测目标提交一次实验。评测集、评估器与目标均可用 ID 或名称指定，字段映射默认自动完成。
 
-```bash
+```bash lines
 agentkit eval run \
   --dataset qa-set \
   --evaluator 相关性 \
@@ -35,7 +36,7 @@ CLI 会先解析当前账号使用的评测后端。TEA 后端要求每个 `--ev
 | `-p, --project <name>` | Coze 项目名称；TEA 后端忽略。 | `default` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit eval run \
   --dataset qa-set \
   --dataset-version 0.0.1 \
@@ -65,7 +66,7 @@ TEA 后端使用带前缀的箭头语法：
 | `evaluator.<字段> <- target.<字段>` | 评估器输入取自目标输出字段。 |
 | `target.<字段> <- dataset.<字段>` | 目标输入取自评测集字段。 |
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator 相关性 --evaluator-version 0.0.1 --target my-agent \
   --map "evaluator.output <- target.actual_output" \
   --map "target.user_input <- dataset.question"
@@ -83,7 +84,7 @@ Coze 后端使用等号语法：
 
 建议首次运行前加 `--dry-run`，确认解析出的评测集版本、评估器版本、目标版本与字段映射无误：
 
-```bash
+```bash lines
 agentkit eval run \
   --dataset qa-set \
   --evaluator 相关性 \
@@ -98,7 +99,7 @@ agentkit eval run \
 
 提交成功后返回实验 ID；TEA 后端还会返回 run ID。可用 [`eval experiment show`](/productions/agentkit-cli/preview/zh/commands/eval/experiment#eval-experiment-show) 跟踪：
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator 相关性 --evaluator-version 0.0.1 --target my-agent --json
 # → { "experimentId": "75901...", "runId": "75902...", "name": "qa-set-<timestamp>" }
 ```

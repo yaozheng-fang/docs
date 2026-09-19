@@ -1,5 +1,6 @@
 ---
 title: "VeADK Web"
+zh_link: "/productions/veadk/archives/1.0.6/zh/components/frontend/veadk-web"
 ---
 
 `veadk web` wraps Google ADK's `adk web` to launch a visual debugging UI: chat with your agent and observe its execution in the browser, with zero frontend code. Compared with running `adk web` directly, it adds automatic integration of VeADK memory, warnings for workflow agents, an optional VeIdentity SSO login, and it disables the OpenAPI documentation routes and trims noisy logging by default. It is intended for local development and troubleshooting.
@@ -10,7 +11,7 @@ title: "VeADK Web"
 
 Run the command from the parent folder of your agent directories. Each subdirectory that contains an `agent.py` exposing a `root_agent` becomes a selectable app in the UI.
 
-```bash
+```bash lines
 # the agents directory is a positional argument, defaulting to the current directory
 veadk web examples
 
@@ -47,7 +48,7 @@ The options below are provided by the underlying `adk web` and passed through by
 | `--oauth2-user-pool-client` | — | VeIdentity User Pool client name. |
 | `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | OAuth2 redirect URI. When not set explicitly, it is derived from the passthrough `--host` and `--port`. |
 
-```bash
+```bash lines
 veadk web examples \
 --oauth2-user-pool "your-user-pool-name" \
 --oauth2-user-pool-client "your-user-pool-client-name"

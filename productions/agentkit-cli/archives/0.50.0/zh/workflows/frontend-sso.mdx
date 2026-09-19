@@ -1,5 +1,6 @@
 ---
 title: "部署带 SSO 登录的前端"
+en_link: "/productions/agentkit-cli/archives/0.50.0/en/workflows/frontend-sso"
 ---
 
 给智能体配一个**公网前端**：用户经 Volcengine 用户池 OAuth 登录（用户池可联合飞书等企业身份），登录后在浏览器里与智能体对话。前端部署在 VeFaaS 上、公网可达，自身完成登录；它把**登录用户的 JWT** 转发给运行时，运行时用 `custom_jwt`（同一个用户池）校验——**全程没有共享 API key**，用户身份端到端透传。
@@ -16,7 +17,7 @@ flowchart LR
 
 <Steps>
   <Step title="脚手架项目">
-    ```bash
+    ```bash lines
     agentkit init my-agent -L python -t basic-agent
     cd my-agent
     ```
@@ -24,7 +25,7 @@ flowchart LR
   <Step title="声明前端（编辑 agentkit.yaml）">
     加上 `frontend` 块。用户池只写这一处——运行时的 `custom_jwt` 网关鉴权会**自动从它派生**，无需另写 `auth`；客户端 secret 也由 CLI 自动获取，不必声明。值用 `${VAR}` 从环境取，不落明文：
 
-    ```yaml .agentkit/agentkit.yaml
+    ```yaml .agentkit/agentkit.yaml lines
     frontend:
       enabled: true
       oauth2:
@@ -35,13 +36,13 @@ flowchart LR
   <Step title="填写环境变量">
     将取值写入 `.env`，部署时 CLI 会自动加载：
 
-    ```bash .env
+    ```bash .env lines
     USERPOOL_ID=...
     USERPOOL_CLIENT_ID=...
     ```
   </Step>
   <Step title="部署">
-    ```bash
+    ```bash lines
     agentkit deploy
     ```
   </Step>

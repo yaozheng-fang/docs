@@ -1,5 +1,6 @@
 ---
 title: "Remote skills proxy"
+zh_link: "/productions/veadk/archives/1.1.3/zh/components/tools/remote-skills"
 ---
 
 ## Overview
@@ -20,7 +21,7 @@ Remote skills reuse the sandbox infrastructure and credential configuration of `
 
 Import path:
 
-```python
+```python lines
 from veadk.tools.builtin_tools.remote_skills import (
     RemoteSkillDefinition,
     load_remote_skill_definitions,
@@ -35,7 +36,7 @@ Steps:
 3. Call `build_remote_skill_tools` to convert the definitions into tool functions;
 4. Pass the tool functions to the `Agent` `tools` parameter.
 
-```python title="remote_skills_agent.py"
+```python title="remote_skills_agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -69,7 +70,7 @@ if __name__ == "__main__":
 
 You can also pass a JSON string directly instead of a file path:
 
-```python
+```python lines
 definitions = load_remote_skill_definitions(
     '{"remote_skills": [{"name": "report_writer", "description": "Generate a technical report", "input_schema": {"type": "object"}}]}'
 )
@@ -80,7 +81,7 @@ tools = build_remote_skill_tools(definitions)
 
 The manifest is a JSON object containing a `remote_skills` array. Each element describes one remote skill:
 
-```json title="remote-skills.json"
+```json title="remote-skills.json" lines
 {
   "remote_skills": [
     {
@@ -123,7 +124,7 @@ The manifest is a JSON object containing a `remote_skills` array. Each element d
 
 `build_remote_skill_tools` generates one tool function per `RemoteSkillDefinition`. The function name is taken from the skill's `name`, and the docstring contains the description and input schema. The generated tool function signature is:
 
-```python
+```python lines
 def remote_skill(
     query: str,
     arguments: dict[str, Any] | None = None,
@@ -160,7 +161,7 @@ When the tool runs, the framework assembles `skill_name`, `query`, `arguments`, 
 
 ### load_remote_skill_definitions
 
-```python
+```python lines
 def load_remote_skill_definitions(
     value: str | os.PathLike[str],
 ) -> list[RemoteSkillDefinition]:
@@ -175,7 +176,7 @@ Returns a list of `RemoteSkillDefinition`. When the value starts with `{`, it is
 
 ### build_remote_skill_tools
 
-```python
+```python lines
 def build_remote_skill_tools(
     definitions: list[RemoteSkillDefinition],
     *,

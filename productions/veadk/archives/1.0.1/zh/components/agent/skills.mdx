@@ -1,5 +1,6 @@
 ---
 title: "技能"
+en_link: "/productions/veadk/archives/1.0.1/en/components/agent/skills"
 ---
 
 技能是可复用的提示词包，用于为智能体提供特定领域的知识、操作流程和脚本。VeADK 1.0.1 推荐通过 Google ADK 的 `SkillToolset` 接入本地或云端技能；原有的 `Agent(skills=..., skills_mode="local")` 入口仍可使用，但已废弃。`skills_sandbox` 与 `aio_sandbox` 模式不受影响。
@@ -8,7 +9,7 @@ title: "技能"
 
 使用 ADK 的 `load_skill_from_dir` 加载技能目录，再将 `SkillToolset` 传给 VeADK 智能体：
 
-```python
+```python lines
 from google.adk.skills import load_skill_from_dir
 from google.adk.tools.skill_toolset import SkillToolset
 from veadk import Agent
@@ -27,7 +28,7 @@ ADK 负责加载技能、向模型提供提示词以及公开 `list_skills`、`l
 
 VeADK 1.0.1 新增 `VeSkillRegistry`，可将 SkillHub 或技能空间中的技能作为 ADK 技能注册表使用：
 
-```python
+```python lines
 import os
 
 from google.adk.tools.skill_toolset import SkillToolset
@@ -51,7 +52,7 @@ agent = Agent(tools=[SkillToolset(registry=registry)])
 
 一个 ADK 本地技能由独立目录构成，必须包含 `SKILL.md`，并可包含引用资料、资源和脚本：
 
-```text
+```text lines
 skills/
 └── kb-skill/
     ├── SKILL.md
@@ -62,7 +63,7 @@ skills/
 
 `SKILL.md` 的 frontmatter 必须提供 `name` 与 `description`，且目录名应与 `name` 一致：
 
-```markdown title="skills/kb-skill/SKILL.md"
+```markdown title="skills/kb-skill/SKILL.md" lines
 ---
 name: kb-skill
 description: 查询知识库并整理答案。
@@ -85,7 +86,7 @@ description: 查询知识库并整理答案。
 
 本地兼容示例：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -98,7 +99,7 @@ agent = Agent(
 
 沙箱兼容示例：
 
-```python
+```python lines
 import os
 
 from veadk import Agent

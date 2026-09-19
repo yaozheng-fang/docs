@@ -1,5 +1,6 @@
 ---
 title: "系统提示词"
+en_link: "/productions/veadk/archives/1.0.7/en/components/agent/system-prompt"
 ---
 
 智能体的系统提示词通过 `instruction` 参数设置，用于约束模型的行为、语气与回答方式。
@@ -8,7 +9,7 @@ title: "系统提示词"
 
 最简单的形式是传入一段字符串：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -23,7 +24,7 @@ agent = Agent(
 
 **占位符**：在字符串中使用 `{变量名}`，运行时会用会话状态中的同名值填充。
 
-```python
+```python lines
 agent = Agent(
     instruction="你正在服务用户 {user_name}，请用简洁、礼貌的中文回答。",
 )
@@ -31,7 +32,7 @@ agent = Agent(
 
 **InstructionProvider**：传入一个函数，它接收运行时上下文并返回提示词字符串，可据此读取会话状态自行拼装。该函数也可以写成异步函数（`async def`）。
 
-```python
+```python lines
 from google.adk.agents.readonly_context import ReadonlyContext
 from veadk import Agent
 

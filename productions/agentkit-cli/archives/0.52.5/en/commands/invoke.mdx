@@ -1,5 +1,6 @@
 ---
 title: "Invoke a runtime"
+zh_link: "/productions/agentkit-cli/archives/0.52.5/zh/commands/invoke"
 ---
 
 The `invoke` command group sends one request to a deployed Runtime. By default it reads the Runtime endpoint, version, authentication, and A2A settings from `agentkit.yaml` in the current directory. You can also target a Runtime directly with `--runtime-id` or `--endpoint`.
@@ -28,7 +29,7 @@ Every request includes default `user_id: agentkit_user` and `session_id: agentki
 | `--raw` | Print raw streaming events or the raw JSON response; errors are printed without interactive decorations. | `false` |
 | `--apikey <key>` | Explicit bearer API key; available with `--endpoint` and mutually exclusive with `--runtime-id`. | — |
 
-```bash
+```bash lines
 # Read agentkit.yaml in the current directory
 agentkit invoke run "Hello, introduce yourself"
 
@@ -45,13 +46,13 @@ When neither `--runtime-id` nor `--endpoint` is passed, the CLI reads `agentkit.
 - if the config only has `runtime_id`, the CLI queries the control plane for the current version endpoint and authentication;
 - when `agent_type` or `template_type` contains `a2a`, the CLI automatically uses A2A transport.
 
-```bash
+```bash lines
 agentkit invoke run "Check deployment status" --config-file ./agentkit.staging.yaml
 ```
 
 With `--runtime-id`, the CLI uses management credentials to query the Runtime's current or selected version. This mode automatically uses resolvable `key_auth` credentials; for a `custom_jwt` Runtime, pass the OAuth token through `--headers`.
 
-```bash
+```bash lines
 agentkit invoke run "hello" \
   --runtime-id <runtime-id> \
   --headers '{"Authorization":"Bearer <oauth-token>","session_id":"session-1"}'
@@ -59,7 +60,7 @@ agentkit invoke run "hello" \
 
 With `--endpoint`, the CLI does not query the control plane, so you must provide authentication explicitly:
 
-```bash
+```bash lines
 agentkit invoke run \
   --payload '{"prompt":"hello","state_delta":{"locale":"en"}}' \
   --endpoint https://runtime.example.com \
@@ -72,7 +73,7 @@ The CLI tries `POST /invoke` first. If that endpoint returns `404` or `405`, it 
 
 By default, output is extracted as answer text from streaming events. `--raw` prints raw events or the raw response for scripts. Without `--raw`, reasoning chunks produce a short hint; pass `--show-reasoning` to print the reasoning text.
 
-```bash
+```bash lines
 agentkit invoke run "Show your reasoning and answer" \
   --runtime-id <runtime-id> \
   --show-reasoning
@@ -87,7 +88,7 @@ agentkit invoke run --payload '{"jsonrpc":"2.0","method":"message/stream","param
 
 A `custom_jwt` Runtime requires the request to carry a user OAuth token. For Runtime access resolved through `--runtime-id` or the config file, the CLI does not automatically inject the login session's `id_token` into generic `invoke run` requests; pass `Authorization` explicitly through `--headers`.
 
-```bash
+```bash lines
 agentkit login --identity-only <sso-address>
 
 agentkit invoke run "hello" \

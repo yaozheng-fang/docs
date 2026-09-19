@@ -1,5 +1,6 @@
 ---
 title: "DeepSeek Harness 创建与部署"
+en_link: "/productions/veadk/archives/1.1.13/en/components/frontend/deepseek-harness"
 ---
 
 DeepSeek Harness 创建模式是 Studio 中的一种智能体创建方式，用于配置、预览和部署基于 DeepSeek Harness 的容器化智能体运行时。该模式生成包含 Dockerfile、配置文件和运行时适配器的完整容器项目，可直接部署到 AgentKit Runtime，也可以导出为 ZIP 在本地构建和运行。
@@ -154,7 +155,7 @@ DeepSeek 原生网络搜索工具的参数。
 
 `POST /invocations` 请求体：
 
-```json title="请求体"
+```json title="请求体" lines
 {
   "prompt": "你好",
   "session_id": "optional-session-id"
@@ -163,7 +164,7 @@ DeepSeek 原生网络搜索工具的参数。
 
 成功响应：
 
-```json title="成功响应"
+```json title="成功响应" lines
 {
   "response": "...",
   "session_id": "...",
@@ -185,13 +186,13 @@ DeepSeek 原生网络搜索工具的参数。
 
 导出的项目包含可直接构建的 Dockerfile。在项目目录中执行：
 
-```bash
+```bash lines
 docker build -t deepseek-harness-agent .
 ```
 
 使用默认 DeepSeek 提供方时，设置 `DEEPSEEK_API_KEY` 并运行：
 
-```bash
+```bash lines
 docker run --rm -p 127.0.0.1:8000:8000 -e DEEPSEEK_API_KEY deepseek-harness-agent
 ```
 

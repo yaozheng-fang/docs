@@ -1,5 +1,6 @@
 ---
 title: "Inbound authentication"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/security/inbound"
 ---
 
 Inbound authentication verifies the identity of requests coming into the agent. VeADK supports API keys and OAuth2.
@@ -50,7 +51,7 @@ When a user visits the app, the API gateway guides them through login; afterward
 
 For local development or self-hosted deployment, VeADK's middleware handles OAuth2 inside the app and supports any Starlette-based framework (including FastAPI). Prefer `OAuth2Config.from_veidentity()`, which auto-configures a VeIdentity user pool:
 
-```python
+```python lines
 from fastapi import FastAPI
 from veadk.auth.middleware.oauth2_auth import OAuth2Config, setup_oauth2
 
@@ -70,7 +71,7 @@ This creates the user pool and client (if missing), registers the callback URL, 
 
 To reuse existing resources, disable auto-creation:
 
-```python
+```python lines
 setup_oauth2(
     app,
     OAuth2Config.from_veidentity(
@@ -85,7 +86,7 @@ setup_oauth2(
 
 Local development needs HTTPS cookies disabled:
 
-```python
+```python lines
 setup_oauth2(
     app,
     OAuth2Config.from_veidentity(
@@ -99,7 +100,7 @@ setup_oauth2(
 
 To use an OAuth2 provider other than VeIdentity, construct `OAuth2Config` directly:
 
-```python
+```python lines
 setup_oauth2(
     app,
     OAuth2Config(
@@ -156,7 +157,7 @@ OAuth2 JWT auth combines the OAuth2 framework with JWT, carrying the authorizati
 
 Select OAuth2 when scaffolding an agent, or add `--auth-method=oauth2` when deploying; VeADK creates the Identity user pool, or reuses one via `--user-pool-name`. Then create an M2M client in the pool and exchange its credentials for a JWT:
 
-```bash
+```bash lines
 REGION="cn-beijing"
 USER_POOL_ID="FILL_IN_YOUR_USER_POOL_ID"
 CLIENT_ID="FILL_IN_YOUR_CLIENT_ID"

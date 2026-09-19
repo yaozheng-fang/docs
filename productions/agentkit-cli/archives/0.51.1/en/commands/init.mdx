@@ -1,5 +1,6 @@
 ---
 title: "Initialize a project"
+zh_link: "/productions/agentkit-cli/archives/0.51.1/zh/commands/init"
 ---
 
 `init` creates a new agent project from a built-in template, or wraps an `Agent` from an existing Python file as a deployable AgentKit app. The generated project includes an entry file, dependency file, `agentkit.yaml`, and `.dockerignore`; use `agentkit config` to adjust it, then `agentkit launch` to build and deploy.
@@ -22,7 +23,7 @@ Create a project from a built-in template. When `--template` is omitted, the com
 | `--tools <list>` | Comma-separated tools to include. | — |
 | `--list-templates` | List template IDs, keys, and names, then exit. | `false` |
 
-```bash
+```bash lines
 agentkit init my-agent --template basic
 
 agentkit init go-agent --template basic_go --directory ./apps
@@ -40,12 +41,12 @@ Wrap an existing Python file that defines a VeADK `Agent`. The CLI copies the so
 | `--wrapper-type <type>` | Wrapper type: `basic` or `stream`. | `basic` |
 | `--directory <path>` | Target directory. | `.` |
 
-```bash
+```bash lines
 agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent
 ```
 
 After initialization, enter the project directory, review `agentkit.yaml`, then run:
 
-```bash
+```bash lines
 agentkit launch
 ```

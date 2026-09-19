@@ -1,5 +1,6 @@
 ---
 title: "定时任务概览"
+en_link: "/productions/api-reference/preview/en/harness-runtime/cronjobs/overview"
 ---
 
 Harness 定时任务按周期或指定时间执行消息，并将任务定义、执行状态和结果保存在 TOS。HTTP 接口统一位于 `/harness/cronjobs`，基于 AgentKit CLI **0.54.0** 打包部署的 Harness Runtime
@@ -16,12 +17,12 @@ Harness 定时任务按周期或指定时间执行消息，并将任务定义、
 
 准备已有 TOS 桶，在包含 `harness.yaml` 的项目目录启用并部署
 
-```bash
+```bash lines
 agentkit harness deploy --cronjob \
   --cronjob-tos-bucket my-harness-jobs --region cn-beijing
 ```
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 cronjob:
   enabled: true
   tos_bucket: my-harness-jobs
@@ -37,7 +38,7 @@ cronjob:
 
 `HARNESS_URL` 使用部署返回的 Runtime 基础地址，`HARNESS_TOKEN` 使用该服务要求的访问凭证。请求不使用模型 API Key 作为接口认证
 
-```bash
+```bash lines
 export HARNESS_URL="https://<runtime-endpoint>"
 export HARNESS_TOKEN="<runtime-api-key>"
 
@@ -47,7 +48,7 @@ curl "${HARNESS_URL}/harness/cronjobs/status" \
 
 创建任务后保存返回的 `cronjob_id`，作为后续请求的 `job_id` 路径参数。执行开始后，通过任务的 `active.run_id`、`last_run.run_id` 或执行历史获取 `run_id`
 
-```bash
+```bash lines
 export CRONJOB_ID="<cronjob_id>"
 export RUN_ID="<run_id>"
 ```

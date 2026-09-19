@@ -1,5 +1,6 @@
 ---
 title: "Code sandboxes"
+zh_link: "/productions/veadk/archives/1.0.7/zh/components/tools/code-sandbox"
 ---
 
 ## Overview
@@ -43,7 +44,7 @@ Environment variables:
 
 `config.yaml` keys:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 agentkit:
   tool_id: your-default-tool-id
   tool_id_script: your-script-tool-id
@@ -67,7 +68,7 @@ After creation, obtain the sandbox ID from the console (looks like `t-ye8dj82xxx
 
 ## Usage
 
-```python title="examples/tools/run_code/agent.py"
+```python title="examples/tools/run_code/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -109,7 +110,7 @@ In addition to Python and other languages, `run_code` can execute shell commands
 
 ### Parameters
 
-```python
+```python lines
 def run_code(
     code: str,
     language: str,
@@ -138,7 +139,7 @@ def run_code(
 
 ### Example
 
-```python title="run_code_bash.py"
+```python title="run_code_bash.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext
@@ -205,7 +206,7 @@ Injected variables are merged with the framework-managed variables that VeADK se
 
 The following example wraps both calls as function tools. `Runner` injects `tool_context` when it invokes a function tool, while the application sets the environment variables for each execution in the wrapper:
 
-```python title="sandbox_env.py"
+```python title="sandbox_env.py" lines
 import asyncio
 
 from google.adk.tools import ToolContext

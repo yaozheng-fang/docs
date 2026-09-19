@@ -1,5 +1,6 @@
 ---
 title: "Outbound authentication"
+zh_link: "/productions/veadk/archives/1.1.4/zh/components/security/outbound"
 ---
 
 Outbound authentication solves credentials when the agent calls third-party services. Agent Identity encrypts and stores API keys and OAuth tokens, keeps them out of your code, and caches, refreshes, and rotates them automatically. Choose a method by scenario:
@@ -25,7 +26,7 @@ Outbound authentication solves credentials when the agent calls third-party serv
 
 Once the credential exists, two wrappers inject it into the agent: `VeIdentityFunctionTool` for plain function tools and `VeIdentityMcpToolset` for MCP toolsets. Both take an `auth_config` — produced by the methods below — and Agent Identity injects the credential at runtime.
 
-```python
+```python lines
 from veadk.integrations.ve_identity import VeIdentityFunctionTool, VeIdentityMcpToolset
 from google.adk.agents.mcp import StdioServerParameters
 
@@ -43,7 +44,7 @@ toolset = VeIdentityMcpToolset(
 
 The simplest method, for service-to-service calls with fixed credentials. In the console, **New › New API Key**, fill in a name, the third-party API key, and how it's passed (Header or Query). Build the `auth_config` with `api_key_auth`:
 
-```python
+```python lines
 from veadk.integrations.ve_identity import api_key_auth
 
 auth_config = api_key_auth(provider_name="my-api-provider")
@@ -53,7 +54,7 @@ auth_config = api_key_auth(provider_name="my-api-provider")
 
 For service-to-service calls — more secure than an API key and supports token refresh. In the console, **New › New OAuth Client**, choose the **Machine to Machine (M2M)** flow; credentials can use a built-in provider (Lark, Coze, Google, GitHub), an OIDC issuer URL, or fully custom endpoints. Build the `auth_config` with `oauth2_auth` and `auth_flow="M2M"`:
 
-```python
+```python lines
 from veadk.integrations.ve_identity import oauth2_auth
 
 auth_config = oauth2_auth(
@@ -67,7 +68,7 @@ auth_config = oauth2_auth(
 
 For cases where the app accesses a third-party service on a user's behalf. In the console, **New › New OAuth Client**, choose the **User Federation (USER_FEDERATION)** flow and set the callback URL. Build the `auth_config` with `oauth2_auth` and `auth_flow="USER_FEDERATION"`:
 
-```python
+```python lines
 from veadk.integrations.ve_identity import oauth2_auth
 
 auth_config = oauth2_auth(
@@ -94,7 +95,7 @@ After the user authorizes, the provider redirects the code and state to this add
 
 The agent below connects to Volcengine ECS's MCP service through user-federation auth, querying instances and running commands on the user's behalf:
 
-```python
+```python lines
 import asyncio
 from veadk import Agent
 from veadk.integrations.ve_identity import VeIdentityMcpToolset, oauth2_auth

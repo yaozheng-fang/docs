@@ -1,5 +1,6 @@
 ---
 title: "部署到 AgentKit"
+en_link: "/productions/veadk/archives/1.1.5/en/deploy/agentkit"
 ---
 
 VeADK 可以把本地智能体部署为 AgentKit Runtime，并通过统一的 AgentKit 应用组件提供对话接口、健康检查、智能体拓扑、内置 Web UI、短期会话默认配置和可选的飞书生命周期。
@@ -15,7 +16,7 @@ VeADK 可以把本地智能体部署为 AgentKit Runtime，并通过统一的 Ag
 
 Studio 生成的项目会调用 `create_agentkit_app`。手动创建项目时也可以使用相同入口：
 
-```python title="app.py"
+```python title="app.py" lines
 from agents.customer_support.agent import root_agent
 from veadk.integrations.agentkit import create_agentkit_app
 
@@ -44,7 +45,7 @@ app = create_agentkit_app(
 
 VeADK 将 `/ping` 健康检查端点排除在身份绑定之外，该端点始终返回 `{"status": "ok"}`；其余业务和内省端点均纳入身份验证范围。
 
-```python title="app.py"
+```python title="app.py" lines
 from agentkit.identity import RuntimeIdentity
 from agents.customer_support.agent import root_agent
 from veadk.integrations.agentkit import create_agentkit_app
@@ -89,7 +90,7 @@ Studio 始终将 `veadk/tools/builtin_tools` 中的规范函数注册到其 BFF 
 
 ### 使用示例
 
-```python title="app.py"
+```python title="app.py" lines
 from agents.customer_support.agent import root_agent
 from veadk.integrations.agentkit import create_agentkit_app
 
@@ -127,7 +128,7 @@ app = create_agentkit_app(
 
 ### 使用示例
 
-```python title="app.py"
+```python title="app.py" lines
 from agents.customer_support.agent import root_agent
 from veadk.integrations.agentkit import create_agentkit_app
 
@@ -158,7 +159,7 @@ app = create_agentkit_app(
 
 在项目目录中运行：
 
-```bash
+```bash lines
 veadk agentkit init
 veadk agentkit config
 veadk agentkit launch
@@ -166,7 +167,7 @@ veadk agentkit launch
 
 部署完成后检查状态并调用 Runtime：
 
-```bash
+```bash lines
 veadk agentkit status
 veadk agentkit invoke -m "介绍你的能力"
 ```

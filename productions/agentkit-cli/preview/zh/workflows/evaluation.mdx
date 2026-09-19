@@ -1,5 +1,6 @@
 ---
 title: "评测闭环"
+en_link: "/productions/agentkit-cli/preview/en/workflows/evaluation"
 ---
 
 评测把「开发 → 部署 → 评测 → 调优」的闭环补齐：用一份固定的评测集与一个或多个评估器，对已部署的运行时打分，再依据量化结果迭代。本页以一个问答智能体为例，走通从初始化项目到看到评测结果的完整流程。各命令的详细用法见[查看评测后端](/productions/agentkit-cli/preview/zh/commands/eval/backend)、[管理评测集](/productions/agentkit-cli/preview/zh/commands/eval/dataset)、[管理评估器](/productions/agentkit-cli/preview/zh/commands/eval/evaluator)、[管理评测目标](/productions/agentkit-cli/preview/zh/commands/eval/target)、[运行评测实验](/productions/agentkit-cli/preview/zh/commands/eval/run)与[查看实验与结果](/productions/agentkit-cli/preview/zh/commands/eval/experiment)。
@@ -14,7 +15,7 @@ title: "评测闭环"
   <Step title="初始化并部署智能体">
     先创建项目并部署，得到一个可评测的目标运行时：
 
-    ```bash
+    ```bash lines
     agentkit init qa-agent --template basic
     cd qa-agent
     agentkit launch
@@ -26,7 +27,7 @@ title: "评测闭环"
   <Step title="创建评测集并添加用例">
     评测集是实验的数据来源。先用 `input` 与 `reference_output` 两个字段创建评测集，再逐条或批量添加用例：
 
-    ```bash
+    ```bash lines
     agentkit eval dataset create --name qa-set --schema "input,reference_output"
 
     # 逐条添加
@@ -40,7 +41,7 @@ title: "评测闭环"
 
     `cases.json` 为一个由 `{字段: 值}` 组成的数组：
 
-    ```json cases.json
+    ```json cases.json lines
     [
       { "input": "法国的首都是？", "reference_output": "巴黎" },
       { "input": "水的化学式是？", "reference_output": "H2O" }
@@ -53,7 +54,7 @@ title: "评测闭环"
   <Step title="创建评估器">
     评估器是负责打分的评判模型。从预置模板派生，并指定自己的方舟模型端点：
 
-    ```bash
+    ```bash lines
     # 查看预置模板
     agentkit eval evaluator template list
 
@@ -66,7 +67,7 @@ title: "评测闭环"
 
     TEA 后端提交实验时需要指定评估器版本。创建或更新草稿后，可先提交版本：
 
-    ```bash
+    ```bash lines
     agentkit eval evaluator version submit 0.0.1 --evaluator 相关性
     ```
   </Step>
@@ -74,7 +75,7 @@ title: "评测闭环"
   <Step title="运行实验">
     将评测集、评估器与目标运行时提交为一次实验。首次运行建议先加 `--dry-run`，确认解析出的评测集版本、评估器版本、目标与字段映射无误：
 
-    ```bash
+    ```bash lines
     # 先核对
     agentkit eval run --dataset qa-set --evaluator 相关性 --evaluator-version 0.0.1 --target qa-agent --dry-run
 
@@ -91,7 +92,7 @@ title: "评测闭环"
   <Step title="查看结果">
     用返回的实验 ID 查看汇总分数与逐条结果：
 
-    ```bash
+    ```bash lines
     # 状态与加权总分、各评估器平均分
     agentkit eval experiment show 75901xxxxxxxxxxxxx
 
@@ -103,7 +104,7 @@ title: "评测闭环"
   <Step title="迭代">
     根据结果改进智能体的提示词、工具或模型，重新部署后，以相同的评测集与评估器再次运行实验，对比两次的汇总分与逐条结果，判断改动是提升还是回退：
 
-    ```bash
+    ```bash lines
     agentkit launch
     agentkit eval run --dataset qa-set --evaluator 相关性 --evaluator-version 0.0.1 --target qa-agent
     ```
@@ -114,7 +115,7 @@ title: "评测闭环"
 
 评测命令无需浏览器登录，且均支持 `--json`，可直接编排进 CI 流水线：`eval run` 返回的 `experimentId` 可传给 `eval experiment show` 或 `results`。
 
-```bash
+```bash lines
 # 一个可放入 CI 的最小闭环示例
 EXP=$(agentkit eval run --dataset qa-set --evaluator 相关性 --evaluator-version 0.0.1 --target qa-agent --json | jq -r .experimentId)
 agentkit eval experiment show "$EXP" --json

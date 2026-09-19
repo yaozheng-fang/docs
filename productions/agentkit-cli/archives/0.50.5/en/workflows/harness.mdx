@@ -1,5 +1,6 @@
 ---
 title: "Using Harness"
+zh_link: "/productions/agentkit-cli/archives/0.50.5/zh/workflows/harness"
 ---
 
 The harness path suits cases that need no custom code: the agent's model, tools, knowledge base, memory, and prompt all live in a single `harness.yaml`, which the CLI builds and deploys as a runtime. The whole loop revolves around that one file — initialize, configure, deploy, invoke, then return to configuration to iterate.
@@ -16,7 +17,7 @@ The harness path suits cases that need no custom code: the agent's model, tools,
   <Step title="Initialize the harness">
     Create a harness directory containing `harness.yaml` and `.env.example`.
 
-    ```bash
+    ```bash lines
     agentkit harness init my-harness
     cd my-harness
     ```
@@ -24,7 +25,7 @@ The harness path suits cases that need no custom code: the agent's model, tools,
   <Step title="Configure the agent">
     Write fields with `harness set`. Only the flags you pass are modified, so you can build up the configuration across several calls.
 
-    ```bash
+    ```bash lines
     agentkit harness set \
       --name my-harness \
       --model-name doubao-seed-1-6-250615 \
@@ -39,21 +40,21 @@ The harness path suits cases that need no custom code: the agent's model, tools,
   <Step title="Build and deploy">
     Build the image in the cloud from `harness.yaml` and create or update the runtime.
 
-    ```bash
+    ```bash lines
     agentkit harness deploy --project default --region cn-beijing
     ```
   </Step>
   <Step title="Invoke the runtime">
     Call the runtime you just deployed by name; the CLI resolves the endpoint and auth automatically. Invocation is a data-plane operation, so either credential type works: AK/SK, or the STS credentials from an `agentkit login` SSO session.
 
-    ```bash
+    ```bash lines
     agentkit invoke my-harness -m "Hello, introduce yourself"
     ```
   </Step>
   <Step title="Iterate">
     Change the configuration and redeploy to publish a new version; when the runtime misbehaves, read the instance logs to diagnose it.
 
-    ```bash
+    ```bash lines
     agentkit harness set --name my-harness --system-prompt "The replacement instruction."
     agentkit harness deploy
     agentkit runtime logs my-harness --limit 200
@@ -67,7 +68,7 @@ When you no longer need the runtime, delete it to free resources:
 Runtime deletion cannot be undone and stops production calls. Confirm the name, project, and region, and retain required configuration, logs, and business data before proceeding.
 </Warning>
 
-```bash
+```bash lines
 agentkit runtime delete my-harness -y
 ```
 

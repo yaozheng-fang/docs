@@ -1,5 +1,6 @@
 ---
 title: "飞书"
+en_link: "/productions/veadk/archives/1.1.6/en/components/extensions/feishu-channel"
 ---
 
 ## 功能说明
@@ -22,13 +23,13 @@ title: "飞书"
 
 安装：
 
-```bash
+```bash lines
 pip install veadk-python[extensions]
 ```
 
 如果只想要这一项能力，也可以单独安装：
 
-```bash
+```bash lines
 pip install lark-oapi
 ```
 
@@ -44,7 +45,7 @@ pip install lark-oapi
 
 或在 `config.yaml` 中配置：
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   feishu_channel:
     app_id: cli_xxx
@@ -56,7 +57,7 @@ tool:
 
 ## 使用方法
 
-```python title="examples/channel/feishu_bot.py"
+```python title="examples/channel/feishu_bot.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -104,7 +105,7 @@ if __name__ == "__main__":
 
 在 ASGI 应用的启动与关闭钩子中调用 `start()` 与 `shutdown()`：
 
-```python title="examples/channel/feishu_asgi.py"
+```python title="examples/channel/feishu_asgi.py" lines
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -188,7 +189,7 @@ app = FastAPI(lifespan=lifespan)
 
 先保存并配置上方的 `feishu_bot.py`，再在同一目录创建以下文件：
 
-```python title="examples/channel/feishu_bot_thread.py"
+```python title="examples/channel/feishu_bot_thread.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 
@@ -202,7 +203,7 @@ channel = FeishuChannelExtension(
 
 关闭该能力，使扩展仅转发当前消息原文：
 
-```python title="examples/channel/feishu_bot_plain.py"
+```python title="examples/channel/feishu_bot_plain.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 

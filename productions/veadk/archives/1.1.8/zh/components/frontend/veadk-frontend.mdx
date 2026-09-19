@@ -1,5 +1,6 @@
 ---
 title: "VeADK Frontend"
+en_link: "/productions/veadk/archives/1.1.8/en/components/frontend/veadk-frontend"
 ---
 
 VeADK 自带一个生产级 React 前端——一个面向企业的智能体应用工作台，通过 Google ADK API Server 与智能体通信：在界面中创建、调试、管理智能体，并将其接入使用。`veadk frontend` 是一个自包含的启动器：在默认模式下，它以单个进程同时提供这套 React 界面与智能体 API，两者同源，因此无需单独部署后端，也无需处理跨域配置。
@@ -38,7 +39,7 @@ VeADK 自带一个生产级 React 前端——一个面向企业的智能体应�
 
 <Step title="构建前端">
 
-```bash
+```bash lines
 cd frontend && npm install && npm run build
 ```
 
@@ -48,7 +49,7 @@ cd frontend && npm install && npm run build
 
 <Step title="启动">
 
-```bash
+```bash lines
 veadk frontend --agents-dir examples
 # 打开 http://127.0.0.1:8000
 ```
@@ -61,7 +62,7 @@ veadk frontend --agents-dir examples
 
 开发模式下 `veadk frontend` 只提供智能体 API，并为 Vite 开发服务器（`http://localhost:5173`，回退到 `http://localhost:5174`）放行 CORS；界面则由 Vite 单独以热更新方式运行。
 
-```bash
+```bash lines
 veadk frontend --dev --vite --agents-dir examples   # 仅 API，为 Vite 放行 CORS
 cd frontend && npm run dev                    # http://localhost:5173，代理 API
 ```
@@ -107,7 +108,7 @@ cd frontend && npm run dev                    # http://localhost:5173，代理 A
 | `DATABASE_TOS_BUCKET` | — | TOS Bucket，使用 `tos` 时必填。 |
 | `DATABASE_TOS_REGION` | 按云环境推导 | TOS 地域。 |
 
-```bash
+```bash lines
 export VEADK_MEDIA_STORAGE=tos
 export DATABASE_TOS_BUCKET="your-bucket"
 export DATABASE_TOS_REGION=cn-beijing
@@ -128,7 +129,7 @@ veadk frontend --agents-dir examples
 
 `veadk studio` 启动专注于创建与管理智能体的界面。准备部署时，在项目预览中检查生成代码并配置地域、消息渠道、网络与环境变量，然后由 Studio 创建 AgentKit Runtime。
 
-```bash
+```bash lines
 veadk studio --host 127.0.0.1 --port 8000
 ```
 
@@ -140,7 +141,7 @@ veadk studio --host 127.0.0.1 --port 8000
 
 **SSO** —— 传入用户池与客户端后启用。前端会展示登录页并跳转到身份提供方，登录后用户信息接口返回的用户标识将作为 `user_id`。用户池与客户端既可用名称指定，也可用 UID 指定。
 
-```bash
+```bash lines
 veadk frontend --agents-dir examples \
   --oauth2-user-pool "your-user-pool-name" \
   --oauth2-user-pool-client "your-user-pool-client-name"
@@ -164,7 +165,7 @@ veadk frontend --agents-dir examples \
 
 GitHub 预设仅需客户端凭据：
 
-```bash
+```bash lines
 export OAUTH2_PROVIDER=github
 export OAUTH2_CLIENT_ID="your-github-oauth-client-id"
 export OAUTH2_CLIENT_SECRET="your-github-oauth-client-secret"
@@ -211,19 +212,19 @@ VeADK Frontend 可能部署到公网，因此会限制用户可控制的地址�
 
 **前端部分** —— 新建一个目录即可自动注册，无需修改任何中心文件：
 
-```text
+```text lines
 src/a2ui/components/RevenueChart/
 ├── RevenueChart.tsx
 └── index.ts
 ```
 
-```ts title="src/a2ui/components/RevenueChart/index.ts"
+```ts title="src/a2ui/components/RevenueChart/index.ts" lines
 import { register } from "../../registry";
 import { RevenueChart } from "./RevenueChart";
 register("RevenueChart", RevenueChart);
 ```
 
-```tsx title="src/a2ui/components/RevenueChart/RevenueChart.tsx"
+```tsx title="src/a2ui/components/RevenueChart/RevenueChart.tsx" lines
 import type { ComponentRendererProps } from "../../registry";
 
 export function RevenueChart({ node, ctx }: ComponentRendererProps) {

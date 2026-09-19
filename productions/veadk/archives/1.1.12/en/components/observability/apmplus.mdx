@@ -1,5 +1,6 @@
 ---
 title: "APMPlus"
+zh_link: "/productions/veadk/archives/1.1.12/zh/components/observability/apmplus"
 ---
 
 `APMPlusExporter` reports span data to the Volcengine APMPlus platform over OTLP (gRPC). Beyond traces, its built-in metrics uploader collects model invocation counts, token usage, operation duration, exception counts, and tool latency, writing them to APMPlus metrics dashboards.
@@ -16,7 +17,7 @@ When content tracing is enabled, reasoning content in model output is labeled wi
 
 ## Usage
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -37,7 +38,7 @@ asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="se
 
 You can also pass connection parameters explicitly via `APMPlusExporterConfig`:
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.apmplus_exporter import (
     APMPlusExporter,
     APMPlusExporterConfig,
@@ -84,7 +85,7 @@ The default `endpoint` is derived dynamically from the cloud provider and region
 
 ## Environment variables
 
-```bash
+```bash lines
 export OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT="http://apmplus-cn-beijing.volces.com:4317"
 export OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY="your-apmplus-app-key"
 export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME="apmplus_veadk_demo"
@@ -92,7 +93,7 @@ export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME="apmplus_veadk_demo"
 
 You can also let `Agent` attach the APMPlus exporter automatically from an environment variable, without constructing it explicitly:
 
-```bash
+```bash lines
 export ENABLE_APMPLUS=true
 ```
 

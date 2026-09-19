@@ -1,5 +1,6 @@
 ---
 title: "部署"
+en_link: "/productions/agentkit-cli/archives/0.51.1/en/commands/deploy"
 ---
 
 `deploy` 根据当前项目的生命周期配置部署运行时。该命令不会先构建镜像；需要一次性完成构建与部署时，使用 [`launch`](/productions/agentkit-cli/archives/0.51.1/zh/commands/launch)。需要使用 `.agentkit/agentkit.yaml` 的云端发布配置、消息渠道或前端发布流程时，使用 [`release`](/productions/agentkit-cli/archives/0.51.1/zh/commands/release)。
@@ -19,7 +20,7 @@ title: "部署"
 | `--allowed-id <ids>` | Harness OAuth2/JWT 允许的客户端 ID，多个值用逗号分隔。 | — |
 | `-y, --yes` | Harness 同名运行时已存在时跳过确认并更新。 | `false` |
 
-```bash
+```bash lines
 agentkit deploy --config-file agentkit.yaml
 ```
 
@@ -31,7 +32,7 @@ agentkit deploy --config-file agentkit.yaml
 
 传入 `--harness <name>` 时，CLI 会读取当前目录下的 `<name>.harness.json`，转换为运行时环境变量，临时生成生命周期配置并部署 Harness 运行时。若传入 `--discovery-url`，必须同时通过 `--allowed-id` 提供至少一个允许的客户端 ID。
 
-```bash
+```bash lines
 agentkit deploy \
   --harness support-bot \
   --region cn-beijing \

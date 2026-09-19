@@ -1,5 +1,6 @@
 ---
 title: "Authentication & login"
+zh_link: "/productions/agentkit-cli/archives/0.46.6/zh/commands/auth"
 ---
 
 The `auth` command group handles SSO authentication: log in through the browser and store short-lived STS credentials, clear the session, show the current identity, and manage login profiles. `login`, `logout`, and `whoami` are also available as top-level commands (e.g. `agentkit login`).
@@ -15,7 +16,7 @@ Authenticate via browser SSO and store short-lived STS credentials.
 | `--duration <seconds>` | Requested STS credential lifetime (seconds) | `3600` |
 | `--no-open` | Don't open a browser — just print the login URL (headless/SSH) | `false` |
 
-```bash
+```bash lines
 agentkit auth login
 ```
 
@@ -28,7 +29,7 @@ Clear the stored SSO session (refresh token + cached STS credentials).
 | `-p, --profile <name>` | SSO profile name | Active profile |
 | `--all` | Clear every profile's session | `false` |
 
-```bash
+```bash lines
 agentkit auth logout
 ```
 
@@ -40,7 +41,7 @@ Show the identity behind the current credentials.
 | --- | --- | --- |
 | `-p, --profile <name>` | SSO profile name | Active profile |
 
-```bash
+```bash lines
 agentkit auth whoami
 ```
 
@@ -57,7 +58,7 @@ Create or update a profile's login coordinates (non-secret).
 | `--provider-trn <trn>` | IAM OIDC provider TRN | None |
 | `--region <region>` | Region | `cn-beijing` |
 
-```bash
+```bash lines
 agentkit auth profile set my-profile --issuer https://example.com --client-id abc123
 ```
 
@@ -67,7 +68,7 @@ List saved profiles.
 
 This command takes no arguments or options.
 
-```bash
+```bash lines
 agentkit auth profile list
 ```
 
@@ -79,6 +80,6 @@ Show a profile's coordinates.
 | --- | --- | --- |
 | `[name]` | Profile name | Active profile |
 
-```bash
+```bash lines
 agentkit auth profile show my-profile
 ```

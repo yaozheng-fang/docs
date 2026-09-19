@@ -1,5 +1,6 @@
 ---
 title: "Bash Toolset"
+zh_link: "/productions/veadk/preview/zh/components/tools/bash-toolset"
 ---
 
 ## Overview
@@ -35,7 +36,7 @@ Use `BashToolset` when the agent needs to read files in the working directory, b
 
 ## Usage example
 
-```python title="bash_toolset_agent.py"
+```python title="bash_toolset_agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -72,7 +73,7 @@ if __name__ == "__main__":
 
 ### Constructor parameters
 
-```python
+```python lines
 BashToolset(
     working_directory=None,
     *,
@@ -208,7 +209,7 @@ Compare two text files using unified diff format. Each file is limited to 2000 l
 
 `BashToolset` supports multiple allowed root directories, enabling the agent to read files across directories:
 
-```python title="bash_toolset_multi_root.py"
+```python title="bash_toolset_multi_root.py" lines
 import asyncio
 
 from veadk import Agent, Runner

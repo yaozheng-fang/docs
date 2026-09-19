@@ -1,5 +1,6 @@
 ---
 title: "Harness scheduled tasks"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/harness-cronjob"
 ---
 
 Scheduled tasks execute prompts inside Harness and persist definitions, execution state, and results in TOS. Use them for recurring reports, checks, and one-time work
@@ -12,11 +13,11 @@ Keep at least one runtime instance active, which incurs capacity and TOS charges
 
 Prepare an existing TOS bucket, then run from the project containing `harness.yaml`
 
-```bash
+```bash lines
 agentkit harness deploy --cronjob --cronjob-tos-bucket my-harness-jobs --region cn-beijing
 ```
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 cronjob:
   enabled: true
   tos_bucket: my-harness-jobs
@@ -76,7 +77,7 @@ Create a recurring or one-time task
 | `--idempotency-key <key>` | Stable key for retrying task creation | Random UUID |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob create my-harness --name morning-report --cron "0 9 * * 1-5" --timezone Asia/Shanghai --prompt "Summarize yesterday’s progress" --idempotency-key morning-report-v1
 ```
 
@@ -98,7 +99,7 @@ List task definitions and current status
 | `--cursor <cursor>` | Next-page cursor | — |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob list my-harness
 ```
 
@@ -118,7 +119,7 @@ Show scheduler health for the responding replica
 | `--json` | Print structured JSON output | `false` |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob status my-harness
 ```
 
@@ -137,7 +138,7 @@ get a scheduled task
 | `--json` | Print structured JSON output | `false` |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob get my-harness "$CRONJOB_ID"
 ```
 
@@ -156,7 +157,7 @@ pause a scheduled task
 | `--json` | Print structured JSON output | `false` |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob pause my-harness "$CRONJOB_ID"
 ```
 
@@ -175,7 +176,7 @@ resume a scheduled task
 | `--json` | Print structured JSON output | `false` |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob resume my-harness "$CRONJOB_ID"
 ```
 
@@ -196,7 +197,7 @@ List execution history, newest first
 | `--cursor <cursor>` | Next-page cursor | — |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob runs my-harness "$CRONJOB_ID"
 ```
 
@@ -218,7 +219,7 @@ Read an execution result
 | `--json` | Print structured JSON output | `false` |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob result my-harness "$CRONJOB_ID" "$RUN_ID"
 ```
 
@@ -238,7 +239,7 @@ Request execution cancellation
 | `--json` | Print structured JSON output | `false` |
 | `-h, --help` | Show help | — |
 
-```bash
+```bash lines
 agentkit harness cronjob cancel my-harness "$CRONJOB_ID" "$RUN_ID"
 ```
 

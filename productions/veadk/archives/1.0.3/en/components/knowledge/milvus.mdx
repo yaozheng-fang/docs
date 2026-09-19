@@ -1,5 +1,6 @@
 ---
 title: "Store knowledge in Milvus"
+zh_link: "/productions/veadk/archives/1.0.3/zh/components/knowledge/milvus"
 ---
 
 The `milvus` backend embeds knowledge chunks and stores them in a Milvus
@@ -12,14 +13,14 @@ collection name.
 Install the extra that contains the Milvus and LlamaIndex integrations, and
 prepare a reachable Milvus instance:
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
 The Milvus backend requires an embedding model. The following environment
 variables configure both Milvus and the embedding model:
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="http://127.0.0.1:19530"
 export DATABASE_MILVUS_TOKEN="${MILVUS_TOKEN}"
 export MODEL_EMBEDDING_NAME="doubao-embedding-text-240715"
@@ -33,7 +34,7 @@ password pair.
 
 ## Example
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 knowledgebase = KnowledgeBase(

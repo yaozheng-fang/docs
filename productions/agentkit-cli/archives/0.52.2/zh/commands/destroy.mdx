@@ -1,5 +1,6 @@
 ---
 title: "销毁运行时"
+en_link: "/productions/agentkit-cli/archives/0.52.2/en/commands/destroy"
 ---
 
 `destroy` 根据根目录生命周期配置 `agentkit.yaml` 删除当前部署。`local` 模式停止并删除本地容器；`cloud` 与 `hybrid` 模式删除配置中记录的 AgentKit Runtime，并清除相应部署状态。
@@ -15,7 +16,7 @@ title: "销毁运行时"
 | `--config-file <path>` | 生命周期配置文件路径。 | `agentkit.yaml` |
 | `--force` | 跳过确认提示并立即删除。 | `false` |
 
-```bash
+```bash lines
 agentkit destroy
 agentkit destroy --config-file ./agentkit.yaml --force
 ```

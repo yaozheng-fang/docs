@@ -1,5 +1,6 @@
 ---
 title: "Structured output"
+zh_link: "/productions/veadk/archives/1.0.0/zh/components/agent/structured-output"
 ---
 
 Pass a Pydantic model as `output_schema` and the agent's reply is guaranteed to
@@ -8,7 +9,7 @@ want to parse the result directly.
 
 ## Define a schema and create the agent
 
-```python
+```python lines
 from pydantic import BaseModel, Field
 from veadk import Agent
 
@@ -29,7 +30,7 @@ agent = Agent(
 `run` returns a JSON string that matches the schema, which you can parse
 directly with Pydantic:
 
-```python
+```python lines
 from veadk import Runner
 
 raw = await Runner(agent=agent, app_name="structured_output").run(
@@ -46,7 +47,7 @@ Responses API, converting `output_schema` into Ark's native `json_schema`
 (`strict: true`) enforced on the model side. This is more reliable than the
 default approach, which relies on prompting the model to produce JSON.
 
-```python
+```python lines
 agent = Agent(
     name="ticket_extractor",
     instruction="Extract a support ticket from the user's message.",

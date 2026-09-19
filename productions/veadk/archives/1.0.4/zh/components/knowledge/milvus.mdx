@@ -1,5 +1,6 @@
 ---
 title: "使用 Milvus 存储"
+en_link: "/productions/veadk/archives/1.0.4/en/components/knowledge/milvus"
 ---
 
 `milvus` 后端将知识片段向量化后写入 Milvus collection，适合已有 Milvus 服务或需要在本地使用 Milvus Lite 持久化数据的场景。`index` 对应 Milvus collection 名称。
@@ -8,7 +9,7 @@ title: "使用 Milvus 存储"
 
 安装 VeADK 的扩展依赖，并准备可用的 embedding 模型：
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
@@ -16,12 +17,12 @@ pip install "veadk-python[extensions]"
 
 ## 使用 Milvus Lite
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="./data/company_faq.db"
 export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 ```
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -39,7 +40,7 @@ agent = Agent(
 
 ## 连接远程 Milvus
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="https://milvus.example.com:19530"
 export DATABASE_MILVUS_TOKEN="your-milvus-token"
 export DATABASE_MILVUS_DB_NAME="default"
@@ -48,7 +49,7 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 
 也可以通过公开配置对象传入连接参数：
 
-```python
+```python lines
 from veadk.configs.database_configs import MilvusConfig
 from veadk.knowledgebase import KnowledgeBase
 

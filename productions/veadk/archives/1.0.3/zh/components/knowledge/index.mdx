@@ -1,5 +1,6 @@
 ---
 title: "概述"
+en_link: "/productions/veadk/archives/1.0.3/en/components/knowledge"
 ---
 
 知识库是智能体的外部知识来源，专门存放静态资料（产品文档、FAQ、文章等）。把它挂到智能体上，VeADK 会自动为智能体注入一个检索工具，使其在回答前先到资料中检索相关片段，从而给出更精准、更有依据的回答（RAG）。
@@ -12,7 +13,7 @@ title: "概述"
 - 从目录导入：`kb.add_from_directory("./docs")`；
 - 从文本导入：`kb.add_from_text([...])`。
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(backend="local", index="company_faq")
@@ -64,7 +65,7 @@ kb.add_from_text(
 
 把 `knowledgebase` 传给 `Agent` 后，智能体会**自动获得 `load_knowledgebase` 工具**，在回答问题时自主决定是否检索知识库。
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -87,7 +88,7 @@ print(asyncio.run(runner.run(messages="年假有多少天？")))
 
 除了智能体运行时自动检索，也可以直接调用 `search` 做语义搜索，用于调试或自定义 RAG。`top_k` 为 0 时使用构造时设定的值。
 
-```python
+```python lines
 entries = kb.search(query="年假", top_k=3)
 for entry in entries:
     print(entry.content)

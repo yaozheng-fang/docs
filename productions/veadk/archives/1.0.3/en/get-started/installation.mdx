@@ -1,5 +1,6 @@
 ---
 title: "Installation"
+zh_link: "/productions/veadk/archives/1.0.3/zh/get-started/installation"
 ---
 
 ## Prerequisites
@@ -11,7 +12,7 @@ title: "Installation"
 
 Install the core package from [PyPI](https://pypi.org/project/veadk-python/):
 
-```bash
+```bash lines
 pip install "veadk-python==1.0.3"
 ```
 
@@ -20,7 +21,7 @@ pip install "veadk-python==1.0.3"
 VeADK provides optional dependency groups (extras) for on-demand capabilities,
 installed individually as needed:
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]==1.0.3"
 ```
 
@@ -39,7 +40,7 @@ long-term-memory backends do not require an additional extra.
 
 To develop against the source, build with [uv](https://docs.astral.sh/uv/):
 
-```bash
+```bash lines
 git clone --branch 1.0.3 --depth 1 https://github.com/volcengine/veadk-python.git
 cd veadk-python
 

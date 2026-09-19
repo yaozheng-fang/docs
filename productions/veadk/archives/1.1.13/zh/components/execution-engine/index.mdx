@@ -1,5 +1,6 @@
 ---
 title: "执行引擎"
+en_link: "/productions/veadk/archives/1.1.13/en/components/execution-engine"
 ---
 
 `Runner` 是执行引擎的核心：它协调智能体、工具与回调，共同响应用户输入，同时管理信息流、状态变化，以及与模型、工具、存储的交互。VeADK 的执行引擎完全兼容 Google ADK 的 `Runner`，其完整机制可参见 [Google ADK 运行时文档](https://google.github.io/adk-docs/runtime/)。
@@ -18,7 +19,7 @@ title: "执行引擎"
 
 `Runner.run()` 直接运行一个智能体，处理输入并返回最终文本响应，适合本地测试：
 
-```python
+```python lines
 import asyncio
 from veadk import Agent, Runner
 
@@ -37,7 +38,7 @@ print(response)
 
 `Runner.run_async()` 返回一个异步生成器，逐个产出智能体执行过程中的事件。相比 `run()` 只拿到最终文本，遍历事件可以获得思考过程、工具调用与结果、以及流式增量，便于自行开发上层逻辑。
 
-```python
+```python lines
 import asyncio
 from google.genai.types import Content, Part
 from veadk import Agent, Runner
@@ -87,7 +88,7 @@ asyncio.run(main())
 
 事件还提供了便捷方法：`is_final_response()` 判断是否为最终回复，`get_function_calls()` 与 `get_function_responses()` 分别取出本事件中的工具调用与结果。
 
-```python
+```python lines
 async for event in runner.run_async(
     user_id=USER_ID, session_id=SESSION_ID, new_message=message,
 ):

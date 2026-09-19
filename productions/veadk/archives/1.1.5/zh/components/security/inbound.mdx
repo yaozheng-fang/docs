@@ -1,5 +1,6 @@
 ---
 title: "入站认证"
+en_link: "/productions/veadk/archives/1.1.5/en/components/security/inbound"
 ---
 
 入站认证验证进入智能体的请求方身份。VeADK 支持 API Key 与 OAuth2 两类方式。
@@ -50,7 +51,7 @@ OAuth2 是一套开放的授权框架，通过令牌而非直接暴露账号密�
 
 适用于本地开发或自托管部署，通过 VeADK 提供的中间件在应用内处理 OAuth2，支持所有基于 Starlette 的框架（含 FastAPI）。推荐用 `OAuth2Config.from_veidentity()` 自动配置 VeIdentity 用户池：
 
-```python
+```python lines
 from fastapi import FastAPI
 from veadk.auth.middleware.oauth2_auth import OAuth2Config, setup_oauth2
 
@@ -70,7 +71,7 @@ setup_oauth2(
 
 复用已有资源时关闭自动创建：
 
-```python
+```python lines
 setup_oauth2(
     app,
     OAuth2Config.from_veidentity(
@@ -85,7 +86,7 @@ setup_oauth2(
 
 本地开发需关闭 HTTPS cookie：
 
-```python
+```python lines
 setup_oauth2(
     app,
     OAuth2Config.from_veidentity(
@@ -99,7 +100,7 @@ setup_oauth2(
 
 接入非 VeIdentity 的 OAuth2 提供商时，直接构造 `OAuth2Config`：
 
-```python
+```python lines
 setup_oauth2(
     app,
     OAuth2Config(
@@ -156,7 +157,7 @@ OAuth2 JWT 认证将 OAuth2 授权框架与 JWT 结合，用 JWT 承载授权令
 
 在脚手架创建智能体时选择 OAuth2，或为已有项目在部署时加上 `--auth-method=oauth2`；VeADK 会自动创建 Identity 用户池，需要复用时用 `--user-pool-name` 指定。随后在 Agent Identity 的用户池中新建 M2M 类型客户端，用其凭据换取 JWT 令牌：
 
-```bash
+```bash lines
 REGION="cn-beijing"
 USER_POOL_ID="FILL_IN_YOUR_USER_POOL_ID"
 CLIENT_ID="FILL_IN_YOUR_CLIENT_ID"

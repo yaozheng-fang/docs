@@ -1,5 +1,6 @@
 ---
 title: "使用本地内存"
+en_link: "/productions/veadk/archives/1.0.4/en/components/session/local"
 ---
 
 `local` 后端把会话保存在进程内存中。它不依赖任何外部服务，也不落盘——进程退出，会话即清空。这是 `ShortTermMemory` 的默认后端。
@@ -12,7 +13,7 @@ title: "使用本地内存"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 
@@ -24,7 +25,7 @@ runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
 
 由于 `local` 是默认值，以下三种写法完全等价：
 
-```python
+```python lines
 ShortTermMemory()                    # 使用默认后端
 ShortTermMemory(backend="local")     # 显式指定
 # 甚至不给 Runner 传 short_term_memory，Runner 会自动兜底创建一个 local

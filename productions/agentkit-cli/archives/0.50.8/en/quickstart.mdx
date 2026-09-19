@@ -1,5 +1,6 @@
 ---
 title: "Quickstart"
+zh_link: "/productions/agentkit-cli/archives/0.50.8/zh/quickstart"
 ---
 
 ## Install
@@ -8,12 +9,12 @@ No Node.js required — one command installs the standalone binary and puts `age
 
 <Tabs>
   <Tab title="wget">
-    ```bash
+    ```bash lines
     wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
     ```
   </Tab>
   <Tab title="curl">
-    ```bash
+    ```bash lines
     curl -fsSL https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
     ```
   </Tab>
@@ -21,7 +22,7 @@ No Node.js required — one command installs the standalone binary and puts `age
 
 Verify the install:
 
-```bash
+```bash lines
 agentkit --help
 ```
 
@@ -37,7 +38,7 @@ The CLI signs every Volcengine OpenAPI request. Provide credentials one of two w
   <Tab title="AK/SK">
     Set these in your environment or a local `.env` (git-ignored):
 
-    ```bash
+    ```bash lines
     VOLCENGINE_ACCESS_KEY=...
     VOLCENGINE_SECRET_KEY=...
     VOLCENGINE_REGION=cn-beijing   # optional, defaults to cn-beijing
@@ -46,7 +47,7 @@ The CLI signs every Volcengine OpenAPI request. Provide credentials one of two w
   <Tab title="SSO">
     Browser login that stores short-lived STS credentials.
 
-    ```bash
+    ```bash lines
     agentkit login <sso-address>
     agentkit whoami
     ```
@@ -61,18 +62,18 @@ The CLI signs every Volcengine OpenAPI request. Provide credentials one of two w
 
 <Steps>
   <Step title="Scaffold a project">
-    ```bash
+    ```bash lines
     agentkit init my-agent -L python -t basic-agent
     cd my-agent
     ```
   </Step>
   <Step title="Build & deploy">
-    ```bash
+    ```bash lines
     agentkit deploy --name my-agent
     ```
   </Step>
   <Step title="Invoke the runtime">
-    ```bash
+    ```bash lines
     agentkit invoke my-agent -m "hello"
     ```
   </Step>

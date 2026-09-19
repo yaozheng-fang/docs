@@ -1,5 +1,6 @@
 ---
 title: "agentkit.yaml"
+en_link: "/productions/agentkit-cli/archives/0.52.0/en/agentkit-yaml"
 ---
 
 AgentKit CLI 当前使用两类 `agentkit.yaml`：
@@ -13,7 +14,7 @@ AgentKit CLI 当前使用两类 `agentkit.yaml`：
 
 根目录 `agentkit.yaml` 描述智能体应用如何构建、部署和查询状态。`common.launch_type` 决定当前使用的策略：`local` 表示本地 Docker 构建和本地容器部署，`cloud` 表示云端构建和云端运行时部署，`hybrid` 表示本地构建后部署到云端运行时。
 
-```yaml title="agentkit.yaml"
+```yaml title="agentkit.yaml" lines
 common:
   agent_name: my-agent
   entry_point: agent.py
@@ -148,7 +149,7 @@ CLI 在解析前会先加载项目目录下的 `.env`，因此把取值写入 `.
 
 ## 发布配置完整示例
 
-```yaml title=".agentkit/agentkit.yaml"
+```yaml title=".agentkit/agentkit.yaml" lines
 # agentkit.yaml — AgentKit release configuration (fully yaml-driven).
 #
 # `agentkit release` reads everything from this file — no flags required.
@@ -310,7 +311,7 @@ infrastructure:
 
 `envs` 声明注入运行时的环境变量。为避免把密钥写进仓库，值用 `${VAR}` 引用部署环境（语法见本页开头），由 CLI 在部署时解析后注入运行时。
 
-```yaml
+```yaml lines
 envs:
   MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY:?set MODEL_AGENT_API_KEY in your env}
   LOG_LEVEL: ${LOG_LEVEL:-info}

@@ -1,5 +1,6 @@
 ---
 title: "Studio agent workbench"
+zh_link: "/productions/veadk/preview/zh/components/frontend/studio"
 ---
 
 AgentKit Studio uses the same service and complete UI as VeADK Frontend. It provides chat, search, session history, the resource library hub, video creation, automation integrations, and agent creation, testing, deployment, and management, and opens on the chat view by default. The agent workspace renders multi-agent topologies as a canvas, surfaces deployed Runtime versions and deployment status, and supports iterating on the same Runtime.
@@ -18,7 +19,7 @@ Intelligent development, custom configuration, code-package deployment, and exis
 
 Run the command from the parent directory of your agent applications:
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -75,7 +76,7 @@ Intelligent-development project versions are stored at `veadk-studio/v1/users/<e
 
 Use `--site-title` to set a system name of up to 16 characters and `--site-logo` to provide a local image or HTTP(S) image URL. The logo appears in the sidebar, login page, and browser favicon. The browser tab title changes dynamically with the active view: the new-conversation home shows only the system name; an open conversation shows the conversation name; other pages such as Automation, System info, Create agent, Resource library, and Search show the form "System name - Page name". Omitting `--site-title` uses the default `AgentKit Studio` name.
 
-```bash
+```bash lines
 veadk studio \
   --site-title "TeamAI" \
   --site-logo "./logo.png"
@@ -481,7 +482,7 @@ When the AIO Sandbox or Codex Sandbox base environment is selected, an additiona
 
 When deploying Studio, you can specify existing environment build resources using the following flags:
 
-```bash
+```bash lines
 veadk studio deploy \
   --vefaas-app-name <app-name> \
   --environment-cp-workspace <workspace-id-or-name> \
@@ -1264,7 +1265,7 @@ Local-to-cloud handoff migrates an in-progress local Codex conversation and proj
   <Step title="Install the AgentKit Studio Plugin">
     On first use, choose an installation method in the "Hand off to the cloud" dialog. Select "Install via Codex conversation" to copy a prompt that you paste into your local Codex conversation so it performs the installation; select "Install from terminal" to copy and run the following command in a local terminal:
 
-    ```bash
+    ```bash lines
     codex plugin marketplace add volcengine/veadk-python \
       --sparse .agents/plugins \
       --sparse plugins/agentkit-studio \
@@ -1457,7 +1458,7 @@ Selecting a historical version creates a rollback. When continuous delivery is a
 
 Besides the Studio UI, you can use the `veadk github-cicd-pipeline` command to push an AgentProject JSON exported by Studio to the target branch, corresponding to the "GitHub code sync" mode:
 
-```bash
+```bash lines
 veadk github-cicd-pipeline \
   --github-url https://github.com/org/repo \
   --github-branch main \
@@ -1519,7 +1520,7 @@ The tab generates a Python request example for each detected protocol, based on 
 
 For the API Server protocol, the example uses `requests` to create a session and call the `/run_sse` streaming endpoint:
 
-```python
+```python lines
 import uuid
 
 import requests
@@ -1563,7 +1564,7 @@ with requests.post(
 
 For the A2A protocol, the example calls the agent via the JSON-RPC `message/send` method:
 
-```python
+```python lines
 import uuid
 
 import requests
@@ -1710,7 +1711,7 @@ The log area renders log lines, auto-refreshes, and keeps only the most recent 1
 
 Before using built-in agents locally, prepare one AgentKit CodeEnv Tool in the `Ready` state and configure its ID:
 
-```bash
+```bash lines
 export SANDBOX_CHAT_CODEX="your-chat-code-env-tool-id"
 
 veadk studio --agents-dir ./agents --open
@@ -2179,7 +2180,7 @@ The domain must be a valid `http` or `https` address. It can include a port (for
 
 Copy the generated `<script>` tag from the "Embed method" area and paste it before the `</body>` tag on the target page. The script loads the chat component from the Studio server and renders an expandable floating chat window in the bottom-right corner of the page.
 
-```html
+```html lines
 <script async src="https://your-studio-url/website-integration.js" data-token="wsi_xxx"></script>
 ```
 
@@ -2621,7 +2622,7 @@ Before deployment, the command checks the VeFaaS service role `ServerlessApplica
 
 Prepare suitable Volcengine credentials, then run:
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -2693,7 +2694,7 @@ In a formal deployment (without `--precheck-only`), if any permission is missing
 
 Use `--precheck-only` to run only the permission pre-check without creating any cloud resources, which is useful for verifying credential permissions before a formal deployment:
 
-```bash
+```bash lines
 veadk studio deploy \
   --vefaas-app-name "veadk-studio" \
   --region "cn-beijing" \
@@ -2734,7 +2735,7 @@ The VeFaaS Function console link in the update status is provider-specific: Volc
 
 During the update, the deployment progress panel streams the VeFaaS deployment log in real time. Logs are filtered on the server to remove curl progress bars, config JSON dumps, ANSI escape sequences, and duplicate lines, retaining only deployment-relevant content. When the Function role lacks the `vefaas:GetApplicationRevisionLog` permission, the log panel is replaced with a permission notice that links to the corresponding provider's IAM console (`console.volcengine.com/iam` for Volcengine, `console.byteplus.com/iam` for BytePlus) so an administrator can grant access; the update continues without interruption. After the update completes, Studio automatically reloads the page to load the new version; if an update dialog was open before the reload, it is automatically restored when the page reopens.
 
-```bash
+```bash lines
 veadk studio deploy \
   --vefaas-app-name "veadk-studio" \
   --studio-update-bucket "custom-studio-releases" \
@@ -2799,7 +2800,7 @@ In Volcengine VeStack (hybrid-cloud) environments, the public-cloud VeFaaS Appli
 
 Build a `linux/amd64` image using the Dockerfile in the VeADK source directory:
 
-```bash title="bash"
+```bash title="bash" lines
 docker build --platform linux/amd64 \
   -f docker/Dockerfile.vestack \
   --build-arg PYTHON_IMAGE=<reachable-python-3.12-image> \
@@ -2808,7 +2809,7 @@ docker build --platform linux/amd64 \
 
 If the selected VeStack base image already contains VeADK runtime dependencies, pass `--build-arg VEADK_INSTALL_DEPENDENCIES=0` to skip full dependency resolution and install only the current repository and wheels staged under `docker/vendor/`. Before using this mode, stage wheels that are absent from the VeStack mirror:
 
-```bash title="bash"
+```bash title="bash" lines
 python -m pip download --no-deps \
   'openviking-sdk>=0.1.3' 'fastmcp==3.4.7' 'fastmcp-slim==3.4.7' \
   -d docker/vendor
@@ -2822,7 +2823,7 @@ python -m pip download --no-deps \
 
 Prepare suitable Volcengine credentials, then run:
 
-```bash title="bash"
+```bash title="bash" lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -2854,7 +2855,7 @@ The deployment performs the following steps:
 
 On success, the terminal prints output similar to:
 
-```text
+```text lines
 ✅ VeStack Studio Function deployed: http://studio.example.com:<port>
    function id: <function-id>
    gateway id: <gateway-id>
@@ -3098,7 +3099,7 @@ During deployment, Studio automatically provides the deploy ID, user-pool ID, ap
 
 `veadk studio update` rebuilds Studio from a local VeADK source checkout, updates the existing VeFaaS Function code, and releases the original Application. The built package does not embed the full offline runtime or AgentKit CLI; instead, verified dependencies are pulled from the current cloud provider's public artifact source at deploy time, reducing the upload size. Install Node.js and npm, then run the command from the VeADK source directory:
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -3141,7 +3142,7 @@ The update also creates or updates the scheduled-task scheduler functions and co
 
 When deploying Studio, role management is backed by Identity user groups. The only deployment role option is `--super-admin`, which accepts an existing Identity user's email or UID:
 
-```bash
+```bash lines
 veadk studio deploy \
   --user-pool-id <pool-id> \
   --allowed-client-id <client-id> \

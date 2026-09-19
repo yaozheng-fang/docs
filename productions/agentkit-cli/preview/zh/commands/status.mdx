@@ -1,5 +1,6 @@
 ---
 title: "状态"
+en_link: "/productions/agentkit-cli/preview/en/commands/status"
 ---
 
 `status` 查询当前生命周期配置对应的运行时状态。`local` 模式读取本地容器状态，`cloud` 与 `hybrid` 模式查询 AgentKit Runtime。
@@ -11,7 +12,7 @@ title: "状态"
 | `--config-file <path>` | 生命周期配置文件路径。 | `agentkit.yaml` |
 | `-v, --verbose` | 输出详细元数据。 | `false` |
 
-```bash
+```bash lines
 agentkit status --config-file agentkit.yaml --verbose
 ```
 

@@ -1,5 +1,6 @@
 ---
 title: "Bash 工具集"
+en_link: "/productions/veadk/preview/en/components/tools/bash-toolset"
 ---
 
 ## 功能说明
@@ -35,7 +36,7 @@ title: "Bash 工具集"
 
 ## 使用示例
 
-```python title="bash_toolset_agent.py"
+```python title="bash_toolset_agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -72,7 +73,7 @@ if __name__ == "__main__":
 
 ### 构造参数
 
-```python
+```python lines
 BashToolset(
     working_directory=None,
     *,
@@ -208,7 +209,7 @@ BashToolset(
 
 `BashToolset` 支持配置多个允许访问的根目录，使智能体能够跨目录读取文件：
 
-```python title="bash_toolset_multi_root.py"
+```python title="bash_toolset_multi_root.py" lines
 import asyncio
 
 from veadk import Agent, Runner

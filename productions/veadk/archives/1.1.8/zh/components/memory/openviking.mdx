@@ -1,5 +1,6 @@
 ---
 title: "使用 OpenViking 存储"
+en_link: "/productions/veadk/archives/1.1.8/en/components/memory/openviking"
 ---
 
 `openviking` 长期记忆后端把会话消息写入 OpenViking 的用户记忆，并按用户身份检索实体、事件和偏好。该后端从 VeADK 1.0.3 开始提供。
@@ -10,7 +11,7 @@ title: "使用 OpenViking 存储"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -70,7 +71,7 @@ agent = Agent(
 
 未配置 `memory_policy` 时，VeADK 不向 OpenViking 发送策略，由 OpenViking 服务应用其官方默认策略。如需显式控制记忆的抽取范围与隔离方式，传入合法的 `memory_policy`，其结构以 OpenViking 会话接口为准。例如：
 
-```json
+```json lines
 {"self": {"enabled": false}, "peer": {"enabled": true}, "memory_types": ["entities", "events", "preferences"]}
 ```
 
@@ -93,7 +94,7 @@ agent = Agent(
 
 多租户应用可以提供 `peer_id_resolver`，把应用和用户组合成单个隔离标识：
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 

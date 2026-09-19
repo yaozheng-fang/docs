@@ -1,5 +1,6 @@
 ---
 title: "Store knowledge in Milvus"
+zh_link: "/productions/veadk/archives/1.0.4/zh/components/knowledge/milvus"
 ---
 
 The `milvus` backend embeds knowledge chunks and stores them in a Milvus collection. Use it when you already operate Milvus or need local persistence through Milvus Lite. The VeADK `index` maps to the Milvus collection name.
@@ -8,7 +9,7 @@ The `milvus` backend embeds knowledge chunks and stores them in a Milvus collect
 
 Install the VeADK extensions and configure an embedding model:
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
@@ -16,12 +17,12 @@ A remote deployment also requires a Milvus URI and credentials. For local valida
 
 ## Use Milvus Lite
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="./data/company_faq.db"
 export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 ```
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -39,7 +40,7 @@ The first run creates data in `./data/company_faq.db`. Later processes using the
 
 ## Connect to remote Milvus
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="https://milvus.example.com:19530"
 export DATABASE_MILVUS_TOKEN="your-milvus-token"
 export DATABASE_MILVUS_DB_NAME="default"
@@ -48,7 +49,7 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 
 You can also pass the public configuration object:
 
-```python
+```python lines
 from veadk.configs.database_configs import MilvusConfig
 from veadk.knowledgebase import KnowledgeBase
 

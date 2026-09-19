@@ -1,5 +1,6 @@
 ---
 title: "Skill tasks"
+zh_link: "/productions/veadk/archives/1.1.7/zh/components/tools/skill-tasks"
 ---
 
 ## Overview
@@ -28,14 +29,14 @@ Use cases:
 
 Import path:
 
-```python
+```python lines
 from veadk.tools.builtin_tools.invoke_skill import invoke_skill
 from veadk.tools.builtin_tools.poll_skill import poll_skill
 ```
 
 Register both tools on the `Agent` `tools` list. The agent can then call `invoke_skill` to start a skill task and `poll_skill` to query its status during reasoning.
 
-```python title="skill_tasks_agent.py"
+```python title="skill_tasks_agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -91,7 +92,7 @@ Task states:
 
 Creates an A2A skill task and returns the initial task object. Sends a non-blocking `message/send` request without waiting for the task to complete.
 
-```python
+```python lines
 def invoke_skill(
     workflow_prompt: str,
     tool_context: ToolContext = None,
@@ -114,7 +115,7 @@ def invoke_skill(
 
 Fetches the current status snapshot of an A2A skill task. Sends a `tasks/get` request and returns the task object.
 
-```python
+```python lines
 def poll_skill(
     task_id: str,
     tool_context: ToolContext = None,

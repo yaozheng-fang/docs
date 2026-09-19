@@ -1,5 +1,6 @@
 ---
 title: "Harness"
+en_link: "/productions/agentkit-cli/archives/0.50.5/en/commands/harness"
 ---
 
 `harness` 命令组用于以无代码方式创建智能体：先初始化一个 `harness.yaml`，再逐项设置字段，最后直接部署为运行时，无需编写任何应用代码。
@@ -14,13 +15,13 @@ title: "Harness"
 | `-y, --yes` | 跳过交互提示并使用默认值 | `false` |
 | `-f, --force` | 在非空目录中脚手架 / 覆盖已有 `harness.yaml` | `false` |
 
-```bash
+```bash lines
 agentkit harness init my-harness
 ```
 
 `harness.yaml` 是无代码智能体的唯一配置来源，`harness deploy` 会将其展开为运行时的环境变量。生成的文件里，常用字段处于启用状态，各组件的可选参数以注释形式按后端分组给出——设好组件的 `type` 后，取消注释该后端下的参数即可。完整内容如下：
 
-```yaml harness.yaml
+```yaml harness.yaml lines
 # =============================================================================
 # AgentKit harness configuration (code-free agent).
 #
@@ -233,7 +234,7 @@ short_term_memory:
 | `--registry-endpoint <url>` | AgentKit A2A registry 端点。 | 当前云环境的 AgentKit 端点 |
 | `--registry-region <region>` | AgentKit A2A registry 区域。 | `cloud.region` |
 
-```bash
+```bash lines
 agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
 
 agentkit harness set --registry default --registry-space-name Default --registry-top-k 3
@@ -254,7 +255,7 @@ agentkit harness set --registry default --registry-space-name Default --registry
 | `--reload` | 服务代码变化时自动重启。 | `false` |
 | `--python <bin>` | 启动服务使用的 Python 解释器。 | `python3` |
 
-```bash
+```bash lines
 agentkit harness dev --reload --port 8000
 ```
 
@@ -269,6 +270,6 @@ agentkit harness dev --reload --port 8000
 | `--discovery-url <url>` | OIDC discovery URL（启用 OAuth2/JWT，覆盖 `harness.yaml`） | 无 |
 | `--allowed-id <ids>` | 逗号分隔的允许客户端 ID（覆盖 `harness.yaml`） | 无 |
 
-```bash
+```bash lines
 agentkit harness deploy --project default --region cn-beijing
 ```

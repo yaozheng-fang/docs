@@ -1,5 +1,6 @@
 ---
 title: "Feishu"
+zh_link: "/productions/veadk/archives/1.1.7/zh/components/extensions/feishu-channel"
 ---
 
 ## Overview
@@ -22,13 +23,13 @@ When an incoming message belongs to a Feishu thread or is a reply, the extension
 
 Installation:
 
-```bash
+```bash lines
 pip install veadk-python[extensions]
 ```
 
 If you only want this capability, install it on its own:
 
-```bash
+```bash lines
 pip install lark-oapi
 ```
 
@@ -44,7 +45,7 @@ Environment variables:
 
 Or configure in `config.yaml`:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   feishu_channel:
     app_id: cli_xxx
@@ -56,7 +57,7 @@ tool:
 
 ## Usage
 
-```python title="examples/channel/feishu_bot.py"
+```python title="examples/channel/feishu_bot.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -104,7 +105,7 @@ Long-connection scripts that only call `connect()` directly do not need `start()
 
 Call `start()` and `shutdown()` from the ASGI app's startup and shutdown hooks:
 
-```python title="examples/channel/feishu_asgi.py"
+```python title="examples/channel/feishu_asgi.py" lines
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -188,7 +189,7 @@ Fetching thread history and quoted messages requires calling Feishu OpenAPI mess
 
 Save and configure the `feishu_bot.py` example above, then create the following file in the same directory:
 
-```python title="examples/channel/feishu_bot_thread.py"
+```python title="examples/channel/feishu_bot_thread.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 
@@ -202,7 +203,7 @@ channel = FeishuChannelExtension(
 
 Disable the capability so the extension forwards only the current message text:
 
-```python title="examples/channel/feishu_bot_plain.py"
+```python title="examples/channel/feishu_bot_plain.py" lines
 from veadk.extensions import FeishuChannelExtension
 from feishu_bot import runner
 

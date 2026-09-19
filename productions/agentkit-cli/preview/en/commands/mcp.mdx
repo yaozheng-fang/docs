@@ -1,5 +1,6 @@
 ---
 title: "Manage MCP services"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/mcp"
 ---
 
 The `mcp service` command group manages AgentKit MCP services. An MCP service deploys a containerized MCP server as an AgentKit cloud resource with network and authentication settings. The current release supports listing, inspecting, creating, and deleting services. Creation supports only the `custom-private` backend and the MCP protocol.
@@ -24,7 +25,7 @@ List MCP services in a project. When no region is specified, the CLI detects the
 | `--json` | Output raw JSON. | `false` |
 | `--gateway-instance-id <id>` | Filter by exclusive gateway instance ID | — |
 
-```bash
+```bash lines
 agentkit mcp service list --project default
 ```
 
@@ -39,7 +40,7 @@ Show an MCP service's status, backend type, protocol, access path, project, and 
 | `-p, --project <name>` | AgentKit project name, used when resolving by name. | `default` |
 | `--json` | Output raw JSON, including network, authentication, and backend configuration. | `false` |
 
-```bash
+```bash lines
 agentkit mcp service show customer-tools
 ```
 
@@ -83,7 +84,7 @@ Only the `custom-private` backend and `mcp` protocol are currently available. `-
 
 The following example creates a public service with inbound API key authentication:
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name customer-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/customer-tools:latest \
@@ -96,7 +97,7 @@ agentkit mcp service create \
 
 The `public` mode cannot be combined with a VPC or subnet. Both `private` and `hybrid` require `--vpc-id` and `--subnet-id`; `hybrid` enables public and private access.
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name internal-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/internal-tools:latest \
@@ -110,7 +111,7 @@ agentkit mcp service create \
 
 With `custom-jwt`, provide an OIDC discovery URL and at least one allowed client ID. Do not pass API key flags in the same command.
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name jwt-protected-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/jwt-tools:latest \
@@ -132,7 +133,7 @@ Deleting an MCP service cannot be undone. Verify the name or ID, project, and re
 | `-p, --project <name>` | AgentKit project name, used when resolving by name. | `default` |
 | `-y, --yes` | Skip the deletion confirmation. | `false` |
 
-```bash
+```bash lines
 agentkit mcp service delete customer-tools
 ```
 
@@ -140,13 +141,13 @@ agentkit mcp service delete customer-tools
 
 Exclusive mode requires an existing gateway instance and inherits its network. Do not combine it with private or hybrid `--network`, `--vpc-id`, or `--subnet-id`. Shared mode rejects `--gateway-instance-id` and `--backend-access-type`
 
-```bash
+```bash lines
 agentkit mcp service list --gateway-instance-id gateway-example --json
 ```
 
 This example creates a service through an existing exclusive gateway with private backend access. Replace the image URL and gateway ID with your resources before running it. Creating a service can incur cloud charges
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name internal-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/internal-tools:latest \

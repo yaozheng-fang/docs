@@ -1,5 +1,6 @@
 ---
 title: "使用 Milvus 存储"
+en_link: "/productions/veadk/archives/1.0.3/en/components/knowledge/milvus"
 ---
 
 `milvus` 后端把知识片段向量化后写入 Milvus collection，适合已经部署 Milvus、需要持久化和多实例共享知识的场景。`KnowledgeBase.index` 对应 Milvus collection 名称。
@@ -8,13 +9,13 @@ title: "使用 Milvus 存储"
 
 安装包含 Milvus 和 LlamaIndex 集成的扩展依赖，并准备可访问的 Milvus 实例：
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
 Milvus 后端需要 embedding 模型。下面的环境变量同时配置 Milvus 连接与 embedding 模型：
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="http://127.0.0.1:19530"
 export DATABASE_MILVUS_TOKEN="${MILVUS_TOKEN}"
 export MODEL_EMBEDDING_NAME="doubao-embedding-text-240715"
@@ -26,7 +27,7 @@ export MODEL_EMBEDDING_API_KEY="${ARK_API_KEY}"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 knowledgebase = KnowledgeBase(

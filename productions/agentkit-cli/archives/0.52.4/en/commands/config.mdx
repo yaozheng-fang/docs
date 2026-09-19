@@ -1,5 +1,6 @@
 ---
 title: "Config"
+zh_link: "/productions/agentkit-cli/archives/0.52.4/zh/commands/config"
 ---
 
 `config` manages the lifecycle project's `agentkit.yaml`, and with `--global` it manages user-wide defaults in `~/.agentkit/config.yaml`. Project config is used by `build`, `deploy`, `launch`, `status`, and `destroy`; global config provides default cloud provider, region, credentials, and infrastructure settings.
@@ -53,7 +54,7 @@ Without `--global`, the command reads or updates the current project's lifecycle
 | `--runtime-enable-shared-internet-access` | Kebab-case form of `--runtime_enable_shared_internet_access`. | Current config value |
 | `--no-runtime-enable-shared-internet-access` | Kebab-case form of `--no-runtime_enable_shared_internet_access`. | — |
 
-```bash
+```bash lines
 agentkit config --init --agent_name my-agent --cloud_provider volcengine --region cn-beijing
 
 agentkit config \
@@ -75,7 +76,7 @@ With `--global`, the command reads or updates `~/.agentkit/config.yaml`. Project
 | `--region <region>` | Default region. | Current user-wide config |
 | `--set <key=value>` | Set a user-wide config key; repeatable. | — |
 
-```bash
+```bash lines
 agentkit config --global --init
 
 agentkit --provider byteplus config --global --region ap-southeast-1

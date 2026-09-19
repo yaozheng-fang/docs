@@ -1,5 +1,6 @@
 ---
 title: "Manage evaluators"
+zh_link: "/productions/agentkit-cli/archives/0.52.1/zh/commands/eval/evaluator"
 ---
 
 The `eval evaluator` command group manages evaluators (the judging models that assign scores): browse built-in templates, list and show existing evaluators, derive a new evaluator from a template, and delete evaluators. An evaluator is typically a prompt with a scoring rubric backed by a large-model endpoint; it takes several input fields (such as `input`, `output`, `reference_output`) and produces a score.
@@ -13,7 +14,7 @@ Browse the platform's built-in evaluator templates as a starting point for creat
 | `-p, --project <name>` | Project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator templates
 ```
 
@@ -26,7 +27,7 @@ List the evaluators in your current project.
 | `-p, --project <name>` | Project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator list
 ```
 
@@ -40,7 +41,7 @@ Show details of an evaluator: the rubric prompt, model configuration, and input 
 | `-p, --project <name>` | Project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator show relevance
 ```
 
@@ -60,7 +61,7 @@ Create an evaluator. The simplest way is to clone the rubric and input schema fr
 
 You must provide at least one of `--from-template` or `--prompt-file`.
 
-```bash
+```bash lines
 # Derive from the built-in "relevance" template and swap in your own model endpoint
 agentkit eval evaluator create --name relevance --from-template "relevance" --model ep-xxxxxxxx
 ```
@@ -83,6 +84,6 @@ This command deletes the evaluator. Check the target first; the CLI prompts for 
 | `-p, --project <name>` | Project name. | `default` |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator delete relevance -y
 ```

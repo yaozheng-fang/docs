@@ -1,5 +1,6 @@
 ---
 title: "Store knowledge in OpenViking"
+zh_link: "/productions/veadk/archives/1.0.4/zh/components/knowledge/openviking"
 ---
 
 The `openviking` backend maps a VeADK knowledge base to an OpenViking resource directory. OpenViking performs document parsing, indexing, and retrieval, so no local embedding model is required. The default target is `viking://resources/{index}/`.
@@ -16,12 +17,12 @@ The `openviking` backend maps a VeADK knowledge base to an OpenViking resource d
 
 ## Configure and import documents
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -37,7 +38,7 @@ agent = Agent(
 
 By default, `add_from_directory` waits up to 300 seconds for parsing and indexing to finish. You can then verify retrieval directly:
 
-```python
+```python lines
 for entry in kb.search("annual leave policy", top_k=3):
     print(entry.content)
     print(entry.metadata.get("uri"), entry.metadata.get("score"))
@@ -63,7 +64,7 @@ for entry in kb.search("annual leave policy", top_k=3):
 
 You can also pass settings through `backend_config`:
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(

@@ -6,9 +6,9 @@
     "timestamp": true
   },
   "colors": {
-    "primary": "#DB2777",
-    "light": "#EC4899",
-    "dark": "#BE185D"
+    "primary": "#2563EB",
+    "light": "#60A5FA",
+    "dark": "#245BDB"
   },
   "favicon": "/favicon.svg",
   "logo": {
@@ -31,9 +31,9 @@
         "tabs": [
           {
             "tab": "VeADK",
-            "versions": [
+            "dropdowns": [
               {
-                "version": "Preview",
+                "dropdown": "Preview",
                 "groups": [
                   {
                     "group": "概览",
@@ -191,11 +191,10 @@
                       "productions/veadk/preview/zh/deploy/harness"
                     ]
                   }
-                ],
-                "default": true
+                ]
               },
               {
-                "version": "1.1.13",
+                "dropdown": "1.1.13",
                 "groups": [
                   {
                     "group": "概览",
@@ -355,7 +354,7 @@
                 ]
               },
               {
-                "version": "1.1.12",
+                "dropdown": "1.1.12",
                 "groups": [
                   {
                     "group": "概览",
@@ -515,7 +514,7 @@
                 ]
               },
               {
-                "version": "1.1.8",
+                "dropdown": "1.1.8",
                 "groups": [
                   {
                     "group": "概览",
@@ -672,7 +671,7 @@
                 ]
               },
               {
-                "version": "1.1.7",
+                "dropdown": "1.1.7",
                 "groups": [
                   {
                     "group": "概览",
@@ -829,7 +828,7 @@
                 ]
               },
               {
-                "version": "1.1.6",
+                "dropdown": "1.1.6",
                 "groups": [
                   {
                     "group": "概览",
@@ -985,7 +984,7 @@
                 ]
               },
               {
-                "version": "1.1.5",
+                "dropdown": "1.1.5",
                 "groups": [
                   {
                     "group": "概览",
@@ -1140,7 +1139,7 @@
                 ]
               },
               {
-                "version": "1.1.4",
+                "dropdown": "1.1.4",
                 "groups": [
                   {
                     "group": "概览",
@@ -1295,7 +1294,7 @@
                 ]
               },
               {
-                "version": "1.1.3",
+                "dropdown": "1.1.3",
                 "groups": [
                   {
                     "group": "概览",
@@ -1450,7 +1449,7 @@
                 ]
               },
               {
-                "version": "1.1.2",
+                "dropdown": "1.1.2",
                 "groups": [
                   {
                     "group": "概览",
@@ -1603,7 +1602,7 @@
                 ]
               },
               {
-                "version": "1.1.0",
+                "dropdown": "1.1.0",
                 "groups": [
                   {
                     "group": "概览",
@@ -1756,7 +1755,7 @@
                 ]
               },
               {
-                "version": "1.0.10",
+                "dropdown": "1.0.10",
                 "groups": [
                   {
                     "group": "概览",
@@ -1909,7 +1908,7 @@
                 ]
               },
               {
-                "version": "1.0.9",
+                "dropdown": "1.0.9",
                 "groups": [
                   {
                     "group": "概览",
@@ -2062,7 +2061,7 @@
                 ]
               },
               {
-                "version": "1.0.8",
+                "dropdown": "1.0.8",
                 "groups": [
                   {
                     "group": "概览",
@@ -2214,7 +2213,7 @@
                 ]
               },
               {
-                "version": "1.0.7",
+                "dropdown": "1.0.7",
                 "groups": [
                   {
                     "group": "概览",
@@ -2366,7 +2365,7 @@
                 ]
               },
               {
-                "version": "1.0.6",
+                "dropdown": "1.0.6",
                 "groups": [
                   {
                     "group": "概览",
@@ -2518,7 +2517,7 @@
                 ]
               },
               {
-                "version": "1.0.5",
+                "dropdown": "1.0.5",
                 "groups": [
                   {
                     "group": "概览",
@@ -2670,7 +2669,7 @@
                 ]
               },
               {
-                "version": "1.0.4",
+                "dropdown": "1.0.4",
                 "groups": [
                   {
                     "group": "概览",
@@ -2816,7 +2815,7 @@
                 ]
               },
               {
-                "version": "1.0.3",
+                "dropdown": "1.0.3",
                 "groups": [
                   {
                     "group": "概览",
@@ -2960,7 +2959,7 @@
                 ]
               },
               {
-                "version": "1.0.2",
+                "dropdown": "1.0.2",
                 "groups": [
                   {
                     "group": "概览",
@@ -3101,7 +3100,7 @@
                 ]
               },
               {
-                "version": "1.0.1",
+                "dropdown": "1.0.1",
                 "groups": [
                   {
                     "group": "概览",
@@ -3242,7 +3241,7 @@
                 ]
               },
               {
-                "version": "1.0.0",
+                "dropdown": "1.0.0",
                 "groups": [
                   {
                     "group": "概览",
@@ -3386,9 +3385,9 @@
           },
           {
             "tab": "AgentKit CLI",
-            "versions": [
+            "dropdowns": [
               {
-                "version": "Preview",
+                "dropdown": "Preview",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3450,11 +3449,10 @@
                       "productions/agentkit-cli/preview/zh/commands/harness-cronjob"
                     ]
                   }
-                ],
-                "default": true
+                ]
               },
               {
-                "version": "0.52.8",
+                "dropdown": "0.52.8",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3515,7 +3513,7 @@
                 ]
               },
               {
-                "version": "0.52.7",
+                "dropdown": "0.52.7",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3576,7 +3574,7 @@
                 ]
               },
               {
-                "version": "0.52.6",
+                "dropdown": "0.52.6",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3636,7 +3634,7 @@
                 ]
               },
               {
-                "version": "0.52.5",
+                "dropdown": "0.52.5",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3696,7 +3694,7 @@
                 ]
               },
               {
-                "version": "0.52.4",
+                "dropdown": "0.52.4",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3756,7 +3754,7 @@
                 ]
               },
               {
-                "version": "0.52.3",
+                "dropdown": "0.52.3",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3816,7 +3814,7 @@
                 ]
               },
               {
-                "version": "0.52.2",
+                "dropdown": "0.52.2",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3876,7 +3874,7 @@
                 ]
               },
               {
-                "version": "0.52.1",
+                "dropdown": "0.52.1",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3933,7 +3931,7 @@
                 ]
               },
               {
-                "version": "0.52.0",
+                "dropdown": "0.52.0",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -3990,7 +3988,7 @@
                 ]
               },
               {
-                "version": "0.51.2",
+                "dropdown": "0.51.2",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4047,7 +4045,7 @@
                 ]
               },
               {
-                "version": "0.51.1",
+                "dropdown": "0.51.1",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4103,7 +4101,7 @@
                 ]
               },
               {
-                "version": "0.51.0",
+                "dropdown": "0.51.0",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4159,7 +4157,7 @@
                 ]
               },
               {
-                "version": "0.50.9",
+                "dropdown": "0.50.9",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4211,7 +4209,7 @@
                 ]
               },
               {
-                "version": "0.50.8",
+                "dropdown": "0.50.8",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4262,7 +4260,7 @@
                 ]
               },
               {
-                "version": "0.50.7",
+                "dropdown": "0.50.7",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4313,7 +4311,7 @@
                 ]
               },
               {
-                "version": "0.50.6",
+                "dropdown": "0.50.6",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4364,7 +4362,7 @@
                 ]
               },
               {
-                "version": "0.50.5",
+                "dropdown": "0.50.5",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4415,7 +4413,7 @@
                 ]
               },
               {
-                "version": "0.50.4",
+                "dropdown": "0.50.4",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4466,7 +4464,7 @@
                 ]
               },
               {
-                "version": "0.50.3",
+                "dropdown": "0.50.3",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4517,7 +4515,7 @@
                 ]
               },
               {
-                "version": "0.50.2",
+                "dropdown": "0.50.2",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4568,7 +4566,7 @@
                 ]
               },
               {
-                "version": "0.50.1",
+                "dropdown": "0.50.1",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4619,7 +4617,7 @@
                 ]
               },
               {
-                "version": "0.50.0",
+                "dropdown": "0.50.0",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4670,7 +4668,7 @@
                 ]
               },
               {
-                "version": "0.46.7",
+                "dropdown": "0.46.7",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4721,7 +4719,7 @@
                 ]
               },
               {
-                "version": "0.46.6",
+                "dropdown": "0.46.6",
                 "groups": [
                   {
                     "group": "开始使用",
@@ -4985,9 +4983,9 @@
         "tabs": [
           {
             "tab": "VeADK",
-            "versions": [
+            "dropdowns": [
               {
-                "version": "Preview",
+                "dropdown": "Preview",
                 "groups": [
                   {
                     "group": "Overview",
@@ -5145,11 +5143,10 @@
                       "productions/veadk/preview/en/deploy/harness"
                     ]
                   }
-                ],
-                "default": true
+                ]
               },
               {
-                "version": "1.1.13",
+                "dropdown": "1.1.13",
                 "groups": [
                   {
                     "group": "Overview",
@@ -5309,7 +5306,7 @@
                 ]
               },
               {
-                "version": "1.1.12",
+                "dropdown": "1.1.12",
                 "groups": [
                   {
                     "group": "Overview",
@@ -5469,7 +5466,7 @@
                 ]
               },
               {
-                "version": "1.1.8",
+                "dropdown": "1.1.8",
                 "groups": [
                   {
                     "group": "Overview",
@@ -5626,7 +5623,7 @@
                 ]
               },
               {
-                "version": "1.1.7",
+                "dropdown": "1.1.7",
                 "groups": [
                   {
                     "group": "Overview",
@@ -5783,7 +5780,7 @@
                 ]
               },
               {
-                "version": "1.1.6",
+                "dropdown": "1.1.6",
                 "groups": [
                   {
                     "group": "Overview",
@@ -5939,7 +5936,7 @@
                 ]
               },
               {
-                "version": "1.1.5",
+                "dropdown": "1.1.5",
                 "groups": [
                   {
                     "group": "Overview",
@@ -6094,7 +6091,7 @@
                 ]
               },
               {
-                "version": "1.1.4",
+                "dropdown": "1.1.4",
                 "groups": [
                   {
                     "group": "Overview",
@@ -6249,7 +6246,7 @@
                 ]
               },
               {
-                "version": "1.1.3",
+                "dropdown": "1.1.3",
                 "groups": [
                   {
                     "group": "Overview",
@@ -6404,7 +6401,7 @@
                 ]
               },
               {
-                "version": "1.1.2",
+                "dropdown": "1.1.2",
                 "groups": [
                   {
                     "group": "Overview",
@@ -6557,7 +6554,7 @@
                 ]
               },
               {
-                "version": "1.1.0",
+                "dropdown": "1.1.0",
                 "groups": [
                   {
                     "group": "Overview",
@@ -6710,7 +6707,7 @@
                 ]
               },
               {
-                "version": "1.0.10",
+                "dropdown": "1.0.10",
                 "groups": [
                   {
                     "group": "Overview",
@@ -6863,7 +6860,7 @@
                 ]
               },
               {
-                "version": "1.0.9",
+                "dropdown": "1.0.9",
                 "groups": [
                   {
                     "group": "Overview",
@@ -7016,7 +7013,7 @@
                 ]
               },
               {
-                "version": "1.0.8",
+                "dropdown": "1.0.8",
                 "groups": [
                   {
                     "group": "Overview",
@@ -7168,7 +7165,7 @@
                 ]
               },
               {
-                "version": "1.0.7",
+                "dropdown": "1.0.7",
                 "groups": [
                   {
                     "group": "Overview",
@@ -7320,7 +7317,7 @@
                 ]
               },
               {
-                "version": "1.0.6",
+                "dropdown": "1.0.6",
                 "groups": [
                   {
                     "group": "Overview",
@@ -7472,7 +7469,7 @@
                 ]
               },
               {
-                "version": "1.0.5",
+                "dropdown": "1.0.5",
                 "groups": [
                   {
                     "group": "Overview",
@@ -7624,7 +7621,7 @@
                 ]
               },
               {
-                "version": "1.0.4",
+                "dropdown": "1.0.4",
                 "groups": [
                   {
                     "group": "Overview",
@@ -7770,7 +7767,7 @@
                 ]
               },
               {
-                "version": "1.0.3",
+                "dropdown": "1.0.3",
                 "groups": [
                   {
                     "group": "Overview",
@@ -7914,7 +7911,7 @@
                 ]
               },
               {
-                "version": "1.0.2",
+                "dropdown": "1.0.2",
                 "groups": [
                   {
                     "group": "Overview",
@@ -8055,7 +8052,7 @@
                 ]
               },
               {
-                "version": "1.0.1",
+                "dropdown": "1.0.1",
                 "groups": [
                   {
                     "group": "Overview",
@@ -8196,7 +8193,7 @@
                 ]
               },
               {
-                "version": "1.0.0",
+                "dropdown": "1.0.0",
                 "groups": [
                   {
                     "group": "Overview",
@@ -8340,9 +8337,9 @@
           },
           {
             "tab": "AgentKit CLI",
-            "versions": [
+            "dropdowns": [
               {
-                "version": "Preview",
+                "dropdown": "Preview",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8404,11 +8401,10 @@
                       "productions/agentkit-cli/preview/en/commands/harness-cronjob"
                     ]
                   }
-                ],
-                "default": true
+                ]
               },
               {
-                "version": "0.52.8",
+                "dropdown": "0.52.8",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8469,7 +8465,7 @@
                 ]
               },
               {
-                "version": "0.52.7",
+                "dropdown": "0.52.7",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8530,7 +8526,7 @@
                 ]
               },
               {
-                "version": "0.52.6",
+                "dropdown": "0.52.6",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8590,7 +8586,7 @@
                 ]
               },
               {
-                "version": "0.52.5",
+                "dropdown": "0.52.5",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8650,7 +8646,7 @@
                 ]
               },
               {
-                "version": "0.52.4",
+                "dropdown": "0.52.4",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8710,7 +8706,7 @@
                 ]
               },
               {
-                "version": "0.52.3",
+                "dropdown": "0.52.3",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8770,7 +8766,7 @@
                 ]
               },
               {
-                "version": "0.52.2",
+                "dropdown": "0.52.2",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8830,7 +8826,7 @@
                 ]
               },
               {
-                "version": "0.52.1",
+                "dropdown": "0.52.1",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8887,7 +8883,7 @@
                 ]
               },
               {
-                "version": "0.52.0",
+                "dropdown": "0.52.0",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -8944,7 +8940,7 @@
                 ]
               },
               {
-                "version": "0.51.2",
+                "dropdown": "0.51.2",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9001,7 +8997,7 @@
                 ]
               },
               {
-                "version": "0.51.1",
+                "dropdown": "0.51.1",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9057,7 +9053,7 @@
                 ]
               },
               {
-                "version": "0.51.0",
+                "dropdown": "0.51.0",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9113,7 +9109,7 @@
                 ]
               },
               {
-                "version": "0.50.9",
+                "dropdown": "0.50.9",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9165,7 +9161,7 @@
                 ]
               },
               {
-                "version": "0.50.8",
+                "dropdown": "0.50.8",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9216,7 +9212,7 @@
                 ]
               },
               {
-                "version": "0.50.7",
+                "dropdown": "0.50.7",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9267,7 +9263,7 @@
                 ]
               },
               {
-                "version": "0.50.6",
+                "dropdown": "0.50.6",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9318,7 +9314,7 @@
                 ]
               },
               {
-                "version": "0.50.5",
+                "dropdown": "0.50.5",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9369,7 +9365,7 @@
                 ]
               },
               {
-                "version": "0.50.4",
+                "dropdown": "0.50.4",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9420,7 +9416,7 @@
                 ]
               },
               {
-                "version": "0.50.3",
+                "dropdown": "0.50.3",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9471,7 +9467,7 @@
                 ]
               },
               {
-                "version": "0.50.2",
+                "dropdown": "0.50.2",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9522,7 +9518,7 @@
                 ]
               },
               {
-                "version": "0.50.1",
+                "dropdown": "0.50.1",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9573,7 +9569,7 @@
                 ]
               },
               {
-                "version": "0.50.0",
+                "dropdown": "0.50.0",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9624,7 +9620,7 @@
                 ]
               },
               {
-                "version": "0.46.7",
+                "dropdown": "0.46.7",
                 "groups": [
                   {
                     "group": "Getting Started",
@@ -9675,7 +9671,7 @@
                 ]
               },
               {
-                "version": "0.46.6",
+                "dropdown": "0.46.6",
                 "groups": [
                   {
                     "group": "Getting Started",

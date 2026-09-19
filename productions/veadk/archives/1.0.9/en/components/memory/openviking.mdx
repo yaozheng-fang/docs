@@ -1,12 +1,13 @@
 ---
 title: "Use OpenViking storage"
+zh_link: "/productions/veadk/archives/1.0.9/zh/components/memory/openviking"
 ---
 
 The `openviking` long-term memory backend writes conversation messages to OpenViking user memory and retrieves entities, events, and preferences by user identity. It is available in VeADK 1.0.3 and later.
 
 ## Example
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -60,7 +61,7 @@ By default, `user_id` becomes the peer ID and may contain only letters, digits, 
 
 Multi-tenant applications can provide `peer_id_resolver` to combine the application and user into one isolation key:
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 

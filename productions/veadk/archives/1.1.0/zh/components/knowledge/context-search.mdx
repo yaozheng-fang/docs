@@ -1,5 +1,6 @@
 ---
 title: "使用 Context Search 存储"
+en_link: "/productions/veadk/archives/1.1.0/en/components/knowledge/context-search"
 ---
 
 `context_search` 后端对接火山引擎 Context Search 托管检索服务。文件通过预签名地址上传至 TOS（对象存储），再登记进 Context Search 的 RAG 场景，切分、向量化与检索均在服务端完成，因此**无需本地 embedding**。
@@ -16,7 +17,7 @@ title: "使用 Context Search 存储"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -33,7 +34,7 @@ agent = Agent(
 
 也可以通过 `backend_config` 显式传入凭证与检索引擎信息：
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(
@@ -74,7 +75,7 @@ kb = KnowledgeBase(
 
 ## 环境变量配置
 
-```bash
+```bash lines
 # 火山引擎凭证
 export VOLCENGINE_ACCESS_KEY="your-ak"
 export VOLCENGINE_SECRET_KEY="your-sk"

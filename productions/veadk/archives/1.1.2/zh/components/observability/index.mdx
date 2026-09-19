@@ -1,5 +1,6 @@
 ---
 title: "概述"
+en_link: "/productions/veadk/archives/1.1.2/en/components/observability"
 ---
 
 可观测通过对智能体执行过程的全链路记录，帮助你理解智能体的内部行为、定位问题、分析性能并持续优化。VeADK 内置的追踪能力会把每一次请求——从接收用户输入，到模型推理、工具调用、记忆与知识库读写，再到生成响应——记录为结构化的 span 数据，并通过导出器上报至火山引擎或第三方平台进行观测与分析。
@@ -33,7 +34,7 @@ span 是一次可被追踪的执行单元，记录名称、起止时间、属性
 
 追踪能力通过 `Agent` 的 `tracers` 字段接入。构造对应后端的导出器，交给 `OpentelemetryTracer`，再把追踪器挂到智能体上即可：
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -54,7 +55,7 @@ asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_
 
 一个追踪器可以同时挂多个导出器，将同一份 span 数据上报到多个平台：
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
 from veadk.tracing.telemetry.exporters.cozeloop_exporter import CozeloopExporter
 from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
@@ -91,7 +92,7 @@ tracer = OpentelemetryTracer(
 
 可通过 `apmplus_managed_externally` 属性判断当前追踪器是否检测到了外部 provider：
 
-```python
+```python lines
 tracer = OpentelemetryTracer(exporters=[APMPlusExporter()])
 if tracer.apmplus_managed_externally:
     # VeADK 复用了已存在的全局 TracerProvider，APMPlusExporter 已被自动移除
@@ -120,7 +121,7 @@ if tracer.apmplus_managed_externally:
 | :--- | :--- | :--- | :--- | :--- |
 | `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | 是否将提示词、补全与工具输入输出内容写入 span。设为 `false` 时仅保留非内容追踪信息。 |
 
-```bash
+```bash lines
 # 关闭内容采集
 export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
 ```
@@ -129,7 +130,7 @@ export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
 
 `OpentelemetryTracer` 内置的内存导出器会按 `session_id` 留存 span，可调用 `dump` 将当前会话的 span 导出为本地 JSON 文件，用于离线分析：
 
-```python
+```python lines
 path = tracer.dump(user_id="user-1", session_id="session_id_demo")
 print(f"trace 已写入 {path}")
 ```

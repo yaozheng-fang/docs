@@ -1,5 +1,6 @@
 ---
 title: "Invoke a runtime"
+zh_link: "/productions/agentkit-cli/archives/0.46.7/zh/commands/invoke"
 ---
 
 The `invoke` command invokes a deployed runtime by name or id, resolving its endpoint and authentication automatically before sending a message.
@@ -20,6 +21,6 @@ Invoke a deployed runtime (resolves endpoint + auth).
 | `--path <path>` | Force a specific endpoint path | Auto-detect (ADK `/run_sse`, else `/invoke`) |
 | `--json` | Print the full JSON response | `false` |
 
-```bash
+```bash lines
 agentkit invoke my-agent -m "Hello, introduce yourself"
 ```

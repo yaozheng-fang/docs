@@ -1,5 +1,6 @@
 ---
 title: "Agent API Server overview"
+zh_link: "/productions/api-reference/preview/zh/agent-api-server/overview"
 ---
 
 Agent API Server provides application discovery, session management, agent execution, artifacts, and memory ingestion. This section documents the Google ADK HTTP service, including the corresponding endpoints exposed when `veadk web` loads VeADK agents
@@ -22,26 +23,26 @@ Prepare an agent application using the ADK directory layout, such as `agents/tra
 
 From the project root containing `agents`, run:
 
-```bash
+```bash lines
 adk api_server --host 127.0.0.1 --port 8000 agents
 ```
 
 For VeADK memory integration and the evaluation and debugging UI, use:
 
-```bash
+```bash lines
 veadk web --host 127.0.0.1 --port 8000 agents
 ```
 
 The base URL is `http://localhost:8000`. Verify the server version and available applications:
 
-```bash
+```bash lines
 curl http://localhost:8000/version
 curl http://localhost:8000/list-apps
 ```
 
 Evaluation requires additional dependencies. Install the extension matching the server version to avoid changing the API baseline:
 
-```bash
+```bash lines
 python -m pip install "google-adk[eval]==2.2.0"
 ```
 

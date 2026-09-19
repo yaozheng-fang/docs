@@ -1,5 +1,6 @@
 ---
 title: "Model"
+zh_link: "/productions/veadk/archives/1.0.1/zh/components/agent/model"
 ---
 
 By default an agent uses the globally configured model — the one set via
@@ -12,7 +13,7 @@ In a Volcengine environment, version 1.0.1 defaults to `doubao-seed-1-8-251228` 
 
 Override the global default with `model_name` and `model_provider`:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -29,7 +30,7 @@ to the global configuration.
 `model_name` also accepts a list: the first entry is the primary model and the
 rest are fallbacks, tried in order when the primary model is unavailable.
 
-```python
+```python lines
 agent = Agent(
     model_name=["doubao-seed-1-8-251228", "deepseek-r1-250528"],
 )
@@ -51,7 +52,7 @@ document understanding.
 
 Set `enable_responses=True` when creating the agent:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(enable_responses=True)
@@ -72,7 +73,7 @@ sources:
 
 For a local image:
 
-```python
+```python lines
 import os
 from google.genai import types
 from google.genai.types import FileData

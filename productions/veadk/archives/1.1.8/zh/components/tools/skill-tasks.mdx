@@ -1,5 +1,6 @@
 ---
 title: "技能任务"
+en_link: "/productions/veadk/archives/1.1.8/en/components/tools/skill-tasks"
 ---
 
 ## 功能说明
@@ -28,14 +29,14 @@ title: "技能任务"
 
 导入路径：
 
-```python
+```python lines
 from veadk.tools.builtin_tools.invoke_skill import invoke_skill
 from veadk.tools.builtin_tools.poll_skill import poll_skill
 ```
 
 将两个工具直接注册到 `Agent` 的 `tools` 列表，智能体即可在推理过程中按需调用：先通过 `invoke_skill` 启动技能任务，再通过 `poll_skill` 查询任务状态。
 
-```python title="skill_tasks_agent.py"
+```python title="skill_tasks_agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -91,7 +92,7 @@ if __name__ == "__main__":
 
 创建一个 A2A 技能任务并返回初始任务对象。调用时发送非阻塞的 `message/send` 请求，不等待任务完成。
 
-```python
+```python lines
 def invoke_skill(
     workflow_prompt: str,
     tool_context: ToolContext = None,
@@ -114,7 +115,7 @@ def invoke_skill(
 
 获取一个 A2A 技能任务的当前状态快照。调用时发送 `tasks/get` 请求，返回任务对象。
 
-```python
+```python lines
 def poll_skill(
     task_id: str,
     tool_context: ToolContext = None,

@@ -1,5 +1,6 @@
 ---
 title: "长期记忆"
+en_link: "/productions/veadk/archives/1.0.6/en/components/memory"
 ---
 
 长期记忆跨会话、跨时间保存重要信息，包括用户偏好、任务历史、知识要点或长期状态。短期记忆只在单次会话内有效，而长期记忆让智能体在**不同会话**之间也能记住事实。
@@ -15,7 +16,7 @@ title: "长期记忆"
 
 无论使用哪种后端，均通过统一的 `veadk.memory.long_term_memory.LongTermMemory` 接入。它可直接作为智能体的记忆服务，并根据 `backend` 选择存储后端。
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 ltm = LongTermMemory(backend="viking", app_name="ltm_demo")
@@ -53,7 +54,7 @@ ltm = LongTermMemory(backend="viking", app_name="ltm_demo")
 
 把 `long_term_memory` 传给 `Agent` 后，智能体会**自动获得 `load_memory` 工具**，可在运行时检索过往会话。
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -74,7 +75,7 @@ runner = Runner(agent=root_agent, app_name=APP_NAME)
 
 会话结束或达到某个节点时，调用异步方法 `add_session_to_memory` 把会话持久化。`LongTermMemory` 会先过滤事件（只保留用户文本事件以提升检索质量），再交给后端写入。
 
-```python
+```python lines
 completed_session = await runner.session_service.get_session(
     app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
 )
@@ -85,7 +86,7 @@ await ltm.add_session_to_memory(completed_session)
 
 除了智能体运行时通过 `load_memory` 自动检索，你也可以直接调用异步方法 `search_memory` 做语义搜索，用于调试或自定义 RAG：
 
-```python
+```python lines
 response = await ltm.search_memory(
     app_name=APP_NAME,
     user_id=USER_ID,
@@ -102,7 +103,7 @@ print(response.memories)
 
 在初始化 `Agent` 时开启 `auto_save_session=True` 并配置好长期记忆，VeADK 会自动把会话写入长期记忆，无需手动调用 `add_session_to_memory`。
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -119,7 +120,7 @@ agent = Agent(
 
 下面是端到端流程：会话 #1 告诉智能体一个事实并自动归档，然后在**全新的**会话 #2 提问，智能体通过检索长期记忆（而非上下文窗口）回忆起该事实。这里用 `local` 后端，需要 `pip install "veadk-python[extensions]"`。
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner

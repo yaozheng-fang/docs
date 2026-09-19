@@ -1,5 +1,6 @@
 ---
 title: "可信 MCP"
+en_link: "/productions/veadk/archives/1.1.13/en/components/security/trusted-mcp"
 ---
 
 可信 MCP 在标准 MCP 协议之上增加组件间的身份证明与验证能力，并提供端到端加密通信。结合机密计算（如 Jeddak AICC）与可信推理服务，可有效防范服务身份不可信、数据被篡改、流量劫持与隐私泄露等风险。
@@ -23,7 +24,7 @@ title: "可信 MCP"
 
 在连接参数中开启 `x-trusted-mcp: true`，再用 `TrustedMcpToolset` 接入：
 
-```python title="agent.py"
+```python title="agent.py" lines
 import asyncio
 
 from veadk import Agent

@@ -1,5 +1,6 @@
 ---
 title: "Build"
+zh_link: "/productions/agentkit-cli/archives/0.52.5/zh/commands/build"
 ---
 
 `build` builds the runtime image described by the lifecycle config. The build strategy comes from `common.launch_type` in `agentkit.yaml`: `local` builds with local Docker, `cloud` builds in the cloud, and `hybrid` builds locally before pushing to the cloud container registry.
@@ -12,7 +13,7 @@ title: "Build"
 | `--platform <platform>` | Docker build target platform, such as `linux/amd64` or `linux/arm64`. | Auto-detected |
 | `--regenerate-dockerfile` | Regenerate the Dockerfile even when one already exists. | `false` |
 
-```bash
+```bash lines
 agentkit build --config-file agentkit.yaml --platform linux/amd64
 ```
 

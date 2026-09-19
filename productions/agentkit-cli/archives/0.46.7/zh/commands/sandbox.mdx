@@ -1,5 +1,6 @@
 ---
 title: "使用沙箱"
+en_link: "/productions/agentkit-cli/archives/0.46.7/en/commands/sandbox"
 ---
 
 沙箱是一个隔离的 `code` 或 `skill` 环境。`sandbox` 命令组既管理沙箱的完整生命周期——创建、列出、查看、更新、删除——也提供对沙箱的操作：在会话中运行命令、打开交互式终端、传输文件、预览 Web、注入订阅凭据，以及管理会话。
@@ -37,13 +38,13 @@ title: "使用沙箱"
 `sandbox create` 会在云端创建计算资源，资源存续期间可能产生费用。创建前确认项目、地域、规格与镜像来源；不再使用时，通过 `sandbox delete` 删除沙箱。
 </Warning>
 
-```bash
+```bash lines
 agentkit sandbox create --name dev-sandbox --type code --cpu 1000 --memory 2048
 ```
 
 以下示例使用自定义镜像创建一个 Web 沙箱。请将镜像地址替换为项目能够访问的镜像：
 
-```bash
+```bash lines
 agentkit sandbox create \
   --name web-sandbox \
   --image-url your-registry.example.com/team/python-web:latest \
@@ -62,7 +63,7 @@ agentkit sandbox create \
 | `--type <type>` | 按沙箱类型过滤：`code` \| `skill`。 | — |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox list --type code
 ```
 
@@ -76,7 +77,7 @@ agentkit sandbox list --type code
 | `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox show t-12345678
 ```
 
@@ -95,7 +96,7 @@ agentkit sandbox show t-12345678
 | `--apmplus` | 启用 APMPlus。 | — |
 | `--json <jsonString>` | 以 JSON 对象形式提供的额外字段，合并进请求体。 | — |
 
-```bash
+```bash lines
 agentkit sandbox update t-12345678 --description "开发沙箱" --port 9090
 ```
 
@@ -113,7 +114,7 @@ agentkit sandbox update t-12345678 --description "开发沙箱" --port 9090
 | `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox delete t-12345678 --yes
 ```
 
@@ -139,7 +140,7 @@ agentkit sandbox delete t-12345678 --yes
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
-```bash
+```bash lines
 agentkit sandbox run "ls -la" --session my-session
 ```
 
@@ -166,7 +167,7 @@ agentkit sandbox run "ls -la" --session my-session
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
-```bash
+```bash lines
 agentkit sandbox shell --tmux --session my-session
 ```
 
@@ -186,7 +187,7 @@ agentkit sandbox shell --tmux --session my-session
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
-```bash
+```bash lines
 # 上传本地文件
 agentkit sandbox cp ./local.txt :/workspace/local.txt --session my-session
 
@@ -211,7 +212,7 @@ agentkit sandbox cp :/workspace/report.json ./report.json --session my-session -
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
-```bash
+```bash lines
 agentkit sandbox web --session my-session
 ```
 
@@ -235,7 +236,7 @@ agentkit sandbox web --session my-session
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
-```bash
+```bash lines
 agentkit sandbox login --provider claude --session my-session
 ```
 
@@ -251,7 +252,7 @@ agentkit sandbox login --provider claude --session my-session
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit sandbox sessions
 ```
 
@@ -269,7 +270,7 @@ agentkit sandbox sessions
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit sandbox logs my-session --tail 100
 ```
 
@@ -287,6 +288,6 @@ agentkit sandbox logs my-session --tail 100
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-p, --project <name>` | AgentKit 项目 | `default` |
 
-```bash
+```bash lines
 agentkit sandbox rm my-session -y
 ```

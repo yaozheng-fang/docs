@@ -1,5 +1,6 @@
 ---
 title: "Built-in tools"
+zh_link: "/productions/api-reference/preview/zh/harness-runtime/tools"
 ---
 
 `harness.tools` adds built-in tools for one invocation. Its value is a comma-separated string of tool names, such as `"web_search,web_fetch"`. It does not accept tool objects, function arguments, or Python import paths
@@ -69,7 +70,7 @@ Request-level `tools` **adds tools; it does not replace or clear deployment tool
 
 The following request adds two tools that do not require cloud service credentials to one invocation of a non-shared-OAuth Harness. The service still needs a working reasoning-model configuration
 
-```bash
+```bash lines
 curl -X POST http://localhost:8000/harness/invoke \
   -H 'Content-Type: application/json' \
   -d '{
@@ -103,7 +104,7 @@ The VeADK 1.0.8 name list does not include `video_task_query`, `ppt_generate`, `
 
 Run the following command **inside the Python environment or container used by Harness** to inspect its installed version and supported names. Running it in a different environment on your computer does not verify the deployed tool list
 
-```bash
+```bash lines
 python - <<'PY'
 from importlib.metadata import version
 from veadk.tools import list_builtin_tools

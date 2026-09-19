@@ -1,5 +1,6 @@
 ---
 title: "Installation"
+zh_link: "/productions/veadk/archives/1.0.1/zh/get-started/installation"
 ---
 
 ## Prerequisites
@@ -11,7 +12,7 @@ title: "Installation"
 
 Install the VeADK version that matches this documentation:
 
-```bash
+```bash lines
 pip install "veadk-python==1.0.1"
 ```
 
@@ -30,7 +31,7 @@ Install only the groups required by your application. Multiple groups can share 
 
 For example, install the Harness dependencies:
 
-```bash
+```bash lines
 pip install "veadk-python[harness]==1.0.1"
 ```
 
@@ -40,7 +41,7 @@ The `speech` and `cli` groups are compatibility placeholders in 1.0.1 and do not
 
 To develop against the 1.0.1 source, create an environment and install with [uv](https://docs.astral.sh/uv/):
 
-```bash
+```bash lines
 git clone https://github.com/volcengine/veadk-python.git
 cd veadk-python
 git checkout 1.0.1

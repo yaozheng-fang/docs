@@ -1,5 +1,6 @@
 ---
 title: "动态智能体委派"
+en_link: "/productions/veadk/archives/1.1.7/en/components/tools/dynamic-agent"
 ---
 
 ## 功能说明
@@ -60,7 +61,7 @@ title: "动态智能体委派"
 
 把 `CreateAgentToolset()` 实例加入 `Agent` 的 `tools` 列表即可。主智能体在指令中描述资源收集、蓝图设计与移交的流程，运行时由模型自主决定何时调用两个工具。
 
-```python title="dynamic_agent_coordinator.py"
+```python title="dynamic_agent_coordinator.py" lines
 import asyncio
 
 from veadk import Agent, Runner

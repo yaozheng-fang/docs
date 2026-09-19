@@ -1,5 +1,6 @@
 ---
 title: "agentkit.yaml"
+zh_link: "/productions/agentkit-cli/archives/0.50.1/zh/agentkit-yaml"
 ---
 
 `agentkit.yaml` is the single source of deploy configuration. Scaffold a project with `agentkit init` first, then run `agentkit deploy config` to generate it under the project's `.agentkit/` directory; `agentkit deploy`, `deploy build`, and `deploy apply` all read from it — no extra flags required. In the generated file, required and common fields are active; every optional field is shown commented-out with its full shape, so you uncomment and fill it to enable it.
@@ -15,7 +16,7 @@ The CLI loads the project's `.env` (from the working directory) before resolving
 
 ## Full example
 
-```yaml .agentkit/agentkit.yaml
+```yaml .agentkit/agentkit.yaml lines
 # agentkit.yaml — AgentKit deploy configuration (fully yaml-driven).
 #
 # `agentkit deploy` reads everything from this file — no flags required.
@@ -182,7 +183,7 @@ The `runtime` block configures compute resources and the scaling policy.
 
 `envs` declares the environment variables injected into the runtime. To keep secrets out of the repository, reference the deploy environment with `${VAR}` (syntax at the top of this page); the CLI resolves them at deploy time.
 
-```yaml
+```yaml lines
 envs:
   MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY:?set MODEL_AGENT_API_KEY in your env}
   LOG_LEVEL: ${LOG_LEVEL:-info}

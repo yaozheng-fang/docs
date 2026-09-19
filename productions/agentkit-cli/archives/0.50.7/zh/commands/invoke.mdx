@@ -1,5 +1,6 @@
 ---
 title: "调用运行时"
+en_link: "/productions/agentkit-cli/archives/0.50.7/en/commands/invoke"
 ---
 
 `invoke` 命令按名称或 ID 调用一个已部署的运行时，自动解析其访问端点与鉴权信息后发送消息。
@@ -37,13 +38,13 @@ title: "调用运行时"
 | `--registry-region <region>` | A2A registry 区域。 | 当前运行时区域 |
 | `--protocol <protocol>` | Harness 传输协议：`invoke` 或 `run_sse`。 | `invoke` |
 
-```bash
+```bash lines
 agentkit invoke my-agent -m "你好，介绍一下你自己"
 ```
 
 传入任一 Harness 覆盖项、`--max-llm-calls` 或 `--protocol` 后，CLI 会调用 Harness 的请求级覆盖接口；此时不能同时使用 `--path`。这些覆盖只影响当前请求，不会修改 `harness.yaml`。
 
-```bash
+```bash lines
 agentkit invoke my-harness \
   --message "总结本次会话" \
   --model-name doubao-pro \

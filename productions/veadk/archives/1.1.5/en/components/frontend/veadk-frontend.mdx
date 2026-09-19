@@ -1,5 +1,6 @@
 ---
 title: "VeADK Frontend"
+zh_link: "/productions/veadk/archives/1.1.5/zh/components/frontend/veadk-frontend"
 ---
 
 VeADK ships a production-grade React frontend — an enterprise agent-application workbench that talks to agents over the Google ADK API server: create, debug, manage, and use agents from the UI. `veadk frontend` is a self-contained launcher: in the default mode it serves this React UI and the agent API from a single process on the same origin, so there is no separate backend to deploy and no cross-origin setup.
@@ -38,7 +39,7 @@ Build the UI once, then serve the UI and the agent API together from a single pr
 
 <Step title="Build the UI">
 
-```bash
+```bash lines
 cd frontend && npm install && npm run build
 ```
 
@@ -48,7 +49,7 @@ The build output is served as the UI by `veadk frontend`. When VeADK is installe
 
 <Step title="Launch">
 
-```bash
+```bash lines
 veadk frontend --agents-dir examples
 # open http://127.0.0.1:8000
 ```
@@ -61,7 +62,7 @@ veadk frontend --agents-dir examples
 
 Use `--vite` to serve only the API and allow CORS from the Vite dev server (`http://localhost:5173`, falling back to `http://localhost:5174`). Add `--dev` to load local agents instead of cloud AgentKit runtimes.
 
-```bash
+```bash lines
 veadk frontend --dev --vite --agents-dir examples   # API only, CORS for Vite
 cd frontend && npm run dev                    # http://localhost:5173, proxies API
 ```
@@ -107,7 +108,7 @@ Attachment bodies are stored separately from ADK Sessions, while Session Events 
 | `DATABASE_TOS_BUCKET` | — | TOS bucket, required for `tos`. |
 | `DATABASE_TOS_REGION` | Derived from the cloud | TOS region. |
 
-```bash
+```bash lines
 export VEADK_MEDIA_STORAGE=tos
 export DATABASE_TOS_BUCKET="your-bucket"
 export DATABASE_TOS_REGION=cn-beijing
@@ -128,7 +129,7 @@ Type `/` in the composer to search skills mounted on the current agent, or `@` t
 
 `veadk studio` launches a UI focused on creating and managing agents. Before deployment, review the generated source and configure the region, message channel, network, and environment variables; Studio then creates an AgentKit Runtime.
 
-```bash
+```bash lines
 veadk studio --host 127.0.0.1 --port 8000
 ```
 
@@ -140,7 +141,7 @@ Sessions and memory are scoped by the ADK `user_id`, which comes from the signed
 
 **SSO** — enable by passing the pool and client. The UI shows a login page and redirects through the identity provider, then uses the user identifier returned by the userinfo endpoint as the `user_id`. The pool and client can be given either by name or by UID.
 
-```bash
+```bash lines
 veadk frontend --agents-dir examples \
   --oauth2-user-pool "your-user-pool-name" \
   --oauth2-user-pool-client "your-user-pool-client-name"
@@ -164,7 +165,7 @@ Enabling VeIdentity SSO requires the process to have access to Volcengine creden
 
 The GitHub preset only needs the client credentials:
 
-```bash
+```bash lines
 export OAUTH2_PROVIDER=github
 export OAUTH2_CLIENT_ID="your-github-oauth-client-id"
 export OAUTH2_CLIENT_SECRET="your-github-oauth-client-secret"
@@ -211,19 +212,19 @@ A custom component has two halves that share one catalog id. For the backend hal
 
 **Frontend half** — drop in a new directory; it auto-registers, with no central edit:
 
-```text
+```text lines
 src/a2ui/components/RevenueChart/
 ├── RevenueChart.tsx
 └── index.ts
 ```
 
-```ts title="src/a2ui/components/RevenueChart/index.ts"
+```ts title="src/a2ui/components/RevenueChart/index.ts" lines
 import { register } from "../../registry";
 import { RevenueChart } from "./RevenueChart";
 register("RevenueChart", RevenueChart);
 ```
 
-```tsx title="src/a2ui/components/RevenueChart/RevenueChart.tsx"
+```tsx title="src/a2ui/components/RevenueChart/RevenueChart.tsx" lines
 import type { ComponentRendererProps } from "../../registry";
 
 export function RevenueChart({ node, ctx }: ComponentRendererProps) {

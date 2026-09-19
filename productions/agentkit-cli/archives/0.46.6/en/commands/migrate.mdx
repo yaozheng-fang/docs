@@ -1,5 +1,6 @@
 ---
 title: "Migrate an existing agent"
+zh_link: "/productions/agentkit-cli/archives/0.46.6/zh/commands/migrate"
 ---
 
 The `migrate` command wraps an existing LangChain, LangGraph, ADK, Strands, or Bedrock AgentCore agent as an AgentKit app. It generates the files needed to serve the agent through AgentKit's agent server without rewriting the agent itself. The command prints the migration plan—the files it creates or updates, dependency changes, and warnings—so you can review the result before deployment. Add `--dry-run` to print the plan without writing any files.
@@ -30,7 +31,7 @@ Wrap an existing agent as an AgentKit app.
 | `-f, --force` | Overwrite generated files when they already exist. | `false` |
 | `--json` | Print the migration plan as JSON. | `false` |
 
-```bash
+```bash lines
 # LangChain agent → AgentKit app
 agentkit migrate . --framework langchain --entry agent.py:agent --name support-agent
 

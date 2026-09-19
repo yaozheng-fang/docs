@@ -1,5 +1,6 @@
 ---
 title: "Use OpenViking storage"
+zh_link: "/productions/veadk/archives/1.0.6/zh/components/knowledge/openviking"
 ---
 
 The `openviking` backend delegates resource parsing, indexing, and retrieval to OpenViking, so VeADK does not need a local embedding model. Each `index` maps to `viking://resources/<index>/` by default. This backend is available in VeADK 1.0.3 and later.
@@ -8,13 +9,13 @@ The `openviking` backend delegates resource parsing, indexing, and retrieval to 
 
 The OpenViking SDK is part of VeADK's base dependencies:
 
-```bash
+```bash lines
 pip install veadk-python
 ```
 
 Prepare a reachable OpenViking service and a service-owner API key. In production, inject credentials through environment variables or a secret manager:
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
@@ -25,7 +26,7 @@ export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 
 ## Example
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 

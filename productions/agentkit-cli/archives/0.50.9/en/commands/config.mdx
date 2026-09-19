@@ -1,5 +1,6 @@
 ---
 title: "Configure the cloud provider"
+zh_link: "/productions/agentkit-cli/archives/0.50.9/zh/commands/config"
 ---
 
 `config` shows or changes the cloud provider and region for the current project. It can also manage user-wide defaults. Project settings are stored in `.agentkit/agentkit.yaml`; global settings are stored in `~/.agentkit/config.yaml`.
@@ -18,7 +19,7 @@ This command modifies project configuration and related generated files. Commit 
 | `-r, --region <region>` | Set the cloud region. | Current provider's default region |
 | `-s, --show` | Show the scope, file path, provider, and region without modifying files. | `false` |
 
-```bash
+```bash lines
 # Show the current project
 agentkit config --show
 

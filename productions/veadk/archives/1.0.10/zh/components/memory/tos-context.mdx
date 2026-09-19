@@ -1,5 +1,6 @@
 ---
 title: "使用 TOS ContextBucket 存储"
+en_link: "/productions/veadk/archives/1.0.10/en/components/memory/tos-context"
 ---
 
 `tos_context` 是 VeADK 的长期记忆后端，使用火山引擎 [TOS](https://www.volcengine.com/product/TOS) ContextBucket 保存和检索记忆。记忆推理与检索由托管服务完成，无需部署向量数据库或配置 embedding 模型。
@@ -27,7 +28,7 @@ ContextBucket 的开通范围、控制面端点和 IAM 权限由 TOS 服务侧�
 
 ContextBucket 要求 TOS SDK `tos>=2.9.4b1`。VeADK 的基础依赖允许安装更早的 TOS SDK，因此需要在 VeADK 所在环境中单独升级：
 
-```bash
+```bash lines
 python -m pip install --upgrade "tos>=2.9.4b1"
 ```
 
@@ -35,7 +36,7 @@ python -m pip install --upgrade "tos>=2.9.4b1"
 
 可以通过以下命令确认已安装的版本：
 
-```bash
+```bash lines
 python -c "from importlib.metadata import version; print(version('tos'))"
 ```
 
@@ -43,7 +44,7 @@ python -c "from importlib.metadata import version; print(version('tos'))"
 
 以下示例使用环境变量提供凭证，避免把 AK/SK 写入代码或配置文件：
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 export DATABASE_TOS_CONTEXT_ACCOUNT_ID="your-account-id"
@@ -62,7 +63,7 @@ export DATABASE_TOS_CONTEXT_REGION="cn-beijing"
 
 下面的示例先保存一个会话，再从新会话中检索同一用户的长期记忆。运行前还需按[模型配置](/productions/veadk/preview/zh/components/agent/model)准备模型凭证。
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -114,7 +115,7 @@ if __name__ == "__main__":
 
 除环境变量外，也可以通过 `backend_config` 提供非敏感连接配置。后端最终必须获得有效的 `index`；推荐在 `LongTermMemory` 外层设置，VeADK 会自动补入后端配置。
 
-```python
+```python lines
 from veadk.configs.database_configs import TOSContextBucketConfig
 from veadk.memory.long_term_memory import LongTermMemory
 

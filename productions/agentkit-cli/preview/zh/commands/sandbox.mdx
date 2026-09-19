@@ -1,5 +1,6 @@
 ---
 title: "使用沙箱"
+en_link: "/productions/agentkit-cli/preview/en/commands/sandbox"
 ---
 
 `sandbox` 命令组用于创建和管理 AgentKit 沙箱工具，并在沙箱会话中执行命令、调用智能体、传输文件、打开 Web 预览或注入本地模型订阅凭据。它也可以初始化 Claude 自托管沙箱项目，并把 Tool 信息交给 [`env`](/productions/agentkit-cli/preview/zh/commands/env) 创建对应 Runtime。`sandbox create` 与 `sandbox config` 对外支持的工具类型包括 `All-in-one`、`Skill`、`CodeEnv`、`DevEnv`、`ArkClawEnv`、`HermesEnv` 和 `Private`。
@@ -51,7 +52,7 @@ title: "使用沙箱"
 | `--namespace <name>` | Container Registry 命名空间。 | `agentkit` |
 | `--project-dir <path>` | 打包为 Docker 构建上下文的项目目录。 | 当前目录 |
 
-```bash
+```bash lines
 agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name custom-sandbox
 ```
 
@@ -71,7 +72,7 @@ agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name cust
 | `-o, --output <path>` | 输出 Dockerfile 路径；`self-host` 模板固定写入项目约定文件，不使用该参数。 | 模板默认路径 |
 | `-f, --force` | 覆盖已经存在的输出文件；`self-host` 模板中还会覆盖 `.agentkit/sandbox.yaml`。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox init --template code-web-server --output Dockerfile.sandbox
 
 agentkit sandbox init -t self-host
@@ -89,7 +90,7 @@ agentkit sandbox init -t self-host
 | `--unset <KEY>` | 删除配置值，可重复。 | — |
 | `--list` | 输出当前配置文件内容。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox config \
   --set tool-type=CodeEnv \
   --set session-id=dev \
@@ -212,7 +213,7 @@ agentkit sandbox config --list
 | `--jwt-discovery-url <url>` | JWT 的 OIDC 发现地址，JWT 鉴权必填 | — |
 | `--allowed-clients <ids>` | JWT 允许的客户端 ID，逗号分隔，JWT 鉴权必填 | — |
 
-```bash
+```bash lines
 agentkit sandbox create --tool-type CodeEnv --tool-name dev-code --cpu 4
 
 agentkit sandbox create \
@@ -224,13 +225,13 @@ agentkit sandbox create \
 
 启用 `--network-private` 时，如果命令行或 `.agentkit/sandbox.yaml` 已提供完整的 `network-vpc-id` 与 `network-subnet-ids`，CLI 会直接复用该配置。若配置不完整，CLI 会查询当前区域下的 VPC 与可用子网，交互式选择后写回 `.agentkit/sandbox.yaml`，再继续创建工具。
 
-```bash
+```bash lines
 agentkit sandbox create --tool-type CodeEnv --network-private
 ```
 
 为 `Skill` 工具启用 LLM Shield 时，必须显式传入应用 ID。该参数只支持 `Skill` 工具类型。
 
-```bash
+```bash lines
 agentkit sandbox create \
   --tool-type Skill \
   --tool-name guarded-skill \
@@ -240,7 +241,7 @@ agentkit sandbox create \
 
 创建自定义 `Private` 工具时需要先准备镜像地址：
 
-```bash
+```bash lines
 agentkit sandbox create \
   --tool-type Private \
   --tool-name private-dev \
@@ -249,7 +250,7 @@ agentkit sandbox create \
 
 Claude 自托管沙箱通常使用 `sandbox init -t self-host` 生成配置，再按生成的 `build` 配置构建镜像并创建 `Private` Tool：
 
-```bash
+```bash lines
 agentkit sandbox init -t self-host
 # 编辑 .agentkit/sandbox.yaml 中的 self_host.environment.*
 agentkit sandbox build
@@ -272,7 +273,7 @@ agentkit sandbox create
 | `--no-open` | 只输出控制台 URL，不打开浏览器。 | `false` |
 | `--json` | 以 JSON 输出启动信息。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox dashboard --port 0
 
 agentkit sandbox ui --no-open --json
@@ -293,7 +294,7 @@ agentkit sandbox ui --no-open --json
 | `--tool-name <name>` | 沙箱工具名称。 | — |
 | `--force` | 跳过确认提示。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox delete --tool-id tool-123 --session-id dev --force
 
 agentkit sandbox delete --tool-name private-dev --force
@@ -319,7 +320,7 @@ agentkit sandbox delete --tool-name private-dev --force
 `sandbox list` 是查看类命令，不会按常用会话命令的工具解析链自动创建或选择沙箱工具。`--tools` 与 `--sessions` 互斥，`--local` 与 `--remote` 互斥；`--tool-name`、`--tool-type` 和 `--status` 只适用于工具模式。
 </Note>
 
-```bash
+```bash lines
 agentkit sandbox list
 
 agentkit sandbox list --tool-id tool-123 --session-id dev
@@ -343,7 +344,7 @@ agentkit sandbox list --sessions --remote --tool-id tool-123
 | `--tool-name <name>` | 沙箱工具名称。 | 配置值或 — |
 | `--tool-type <type>` | 沙箱工具类型。 | 配置值或 `CodeEnv` |
 
-```bash
+```bash lines
 agentkit sandbox mount --tool-id tool-123 --session-id dev
 ```
 
@@ -368,7 +369,7 @@ agentkit sandbox mount --tool-id tool-123 --session-id dev
 | `--model-base-url <url>` | 注入会话的模型 API Base URL。 | 配置值或 — |
 | `--disable-websearch-apikey` | 本次会话不注入 WebSearch API Key。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox exec --session-id dev --command "npm test"
 
 agentkit sandbox exec \
@@ -402,7 +403,7 @@ agentkit sandbox exec \
 | `--history-length <count>` | 请求的 A2A 任务历史长度。 | `20` |
 | `--a2a-path <path>` | 沙箱端点上的 A2A JSON-RPC 路径。 | `/a2a` |
 
-```bash
+```bash lines
 agentkit sandbox invoke --tool-id skill-tool-123 --session-id task-dev --prompt "总结项目结构"
 
 agentkit sandbox invoke --tool-id skill-tool-123 --prompt "执行长任务" --async
@@ -418,7 +419,7 @@ agentkit sandbox invoke --tool-id skill-tool-123 --prompt "执行长任务" --as
 | `--terminal <count>` | 要打开或执行的 exec 条目数量。 | `1` |
 | `--dry-run` | 只打印将要执行的 `sandbox exec` 命令。 | `false` |
 
-```yaml title="agentkit-sandbox-run.yaml"
+```yaml title="agentkit-sandbox-run.yaml" lines
 exec:
   - session_id: dev
     cwd: .
@@ -427,7 +428,7 @@ exec:
     command: "cd /home/gem/app && npm test"
 ```
 
-```bash
+```bash lines
 agentkit sandbox run --config agentkit-sandbox-run.yaml --dry-run
 ```
 
@@ -448,7 +449,7 @@ agentkit sandbox run --config agentkit-sandbox-run.yaml --dry-run
 | `--copy <sourceAndDestination...>` | 执行前上传本地 SOURCE 到沙箱 DESTINATION。 | — |
 | `--git-config <source>` | Git 身份来源：`local` 或 INI/TOML/JSON 文件。 | 配置值或 — |
 
-```bash
+```bash lines
 agentkit sandbox shell --session-id dev --command "python --version"
 ```
 
@@ -464,7 +465,7 @@ agentkit sandbox shell --session-id dev --command "python --version"
 | `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
 | `--no-open` | 只返回 Web URL，不打开浏览器。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox web --session-id dev --no-open
 ```
 
@@ -493,7 +494,7 @@ agentkit sandbox web --session-id dev --no-open
 | `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
 | `--dry-run` | 打印脱敏后的注入命令，不创建会话。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox codex-login --session-id dev --provider codex
 
 agentkit sandbox model-login --session-id dev --provider claude --dry-run
@@ -516,7 +517,7 @@ agentkit sandbox model-login --session-id dev --provider claude --dry-run
 | `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
 | `--dry-run` | 打印脱敏后的注入命令，不创建会话。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox model-login --session-id dev --provider codex
 ```
 
@@ -531,7 +532,7 @@ agentkit sandbox model-login --session-id dev --provider codex
 | `-s, --session-id <id>, --sid <id>` | 用于传输的用户会话 ID。 | 配置值或 — |
 | `--tool-id <id>` | 用于区分本地会话缓存的沙箱工具 ID。 | — |
 
-```bash
+```bash lines
 agentkit sandbox scp ./local.txt sandbox:/home/gem/local.txt --session-id dev
 
 agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id dev
@@ -554,7 +555,7 @@ agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id de
 创建工具可能产生云资源费用。显式指定的角色名称不存在时，CLI 会自动创建 IAM 角色并绑定所需策略；交互选择也可在确认后创建默认角色。创建角色需要相应的 IAM 权限。JWT 只允许配置的客户端访问，请核对发现地址和客户端 ID
 </Warning>
 
-```bash
+```bash lines
 agentkit sandbox create --tool-type Skill --role-name my-sandbox-role --skill-space-id ss-example --auth-type jwt --jwt-discovery-url "https://identity.example.com/.well-known/openid-configuration" --allowed-clients client-example
 ```
 
@@ -580,7 +581,7 @@ agentkit sandbox create --tool-type Skill --role-name my-sandbox-role --skill-sp
 | `--session <id>` | --session-id 的别名 | — |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit sandbox snapshot create --tool-id "$TOOL_ID" --session-id report-session
 ```
 
@@ -597,7 +598,7 @@ agentkit sandbox snapshot create --tool-id "$TOOL_ID" --session-id report-sessio
 | `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit sandbox snapshot get --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
 ```
 
@@ -621,7 +622,7 @@ agentkit sandbox snapshot get --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
 | `--session <id>` | --session-id 的别名 | — |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit sandbox snapshot list --tool-id "$TOOL_ID" --max-results 20
 ```
 
@@ -647,7 +648,7 @@ agentkit sandbox snapshot list --tool-id "$TOOL_ID" --max-results 20
 | `--session <id>` | --session-id 的别名 | — |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit sandbox snapshot resume --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID" --session-id restored-report --ttl 600 --create-new-instance
 ```
 
@@ -666,6 +667,6 @@ agentkit sandbox snapshot resume --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_I
 | `--json` | 输出 JSON；快照子命令始终返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit sandbox snapshot delete --tool-id "$TOOL_ID" --snapshot-id "$SNAPSHOT_ID"
 ```

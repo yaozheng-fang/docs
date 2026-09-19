@@ -1,5 +1,6 @@
 ---
 title: "Long-term memory"
+zh_link: "/productions/veadk/archives/1.0.3/zh/components/memory"
 ---
 
 Long-term memory persists important information across sessions and over time — user preferences, task history, key facts, or long-lived state. Short-term memory only lives within a single session; long-term memory lets an agent remember facts **across different sessions**.
@@ -15,7 +16,7 @@ Why you need it:
 
 Whatever backend you use, you interact with `veadk.memory.long_term_memory.LongTermMemory`. It plugs directly into an agent as its memory service and selects the storage backend through `backend`.
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 ltm = LongTermMemory(backend="viking", app_name="ltm_demo")
@@ -53,7 +54,7 @@ Use `local` for debugging. In production, choose `viking`, `mem0`, or `openvikin
 
 Passing `long_term_memory` to an `Agent` **auto-injects the `load_memory` tool** so the agent can retrieve past sessions at run time.
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -77,7 +78,7 @@ to persist it. Most backends keep only user text events to improve retrieval
 quality. The `openviking` backend keeps text from both the user and the agent so
 OpenViking can form memory from the complete conversation.
 
-```python
+```python lines
 completed_session = await runner.session_service.get_session(
     app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
 )
@@ -88,7 +89,7 @@ await ltm.add_session_to_memory(completed_session)
 
 Besides the agent's automatic retrieval via `load_memory`, you can call the async `search_memory` directly for semantic search — useful for debugging or custom RAG:
 
-```python
+```python lines
 response = await ltm.search_memory(
     app_name=APP_NAME,
     user_id=USER_ID,
@@ -105,7 +106,7 @@ print(response.memories)
 
 Set `auto_save_session=True` on the `Agent` with long-term memory configured, and VeADK persists sessions automatically — no manual `add_session_to_memory`.
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -122,7 +123,7 @@ To avoid frequent index re-initialization, VeADK exposes `MIN_MESSAGES_THRESHOLD
 
 An end-to-end flow: session #1 tells the agent a fact and auto-archives it, then a **brand-new** session #2 asks a question — and the agent recalls the fact via memory retrieval (not the context window). This uses the `local` backend, which needs `pip install "veadk-python[extensions]"`.
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner

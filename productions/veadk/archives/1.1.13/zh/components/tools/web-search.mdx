@@ -1,5 +1,6 @@
 ---
 title: "网页搜索"
+en_link: "/productions/veadk/archives/1.1.13/en/components/tools/web-search"
 ---
 
 ## 功能说明
@@ -32,7 +33,7 @@ title: "网页搜索"
 
 或在 `config.yaml` 中配置：
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 model:
   agent:
     provider: openai
@@ -47,7 +48,7 @@ volcengine:
 
 BytePlus 模式示例：
 
-```bash
+```bash lines
 export CLOUD_PROVIDER="byteplus"
 export BYTEPLUS_WEB_SEARCH_API_KEY="your-byteplus-search-api-key"
 export MODEL_AGENT_API_KEY="your-model-api-key"
@@ -55,7 +56,7 @@ export MODEL_AGENT_API_KEY="your-model-api-key"
 
 ## 使用方法
 
-```python title="examples/tools/web_search/agent.py"
+```python title="examples/tools/web_search/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

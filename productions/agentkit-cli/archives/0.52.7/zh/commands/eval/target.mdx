@@ -1,5 +1,6 @@
 ---
 title: "管理评测目标"
+en_link: "/productions/agentkit-cli/archives/0.52.7/en/commands/eval/target"
 ---
 
 `eval target` 命令组用于查看 TEA 评测平台中的源评测目标及其版本。评测目标通常对应已部署的 Runtime；`eval run` 会用目标 ID 或名称解析该对象，并可按版本提交实验。
@@ -19,7 +20,7 @@ title: "管理评测目标"
 | `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit eval target list --name my-agent
 ```
 
@@ -34,6 +35,6 @@ agentkit eval target list --name my-agent
 | `-r, --region <region>` | Volcengine 区域。 | 环境变量 |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit eval target version-list --source-target-id <source-target-id>
 ```

@@ -1,5 +1,6 @@
 ---
 title: "Remote sandbox sub-agent"
+zh_link: "/productions/veadk/archives/1.1.12/zh/components/agent/remote-sandbox-agent"
 ---
 
 ## Overview
@@ -32,7 +33,7 @@ Before using:
 
 Import path:
 
-```python
+```python lines
 from veadk import AgentkitRemoteSandboxAgent
 ```
 
@@ -44,7 +45,7 @@ from veadk import AgentkitRemoteSandboxAgent
 
 Register `AgentkitRemoteSandboxAgent` in the coordinator agent's `sub_agents` list. The coordinator agent delegates tasks to the sandbox sub-agent via `transfer_to_agent` during inference, and the sub-agent executes the task in the remote sandbox and returns results directly.
 
-```python title="remote_sandbox_subagent.py"
+```python title="remote_sandbox_subagent.py" lines
 import os
 
 from veadk import Agent, Runner
@@ -76,7 +77,7 @@ runner = Runner(agent=coordinator, short_term_memory=ShortTermMemory())
 
 You can also use `AgentkitRemoteSandboxAgent` directly as the application's root agent. In this mode there is no local coordinator agent; the user's text task is executed directly in the remote sandbox.
 
-```python title="remote_sandbox_root.py"
+```python title="remote_sandbox_root.py" lines
 import os
 
 from veadk import AgentkitRemoteSandboxAgent

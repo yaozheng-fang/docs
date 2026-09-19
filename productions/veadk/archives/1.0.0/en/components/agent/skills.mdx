@@ -1,5 +1,6 @@
 ---
 title: "Skills"
+zh_link: "/productions/veadk/archives/1.0.0/zh/components/agent/skills"
 ---
 
 Skills are reusable prompt packages that provide an agent with domain knowledge, procedures, and scripts. VeADK 1.0.0 first loads each skill's name and description, then reads its full content when the skill is needed to limit context usage.
@@ -18,7 +19,7 @@ If `skills_mode` is unset, VeADK selects a mode from the runtime environment: lo
 
 A local path in `skills` must point to a skills root. Each child directory represents one skill and contains `SKILL.md`:
 
-```text
+```text lines
 skills/
 └── kb-skill/
     ├── SKILL.md
@@ -29,7 +30,7 @@ skills/
 
 The `SKILL.md` frontmatter must define `name` and `description`, and `name` should match the directory name:
 
-```markdown title="skills/kb-skill/SKILL.md"
+```markdown title="skills/kb-skill/SKILL.md" lines
 ---
 name: kb-skill
 description: Query the knowledge base and compose an answer.
@@ -40,7 +41,7 @@ Follow these steps to query the knowledge base and compose an answer...
 
 ## Use local skills
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -55,7 +56,7 @@ Local mode adds skill metadata to the system prompt and provides the supporting 
 
 Pass the Skill Space identifier through `skills`, select `skills_sandbox`, and add `execute_skills`:
 
-```python
+```python lines
 import os
 
 from veadk import Agent
@@ -74,7 +75,7 @@ Configure credentials that can access the Skill Space and AgentKit tool runtime 
 
 A skill definition can include a checklist. With `enable_skills_checklist=True`, VeADK initializes its items when execution begins and prompts the model to update each item through `update_check_list`:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -88,7 +89,7 @@ agent = Agent(
 
 With `enable_dynamic_load_skills=True`, VeADK checks and reloads skill configuration while the agent is running:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(

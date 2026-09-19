@@ -1,5 +1,6 @@
 ---
 title: "A2UI"
+zh_link: "/productions/veadk/archives/1.0.6/zh/components/frontend/a2ui"
 ---
 
 A2UI lets an agent return **rich, interactive UI** — cards, forms, row/column layouts — rendered natively by the frontend, instead of plain text only. It suits naturally visual answers: status cards, summaries, option lists, and small forms.
@@ -12,7 +13,7 @@ A2UI lets an agent return **rich, interactive UI** — cards, forms, row/column 
 
 Set `enable_a2ui=True` when creating the agent, and it can reply with UI when appropriate. It uses a built-in basic component set by default (card, text, button, divider, and other common components):
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent
 
 agent = Agent(

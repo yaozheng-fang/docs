@@ -1,5 +1,6 @@
 ---
 title: "管理 MCP 服务"
+en_link: "/productions/agentkit-cli/preview/en/commands/mcp"
 ---
 
 `mcp service` 命令组用于管理 AgentKit MCP 服务。MCP 服务把容器化的 MCP Server 部署为 AgentKit 云资源，并提供网络与鉴权配置。当前版本支持查询、创建和删除服务；创建时仅支持 `custom-private` 后端与 MCP 协议。
@@ -24,7 +25,7 @@ title: "管理 MCP 服务"
 | `--json` | 输出原始 JSON。 | `false` |
 | `--gateway-instance-id <id>` | 按专属网关实例 ID 筛选 | — |
 
-```bash
+```bash lines
 agentkit mcp service list --project default
 ```
 
@@ -39,7 +40,7 @@ agentkit mcp service list --project default
 | `-p, --project <name>` | AgentKit 项目名称，用于按名称解析服务。 | `default` |
 | `--json` | 输出原始 JSON，包括网络、鉴权和后端配置。 | `false` |
 
-```bash
+```bash lines
 agentkit mcp service show customer-tools
 ```
 
@@ -83,7 +84,7 @@ agentkit mcp service show customer-tools
 
 以下示例创建一个使用公网与 API Key 入站鉴权的服务：
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name customer-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/customer-tools:latest \
@@ -96,7 +97,7 @@ agentkit mcp service create \
 
 `public` 网络不能同时设置 VPC 或子网。`private` 和 `hybrid` 均要求同时提供 `--vpc-id` 与 `--subnet-id`；`hybrid` 同时启用公网和私网访问。
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name internal-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/internal-tools:latest \
@@ -110,7 +111,7 @@ agentkit mcp service create \
 
 使用 `custom-jwt` 时，必须提供 OIDC Discovery URL 和至少一个允许的客户端 ID，且不能再传入 API Key 相关标志。
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name jwt-protected-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/jwt-tools:latest \
@@ -132,7 +133,7 @@ agentkit mcp service create \
 | `-p, --project <name>` | AgentKit 项目名称，用于按名称解析服务。 | `default` |
 | `-y, --yes` | 跳过删除确认。 | `false` |
 
-```bash
+```bash lines
 agentkit mcp service delete customer-tools
 ```
 
@@ -140,13 +141,13 @@ agentkit mcp service delete customer-tools
 
 专属网关模式要求已有网关实例，并沿用该实例的网络。不能同时指定私有或混合 `--network`、`--vpc-id` 或 `--subnet-id`；共享网关不能设置 `--gateway-instance-id` 与 `--backend-access-type`
 
-```bash
+```bash lines
 agentkit mcp service list --gateway-instance-id gateway-example --json
 ```
 
 以下示例使用已有专属网关创建服务，并通过私网访问后端。执行前请将镜像地址和网关 ID 替换为实际资源；创建服务可能产生云资源费用
 
-```bash
+```bash lines
 agentkit mcp service create \
   --name internal-tools \
   --image-url cr-cn-beijing.volces.com/agentkit/internal-tools:latest \

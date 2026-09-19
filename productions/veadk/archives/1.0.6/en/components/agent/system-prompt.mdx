@@ -1,5 +1,6 @@
 ---
 title: "System prompt"
+zh_link: "/productions/veadk/archives/1.0.6/zh/components/agent/system-prompt"
 ---
 
 An agent's system prompt is set through the `instruction` parameter, which
@@ -9,7 +10,7 @@ governs the model's behavior, tone, and how it answers.
 
 The simplest form is a plain string:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -25,7 +26,7 @@ When the prompt needs to vary with runtime context, there are two options.
 **Placeholders**: use `{variable_name}` in the string; at runtime it is filled
 from the matching value in session state.
 
-```python
+```python lines
 agent = Agent(
     instruction="You are serving user {user_name}. Answer concisely and politely.",
 )
@@ -35,7 +36,7 @@ agent = Agent(
 returns the prompt string, letting you read session state to build the prompt
 yourself. The function can also be an `async` function.
 
-```python
+```python lines
 from google.adk.agents.readonly_context import ReadonlyContext
 from veadk import Agent
 

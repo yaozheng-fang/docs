@@ -1,5 +1,6 @@
 ---
 title: "Harness"
+zh_link: "/productions/veadk/archives/1.1.12/zh/components/extensions/harness"
 ---
 
 Harness is a VeADK execution enhancement extension that provides two mutually exclusive integration modes: an in-process plugin mode and a managed Sidecar mode. The in-process mode loads Harness plugins into the application process to prepare context, compact tool results, and verify answers for each turn. The managed Sidecar mode runs all enhancement behavior in a separate managed runtime, and the application process does not load the related plugins.
@@ -19,7 +20,7 @@ Harness is a VeADK execution enhancement extension that provides two mutually ex
 
 The base Harness extension is bundled with VeADK and requires no additional installation. To use the Headroom compression provider, install the `harness` extra:
 
-```bash
+```bash lines
 pip install "veadk-python[harness]"
 ```
 
@@ -27,7 +28,7 @@ pip install "veadk-python[harness]"
 
 The in-process mode builds a plugin list via `build_harness_plugins()` and attaches it to the `Runner`:
 
-```python
+```python lines
 from veadk.extensions.harness.plugins import build_harness_plugins
 from veadk import Agent, Runner
 
@@ -54,7 +55,7 @@ runner = Runner(
 
 Use `build_harness_plugins_from_env()` to build plugins from environment variables:
 
-```python
+```python lines
 from veadk.extensions.harness.env import build_harness_plugins_from_env
 
 plugins = build_harness_plugins_from_env()
@@ -83,7 +84,7 @@ The managed Sidecar mode starts a managed runtime via `HarnessExtension`. The ru
 
 Set `HARNESS_SIDECAR_ENABLED=true` and `HarnessExtension.from_env()` reads the relevant environment variables and starts the Sidecar:
 
-```python
+```python lines
 from veadk.extensions.harness import HarnessExtension
 
 extension = HarnessExtension.from_env()
@@ -92,7 +93,7 @@ plugins = extension.plugins()  # Returns an empty list in managed Sidecar mode
 
 <Note>
   `HarnessExtension` supports the context manager protocol and automatically closes the Sidecar on exit:
-  ```python
+  ```python lines
   with HarnessExtension.from_env() as extension:
       ...
   ```
@@ -102,7 +103,7 @@ plugins = extension.plugins()  # Returns an empty list in managed Sidecar mode
 
 You can also enable the Sidecar directly via the `sidecar` parameter:
 
-```python
+```python lines
 from veadk.extensions.harness import HarnessExtension
 
 extension = HarnessExtension(
@@ -121,7 +122,7 @@ The `sidecar` parameter accepts a boolean or a configuration dict. When a dict i
 
 Use `HarnessSidecarConfig` to build a complete configuration, then pass it to `HarnessExtension`:
 
-```python
+```python lines
 from veadk.extensions.harness import HarnessExtension
 from veadk.extensions.harness.sidecar_runtime import HarnessSidecarConfig
 
@@ -213,7 +214,7 @@ The managed Sidecar mode is configured through the following environment variabl
 
 Individual modules from the in-process mode can also be used directly:
 
-```python
+```python lines
 from veadk.extensions.harness import HarnessInvocationContextBuilder, HarnessInvocationRef
 
 context = HarnessInvocationRef(session_id="session-1", invocation_id="run-1")

@@ -1,5 +1,6 @@
 ---
 title: "代码沙箱"
+en_link: "/productions/veadk/archives/1.0.3/en/components/tools/code-sandbox"
 ---
 
 ## 功能说明
@@ -43,7 +44,7 @@ VeADK 提供一组在 [AgentKit 沙箱](https://console.volcengine.com/agentkit)
 
 `config.yaml` 配置项：
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 agentkit:
   tool_id: your-default-tool-id
   tool_id_script: your-script-tool-id
@@ -67,7 +68,7 @@ agentkit:
 
 ## 使用方法
 
-```python title="examples/tools/run_code/agent.py"
+```python title="examples/tools/run_code/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

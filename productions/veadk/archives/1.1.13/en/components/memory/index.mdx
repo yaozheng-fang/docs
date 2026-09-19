@@ -1,5 +1,6 @@
 ---
 title: "Long-term memory"
+zh_link: "/productions/veadk/archives/1.1.13/zh/components/memory"
 ---
 
 Long-term memory persists important information across sessions and over time — user preferences, task history, key facts, or long-lived state. Short-term memory only lives within a single session; long-term memory lets an agent remember facts **across different sessions**.
@@ -15,7 +16,7 @@ Why you need it:
 
 Whatever backend you use, you interact with `veadk.memory.long_term_memory.LongTermMemory`. It plugs directly into an agent as its memory service and selects the storage backend through `backend`.
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 ltm = LongTermMemory(backend="viking", app_name="ltm_demo")
@@ -54,7 +55,7 @@ Use `local` for debugging. In production, select `viking`, `mem0`, or `tos_conte
 
 Passing `long_term_memory` to an `Agent` **auto-injects the `load_memory` tool** so the agent can retrieve past sessions at run time.
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -75,7 +76,7 @@ runner = Runner(agent=root_agent, app_name=APP_NAME)
 
 When a session ends or hits a checkpoint, call the async `add_session_to_memory` to persist it. `LongTermMemory` filters events according to the auto-save policy — by default keeping only user text events to improve retrieval quality. You can customize the filtering rules with the `auto_save_memory_policy` parameter before passing events to the backend.
 
-```python
+```python lines
 completed_session = await runner.session_service.get_session(
     app_name=APP_NAME, user_id=USER_ID, session_id=SESSION_ID
 )
@@ -84,7 +85,7 @@ await ltm.add_session_to_memory(completed_session)
 
 `add_session_to_memory` accepts an optional `auto_save_memory_policy` keyword argument to override the default filtering policy:
 
-```python
+```python lines
 from veadk.memory import MemoryAutoSavePolicy
 
 await ltm.add_session_to_memory(
@@ -97,7 +98,7 @@ await ltm.add_session_to_memory(
 
 Besides the agent's automatic retrieval via `load_memory`, you can call the async `search_memory` directly for semantic search — useful for debugging or custom RAG:
 
-```python
+```python lines
 response = await ltm.search_memory(
     app_name=APP_NAME,
     user_id=USER_ID,
@@ -114,7 +115,7 @@ print(response.memories)
 
 Set `auto_save_session=True` on the `Agent` with long-term memory configured, and VeADK persists sessions automatically — no manual `add_session_to_memory`.
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -148,7 +149,7 @@ The parameter type is `MemoryAutoSavePolicyInput`, which accepts one of:
 
 Using a preset string:
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -162,7 +163,7 @@ agent = Agent(
 
 Using a `MemoryAutoSavePolicy` instance for fine-grained control:
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory import MemoryAutoSavePolicy
 from veadk.memory.long_term_memory import LongTermMemory
@@ -205,7 +206,7 @@ String presets provide a quick configuration shortcut. When you pass a `MemoryAu
 
 An end-to-end flow: session #1 tells the agent a fact and auto-archives it, then a **brand-new** session #2 asks a question — and the agent recalls the fact via memory retrieval (not the context window). This uses the `local` backend, which needs `pip install "veadk-python[extensions]"`.
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner

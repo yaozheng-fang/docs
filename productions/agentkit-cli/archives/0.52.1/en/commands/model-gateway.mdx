@@ -1,5 +1,6 @@
 ---
 title: "Manage Model Gateway"
+zh_link: "/productions/agentkit-cli/archives/0.52.1/zh/commands/model-gateway"
 ---
 
 The `model-gateway` command group activates AgentKit Model Gateway and manages model providers and consumers that access models through a unified gateway. The top-level alias is `mgw`.
@@ -18,7 +19,7 @@ Activate Model Gateway. If a Model Gateway already exists in the current region,
 | `-r, --region <region>` | Cloud region. | Resolved from provider or environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit model-gateway activate --region cn-beijing
 
 agentkit mgw activate --apig-gateway-id <apig-gateway-id> --json
@@ -37,7 +38,7 @@ Create a model provider. A provider contains the upstream base URL, protocol, on
 | `--protocol <protocol>` | Upstream protocol: `openai` or `anthropic`. | `openai` |
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 
-```bash
+```bash lines
 agentkit model-gateway provider create ark \
   --base-url https://ark.cn-beijing.volces.com/api/v3 \
   --api-key ${MODEL_PROVIDER_API_KEY} \
@@ -53,7 +54,7 @@ List model providers under the current Model Gateway.
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit model-gateway provider list
 ```
 
@@ -67,7 +68,7 @@ Show details for a model provider.
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit model-gateway provider show ark
 ```
 
@@ -84,7 +85,7 @@ Update a model provider. Pass at least one of `--base-url`, `--api-key`, `--mode
 | `--protocol <protocol>` | New protocol: `openai` or `anthropic`. | — |
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 
-```bash
+```bash lines
 agentkit model-gateway provider update ark \
   --model deepseek-v4-flash-ga-260731 \
   --model doubao-seed-2-0-pro-260215
@@ -104,7 +105,7 @@ Delete a model provider.
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 agentkit model-gateway provider delete ark --yes
 ```
 
@@ -120,7 +121,7 @@ Create a consumer. A consumer receives an API key for accessing Model Gateway, a
 | `--tpd <tokens>` | Tokens per day; must be a positive integer. | — |
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 
-```bash
+```bash lines
 agentkit model-gateway consumer create app-server \
   --allow-model ark/deepseek-v4-flash-ga-260731 \
   --tpm 60000 \
@@ -138,7 +139,7 @@ List consumers under the current Model Gateway.
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit model-gateway consumer list
 ```
 
@@ -152,7 +153,7 @@ Show consumer details, including API keys, authorization scope, and rate limits.
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit model-gateway consumer show app-server
 ```
 
@@ -168,7 +169,7 @@ Update a consumer's model authorization scope or token rate limits. Pass at leas
 | `--tpd <tokens>` | Replacement tokens-per-day limit; must be a positive integer. | — |
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 
-```bash
+```bash lines
 agentkit model-gateway consumer update app-server \
   --allow-model ark \
   --tpm 120000
@@ -188,7 +189,7 @@ Delete a consumer.
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 agentkit model-gateway consumer delete app-server --yes
 ```
 
@@ -203,7 +204,7 @@ Generate a calling example from a provider and consumer. The command reads the p
 | `--example <type>` | Example type: `curl`, `openai`, `anthropic`, or `agentkit`. | `curl` |
 | `-r, --region <region>` | Cloud region. | Auto-sense |
 
-```bash
+```bash lines
 agentkit model-gateway show-example \
   --model-provider ark \
   --consumer app-server \

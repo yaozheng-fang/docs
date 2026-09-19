@@ -1,5 +1,6 @@
 ---
 title: "模型"
+en_link: "/productions/veadk/archives/1.0.5/en/components/agent/model"
 ---
 
 智能体默认使用全局配置的模型，即通过环境变量或 `config.yaml` 设置的模型（参见[快速开始](/productions/veadk/archives/1.0.5/zh/get-started/quickstart)）。VeADK 1.0.5 的默认推理模型为 `doubao-seed-2-1-pro-260628`。也可以在创建智能体时为其单独指定模型。
@@ -8,7 +9,7 @@ title: "模型"
 
 通过 `model_name` 与 `model_provider` 覆盖全局默认模型：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -23,7 +24,7 @@ agent = Agent(
 
 除直接设置 `MODEL_AGENT_API_KEY` 外，还可以设置 `MODEL_AGENT_API_KEY_NAME`，让 VeADK 按名称获取火山方舟 API Key。显式提供的 Key 始终优先：
 
-```bash
+```bash lines
 export MODEL_AGENT_API_KEY_NAME="production-key"
 ```
 
@@ -33,7 +34,7 @@ export MODEL_AGENT_API_KEY_NAME="production-key"
 
 `model_name` 也接受一个列表：第一个为主模型，其余作为回退模型；当主模型不可用时，依次尝试后续模型。
 
-```python
+```python lines
 agent = Agent(
     model_name=["doubao-seed-2-1-pro-260628", "deepseek-r1-250528"],
 )
@@ -49,7 +50,7 @@ Responses API 是火山方舟推出的接口，原生支持高效的上下文管
 
 在创建智能体时设置 `enable_responses=True`：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(enable_responses=True)
@@ -67,7 +68,7 @@ agent = Agent(enable_responses=True)
 
 以本地图片为例：
 
-```python
+```python lines
 import os
 from google.genai import types
 from google.genai.types import FileData
@@ -92,7 +93,7 @@ message = types.UserContent(
 
 启用 Responses API 时，可通过 `model_extra_config` 传入方舟支持的 `context_management` 配置。以下示例会清理较早的思维内容，仅保留最近一个思维轮次：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(

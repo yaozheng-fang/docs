@@ -1,5 +1,6 @@
 ---
 title: "Execution engine"
+zh_link: "/productions/veadk/archives/1.0.6/zh/components/execution-engine"
 ---
 
 `Runner` is the core of the execution engine: it coordinates the agent, tools,
@@ -25,7 +26,7 @@ dimensions — `app_name`, `user_id`, and `session_id`:
 `Runner.run()` runs an agent directly, handling input and returning the final
 text response — convenient for local testing:
 
-```python
+```python lines
 import asyncio
 from veadk import Agent, Runner
 
@@ -49,7 +50,7 @@ during the agent's run. Unlike `run()`, which only returns the final text,
 iterating over events gives you the reasoning, tool calls and results, and
 streaming increments — useful for building your own logic on top.
 
-```python
+```python lines
 import asyncio
 from google.genai.types import Content, Part
 from veadk import Agent, Runner
@@ -102,7 +103,7 @@ The event also offers helpers: `is_final_response()` tells whether it is the
 final reply, and `get_function_calls()` / `get_function_responses()` extract the
 tool calls and results from the event.
 
-```python
+```python lines
 async for event in runner.run_async(
     user_id=USER_ID, session_id=SESSION_ID, new_message=message,
 ):

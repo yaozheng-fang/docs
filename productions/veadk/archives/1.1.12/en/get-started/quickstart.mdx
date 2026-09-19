@@ -1,5 +1,6 @@
 ---
 title: "Quickstart"
+zh_link: "/productions/veadk/archives/1.1.12/zh/get-started/quickstart"
 ---
 
 This tutorial explains how to configure a model and run a minimal agent that
@@ -21,7 +22,7 @@ is an environment variable — only the API key is required.
   <Tab title="Environment variable">
     With the API key set, VeADK uses the default doubao model on Volcengine Ark:
 
-    ```bash
+    ```bash lines
     export MODEL_AGENT_API_KEY="your-ark-api-key"
     ```
 
@@ -30,7 +31,7 @@ is an environment variable — only the API key is required.
   <Tab title="Config file">
     Create `config.yaml` in the project root; VeADK reads it automatically:
 
-    ```yaml config.yaml
+    ```yaml config.yaml lines
     model:
       agent:
         provider: openai
@@ -47,7 +48,7 @@ is an environment variable — only the API key is required.
 
 Create `main.py`:
 
-```python main.py
+```python main.py lines
 from veadk import Agent
 import asyncio
 
@@ -63,7 +64,7 @@ text answer.
 
 ## Run
 
-```bash
+```bash lines
 python main.py
 ```
 

@@ -1,5 +1,6 @@
 ---
 title: "Destroy a runtime"
+zh_link: "/productions/agentkit-cli/archives/0.46.6/zh/commands/destroy"
 ---
 
 `destroy` deletes the deployed runtime. With no name it resolves the runtime from the project's local config (`.agentkit/agentkit.yaml`); pass a name to target one explicitly. This removes the runtime itself — use it to tear down a deployment you no longer need.
@@ -10,7 +11,7 @@ title: "Destroy a runtime"
 | `-r, --region <region>` | Volcengine region. | auto-sense |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 # Delete the runtime declared in the current project's config
 agentkit destroy
 

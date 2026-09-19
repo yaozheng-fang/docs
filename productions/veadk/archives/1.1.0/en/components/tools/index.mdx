@@ -1,5 +1,6 @@
 ---
 title: "Overview"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/tools"
 ---
 
 Tools give an agent the ability to interact with the outside world beyond reasoning: web search, code execution, image and video generation, access to third-party services, and more. VeADK packages these capabilities as tools you can register directly. At runtime the agent decides on its own — based on user input and its instruction — whether to call a tool; the framework executes it automatically and feeds the result back into the reasoning process.
@@ -8,7 +9,7 @@ Tools give an agent the ability to interact with the outside world beyond reason
 
 Whatever the tool type, registration is the same: put the tool in the `Agent`'s `tools` list.
 
-```python
+```python lines
 from veadk import Agent
 from veadk.tools.builtin_tools.web_search import web_search
 

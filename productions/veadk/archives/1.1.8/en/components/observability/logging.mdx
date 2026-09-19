@@ -1,5 +1,6 @@
 ---
 title: "Application logging"
+zh_link: "/productions/veadk/archives/1.1.8/zh/components/observability/logging"
 ---
 
 Since 1.0.5, VeADK uses Python's standard `logging` package for runtime logs and no longer depends on Loguru. VeADK loggers live under the `veadk` namespace and write to standard output by default, which works with container platforms and log collectors.
@@ -8,7 +9,7 @@ Since 1.0.5, VeADK uses Python's standard `logging` package for runtime logs and
 
 Set `LOGGING_LEVEL` before importing VeADK. Its default is `DEBUG`.
 
-```bash
+```bash lines
 export LOGGING_LEVEL=INFO
 python app.py
 ```
@@ -19,13 +20,13 @@ Use standard Python logging levels, including `DEBUG`, `INFO`, `WARNING`, `ERROR
 
 Each record contains the time, level, call location, and message:
 
-```text
+```text lines
 2026-07-14 10:30:00 | INFO | runner.py:180 - Event output: request completed
 ```
 
 When code runs inside a recording OpenTelemetry span, VeADK adds `trace_id` so you can correlate a request between logs and traces:
 
-```text
+```text lines
 2026-07-14 10:30:00 | INFO | runner.py:180 | trace_id=0123456789abcdef - Event output: request completed
 ```
 
@@ -35,7 +36,7 @@ Interactive terminals use colors for the time, level, and location. Redirected o
 
 Your application can use standard-library loggers and control the `veadk` namespace independently:
 
-```python
+```python lines
 import logging
 
 from veadk import Agent

@@ -1,5 +1,6 @@
 ---
 title: "Manage evaluation targets"
+zh_link: "/productions/agentkit-cli/archives/0.52.6/zh/commands/eval/target"
 ---
 
 The `eval target` command group lists TEA source evaluation targets and their versions. A target usually corresponds to a deployed Runtime; `eval run` resolves that object from the target ID or name and can submit an experiment against a specific target version.
@@ -19,7 +20,7 @@ List source evaluation targets, optionally filtered by a name substring.
 | `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval target list --name my-agent
 ```
 
@@ -34,6 +35,6 @@ List versions of a source evaluation target. When `eval run` omits `--target-ver
 | `-r, --region <region>` | Volcengine region. | Environment |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval target version-list --source-target-id <source-target-id>
 ```

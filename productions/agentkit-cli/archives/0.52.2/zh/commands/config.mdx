@@ -1,5 +1,6 @@
 ---
 title: "配置"
+en_link: "/productions/agentkit-cli/archives/0.52.2/en/commands/config"
 ---
 
 `config` 管理生命周期项目的 `agentkit.yaml`，也可通过 `--global` 管理用户级默认配置 `~/.agentkit/config.yaml`。项目级配置用于 `build`、`deploy`、`launch`、`status` 与 `destroy`；全局配置用于默认云厂商、区域、凭证和基础设施默认值。
@@ -53,7 +54,7 @@ title: "配置"
 | `--runtime-enable-shared-internet-access` | `--runtime_enable_shared_internet_access` 的 kebab-case 写法。 | 当前配置值 |
 | `--no-runtime-enable-shared-internet-access` | `--no-runtime_enable_shared_internet_access` 的 kebab-case 写法。 | — |
 
-```bash
+```bash lines
 agentkit config --init --agent_name my-agent --cloud_provider volcengine --region cn-beijing
 
 agentkit config \
@@ -75,7 +76,7 @@ agentkit config \
 | `--region <region>` | 默认区域。 | 当前用户级配置 |
 | `--set <key=value>` | 写入用户级配置键，可重复。 | — |
 
-```bash
+```bash lines
 agentkit config --global --init
 
 agentkit --provider byteplus config --global --region ap-southeast-1

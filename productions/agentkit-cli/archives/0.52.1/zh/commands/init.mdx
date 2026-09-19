@@ -1,5 +1,6 @@
 ---
 title: "初始化项目"
+en_link: "/productions/agentkit-cli/archives/0.52.1/en/commands/init"
 ---
 
 `init` 基于内置模板创建新的智能体项目，也可以把已有 Python 文件中的 `Agent` 包装为可部署的 AgentKit 应用。生成结果包含入口文件、依赖文件、`agentkit.yaml` 和 `.dockerignore`；随后可用 `agentkit config` 调整配置，并用 `agentkit launch` 构建与部署。
@@ -22,7 +23,7 @@ title: "初始化项目"
 | `--tools <list>` | 要包含的工具列表，多个值用逗号分隔。 | — |
 | `--list-templates` | 列出模板 ID、Key 和名称后退出。 | `false` |
 
-```bash
+```bash lines
 agentkit init my-agent --template basic
 
 agentkit init go-agent --template basic_go --directory ./apps
@@ -40,12 +41,12 @@ agentkit init go-agent --template basic_go --directory ./apps
 | `--wrapper-type <type>` | 包装类型：`basic` 或 `stream`。 | `basic` |
 | `--directory <path>` | 目标目录。 | `.` |
 
-```bash
+```bash lines
 agentkit init wrapped-agent --from-agent ./agent.py --agent-var root_agent
 ```
 
 初始化后进入项目目录，检查 `agentkit.yaml`，再执行：
 
-```bash
+```bash lines
 agentkit launch
 ```

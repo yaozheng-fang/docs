@@ -1,5 +1,6 @@
 ---
 title: "Video-on-Demand MCP"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/tools/vod"
 ---
 
 ## Overview
@@ -26,7 +27,7 @@ Environment variables:
 
 Or configure in `config.yaml`:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 volcengine:
   access_key: your-access-key-here
   secret_key: your-secret-key-here
@@ -38,7 +39,7 @@ tool:
 
 ## Usage
 
-```python title="examples/tools/vod/agent.py"
+```python title="examples/tools/vod/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

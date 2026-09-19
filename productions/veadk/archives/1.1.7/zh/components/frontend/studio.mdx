@@ -1,5 +1,6 @@
 ---
 title: "Studio 智能体工作台"
+en_link: "/productions/veadk/archives/1.1.7/en/components/frontend/studio"
 ---
 
 AgentKit Studio 使用与 VeADK Frontend 相同的服务和完整界面，提供对话、搜索、历史会话、资源库、视频创作、自动化集成，以及智能体创建、测试、部署和管理功能，启动后默认进入对话页面。智能体工作台以画布形式呈现多智能体拓扑，并集中展示已部署 Runtime 的版本与部署状态，支持在同一 Runtime 上迭代更新。
@@ -18,7 +19,7 @@ AgentKit Studio 使用与 VeADK Frontend 相同的服务和完整界面，提供
 
 从智能体目录的上一级目录运行：
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -75,7 +76,7 @@ Studio 对象使用用户优先的版本化布局，路径格式为 `veadk-studi
 
 使用 `--site-title` 设置最多 16 个字符的系统名称，使用 `--site-logo` 指定本地图片或 HTTP(S) 图片 URL。Logo 会用于侧边栏、登录页和浏览器 favicon。浏览器页面标题会随当前界面动态变化：新会话首页只显示系统名称；进入对话后显示会话名称；进入自动化、系统信息、创建智能体、资源库、搜索等功能页时，标题为「系统名称 - 页面名称」。省略 `--site-title` 时使用默认名称 `AgentKit Studio`。
 
-```bash
+```bash lines
 veadk studio \
   --site-title "火山助手" \
   --site-logo "./logo.png"
@@ -358,7 +359,7 @@ Studio 侧边栏提供「工作区」入口，用于将可复用的运行环境�
 
 部署 Studio 时，可通过以下标志指定已有的环境构建资源：
 
-```bash
+```bash lines
 veadk studio deploy \
   --vefaas-app-name <app-name> \
   --environment-cp-workspace <workspace-id-or-name> \
@@ -951,7 +952,7 @@ Studio 不会在浏览器中保存 Runtime API Key，因此管理页只显示 Ru
   <Step title="安装 AgentKit Studio Plugin">
     首次使用时，在「接力到云端继续执行」对话框中选择安装方式。选择「与 Codex 对话安装」可复制一段提示词，粘贴到本地 Codex 对话中由其执行安装；选择「从终端安装」则复制以下命令在本地终端执行：
 
-    ```bash
+    ```bash lines
     codex plugin marketplace add volcengine/veadk-python \
       --sparse .agents/plugins \
       --sparse plugins/agentkit-studio \
@@ -1136,7 +1137,7 @@ Studio 可将自定义创建生成的智能体源码交付到 GitHub 仓库，�
 
 除 Studio 界面外，可使用 `veadk github-cicd-pipeline` 命令将 Studio 导出的 AgentProject JSON 推送到目标分支，对应「GitHub 代码同步」模式：
 
-```bash
+```bash lines
 veadk github-cicd-pipeline \
   --github-url https://github.com/org/repo \
   --github-branch main \
@@ -1198,7 +1199,7 @@ veadk github-cicd-pipeline \
 
 API Server 协议的示例通过 `requests` 创建会话并调用 `/run_sse` 流式接口：
 
-```python
+```python lines
 import uuid
 
 import requests
@@ -1242,7 +1243,7 @@ with requests.post(
 
 A2A 协议的示例通过 JSON-RPC `message/send` 方法调用智能体：
 
-```python
+```python lines
 import uuid
 
 import requests
@@ -1360,7 +1361,7 @@ print(response.json())
 
 本地使用内置智能体前，准备一个处于 `Ready` 状态的 AgentKit CodeEnv Tool，并配置其 ID：
 
-```bash
+```bash lines
 export SANDBOX_CHAT_CODEX="your-chat-code-env-tool-id"
 
 veadk studio --agents-dir ./agents --open
@@ -1761,7 +1762,7 @@ PR 评审工作流需要在仓库中配置以下 GitHub Secrets：
 
 在「引入方法」区域中复制生成的 `<script>` 标签，将其粘贴到目标网页的 `</body>` 标签之前。脚本会从 Studio 服务加载聊天组件，并在页面右下角渲染一个可展开的悬浮聊天窗口。
 
-```html
+```html lines
 <script async src="https://your-studio-url/website-integration.js" data-token="wsi_xxx"></script>
 ```
 
@@ -2099,7 +2100,7 @@ Dev Sandbox 技能生成需要管理员配置处于 `Ready` 状态的 AgentKit D
 
 准备符合权限要求的火山引擎凭证，然后执行：
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -2148,7 +2149,7 @@ Preview 中的未发布 Studio 能力需要从 VeADK 源码目录执行部署，
 
 使用 `--precheck-only` 可仅执行权限预检而不创建任何云资源，用于在正式部署前确认凭证权限是否完备：
 
-```bash
+```bash lines
 veadk studio deploy \
   --vefaas-app-name "veadk-studio" \
   --region "cn-beijing" \
@@ -2177,7 +2178,7 @@ Studio 每三分钟检查一次更新，列出可用版本及其变更说明。�
 
 更新过程中，部署进度面板实时展示 VeFaaS 部署日志。日志在服务端经过过滤，去除 curl 进度条、配置 JSON 导出、ANSI 转义序列和重复行，仅保留与部署相关的有效内容。当 Function 角色缺少 `vefaas:GetApplicationRevisionLog` 权限时，日志面板替换为权限提示，并显示对应云服务商的 IAM 控制台链接（火山引擎为 `console.volcengine.com/iam`，BytePlus 为 `console.byteplus.com/iam`），管理员可据此前往补充权限；更新不受影响，继续进行。更新完成后，Studio 会自动刷新页面以加载新版本；刷新前如有未关闭的更新对话框，也会在重新打开页面后自动恢复显示。
 
-```bash
+```bash lines
 veadk studio deploy \
   --vefaas-app-name "veadk-studio" \
   --studio-update-bucket "custom-studio-releases" \
@@ -2252,7 +2253,7 @@ Studio 前端的产品行为数据通过 TEA 上报，用于统计 Studio 实例
 
 `veadk studio update` 从本地 VeADK 源码重新构建 Studio，更新已有 VeFaaS Function 的代码并重新发布原 Application。运行前安装 Node.js 与 npm，并在 VeADK 源码目录执行：
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -2285,7 +2286,7 @@ veadk studio update --vefaas-app-name "veadk-studio"
 
 `--admin` 和 `--developer` 各自接收逗号分隔的本地用户名或 OAuth 邮箱名单。空格会被忽略，身份匹配不区分大小写；同一身份同时出现在两个名单时，`admin` 优先。本地启动示例：
 
-```bash
+```bash lines
 veadk studio \
   --admin "admin,admin@example.com" \
   --developer "alice,alice@example.com,bob"
@@ -2293,7 +2294,7 @@ veadk studio \
 
 也可以分别通过 `VEADK_STUDIO_ADMINS` 和 `VEADK_STUDIO_DEVELOPERS` 环境变量设置这两个名单。部署 Studio 时使用相同参数：
 
-```bash
+```bash lines
 veadk studio deploy \
   --vefaas-app-name "veadk-studio" \
   --admin "admin@example.com" \

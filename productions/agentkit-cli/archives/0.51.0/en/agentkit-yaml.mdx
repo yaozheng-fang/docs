@@ -1,5 +1,6 @@
 ---
 title: "agentkit.yaml"
+zh_link: "/productions/agentkit-cli/archives/0.51.0/zh/agentkit-yaml"
 ---
 
 AgentKit CLI currently uses two `agentkit.yaml` files:
@@ -13,7 +14,7 @@ This page covers the root lifecycle config first, then the `.agentkit/agentkit.y
 
 Root `agentkit.yaml` describes how an agent application is built, deployed, and inspected. `common.launch_type` selects the active strategy: `local` means local Docker build and local container deploy, `cloud` means cloud build and cloud runtime deploy, and `hybrid` means local build followed by cloud runtime deploy.
 
-```yaml title="agentkit.yaml"
+```yaml title="agentkit.yaml" lines
 common:
   agent_name: my-agent
   entry_point: agent.py
@@ -148,7 +149,7 @@ The CLI loads the project's `.env` (from the working directory) before resolving
 
 ## Release Config Full Example
 
-```yaml title=".agentkit/agentkit.yaml"
+```yaml title=".agentkit/agentkit.yaml" lines
 # agentkit.yaml — AgentKit release configuration (fully yaml-driven).
 #
 # `agentkit release` reads everything from this file — no flags required.
@@ -310,7 +311,7 @@ The `runtime` block configures compute resources and the scaling policy.
 
 `envs` declares the environment variables injected into the runtime. To keep secrets out of the repository, reference the deploy environment with `${VAR}` (syntax at the top of this page); the CLI resolves them at deploy time.
 
-```yaml
+```yaml lines
 envs:
   MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY:?set MODEL_AGENT_API_KEY in your env}
   LOG_LEVEL: ${LOG_LEVEL:-info}

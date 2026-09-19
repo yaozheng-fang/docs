@@ -1,5 +1,6 @@
 ---
 title: "Manage runtimes"
+zh_link: "/productions/agentkit-cli/archives/0.52.1/zh/commands/runtime"
 ---
 
 The `runtime` command group manages AgentKit runtimes, covering listing, inspection, log retrieval, version history, releasing, updating, and deletion.
@@ -14,7 +15,7 @@ List all runtimes.
 | `-p, --project <name>` | Project name. | default |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit runtime list --project demo
 ```
 
@@ -29,7 +30,7 @@ Show details of a runtime, optionally a specific version.
 | `--rev <n>` | Show a specific version instead of the current one. | current |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit runtime show my-agent --rev 3
 ```
 
@@ -43,7 +44,7 @@ Delete a runtime.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 agentkit runtime delete my-agent --yes
 ```
 
@@ -59,7 +60,7 @@ Show logs for a runtime instance.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit runtime logs my-agent --limit 200
 ```
 
@@ -73,7 +74,7 @@ Open an interactive terminal inside a running instance of the runtime, the same 
 | `-i, --instance <name>` | Instance to attach to; otherwise a ready instance is used, and you are prompted when several exist. | auto-resolve |
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 
-```bash
+```bash lines
 agentkit runtime attach my-agent
 ```
 
@@ -87,7 +88,7 @@ List a runtime's version history.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit runtime versions my-agent
 ```
 
@@ -102,7 +103,7 @@ Release (publish) a runtime version, making it live.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `--no-wait` | Return immediately instead of waiting for `Ready`. | `false` |
 
-```bash
+```bash lines
 agentkit runtime release my-agent --rev 3
 ```
 
@@ -135,6 +136,6 @@ Update a runtime's configuration. This does not release the new version unless `
 | `--auto-release` | Release the new version immediately after updating. | `false` |
 | `--no-wait` | Return immediately instead of waiting for the runtime to settle. | `false` |
 
-```bash
+```bash lines
 agentkit runtime update my-agent --cpu-milli 1000 --memory-mb 2048 --auto-release
 ```

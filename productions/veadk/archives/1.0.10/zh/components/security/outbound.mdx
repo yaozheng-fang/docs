@@ -1,5 +1,6 @@
 ---
 title: "出站认证"
+en_link: "/productions/veadk/archives/1.0.10/en/components/security/outbound"
 ---
 
 出站认证解决智能体访问第三方服务时的凭据问题。Agent Identity 加密保管 API Key 与 OAuth 令牌，凭据不写入代码，并自动缓存、刷新与轮换。按场景选择认证方式：
@@ -25,7 +26,7 @@ title: "出站认证"
 
 创建凭据后，用两个封装把凭据注入智能体：普通函数工具用 `VeIdentityFunctionTool`，MCP 工具集用 `VeIdentityMcpToolset`。二者都接收一个 `auth_config`——由下述各认证方式生成——运行时凭据由 Agent Identity 自动注入。
 
-```python
+```python lines
 from veadk.integrations.ve_identity import VeIdentityFunctionTool, VeIdentityMcpToolset
 from google.adk.agents.mcp import StdioServerParameters
 
@@ -43,7 +44,7 @@ toolset = VeIdentityMcpToolset(
 
 最简单的方式，适用于服务间通信与固定凭证场景。在控制台 **新建 › 新建 API Key** 填写名称、第三方服务的 API Key 与传递方式（Header 或 Query）。用 `api_key_auth` 生成 `auth_config`：
 
-```python
+```python lines
 from veadk.integrations.ve_identity import api_key_auth
 
 auth_config = api_key_auth(provider_name="my-api-provider")
@@ -53,7 +54,7 @@ auth_config = api_key_auth(provider_name="my-api-provider")
 
 用于服务间通信，比 API Key 更安全且支持令牌刷新。在控制台 **新建 › 新建 OAuth Client**，OAuth2 流程选 **机器对机器（M2M）**；凭据可用内置提供商（Lark、Coze、Google、GitHub）、OIDC 发行者 URL，或完全自定义的端点。用 `oauth2_auth` 生成，`auth_flow="M2M"`：
 
-```python
+```python lines
 from veadk.integrations.ve_identity import oauth2_auth
 
 auth_config = oauth2_auth(
@@ -67,7 +68,7 @@ auth_config = oauth2_auth(
 
 用于应用代表用户访问第三方服务的场景。在控制台 **新建 › 新建 OAuth Client**，OAuth2 流程选 **用户委托（USER_FEDERATION）**，并填写回调 URL。用 `oauth2_auth` 生成，`auth_flow="USER_FEDERATION"`：
 
-```python
+```python lines
 from veadk.integrations.ve_identity import oauth2_auth
 
 auth_config = oauth2_auth(
@@ -94,7 +95,7 @@ auth_config = oauth2_auth(
 
 以下智能体通过用户委托认证连接火山引擎 ECS 的 MCP 服务，代表用户查询实例并执行命令：
 
-```python
+```python lines
 import asyncio
 from veadk import Agent
 from veadk.integrations.ve_identity import VeIdentityMcpToolset, oauth2_auth

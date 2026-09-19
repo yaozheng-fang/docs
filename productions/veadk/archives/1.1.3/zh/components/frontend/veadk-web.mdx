@@ -1,5 +1,6 @@
 ---
 title: "VeADK Web"
+en_link: "/productions/veadk/archives/1.1.3/en/components/frontend/veadk-web"
 ---
 
 `veadk web` 在 Google ADK 的 `adk web` 之上封装了一层，启动一个可视化的调试界面：无需编写任何前端代码，即可在浏览器中与智能体对话并观察其执行过程。相比直接使用 `adk web`，它额外提供了 VeADK 记忆能力的自动集成、工作流智能体的记忆告警、可选的 VeIdentity SSO 登录，并默认关闭 OpenAPI 文档路由与冗余日志。它适合本地开发与排查。
@@ -10,7 +11,7 @@ title: "VeADK Web"
 
 在智能体目录的上层目录中执行命令。每个包含 `agent.py` 并暴露 `root_agent` 的子目录都会成为界面中可选择的一个应用。
 
-```bash
+```bash lines
 # 智能体目录作为位置参数，缺省为当前目录
 veadk web examples
 
@@ -47,7 +48,7 @@ veadk web examples --host 0.0.0.0 --port 8080
 | `--oauth2-user-pool-client` | — | VeIdentity 用户池客户端名称。 |
 | `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | OAuth2 回调地址。未显式设置时，依据透传的 `--host` 与 `--port` 自动拼接。 |
 
-```bash
+```bash lines
 veadk web examples \
 --oauth2-user-pool "your-user-pool-name" \
 --oauth2-user-pool-client "your-user-pool-client-name"

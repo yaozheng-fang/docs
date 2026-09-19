@@ -1,5 +1,6 @@
 ---
 title: "Model"
+zh_link: "/productions/veadk/archives/1.0.3/zh/components/agent/model"
 ---
 
 By default an agent uses the globally configured model — the one set via
@@ -10,7 +11,7 @@ You can also set a model per agent when you create it.
 
 Override the global default with `model_name` and `model_provider`:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -28,13 +29,13 @@ If the current account has multiple Volcengine Ark API keys, set
 `MODEL_AGENT_API_KEY_NAME` to select one by name. VeADK resolves the key value at
 runtime, so the secret does not need to be stored in a configuration file.
 
-```bash
+```bash lines
 export MODEL_AGENT_API_KEY_NAME="production-agent-key"
 ```
 
 You can also select a key for one agent with `model_api_key_name`:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(model_api_key_name="production-agent-key")
@@ -58,7 +59,7 @@ VeADK resolves credentials in this order:
 `model_name` also accepts a list: the first entry is the primary model and the
 rest are fallbacks, tried in order when the primary model is unavailable.
 
-```python
+```python lines
 agent = Agent(
     model_name=["doubao-seed-1-8-251228", "deepseek-r1-250528"],
 )
@@ -76,7 +77,7 @@ document understanding.
 
 Set `enable_responses=True` when creating the agent:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(enable_responses=True)
@@ -97,7 +98,7 @@ sources:
 
 For a local image:
 
-```python
+```python lines
 import os
 from google.genai import types
 from google.genai.types import FileData

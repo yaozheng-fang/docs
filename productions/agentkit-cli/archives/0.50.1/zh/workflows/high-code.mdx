@@ -1,5 +1,6 @@
 ---
 title: "高代码智能体"
+en_link: "/productions/agentkit-cli/archives/0.50.1/en/workflows/high-code"
 ---
 
 高代码路径适合需要自定义逻辑、工具或多智能体编排的场景：你从模板脚手架一个项目，直接编写智能体代码，再由 CLI 在云端构建镜像并部署为运行时。闭环从脚手架开始，经编辑、部署、调用、查看日志，最终回到编辑持续迭代。
@@ -12,7 +13,7 @@ title: "高代码智能体"
   <Step title="脚手架项目">
     从内置模板创建项目，模板按语言分组。运行 `agentkit init -l` 可先列出全部语言与模板。
 
-    ```bash
+    ```bash lines
     agentkit init my-agent -L python -t basic-agent
     cd my-agent
     ```
@@ -27,7 +28,7 @@ title: "高代码智能体"
   <Step title="构建并部署">
     执行完整部署流程（config → build → apply），在云端构建镜像并创建或更新运行时。
 
-    ```bash
+    ```bash lines
     agentkit deploy --name my-agent --region cn-beijing
     ```
 
@@ -38,14 +39,14 @@ title: "高代码智能体"
   <Step title="调用运行时">
     按名称调用运行时，验证部署结果。
 
-    ```bash
+    ```bash lines
     agentkit invoke my-agent -m "你好，介绍一下你自己"
     ```
   </Step>
   <Step title="查看与迭代">
     运行时行为异常时先看日志；修改代码后重新部署即可发布新版本。
 
-    ```bash
+    ```bash lines
     agentkit runtime logs my-agent --limit 200
     agentkit deploy
     ```
@@ -56,7 +57,7 @@ title: "高代码智能体"
 
 不再需要该运行时时，将其删除以释放资源：
 
-```bash
+```bash lines
 agentkit runtime delete my-agent -y
 ```
 

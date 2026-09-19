@@ -1,5 +1,6 @@
 ---
 title: "Trusted MCP"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/security/trusted-mcp"
 ---
 
 Trusted MCP adds component attestation and verification on top of the standard MCP protocol, plus end-to-end encrypted communication. Combined with confidential computing (such as Jeddak AICC) and trusted inference services, it guards against untrusted service identities, tampered data, traffic hijacking, and privacy leaks.
@@ -23,7 +24,7 @@ With confidential computing, you can run the agent and its model services (such 
 
 Turn on `x-trusted-mcp: true` in the connection parameters, then connect with `TrustedMcpToolset`:
 
-```python title="agent.py"
+```python title="agent.py" lines
 import asyncio
 
 from veadk import Agent

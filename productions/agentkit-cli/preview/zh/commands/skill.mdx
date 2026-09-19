@@ -1,5 +1,6 @@
 ---
 title: "管理平台技能与本地技能包"
+en_link: "/productions/agentkit-cli/preview/en/commands/skill"
 ---
 
 `skill` 管理 AgentKit 平台上的技能与技能空间；`skills` 用于安全壳生成、上传、下载和成对发布真实技能与安全壳技能
@@ -29,7 +30,7 @@ title: "管理平台技能与本地技能包"
 | `-p, --project <name>` | 项目名称 | default |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill list
 ```
 
@@ -43,7 +44,7 @@ agentkit skill list
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill show sk-xxxxxxxx
 ```
 
@@ -57,7 +58,7 @@ agentkit skill show sk-xxxxxxxx
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill versions sk-xxxxxxxx
 ```
 
@@ -70,7 +71,7 @@ agentkit skill versions sk-xxxxxxxx
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `--json` | 输出原始 JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill spaces
 ```
 
@@ -84,7 +85,7 @@ agentkit skill spaces
 | `-r, --region <region>` | Volcengine 区域 | 无 |
 | `-y, --yes` | 跳过确认提示 | `false` |
 
-```bash
+```bash lines
 agentkit skill delete sk-xxxxxxxx --yes
 ```
 
@@ -99,7 +100,7 @@ agentkit skill delete sk-xxxxxxxx --yes
 | `--force` | 覆盖已经存在的生成文件。 | `false` |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit skills secure ./skills
 
 agentkit skills secure ./skills --output ./skills-secure --force
@@ -128,7 +129,7 @@ agentkit skills secure ./skills --output ./skills-secure --force
 | `--dry-run` | 校验并展示上传计划，不发送文件 | `false` |
 | `--json` | 输出 JSON 结果 | `false` |
 
-```bash
+```bash lines
 agentkit skills upload ./skills --source agentkit --skill-space-id ss-example --dry-run
 agentkit skills upload ./skills --source agentkit --skill-space-id ss-example
 agentkit skills upload ./skills/report --source ark_ma
@@ -156,7 +157,7 @@ GitHub 来源使用 `https://github.com/<owner>/<repo>/tree/<ref>/<path>`，需�
 | `-p, --project <name>` | AgentKit 项目 | — |
 | `--json` | 输出 JSON 结果 | `false` |
 
-```bash
+```bash lines
 agentkit skills download s-example --output ./downloaded-skill --source agentkit
 ```
 
@@ -179,7 +180,7 @@ agentkit skills download s-example --output ./downloaded-skill --source agentkit
 | `-p, --project <name>` | AgentKit 项目 | — |
 | `--json` | 输出 JSON 结果 | `false` |
 
-```bash
+```bash lines
 agentkit skills download-space ss-example --output ./downloaded-space --source agentkit
 ```
 
@@ -205,7 +206,7 @@ agentkit skills download-space ss-example --output ./downloaded-space --source a
 | `-y, --yes` | 跳过发布确认；非交互环境必填 | `false` |
 | `--json` | 输出 JSON 结果 | `false` |
 
-```bash
+```bash lines
 agentkit skills publish-secure ./skills --dry-run
 agentkit skills publish-secure ./skills --space-name-prefix reports --output-dir ./secure-skills --yes
 ```

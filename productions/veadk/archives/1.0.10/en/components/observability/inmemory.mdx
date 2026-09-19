@@ -1,5 +1,6 @@
 ---
 title: "In-memory exporter"
+zh_link: "/productions/veadk/archives/1.0.10/zh/components/observability/inmemory"
 ---
 
 `InMemoryExporter` keeps span data in process memory instead of reporting it to an external platform. It organizes spans by `session_id`, which is useful for local debugging, testing, and dumping a session's trace data to a JSON file for offline analysis.
@@ -14,7 +15,7 @@ title: "In-memory exporter"
 
 `InMemoryExporter` is created and managed automatically by `OpentelemetryTracer` and records every span. It therefore **cannot** be added explicitly to the `exporters` list of `OpentelemetryTracer`, or initialization fails.
 
-```python
+```python lines
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
 # The in-memory exporter is attached automatically even with no external exporters
@@ -25,7 +26,7 @@ tracer = OpentelemetryTracer(exporters=[])
 
 After a session run finishes, call the tracer's `dump` method to export that session's spans to a local JSON file:
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner

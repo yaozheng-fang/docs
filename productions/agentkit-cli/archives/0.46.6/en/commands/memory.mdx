@@ -1,5 +1,6 @@
 ---
 title: "Manage memory collections"
+zh_link: "/productions/agentkit-cli/archives/0.46.6/zh/commands/memory"
 ---
 
 The `memory` command group manages AgentKit memory collections, covering listing, inspection, creation, update, and deletion. The command is also available under the `mem` alias.
@@ -14,7 +15,7 @@ List all memory collections.
 | `-p, --project <name>` | Project name. | default |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit memory list --project demo
 ```
 
@@ -28,7 +29,7 @@ Show details of a memory collection.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit memory show m-12345678
 ```
 
@@ -45,7 +46,7 @@ Create a memory collection.
 | `-r, --region <region>` | Volcengine region. | from env |
 | `--json <jsonString>` | JSON object merged into the request body (for nested fields such as `LongTermConfiguration`, `VpcConfig`, `Tags`). | — |
 
-```bash
+```bash lines
 agentkit memory create --name user-mem --provider-type MEM0
 ```
 
@@ -60,7 +61,7 @@ Update a memory collection.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `--json <jsonString>` | JSON object merged into the request body (for nested fields such as `LongTermConfiguration`, `VpcConfig`). | — |
 
-```bash
+```bash lines
 agentkit memory update m-12345678 --description "Updated memory"
 ```
 
@@ -74,6 +75,6 @@ Delete a memory collection.
 | `-r, --region <region>` | Volcengine region. | auto-detect |
 | `-y, --yes` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 agentkit memory delete m-12345678 --yes
 ```

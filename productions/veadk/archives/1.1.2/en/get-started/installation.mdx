@@ -1,5 +1,6 @@
 ---
 title: "Installation"
+zh_link: "/productions/veadk/archives/1.1.2/zh/get-started/installation"
 ---
 
 ## Prerequisites
@@ -11,7 +12,7 @@ title: "Installation"
 
 Install VeADK 1.0.9, the released baseline for this Preview, from [PyPI](https://pypi.org/project/veadk-python/):
 
-```bash
+```bash lines
 pip install "veadk-python==1.0.9"
 ```
 
@@ -24,7 +25,7 @@ pip install "veadk-python==1.0.9"
 VeADK provides optional dependency groups (extras) for on-demand capabilities,
 installed individually as needed:
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
@@ -44,7 +45,7 @@ The `speech` and `cli` extras remain available for compatibility with existing i
 
 The Preview source is the current main line of the public VeADK repository. Create an isolated environment and install it with [uv](https://docs.astral.sh/uv/):
 
-```bash
+```bash lines
 git clone --depth 1 https://github.com/volcengine/veadk-python.git
 cd veadk-python
 

@@ -1,5 +1,6 @@
 ---
 title: "使用沙箱"
+en_link: "/productions/agentkit-cli/archives/0.50.0/en/commands/sandbox"
 ---
 
 `sandbox` 命令组用于创建和管理 AgentKit 沙箱工具，并在沙箱会话中执行命令、调用智能体、传输文件、打开 Web 预览或注入本地模型订阅凭据。当前沙箱工具类型包括 `CodeEnv`、`SkillEnv` 和 `Private`。
@@ -47,7 +48,7 @@ title: "使用沙箱"
 | `--namespace <name>` | Container Registry 命名空间。 | `agentkit` |
 | `--project-dir <path>` | 打包为 Docker 构建上下文的项目目录。 | 当前目录 |
 
-```bash
+```bash lines
 agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name custom-sandbox
 ```
 
@@ -61,7 +62,7 @@ agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name cust
 | `-o, --output <path>` | 输出 Dockerfile 路径。 | 模板默认路径 |
 | `-f, --force` | 覆盖已经存在的输出文件。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox init --template code-web-server --output Dockerfile.sandbox
 ```
 
@@ -75,7 +76,7 @@ agentkit sandbox init --template code-web-server --output Dockerfile.sandbox
 | `--unset <KEY>` | 删除配置值，可重复。 | — |
 | `--list` | 输出当前有效配置。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox config \
   --set tool-type=CodeEnv \
   --set session-id=dev \
@@ -146,13 +147,13 @@ agentkit sandbox config --list
 | `--network-subnet-ids <ids>` | 逗号分隔的子网 ID。 | 配置值或 — |
 | `--json` | 输出 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox create --tool-type CodeEnv --tool-name dev-code --cpu 4
 ```
 
 创建自定义 `Private` 工具时需要先准备镜像地址：
 
-```bash
+```bash lines
 agentkit sandbox create \
   --tool-type Private \
   --tool-name private-dev \
@@ -174,7 +175,7 @@ agentkit sandbox create \
 | `--tool-name <name>` | 沙箱工具名称。 | — |
 | `--force` | 跳过确认提示。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox delete --tool-id tool-123 --session-id dev --force
 
 agentkit sandbox delete --tool-name private-dev --force
@@ -189,7 +190,7 @@ agentkit sandbox delete --tool-name private-dev --force
 | `-s, --session-id <id>, --sid <id>` | 要查找的用户会话 ID。 | — |
 | `--tool-id <id>` | 按沙箱工具 ID 过滤本地缓存。 | — |
 
-```bash
+```bash lines
 agentkit sandbox list
 
 agentkit sandbox list --tool-id tool-123 --session-id dev
@@ -207,7 +208,7 @@ agentkit sandbox list --tool-id tool-123 --session-id dev
 | `--tool-name <name>` | 沙箱工具名称。 | 配置值或 — |
 | `--tool-type <type>` | 沙箱工具类型。 | 配置值或 `CodeEnv` |
 
-```bash
+```bash lines
 agentkit sandbox mount --tool-id tool-123 --session-id dev
 ```
 
@@ -232,7 +233,7 @@ agentkit sandbox mount --tool-id tool-123 --session-id dev
 | `--model-base-url <url>` | 注入会话的模型 API Base URL。 | 配置值或 — |
 | `--disable-websearch-apikey` | 本次会话不注入 WebSearch API Key。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox exec --session-id dev --command "npm test"
 
 agentkit sandbox exec \
@@ -266,7 +267,7 @@ agentkit sandbox exec \
 | `--history-length <count>` | 请求的 A2A 任务历史长度。 | `20` |
 | `--a2a-path <path>` | 沙箱端点上的 A2A JSON-RPC 路径。 | `/a2a` |
 
-```bash
+```bash lines
 agentkit sandbox invoke --tool-id skill-tool-123 --session-id task-dev --prompt "总结项目结构"
 
 agentkit sandbox invoke --tool-id skill-tool-123 --prompt "执行长任务" --async
@@ -282,7 +283,7 @@ agentkit sandbox invoke --tool-id skill-tool-123 --prompt "执行长任务" --as
 | `--terminal <count>` | 要打开或执行的 exec 条目数量。 | `1` |
 | `--dry-run` | 只打印将要执行的 `sandbox exec` 命令。 | `false` |
 
-```yaml title="agentkit-sandbox-run.yaml"
+```yaml title="agentkit-sandbox-run.yaml" lines
 exec:
   - session_id: dev
     cwd: .
@@ -291,7 +292,7 @@ exec:
     command: "cd /home/gem/app && npm test"
 ```
 
-```bash
+```bash lines
 agentkit sandbox run --config agentkit-sandbox-run.yaml --dry-run
 ```
 
@@ -312,7 +313,7 @@ agentkit sandbox run --config agentkit-sandbox-run.yaml --dry-run
 | `--copy <sourceAndDestination...>` | 执行前上传本地 SOURCE 到沙箱 DESTINATION。 | — |
 | `--git-config <source>` | Git 身份来源：`local` 或 INI/TOML/JSON 文件。 | 配置值或 — |
 
-```bash
+```bash lines
 agentkit sandbox shell --session-id dev --command "python --version"
 ```
 
@@ -328,7 +329,7 @@ agentkit sandbox shell --session-id dev --command "python --version"
 | `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
 | `--no-open` | 只返回 Web URL，不打开浏览器。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox web --session-id dev --no-open
 ```
 
@@ -353,7 +354,7 @@ agentkit sandbox web --session-id dev --no-open
 | `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
 | `--dry-run` | 打印脱敏后的注入命令，不创建会话。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox codex-login --session-id dev --provider codex
 
 agentkit sandbox model-login --session-id dev --provider claude --dry-run
@@ -376,7 +377,7 @@ agentkit sandbox model-login --session-id dev --provider claude --dry-run
 | `--tool-type <type>` | 沙箱工具类型。 | `CodeEnv` |
 | `--dry-run` | 打印脱敏后的注入命令，不创建会话。 | `false` |
 
-```bash
+```bash lines
 agentkit sandbox model-login --session-id dev --provider codex
 ```
 
@@ -391,7 +392,7 @@ agentkit sandbox model-login --session-id dev --provider codex
 | `-s, --session-id <id>, --sid <id>` | 用于传输的用户会话 ID。 | 配置值或 — |
 | `--tool-id <id>` | 用于区分本地会话缓存的沙箱工具 ID。 | — |
 
-```bash
+```bash lines
 agentkit sandbox scp ./local.txt sandbox:/home/gem/local.txt --session-id dev
 
 agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id dev

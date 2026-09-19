@@ -1,5 +1,6 @@
 ---
 title: "共享聊天"
+en_link: "/productions/agentkit-cli/archives/0.52.5/en/commands/chat"
 ---
 
 `chat` 命令用于通过租户登录发现文档中发布的别名，连接一个启用 OAuth 的共享 Harness。它面向多名用户共用同一个 Harness Runtime 的场景：用户只输入受信任别名，CLI 会刷新租户登录发现文档、解析 Runtime 端点，并用当前 OIDC 会话为每条消息换取最新的 `id_token`。
@@ -8,7 +9,7 @@ title: "共享聊天"
 使用前需要先通过租户登录地址完成身份仅登录。共享 Harness 必须使用 `custom_jwt` 鉴权，并由管理员在同一个租户登录发现文档的 `shared_harnesses` 中发布。
 </Note>
 
-```bash
+```bash lines
 agentkit login https://login.example.com/team-a --identity-only
 agentkit chat harness
 ```
@@ -23,7 +24,7 @@ agentkit chat harness
 | `[message]` | 要发送的一条用户消息；省略时进入交互式会话。 | — |
 | `--session-id <id>` | 继续使用自己的某个聊天会话；长度 1 到 128，必须以字母或数字开头，后续只接受字母、数字、`.`、`_`、`:`、`-`。 | 自动生成 |
 
-```bash
+```bash lines
 agentkit chat harness "总结这段对话的上下文"
 
 agentkit chat harness --session-id support-demo
@@ -35,7 +36,7 @@ agentkit chat harness --session-id support-demo
 
 管理员在发现文档中发布的 `shared_harnesses` 只包含非机密绑定信息：
 
-```json
+```json lines
 {
   "shared_harnesses": {
     "harness": {

@@ -1,5 +1,6 @@
 ---
 title: "Web search"
+zh_link: "/productions/veadk/archives/1.1.3/zh/components/tools/web-search"
 ---
 
 ## Overview
@@ -32,7 +33,7 @@ Requirements:
 
 Or configure in `config.yaml`:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 model:
   agent:
     provider: openai
@@ -47,7 +48,7 @@ volcengine:
 
 BytePlus mode example:
 
-```bash
+```bash lines
 export CLOUD_PROVIDER="byteplus"
 export BYTEPLUS_WEB_SEARCH_API_KEY="your-byteplus-search-api-key"
 export MODEL_AGENT_API_KEY="your-model-api-key"
@@ -55,7 +56,7 @@ export MODEL_AGENT_API_KEY="your-model-api-key"
 
 ## Usage
 
-```python title="examples/tools/web_search/agent.py"
+```python title="examples/tools/web_search/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

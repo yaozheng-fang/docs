@@ -1,5 +1,6 @@
 ---
 title: "提示词管理"
+en_link: "/productions/veadk/archives/1.0.5/en/components/agent/prompt-management"
 ---
 
 在生产环境中，系统提示词往往需要版本管理与动态下发。提示词管理让你在运行时模板化并热更新提示词，而无需修改代码或重启服务。每次处理用户请求前，VeADK 都会调用提示词管理器的 `get_prompt` 方法获取最新内容，并将其作为该智能体的系统提示词。
@@ -10,20 +11,20 @@ VeADK 内置 `CozeloopPromptManager`，可将系统提示词对接到 CozeLoop �
 
 先安装 CozeLoop 的 Python SDK：
 
-```bash
+```bash lines
 pip install cozeloop
 ```
 
 将凭证通过环境变量提供，避免在代码中硬编码：
 
-```bash
+```bash lines
 export COZELOOP_WORKSPACE_ID="<你的 Workspace ID>"
 export COZELOOP_TOKEN="<你的 CozeLoop Token>"
 ```
 
 创建管理器并传入智能体：
 
-```python
+```python lines
 import os
 from veadk import Agent
 from veadk.prompts.prompt_manager import CozeloopPromptManager

@@ -1,5 +1,6 @@
 ---
 title: "应用日志"
+en_link: "/productions/veadk/archives/1.0.8/en/components/observability/logging"
 ---
 
 VeADK 自 1.0.5 起使用 Python 标准库 `logging` 输出运行日志，不再依赖 Loguru。VeADK 自身的 logger 位于 `veadk` 命名空间，默认写入标准输出，便于被容器平台和日志采集器收集。
@@ -8,7 +9,7 @@ VeADK 自 1.0.5 起使用 Python 标准库 `logging` 输出运行日志，不再
 
 通过 `LOGGING_LEVEL` 环境变量设置 VeADK 日志级别。该变量应在导入 VeADK 前设置，默认值为 `DEBUG`。
 
-```bash
+```bash lines
 export LOGGING_LEVEL=INFO
 python app.py
 ```
@@ -19,13 +20,13 @@ python app.py
 
 每条日志包含时间、级别、调用位置和消息：
 
-```text
+```text lines
 2026-07-14 10:30:00 | INFO | runner.py:180 - Event output: request completed
 ```
 
 当代码运行在正在记录的 OpenTelemetry span 中时，日志会自动增加 `trace_id`，便于在日志系统和链路追踪系统之间关联同一次请求：
 
-```text
+```text lines
 2026-07-14 10:30:00 | INFO | runner.py:180 | trace_id=0123456789abcdef - Event output: request completed
 ```
 
@@ -35,7 +36,7 @@ python app.py
 
 应用可以使用标准库 logger 输出自己的日志，并单独控制 `veadk` 命名空间的级别：
 
-```python
+```python lines
 import logging
 
 from veadk import Agent

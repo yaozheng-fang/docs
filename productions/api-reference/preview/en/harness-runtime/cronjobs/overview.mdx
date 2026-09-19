@@ -1,5 +1,6 @@
 ---
 title: "Scheduled task overview"
+zh_link: "/productions/api-reference/preview/zh/harness-runtime/cronjobs/overview"
 ---
 
 Harness scheduled tasks execute prompts periodically or at a specified time, persisting task definitions, execution state, and results in TOS. Their HTTP interfaces share the `/harness/cronjobs` prefix and are verified against the Harness Runtime packaged and deployed by AgentKit CLI **0.54.0**
@@ -16,12 +17,12 @@ Enabling scheduled tasks keeps at least one instance running and incurs Runtime 
 
 Prepare an existing TOS bucket and enable the feature from the directory containing `harness.yaml`
 
-```bash
+```bash lines
 agentkit harness deploy --cronjob \
   --cronjob-tos-bucket my-harness-jobs --region cn-beijing
 ```
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 cronjob:
   enabled: true
   tos_bucket: my-harness-jobs
@@ -37,7 +38,7 @@ The Runtime role needs TOS permissions for the task storage prefix, and the depl
 
 Set `HARNESS_URL` to the deployment’s Runtime base URL and `HARNESS_TOKEN` to its access credential. Do not use the model API key for Runtime API authentication
 
-```bash
+```bash lines
 export HARNESS_URL="https://<runtime-endpoint>"
 export HARNESS_TOKEN="<runtime-api-key>"
 
@@ -47,7 +48,7 @@ curl "${HARNESS_URL}/harness/cronjobs/status" \
 
 Save the `cronjob_id` returned by creation and use it as the `job_id` path parameter. Once an execution exists, obtain `run_id` from the task’s `active.run_id`, `last_run.run_id`, or execution history
 
-```bash
+```bash lines
 export CRONJOB_ID="<cronjob_id>"
 export RUN_ID="<run_id>"
 ```

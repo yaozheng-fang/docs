@@ -1,5 +1,6 @@
 ---
 title: "Develop apps in a Codex sandbox"
+zh_link: "/productions/agentkit-cli/archives/0.46.7/zh/workflows/codex-sandbox"
 ---
 
 An AgentKit sandbox is a cloud `code` tool environment where you can develop applications with a coding agent such as Codex: no local runtime to set up, sessions persist, code transfers both ways, and the app you are building can be viewed through a web preview. For the full options of each sandbox command, see [Use sandboxes](/productions/agentkit-cli/archives/0.46.7/en/commands/sandbox).
@@ -18,7 +19,7 @@ Creating a sandbox provisions cloud compute resources that may incur charges whi
   <Step title="Create a sandbox">
     A sandbox is a `code` environment. If the project does not have one yet, create it first:
 
-    ```bash
+    ```bash lines
     agentkit sandbox create --type code --name dev-sandbox
     ```
 
@@ -28,13 +29,13 @@ Creating a sandbox provisions cloud compute resources that may incur charges whi
   <Step title="Develop with Codex inside the sandbox">
     Open the sandbox session's interactive terminal and run `codex` there to develop:
 
-    ```bash
+    ```bash lines
     agentkit sandbox shell --session dev --tmux
     ```
 
     `--session dev` names the session; reuse the same name in later commands to return to the same environment. `--tmux` opens or joins a persistent terminal session so reconnecting after a drop keeps your progress (press Ctrl-] to detach). To bring existing local code into the sandbox, upload it before opening the terminal:
 
-    ```bash
+    ```bash lines
     agentkit sandbox shell --session dev --src-dir ./my-app --dst-dir my-app
     ```
 
@@ -44,7 +45,7 @@ Creating a sandbox provisions cloud compute resources that may incur charges whi
   <Step title="Transfer files between local and sandbox">
     Prefix the remote side with `:`. Upload and download:
 
-    ```bash
+    ```bash lines
     # Upload
     agentkit sandbox cp ./local.txt :/workspace/local.txt --session dev
 
@@ -56,7 +57,7 @@ Creating a sandbox provisions cloud compute resources that may incur charges whi
   <Step title="Preview the app you are building">
     If you start a web server inside the sandbox, open its web preview to view it:
 
-    ```bash
+    ```bash lines
     agentkit sandbox web --session dev
     ```
   </Step>
@@ -68,7 +69,7 @@ Creating a sandbox provisions cloud compute resources that may incur charges whi
     `sandbox rm` removes the session and files that were not persisted elsewhere, but it does not delete the sandbox itself. Back up required files first. When the sandbox is no longer needed, delete the cloud resource separately with `sandbox delete <sandbox-id> -y`.
     </Warning>
 
-    ```bash
+    ```bash lines
     agentkit sandbox rm dev -y
     ```
   </Step>
@@ -80,7 +81,7 @@ Creating a sandbox provisions cloud compute resources that may incur charges whi
 
 There are several ways to authenticate Codex inside the sandbox; injecting your local subscription is one of them. If you have logged in locally with `codex login`, you can inject those credentials into the session:
 
-```bash
+```bash lines
 agentkit sandbox login --provider codex --session dev
 ```
 
@@ -90,7 +91,7 @@ The command reads `~/.codex/auth.json` by default; use `--auth-file` or `--codex
 
 Besides the interactive terminal, `sandbox run` executes a single command in the session and prints its output, which is convenient for scripts and automated flows:
 
-```bash
+```bash lines
 agentkit sandbox run "codex exec 'add unit tests to the project'" --session dev
 ```
 

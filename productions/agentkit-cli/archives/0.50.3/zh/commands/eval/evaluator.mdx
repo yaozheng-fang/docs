@@ -1,5 +1,6 @@
 ---
 title: "管理评估器"
+en_link: "/productions/agentkit-cli/archives/0.50.3/en/commands/eval/evaluator"
 ---
 
 `eval evaluator` 命令组用于管理评估器（负责打分的评判模型）：浏览预置模板、列出与查看已有评估器、从模板派生新评估器、删除评估器。评估器通常是一段带评分标准的提示词，配合一个大模型端点，接收若干输入字段（如 `input`、`output`、`reference_output`）后给出分数。
@@ -12,7 +13,7 @@ title: "管理评估器"
 
 浏览平台预置的评估器模板，作为创建自己评估器的起点。
 
-```bash
+```bash lines
 agentkit eval evaluator templates
 ```
 
@@ -20,7 +21,7 @@ agentkit eval evaluator templates
 
 列出你在当前项目下的评估器。
 
-```bash
+```bash lines
 agentkit eval evaluator list
 ```
 
@@ -32,7 +33,7 @@ agentkit eval evaluator list
 | --- | --- | --- |
 | `<id>` | 评估器 ID 或名称（必填） | 无 |
 
-```bash
+```bash lines
 agentkit eval evaluator show 相关性
 ```
 
@@ -50,7 +51,7 @@ agentkit eval evaluator show 相关性
 
 需至少提供 `--from-template` 或 `--prompt-file` 之一。
 
-```bash
+```bash lines
 # 从预置的「相关性」模板派生，换成自己的模型端点
 agentkit eval evaluator create --name 相关性 --from-template "相关性" --model ep-xxxxxxxx
 ```
@@ -68,6 +69,6 @@ agentkit eval evaluator create --name 相关性 --from-template "相关性" --mo
 | `<id>` | 评估器 ID 或名称（必填） | 无 |
 | `-y, --yes` | 跳过确认提示 | `false` |
 
-```bash
+```bash lines
 agentkit eval evaluator delete 相关性 -y
 ```

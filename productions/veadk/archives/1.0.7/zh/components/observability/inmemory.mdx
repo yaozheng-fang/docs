@@ -1,5 +1,6 @@
 ---
 title: "内存导出器"
+en_link: "/productions/veadk/archives/1.0.7/en/components/observability/inmemory"
 ---
 
 `InMemoryExporter` 把 span 数据保存在进程内存中，而非上报至外部平台。它按 `session_id` 组织 span，便于本地调试、测试以及将某次会话的追踪数据落盘为 JSON 文件进行离线分析。
@@ -14,7 +15,7 @@ title: "内存导出器"
 
 `InMemoryExporter` 由 `OpentelemetryTracer` 自动创建并管理，用于记录全部 span。因此它**不能**被显式加入 `OpentelemetryTracer` 的 `exporters` 列表，否则初始化会报错。
 
-```python
+```python lines
 from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
 
 # 即使不配置任何外部导出器，内存导出器仍会自动附加
@@ -25,7 +26,7 @@ tracer = OpentelemetryTracer(exporters=[])
 
 会话运行结束后，可调用追踪器的 `dump` 方法，将该会话的 span 导出为本地 JSON 文件：
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner

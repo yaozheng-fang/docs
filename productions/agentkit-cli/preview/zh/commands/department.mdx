@@ -1,5 +1,6 @@
 ---
 title: "部门管理"
+en_link: "/productions/agentkit-cli/preview/en/commands/department"
 ---
 
 管理用户池的部门层级，以及用户与部门的归属关系
@@ -34,7 +35,7 @@ title: "部门管理"
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit department create --user-pool-id pool-example --name Engineering --parent-department-id root
 ```
 
@@ -53,7 +54,7 @@ agentkit department create --user-pool-id pool-example --name Engineering --pare
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit department update --user-pool-id pool-example --department-id dept-example --description "Product engineering"
 ```
 
@@ -73,7 +74,7 @@ agentkit department update --user-pool-id pool-example --department-id dept-exam
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit department list --user-pool-id pool-example --parent-department-id root --max-results 20 --json
 ```
 
@@ -92,7 +93,7 @@ agentkit department list --user-pool-id pool-example --parent-department-id root
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit department add-users --user-pool-id pool-example --department-id dept-example --user-id user-alice --user-id user-bob
 ```
 
@@ -109,7 +110,7 @@ agentkit department add-users --user-pool-id pool-example --department-id dept-e
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit department remove-users --user-pool-id pool-example --department-id dept-example --user-id user-alice
 ```
 
@@ -127,7 +128,7 @@ agentkit department remove-users --user-pool-id pool-example --department-id dep
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit department change-users --user-pool-id pool-example --origin-department-id dept-source --target-department-id dept-target --user-id user-alice
 ```
 
@@ -148,7 +149,7 @@ agentkit department change-users --user-pool-id pool-example --origin-department
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit department delete --user-pool-id pool-example --department-id dept-example --yes
 ```
 

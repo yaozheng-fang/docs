@@ -1,5 +1,6 @@
 ---
 title: "Runtime"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/agent/runtime"
 ---
 
 The runtime determines how an agent's inner loop runs — how each turn calls the
@@ -12,7 +13,7 @@ changing the agent itself.
 
 The ADK runtime is the default and needs no extra configuration:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(name="assistant")  # uses the ADK runtime by default
@@ -22,7 +23,7 @@ agent = Agent(name="assistant")  # uses the ADK runtime by default
 
 Use `runtime` to select the inner-loop execution backend:
 
-```python
+```python lines
 agent = Agent(name="assistant", runtime="codex")
 ```
 
@@ -38,7 +39,7 @@ The Codex runtime requires the optional `codex` dependency group, which is not
 installed with VeADK by default. Install the required dependencies before using
 it:
 
-```bash
+```bash lines
 pip install "veadk-python[codex]"
 ```
 
@@ -47,7 +48,7 @@ The `codex` extra includes the OpenAI Codex SDK and the Codex CLI binary.
 The model name, API endpoint, and API key still come from the agent's model
 configuration:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -74,7 +75,7 @@ operations. Broader access must be enabled explicitly.
 Pass a `CodexRuntimeConfig` through the `Agent` `codex_runtime_config`
 parameter:
 
-```python title="agent.py"
+```python title="agent.py" lines
 from veadk import Agent
 from veadk.runtime.codex import CodexRuntimeConfig
 
@@ -135,7 +136,7 @@ twice by default. Use these environment variables to change the behavior:
 
 ### Use PiAgent
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -172,7 +173,7 @@ Without touching business logic, you can inject shared cross-cutting processing
 into each run. Pass a processor to `run_processor`, for example to enforce login
 via identity authentication:
 
-```python
+```python lines
 from veadk import Agent
 from veadk.integrations.ve_identity import AuthRequestProcessor
 
@@ -192,7 +193,7 @@ wrapping the run's event stream, letting you:
 - **intercept, rewrite, or inject** events produced during the run;
 - build control logic such as retries on top of that.
 
-```python
+```python lines
 from veadk.processors.base_run_processor import BaseRunProcessor
 
 class LoggingProcessor(BaseRunProcessor):

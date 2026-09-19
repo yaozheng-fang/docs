@@ -1,5 +1,6 @@
 ---
 title: "Manage departments"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/department"
 ---
 
 Manage department hierarchies and user membership in an existing user pool
@@ -34,7 +35,7 @@ Create a department in a user pool
 | `--json` | output JSON result instead of a human-readable summary | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit department create --user-pool-id pool-example --name Engineering --parent-department-id root
 ```
 
@@ -53,7 +54,7 @@ Update a department's fields in a user pool
 | `--json` | output a JSON summary instead of human-readable lines | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit department update --user-pool-id pool-example --department-id dept-example --description "Product engineering"
 ```
 
@@ -73,7 +74,7 @@ List child departments in a user pool
 | `--json` | output JSON results instead of a table | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit department list --user-pool-id pool-example --parent-department-id root --max-results 20 --json
 ```
 
@@ -92,7 +93,7 @@ Add users to a department
 | `--json` | output JSON results instead of a table | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit department add-users --user-pool-id pool-example --department-id dept-example --user-id user-alice --user-id user-bob
 ```
 
@@ -109,7 +110,7 @@ Remove users from a department
 | `--json` | output JSON results instead of a table | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit department remove-users --user-pool-id pool-example --department-id dept-example --user-id user-alice
 ```
 
@@ -127,7 +128,7 @@ Move users from one department to another
 | `--json` | output JSON results instead of a table | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit department change-users --user-pool-id pool-example --origin-department-id dept-source --target-department-id dept-target --user-id user-alice
 ```
 
@@ -148,7 +149,7 @@ Deletion is irreversible. Check the user pool and resource IDs. Interactive term
 | `--json` | output a JSON summary instead of a human-readable line | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit department delete --user-pool-id pool-example --department-id dept-example --yes
 ```
 

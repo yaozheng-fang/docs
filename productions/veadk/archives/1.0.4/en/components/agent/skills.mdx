@@ -1,5 +1,6 @@
 ---
 title: "Skills"
+zh_link: "/productions/veadk/archives/1.0.4/zh/components/agent/skills"
 ---
 
 A skill is a reusable prompt package that injects specific domain knowledge,
@@ -12,7 +13,7 @@ through VeADK's `VeSkillRegistry`.
 Load a local skill directory with ADK's `load_skill_from_dir` and pass it as a
 standard toolset to the agent:
 
-```python
+```python lines
 from google.adk.skills import load_skill_from_dir
 from google.adk.tools.skill_toolset import SkillToolset
 from veadk import Agent
@@ -32,7 +33,7 @@ agent — VeADK does not create a local code executor by default.
 Connect a cloud skill space through `VeSkillRegistry`, then hand it to
 `SkillToolset`:
 
-```python
+```python lines
 from google.adk.tools.skill_toolset import SkillToolset
 from veadk import Agent
 from veadk.skills import VeSkillRegistry
@@ -51,7 +52,7 @@ In VeADK 1.0.4, Harness can load both Skill Hub skills and AgentKit skills-cente
 
 The skills center requires Volcengine credentials that can read the space and its object-storage content. For local runs, set `VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`, plus `VOLCENGINE_SESSION_TOKEN` for temporary credentials. On VeFaaS, the bound IAM role can provide temporary credentials instead.
 
-```bash
+```bash lines
 cd my-harness
 veadk harness add \
   --skills "data-visualization-cloud,space:ss-example"
@@ -59,7 +60,7 @@ veadk harness add \
 
 The resulting `harness.yaml` stores the sources as a list:
 
-```yaml
+```yaml lines
 skills:
   - data-visualization-cloud
   - space:ss-example
@@ -67,7 +68,7 @@ skills:
 
 Harness downloads and loads the base skills during startup. `space:ss-example` loads every skill in that space and combines them with Skill Hub skills in one `SkillToolset`. You can also add a space for one invocation:
 
-```bash
+```bash lines
 veadk harness invoke \
   --name research-agent \
   --message "Prepare a research report" \
@@ -81,7 +82,7 @@ Invocation-level `--skills` adds skills on top of the base Harness configuration
 A local skill is a directory containing a `SKILL.md` file, and may include
 `references/`, `assets/`, and `scripts/` subdirectories:
 
-```
+```text lines
 skills/
 └── kb-skill/
     ├── SKILL.md
@@ -93,7 +94,7 @@ skills/
 `SKILL.md` must declare `name` and `description` in frontmatter, and the
 directory name must match `name`:
 
-```markdown SKILL.md
+```markdown SKILL.md lines
 ---
 name: kb-skill
 description: A skill that queries the knowledge base and composes an answer.
@@ -116,7 +117,7 @@ is deprecated; migrate to `SkillToolset` above. The `skills_sandbox` and
 
 Sandbox mode example:
 
-```python
+```python lines
 from veadk import Agent
 from veadk.tools.builtin_tools.execute_skills import execute_skills
 

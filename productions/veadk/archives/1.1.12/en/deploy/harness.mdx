@@ -1,5 +1,6 @@
 ---
 title: "Harness Server Deployment"
+zh_link: "/productions/veadk/archives/1.1.12/zh/deploy/harness"
 ---
 
 The Harness server is a standalone VeADK agent runtime that you create, configure, and deploy with the `veadk harness` command line. Once deployed, it runs as an AgentKit Runtime and provides conversation endpoints, session management, and runtime config override capabilities. It suits scenarios where you need to host an agent independently and call it through an HTTP API.
@@ -32,7 +33,7 @@ The Harness server is a standalone VeADK agent runtime that you create, configur
 
 ## Create a project
 
-```bash
+```bash lines
 veadk harness create my-harness
 ```
 
@@ -50,7 +51,7 @@ This command generates the following files in the `my-harness` directory:
 
 Use `veadk harness add` to write parameters into `harness.yaml`:
 
-```bash
+```bash lines
 cd my-harness
 veadk harness add \
   --harness-name my-harness \
@@ -89,7 +90,7 @@ Each backend's connection parameters also has its own flag, for example `--knowl
 
 `harness.yaml` organizes configuration in sections. On deploy, top-level fields and the `model` section are flattened into runtime environment variables (e.g. `model.name` maps to `MODEL_AGENT_NAME`); each component's `type` selects a backend, and its other parameters map to the environment variables that backend reads.
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 harness_name: my-harness
 
 model:
@@ -142,7 +143,7 @@ Beyond the basic fields written by `veadk harness add`, `harness.yaml` supports 
 
 Structured resource configuration example:
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 harness:
   model:
     name: doubao-seed-1-6-250615
@@ -175,7 +176,7 @@ harness:
 
 ## View configuration
 
-```bash
+```bash lines
 veadk harness show
 ```
 
@@ -187,7 +188,7 @@ This command prints the parameters configured in `harness.yaml`, followed by the
 
 ## Deploy
 
-```bash
+```bash lines
 veadk harness deploy
 ```
 
@@ -201,7 +202,7 @@ This command reads `harness.yaml`, converts it into runtime environment variable
 
 The default authentication is API key (`key_auth`). Add an `auth` section in `harness.yaml` or use `--discovery-url` and `--allowed-id` to enable OAuth2/JWT authentication (`custom_jwt`):
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 auth:
   discovery_url: "https://userpool-<id>.userpool.auth.id.cn-beijing.volces.com/.well-known/openid-configuration"
   allowed_ids: ["<client-id>"]
@@ -211,7 +212,7 @@ With OAuth2/JWT authentication, calls must include an `Authorization: Bearer <us
 
 ## Invoke the Harness server
 
-```bash
+```bash lines
 veadk harness invoke --name my-harness --message "Describe your capabilities"
 ```
 
@@ -256,7 +257,7 @@ The Harness server supports overriding the deployed agent's configuration on eac
 
 `/harness/invoke` request body structure:
 
-```json title="Request body"
+```json title="Request body" lines
 {
   "prompt": "Compile a research report",
   "harness_name": "my-harness",
@@ -315,7 +316,7 @@ The following fields can be overridden per request through `harness`:
 
 ### Create a session
 
-```bash
+```bash lines
 curl -X POST "https://<harness-url>/apps/my-harness/users/user-1/sessions" \
   -H "Content-Type: application/json" \
   -d '{"id": "session-1", "state": {"key": "value"}}'
@@ -332,7 +333,7 @@ The request body can include the following fields:
 
 ### Query default configuration
 
-```bash
+```bash lines
 curl "https://<harness-url>/get_agent_config?app_name=my-harness&user_id=user-1&session_id=session-1"
 ```
 

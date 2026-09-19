@@ -1,5 +1,6 @@
 ---
 title: "Cozeloop"
+zh_link: "/productions/veadk/archives/1.1.5/zh/components/observability/cozeloop"
 ---
 
 `CozeloopExporter` reports span data to the Cozeloop platform over OTLP (HTTP). Once connected, you can observe traces with Cozeloop's trace feature or evaluate agents with its evaluation feature. Data is isolated by workspace (space).
@@ -12,7 +13,7 @@ title: "Cozeloop"
 
 ## Usage
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -33,7 +34,7 @@ asyncio.run(runner.run(messages="How is the weather in Beijing?", session_id="se
 
 You can also pass connection parameters explicitly via `CozeloopExporterConfig`:
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.cozeloop_exporter import (
     CozeloopExporter,
     CozeloopExporterConfig,
@@ -76,7 +77,7 @@ exporter = CozeloopExporter(
 
 ## Environment variables
 
-```bash
+```bash lines
 export OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT="https://api.coze.cn/v1/loop/opentelemetry/v1/traces"
 export OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY="your-cozeloop-token"
 export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME="your-cozeloop-space-id"
@@ -84,7 +85,7 @@ export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME="your-cozeloop-space-id
 
 You can also let `Agent` attach the Cozeloop exporter automatically from an environment variable, without constructing it explicitly:
 
-```bash
+```bash lines
 export ENABLE_COZELOOP=true
 ```
 

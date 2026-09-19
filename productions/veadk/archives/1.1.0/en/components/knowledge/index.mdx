@@ -1,5 +1,6 @@
 ---
 title: "Knowledge Base"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/knowledge"
 ---
 
 A knowledge base (`KnowledgeBase`) is an agent's external source of knowledge — a place to store static material such as product docs, FAQs, and articles. Attach it to an agent and VeADK automatically injects a retrieval tool, so the agent retrieves relevant snippets before answering and produces more accurate, better-grounded responses (RAG).
@@ -12,7 +13,7 @@ Regardless of the backend, everything goes through the unified `veadk.knowledgeb
 - From a directory: `kb.add_from_directory("./docs")`;
 - From text: `kb.add_from_text([...])`.
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 
 kb = KnowledgeBase(backend="local", index="company_faq")
@@ -64,7 +65,7 @@ Use `local` for development. Choose `viking`, `context_search`, or `openviking` 
 
 Pass `knowledgebase` to `Agent` and the agent **automatically gains a `load_knowledgebase` tool**, deciding on its own whether to search the knowledge base when answering.
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -87,7 +88,7 @@ print(asyncio.run(runner.run(messages="How many days of annual leave do I get?")
 
 Besides automatic retrieval at agent runtime, you can call `search` directly for semantic search, useful for debugging or custom RAG. A `top_k` of 0 uses the value set at construction.
 
-```python
+```python lines
 entries = kb.search(query="annual leave", top_k=3)
 for entry in entries:
     print(entry.content)

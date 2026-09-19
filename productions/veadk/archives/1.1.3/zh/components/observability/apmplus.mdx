@@ -1,5 +1,6 @@
 ---
 title: "APMPlus"
+en_link: "/productions/veadk/archives/1.1.3/en/components/observability/apmplus"
 ---
 
 `APMPlusExporter` 将 span 数据以 OTLP（gRPC）协议上报至火山引擎 APMPlus 平台。除追踪链路外，它还会通过内置的指标上报器采集模型调用次数、token 用量、操作耗时、异常次数以及工具耗时等指标，写入 APMPlus 的指标面板。
@@ -16,7 +17,7 @@ title: "APMPlus"
 
 ## 使用示例
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -37,7 +38,7 @@ asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_
 
 也可以通过 `APMPlusExporterConfig` 显式传入连接参数：
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.apmplus_exporter import (
     APMPlusExporter,
     APMPlusExporterConfig,
@@ -80,7 +81,7 @@ exporter = APMPlusExporter(
 
 ## 环境变量配置
 
-```bash
+```bash lines
 export OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT="http://apmplus-cn-beijing.volces.com:4317"
 export OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY="your-apmplus-app-key"
 export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME="apmplus_veadk_demo"
@@ -88,7 +89,7 @@ export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME="apmplus_veadk_demo"
 
 也可以让 `Agent` 依据环境变量自动挂载 APMPlus 导出器，无需显式构造：
 
-```bash
+```bash lines
 export ENABLE_APMPLUS=true
 ```
 

@@ -1,5 +1,6 @@
 ---
 title: "View experiments and results"
+zh_link: "/productions/agentkit-cli/archives/0.52.2/zh/commands/eval/experiment"
 ---
 
 The `eval experiment` command group (alias `exp`) is used to view experiments submitted by [`eval run`](/productions/agentkit-cli/preview/en/commands/eval/run): list experiments, inspect an experiment's status and aggregate scores, and fetch per-case results. On TEA, details include targets, evaluator versions, aggregate scores, and field mappings; on Coze, the commands continue to query by project.
@@ -17,7 +18,7 @@ List experiments in a project or workspace: ID, name, status, start time, creato
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval experiment list
 
 agentkit eval exp list --json
@@ -33,12 +34,12 @@ Show an experiment's details: status, dataset, target, evaluators, aggregate sco
 | `-p, --project <name>` | Coze project name; ignored on TEA. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval experiment show 75901xxxxxxxxxxxxx
 agentkit eval experiment get 75901xxxxxxxxxxxxx
 ```
 
-```text
+```text lines
 ID              75901xxxxxxxxxxxxx
 Name            qa-set-<timestamp>
 Status          Success
@@ -67,7 +68,7 @@ Fetch per-case results: each dataset case, the target output, and each evaluator
 | `--page <n>` | Page number. | `1` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit eval experiment results 75901xxxxxxxxxxxxx --json
 ```
 

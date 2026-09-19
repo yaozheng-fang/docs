@@ -1,5 +1,6 @@
 ---
 title: "Authentication & login"
+zh_link: "/productions/agentkit-cli/archives/0.52.1/zh/commands/auth"
 ---
 
 The `auth` command group handles SSO authentication: log in through the browser and store short-lived STS credentials or only the user's OIDC session, clear the session, show the current identity, manage login profiles, and prepare CLI SSO login resources for an organization. `login`, `logout`, and `whoami` are also available as top-level commands (e.g. `agentkit login`).
@@ -16,7 +17,7 @@ Authenticate through browser SSO. The default mode exchanges the OIDC login resu
 | `--identity-only` | Store only the user's OIDC session without performing the STS role exchange. | `false` |
 | `--no-open` | Don't open a browser — just print the login URL (headless/SSH) | `false` |
 
-```bash
+```bash lines
 agentkit auth login
 agentkit auth login --identity-only <sso-address>
 ```
@@ -38,7 +39,7 @@ Custom tenant addresses allow only these discovery-document fields:
 | `transport` | Must be `sts` when STS coordinates are present. | — |
 | `scope` | OAuth scope list. Must include `openid`. | `openid profile email offline_access` |
 
-```bash
+```bash lines
 agentkit auth login https://login.example.com/team-a
 agentkit auth login --identity-only ./local-discovery.json
 ```
@@ -56,7 +57,7 @@ Clear the stored SSO session (refresh token + cached STS credentials).
 | `-p, --profile <name>` | SSO profile name | Active profile |
 | `--all` | Clear every profile's session | `false` |
 
-```bash
+```bash lines
 agentkit auth logout
 ```
 
@@ -68,7 +69,7 @@ Show the identity behind the current credentials.
 | --- | --- | --- |
 | `-p, --profile <name>` | SSO profile name | Active profile |
 
-```bash
+```bash lines
 agentkit auth whoami
 ```
 
@@ -86,7 +87,7 @@ Create or update a profile's login coordinates (non-secret).
 | `--region <region>` | Region | `cn-beijing` |
 | `--identity-only` | Save an OIDC-only profile without an STS role. | `false` |
 
-```bash
+```bash lines
 agentkit auth profile set my-profile \
   --issuer https://example.com \
   --client-id abc123 \
@@ -101,7 +102,7 @@ List saved profiles.
 
 This command takes no arguments or options.
 
-```bash
+```bash lines
 agentkit auth profile list
 ```
 
@@ -113,7 +114,7 @@ Show a profile's coordinates.
 | --- | --- | --- |
 | `[name]` | Profile name | Active profile |
 
-```bash
+```bash lines
 agentkit auth profile show my-profile
 ```
 
@@ -130,7 +131,7 @@ Run read-only checks that determine whether the account is ready for CLI SSO set
 | `--data-plane` | Also check credential-hosting prerequisites | `true` |
 | `--no-data-plane` | Skip credential-hosting prerequisite checks | — |
 
-```bash
+```bash lines
 agentkit auth admin doctor --account <account-id> --region cn-beijing
 ```
 
@@ -148,7 +149,7 @@ This command creates an identity resource in the selected account and region. Ru
 | `--account <account>` | Expected account ID; refuse to continue when the active credentials belong to another account | — |
 | `--region <region>` | Cloud region | Current provider's default region |
 
-```bash
+```bash lines
 agentkit auth admin create-userpool --name agentkit-cli-pool --account <account-id>
 ```
 
@@ -166,7 +167,7 @@ This command modifies user-pool and IAM resources. Confirm that the user pool be
 | `--account <account>` | Expected account ID; refuse to continue when the active credentials belong to another account | — |
 | `--region <region>` | Cloud region | Current provider's default region |
 
-```bash
+```bash lines
 agentkit auth admin provision --user-pool <user-pool-id> --account <account-id>
 ```
 
@@ -194,7 +195,7 @@ This command creates or modifies identity, IAM, and TOS resources and publishes 
 | `--provider-name <name>` | IAM OIDC provider name | Built-in CLI name |
 | `--role-name <name>` | STS role name | Built-in CLI name |
 
-```bash
+```bash lines
 # Interactive setup; enter sensitive upstream credentials in the hidden prompt
 agentkit auth admin sso-setup --account <account-id> --region cn-beijing
 
@@ -229,7 +230,7 @@ Without explicit coordinates, this command modifies identity and IAM resources a
 | `--role-trn <trn>` | Existing target-account STS role TRN; required in publish-only mode and must belong to the authenticated account. | — |
 | `--provider-trn <trn>` | Existing target-account IAM OIDC provider TRN; required in publish-only mode and must belong to the authenticated account. | — |
 
-```bash
+```bash lines
 agentkit auth admin publish \
   --user-pool <user-pool-id> \
   --bucket <discovery-bucket> \

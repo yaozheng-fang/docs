@@ -1,5 +1,6 @@
 ---
 title: "查看评测后端"
+en_link: "/productions/agentkit-cli/archives/0.52.6/en/commands/eval/backend"
 ---
 
 `eval backend` 用于解析当前凭据对应的评测后端，并刷新本地缓存。后续评测命令会根据该结果选择 Coze 或 TEA 评测平台；TEA 后端会返回工作区、项目、账号和 `session_key` 等必要坐标。
@@ -14,7 +15,7 @@ title: "查看评测后端"
 | --- | --- | --- |
 | `--json` | 输出原始 JSON。 | `false` |
 
-```bash
+```bash lines
 agentkit eval backend
 
 agentkit eval backend --json
@@ -32,7 +33,7 @@ agentkit eval backend --json
 | `AGENTKIT_TEA_ACCOUNT_ID` | TEA 评测转发时使用的账号 ID；未设置时从当前 SSO 会话或 STS 身份解析。 | 自动解析 |
 | `EXTRA_HEADER` | 额外请求头，多个请求头以分号分隔，格式为 `Name: Value`。 | — |
 
-```bash
+```bash lines
 AGENTKIT_EVAL_HOST=agentkit-ppe.cn-beijing.volcengineapi.com \
 AGENTKIT_EVAL_SERVICE=agentkit_ppe \
 agentkit eval backend --json
@@ -47,7 +48,7 @@ agentkit eval backend --json
 | `--cache-refresh` | 忽略本地缓存并重新解析评测后端。 | `false` |
 | `--verbose` | 将完整 TEA 请求打印到 stderr；`session_key` cookie 会被脱敏。 | `false` |
 
-```bash
+```bash lines
 agentkit eval --cache-refresh backend
 agentkit eval --verbose dataset list
 ```

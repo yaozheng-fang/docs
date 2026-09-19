@@ -1,5 +1,6 @@
 ---
 title: "使用 OpenViking 存储"
+en_link: "/productions/veadk/archives/1.1.8/en/components/knowledge/openviking"
 ---
 
 `openviking` 后端使用 OpenViking 服务解析、索引和检索资源，无需在 VeADK 进程中配置 embedding 模型。每个 `index` 默认对应 `viking://user/<openviking_user_id>/resources/<index>/` 资源目录，其中 `openviking_user_id` 是资源所属的 owner/context 标识，未配置时为 `default`。该后端从 VeADK 1.0.3 开始提供。
@@ -12,13 +13,13 @@ title: "使用 OpenViking 存储"
 
 OpenViking SDK 已包含在 VeADK 的基础依赖中：
 
-```bash
+```bash lines
 pip install veadk-python
 ```
 
 准备可访问的 OpenViking 服务和 service owner API Key。生产环境应通过环境变量或密钥管理服务注入凭证：
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
@@ -29,7 +30,7 @@ export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -51,7 +52,7 @@ agent = Agent(knowledgebase=kb)
 
 未传 `backend_config` 时，`url`、`api_key` 与 `openviking_user_id` 从 `DATABASE_OPENVIKING_*` 环境变量读取，`index` 来自 `KnowledgeBase(index=...)` 或 `app_name`：
 
-```python
+```python lines
 kb = KnowledgeBase(
     backend="openviking",
     index="product_docs",
@@ -61,7 +62,7 @@ kb.add_from_directory("./docs")
 
 不再使用知识库时应调用 `close()` 释放后端持有的 OpenViking 客户端连接：
 
-```python
+```python lines
 kb.close()
 ```
 

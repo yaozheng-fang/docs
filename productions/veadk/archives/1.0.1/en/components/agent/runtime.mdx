@@ -1,5 +1,6 @@
 ---
 title: "Runtime"
+zh_link: "/productions/veadk/archives/1.0.1/zh/components/agent/runtime"
 ---
 
 The runtime determines how an agent's inner loop runs — how each turn calls the
@@ -12,7 +13,7 @@ changing the agent itself.
 
 The ADK runtime is the default and needs no extra configuration:
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(name="assistant")  # uses the ADK runtime by default
@@ -24,7 +25,7 @@ Use `runtime` to select the inner-loop execution backend:
 
 Install the Codex Python SDK before selecting the Codex runtime:
 
-```bash
+```bash lines
 pip install openai-codex
 ```
 
@@ -32,7 +33,7 @@ pip install openai-codex
   The Codex runtime in VeADK 1.0.1 allows command execution, host file access, and network access by default, without interactive approval. Run trusted tasks in an isolated environment and restrict the credentials and data available to the process.
 </Warning>
 
-```python
+```python lines
 agent = Agent(name="assistant", runtime="codex")
 ```
 
@@ -45,7 +46,7 @@ agent = Agent(name="assistant", runtime="codex")
 
 VeADK 1.0.1 makes skills loaded through ADK `SkillToolset` or the legacy `skills` entry point available to the Codex runtime. The runtime can also call an agent's function and MCP tools:
 
-```python
+```python lines
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioServerParameters
 from veadk import Agent
@@ -73,7 +74,7 @@ The MCP server process and its tools receive the permissions allowed by the curr
 
 Web search is disabled by default when the Codex runtime calls models through Volcengine Ark. Set `CODEX_SHIM_MAX_TOOL_ITERS` to an integer greater than `0` to let the runtime call VeADK's `web_search` and `web_fetch` tools and return their results to the model for a bounded number of rounds:
 
-```bash
+```bash lines
 export CODEX_SHIM_MAX_TOOL_ITERS=6
 ```
 
@@ -89,7 +90,7 @@ Without touching business logic, you can inject shared cross-cutting processing
 into each run. Pass a processor to `run_processor`, for example to enforce login
 via identity authentication:
 
-```python
+```python lines
 from veadk import Agent
 from veadk.integrations.ve_identity import AuthRequestProcessor
 
@@ -109,7 +110,7 @@ wrapping the run's event stream, letting you:
 - **intercept, rewrite, or inject** events produced during the run;
 - build control logic such as retries on top of that.
 
-```python
+```python lines
 from veadk.processors.base_run_processor import BaseRunProcessor
 
 class LoggingProcessor(BaseRunProcessor):

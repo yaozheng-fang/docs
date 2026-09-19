@@ -1,5 +1,6 @@
 ---
 title: "Invoke a runtime"
+zh_link: "/productions/agentkit-cli/archives/0.51.0/zh/commands/invoke"
 ---
 
 The `invoke` command invokes a deployed runtime by name or id, resolving its endpoint and authentication automatically before sending a message.
@@ -37,13 +38,13 @@ Invoke a deployed runtime (resolves endpoint + auth).
 | `--registry-region <region>` | A2A registry region. | Current Runtime region |
 | `--protocol <protocol>` | Harness transport: `invoke` or `run_sse`. | `invoke` |
 
-```bash
+```bash lines
 agentkit invoke my-agent -m "Hello, introduce yourself"
 ```
 
 Passing any Harness override, `--max-llm-calls`, or `--protocol` selects the Harness request-level override endpoint. In that mode, `--path` cannot be used. Overrides apply only to the current request and do not modify `harness.yaml`.
 
-```bash
+```bash lines
 agentkit invoke my-harness \
   --message "Summarize this session" \
   --model-name doubao-pro \

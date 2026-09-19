@@ -1,5 +1,6 @@
 ---
 title: "Code sandboxes"
+zh_link: "/productions/veadk/archives/1.0.2/zh/components/tools/code-sandbox"
 ---
 
 ## Overview
@@ -43,7 +44,7 @@ Environment variables:
 
 `config.yaml` keys:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 agentkit:
   tool_id: your-default-tool-id
   tool_id_script: your-script-tool-id
@@ -67,7 +68,7 @@ After creation, obtain the sandbox ID from the console (looks like `t-ye8dj82xxx
 
 ## Usage
 
-```python title="examples/tools/run_code/agent.py"
+```python title="examples/tools/run_code/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

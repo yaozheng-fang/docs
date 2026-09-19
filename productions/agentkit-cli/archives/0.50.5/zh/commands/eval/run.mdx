@@ -1,10 +1,11 @@
 ---
 title: "运行评测实验"
+en_link: "/productions/agentkit-cli/archives/0.50.5/en/commands/eval/run"
 ---
 
 `eval run` 是串联评测闭环的核心命令：它以一个评测集、一个或多个评估器，对一个已部署的运行时（评测目标）提交一次实验。评测集、评估器与目标均可用 ID 或名称指定，字段映射默认自动完成。
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator 相关性 --target my-agent
 ```
 
@@ -39,7 +40,7 @@ agentkit eval run --dataset qa-set --evaluator 相关性 --target my-agent
 | `评估器字段=target:目标输出` | 评估器输入取自目标输出字段 |
 | `target:目标输入=数据集字段` | 目标输入取自数据集字段 |
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator 相关性 --target my-agent \
   --map "output=target:actual_output" \
   --map "target:user_input=question"
@@ -49,7 +50,7 @@ agentkit eval run --dataset qa-set --evaluator 相关性 --target my-agent \
 
 建议首次运行前加 `--dry-run`，确认解析出的评测集版本、目标与字段映射无误：
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator 相关性 --target my-agent --dry-run
 ```
 
@@ -59,7 +60,7 @@ agentkit eval run --dataset qa-set --evaluator 相关性 --target my-agent --dry
 
 提交成功后返回实验 ID，可用 [`eval experiment get`](/productions/agentkit-cli/archives/0.50.5/zh/commands/eval/experiment) 跟踪：
 
-```bash
+```bash lines
 agentkit eval run --dataset qa-set --evaluator 相关性 --target my-agent --json
 # → { "experimentId": "75901...", "name": "qa-set-2026-07-03-12-16-21" }
 ```

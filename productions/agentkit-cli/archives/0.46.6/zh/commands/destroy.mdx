@@ -1,5 +1,6 @@
 ---
 title: "销毁运行时"
+en_link: "/productions/agentkit-cli/archives/0.46.6/en/commands/destroy"
 ---
 
 `destroy` 删除已部署的运行时。不带名称时，从项目本地配置（`.agentkit/agentkit.yaml`）解析目标运行时；也可传入名称以显式指定。该命令删除运行时本身，用于拆除不再需要的部署。
@@ -10,7 +11,7 @@ title: "销毁运行时"
 | `-r, --region <region>` | Volcengine 区域。 | 自动探测 |
 | `-y, --yes` | 跳过确认提示。 | `false` |
 
-```bash
+```bash lines
 # 删除当前项目配置中声明的运行时
 agentkit destroy
 

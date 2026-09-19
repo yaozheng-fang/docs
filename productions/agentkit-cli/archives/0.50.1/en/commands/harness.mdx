@@ -1,5 +1,6 @@
 ---
 title: "Harness"
+zh_link: "/productions/agentkit-cli/archives/0.50.1/zh/commands/harness"
 ---
 
 The `harness` command group creates an agent without writing any application code: initialize a `harness.yaml`, set its fields, then deploy it directly as a runtime.
@@ -14,13 +15,13 @@ Create a harness directory (`harness.yaml` + `.env.example`) for a Harness.
 | `-y, --yes` | Skip prompts and use defaults | `false` |
 | `-f, --force` | Scaffold into a non-empty directory / overwrite `harness.yaml` | `false` |
 
-```bash
+```bash lines
 agentkit harness init my-harness
 ```
 
 `harness.yaml` is the single source of configuration for a code-free agent; `harness deploy` expands it into the runtime's environment variables. In the generated file, common fields are active and each component's optional params are shown commented-out, grouped by backend — set a component's `type`, then uncomment the params under that backend. The complete file looks like this:
 
-```yaml harness.yaml
+```yaml harness.yaml lines
 # =============================================================================
 # AgentKit harness configuration (code-free agent).
 #
@@ -233,7 +234,7 @@ Set fields in `harness.yaml` (partial update; only the flags you pass are change
 | `--registry-endpoint <url>` | AgentKit A2A registry endpoint. | Current cloud environment's AgentKit endpoint |
 | `--registry-region <region>` | AgentKit A2A registry region. | `cloud.region` |
 
-```bash
+```bash lines
 agentkit harness set --name my-harness --model-name doubao-pro --runtime adk
 
 agentkit harness set --registry default --registry-space-name Default --registry-top-k 3
@@ -254,7 +255,7 @@ Start the Harness service locally from `harness.yaml` for development and debugg
 | `--reload` | Restart when the service code changes. | `false` |
 | `--python <bin>` | Python interpreter used to start the service. | `python3` |
 
-```bash
+```bash lines
 agentkit harness dev --reload --port 8000
 ```
 
@@ -269,6 +270,6 @@ Build the harness image and create or update the runtime from `harness.yaml`.
 | `--discovery-url <url>` | OIDC discovery URL (enables OAuth2/JWT, overrides `harness.yaml`) | None |
 | `--allowed-id <ids>` | Comma-separated allowed client IDs (overrides `harness.yaml`) | None |
 
-```bash
+```bash lines
 agentkit harness deploy --project default --region cn-beijing
 ```

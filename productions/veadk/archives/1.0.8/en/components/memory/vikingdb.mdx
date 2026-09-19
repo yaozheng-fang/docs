@@ -1,5 +1,6 @@
 ---
 title: "Use VikingDB storage"
+zh_link: "/productions/veadk/archives/1.0.8/zh/components/memory/vikingdb"
 ---
 
 The `viking` backend uses Volcengine [VikingDB memory](https://www.volcengine.com/product/vikingdb) as long-term storage. It is a managed service requiring no self-hosted vector store or local embedding — **recommended for production**. This backend also supports user profiles (`get_user_profile`), the only backend that does.
@@ -14,7 +15,7 @@ The earlier `viking_mem` backend is deprecated and is automatically mapped to `v
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -32,7 +33,7 @@ At init, if the collection does not exist, VeADK creates it from `memory_type`.
 
 You can also pass config explicitly via `backend_config`:
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 ltm = LongTermMemory(
@@ -51,7 +52,7 @@ ltm = LongTermMemory(
 
 ### Get a user profile
 
-```python
+```python lines
 profile = ltm.get_user_profile(user_id="user-42")
 print(profile)
 ```
@@ -93,7 +94,7 @@ The backend prefers `volcengine_access_key` and `volcengine_secret_key` from exp
 | `DATABASE_VIKINGMEM_PROJECT` | `default` | Memory project name. |
 | `DATABASE_VIKINGMEM_MEMORY_TYPE` | `sys_event_v1,sys_profile_v1` | Memory types, comma-separated. |
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-ak"
 export VOLCENGINE_SECRET_KEY="your-sk"
 export CLOUD_PROVIDER="volces"

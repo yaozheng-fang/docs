@@ -1,12 +1,13 @@
 ---
 title: "使用 Milvus 存储"
+en_link: "/productions/veadk/archives/1.0.5/en/components/knowledge/milvus"
 ---
 
 `milvus` 后端把知识片段的 embedding 写入 Milvus collection，既可连接 Milvus 或 Zilliz Cloud，也可使用本地 Milvus Lite 文件。该后端从 VeADK 1.0.3 开始提供。
 
 ## 依赖
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
@@ -14,7 +15,7 @@ pip install "veadk-python[extensions]"
 
 本地验证时，可以把 `DATABASE_MILVUS_URI` 指向 Milvus Lite 数据文件，并配置 embedding 模型：
 
-```bash
+```bash lines
 export DATABASE_MILVUS_URI="./data/product_docs.db"
 export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 ```
@@ -23,7 +24,7 @@ export MODEL_EMBEDDING_API_KEY="your-ark-api-key"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 

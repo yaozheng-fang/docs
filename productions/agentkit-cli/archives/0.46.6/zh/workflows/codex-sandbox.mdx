@@ -1,5 +1,6 @@
 ---
 title: "使用 Codex 沙箱开发应用"
+en_link: "/productions/agentkit-cli/archives/0.46.6/en/workflows/codex-sandbox"
 ---
 
 AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex 等编码智能体开发应用：无需在本地准备运行环境，会话可持久保留，代码可双向传输，构建中的应用还能通过 Web 预览查看。沙箱各命令的完整参数见[使用沙箱](/productions/agentkit-cli/archives/0.46.6/zh/commands/sandbox)。
@@ -18,7 +19,7 @@ AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex �
   <Step title="创建沙箱">
     沙箱是一个 `code` 环境。若项目中还没有，先创建一个：
 
-    ```bash
+    ```bash lines
     agentkit sandbox create --type code --name dev-sandbox
     ```
 
@@ -28,13 +29,13 @@ AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex �
   <Step title="进入沙箱用 Codex 开发">
     打开沙箱会话的交互式终端，在其中运行 `codex` 进行开发：
 
-    ```bash
+    ```bash lines
     agentkit sandbox shell --session dev --tmux
     ```
 
     `--session dev` 指定会话名称，后续命令复用同一名称即可回到同一环境；`--tmux` 会打开或接入一个持久化终端会话，断开后重连不会丢失进度（按 Ctrl-] 脱离）。若要把本地已有的代码带入沙箱，可在打开终端前上传：
 
-    ```bash
+    ```bash lines
     agentkit sandbox shell --session dev --src-dir ./my-app --dst-dir my-app
     ```
 
@@ -44,7 +45,7 @@ AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex �
   <Step title="在本地与沙箱之间传输文件">
     远端一侧以 `:` 前缀标记。上传与下载：
 
-    ```bash
+    ```bash lines
     # 上传
     agentkit sandbox cp ./local.txt :/workspace/local.txt --session dev
 
@@ -56,7 +57,7 @@ AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex �
   <Step title="预览构建中的应用">
     若在沙箱内启动了 Web 服务，可打开沙箱的 Web 预览查看：
 
-    ```bash
+    ```bash lines
     agentkit sandbox web --session dev
     ```
   </Step>
@@ -68,7 +69,7 @@ AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex �
     `sandbox rm` 会删除会话及其中未持久化的文件，但不会删除沙箱本身。确认文件已备份后再执行；不再使用沙箱时，另用 `sandbox delete <sandbox-id> -y` 删除云资源。
     </Warning>
 
-    ```bash
+    ```bash lines
     agentkit sandbox rm dev -y
     ```
   </Step>
@@ -80,7 +81,7 @@ AgentKit 沙箱是一个云端的 `code` 工具环境，可在其中用 Codex �
 
 为沙箱内的 Codex 提供登录凭据有多种方式，注入本地订阅是其中之一。若本地已通过 `codex login` 登录，可将订阅凭据注入会话：
 
-```bash
+```bash lines
 agentkit sandbox login --provider codex --session dev
 ```
 
@@ -90,7 +91,7 @@ agentkit sandbox login --provider codex --session dev
 
 除交互式终端外，`sandbox run` 可在会话中执行单条命令并打印输出，便于脚本或自动化流程调用：
 
-```bash
+```bash lines
 agentkit sandbox run "codex exec '给项目补充单元测试'" --session dev
 ```
 

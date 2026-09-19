@@ -1,5 +1,6 @@
 ---
 title: "Agent API Server 概述"
+en_link: "/productions/api-reference/preview/en/agent-api-server/overview"
 ---
 
 Agent API Server 提供应用发现、会话管理、智能体运行、制品读写和记忆写入接口。本章描述 Google ADK 的 HTTP 服务，也适用于通过 `veadk web` 加载 VeADK 智能体时提供的对应接口
@@ -22,26 +23,26 @@ Agent API Server 提供应用发现、会话管理、智能体运行、制品读
 
 在包含 `agents` 目录的项目根目录执行：
 
-```bash
+```bash lines
 adk api_server --host 127.0.0.1 --port 8000 agents
 ```
 
 如需 VeADK 的记忆集成、评测和调试界面，可使用：
 
-```bash
+```bash lines
 veadk web --host 127.0.0.1 --port 8000 agents
 ```
 
 基础地址为 `http://localhost:8000`。通过以下请求确认服务版本与可用应用：
 
-```bash
+```bash lines
 curl http://localhost:8000/version
 curl http://localhost:8000/list-apps
 ```
 
 执行评测还需要安装评测依赖；安装与服务相同版本的扩展，避免接口版本发生变化：
 
-```bash
+```bash lines
 python -m pip install "google-adk[eval]==2.2.0"
 ```
 

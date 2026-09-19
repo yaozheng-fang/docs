@@ -1,5 +1,6 @@
 ---
 title: "Web search"
+zh_link: "/productions/veadk/archives/1.0.6/zh/components/tools/web-search"
 ---
 
 ## Overview
@@ -27,7 +28,7 @@ Environment variables:
 
 Or configure in `config.yaml`:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 model:
   agent:
     provider: openai
@@ -42,7 +43,7 @@ volcengine:
 
 ## Usage
 
-```python title="examples/tools/web_search/agent.py"
+```python title="examples/tools/web_search/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

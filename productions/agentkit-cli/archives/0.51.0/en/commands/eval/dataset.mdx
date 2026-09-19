@@ -1,5 +1,6 @@
 ---
 title: "Manage datasets"
+zh_link: "/productions/agentkit-cli/archives/0.51.0/zh/commands/eval/dataset"
 ---
 
 The `eval dataset` command group manages evaluation sets: list, show, create, and delete datasets, and add or remove cases within a dataset. A dataset is the data source for an experiment; its fields (such as `input` and `reference_output`) are mapped to the target and the evaluator during [`eval run`](/productions/agentkit-cli/archives/0.51.0/en/commands/eval/run).
@@ -18,7 +19,7 @@ List evaluation datasets.
 | `-p, --project <name>` | Project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset list
 ```
 
@@ -34,7 +35,7 @@ Show details of an evaluation dataset, including its case items.
 | `-p, --project <name>` | Project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset show qa-set --items 50
 ```
 
@@ -51,7 +52,7 @@ Create an evaluation dataset. The schema is fixed once created, and a case's key
 | `-p, --project <name>` | Project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset create --name qa-set --schema "input,reference_output"
 ```
 
@@ -72,7 +73,7 @@ Add one or more cases to an evaluation dataset.
 | `-p, --project <name>` | Project name. | `default` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset add qa-set --field "input=What is the capital of France?" --field "reference_output=Paris"
 ```
 
@@ -93,7 +94,7 @@ This command removes the selected cases from the dataset. Check the dataset and 
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit dataset remove qa-set item-1 item-2 -y
 ```
 
@@ -112,6 +113,6 @@ This command deletes the entire dataset. Check the target first; the CLI prompts
 | `-p, --project <name>` | Project name. | `default` |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 
-```bash
+```bash lines
 agentkit dataset delete qa-set -y
 ```

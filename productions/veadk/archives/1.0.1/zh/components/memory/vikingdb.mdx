@@ -1,5 +1,6 @@
 ---
 title: "使用 VikingDB 存储"
+en_link: "/productions/veadk/archives/1.0.1/en/components/memory/vikingdb"
 ---
 
 `viking` 后端使用火山引擎 [VikingDB 记忆库](https://www.volcengine.com/product/vikingdb)作为长期记忆存储。它是托管服务，无需自建向量库或本地 embedding，**生产推荐**。该后端还支持获取用户画像（`get_user_profile`），是当前唯一提供该能力的后端。
@@ -14,7 +15,7 @@ title: "使用 VikingDB 存储"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -32,7 +33,7 @@ agent = Agent(
 
 也可以通过 `backend_config` 显式传入配置：
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 ltm = LongTermMemory(
@@ -51,7 +52,7 @@ ltm = LongTermMemory(
 
 ### 获取用户画像
 
-```python
+```python lines
 profile = ltm.get_user_profile(user_id="user-42")
 print(profile)
 ```
@@ -93,7 +94,7 @@ print(profile)
 | `DATABASE_VIKINGMEM_PROJECT` | `default` | 记忆库项目名。 |
 | `DATABASE_VIKINGMEM_MEMORY_TYPE` | `sys_event_v1,sys_profile_v1` | 记忆类型，逗号分隔。 |
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-ak"
 export VOLCENGINE_SECRET_KEY="your-sk"
 export CLOUD_PROVIDER="volces"

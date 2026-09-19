@@ -1,5 +1,6 @@
 ---
 title: "内置工具"
+en_link: "/productions/api-reference/preview/en/harness-runtime/tools"
 ---
 
 `harness.tools` 为本次调用追加内置工具，值是以英文逗号分隔的工具名称字符串，例如 `"web_search,web_fetch"`。它不接收工具对象、函数参数或 Python 导入路径
@@ -69,7 +70,7 @@ title: "内置工具"
 
 以下请求在非共享 OAuth Harness 中，为本次调用增加两个无需云服务凭证的工具。服务仍需具备可用的推理模型配置
 
-```bash
+```bash lines
 curl -X POST http://localhost:8000/harness/invoke \
   -H 'Content-Type: application/json' \
   -d '{
@@ -103,7 +104,7 @@ VeADK 1.0.8 的名称清单不包含 `video_task_query`、`ppt_generate`、`bash
 
 在 **Harness 使用的同一个 Python 环境或容器内**运行以下命令，查看安装版本和可按名称加载的工具。只在个人电脑的其他环境执行，不能证明部署中的工具清单
 
-```bash
+```bash lines
 python - <<'PY'
 from importlib.metadata import version
 from veadk.tools import list_builtin_tools

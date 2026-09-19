@@ -1,5 +1,6 @@
 ---
 title: "使用 SQLite 存储"
+en_link: "/productions/veadk/archives/1.1.4/en/components/session/sqlite"
 ---
 
 `sqlite` 后端把会话持久化到一个本地 SQLite 文件。它不依赖外部数据库服务，但与 `local` 不同，会话会落盘，因此可以跨进程、跨重启保留。
@@ -12,7 +13,7 @@ title: "使用 SQLite 存储"
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 
@@ -29,7 +30,7 @@ runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
 
 也可以用 `db_url` 直接给出连接串，此时 `backend` 与 `local_database_path` 都会被忽略：
 
-```python
+```python lines
 stm = ShortTermMemory(db_url="sqlite:///./test.db")
 ```
 

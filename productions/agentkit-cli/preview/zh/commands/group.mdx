@@ -1,5 +1,6 @@
 ---
 title: "用户组管理"
+en_link: "/productions/agentkit-cli/preview/en/commands/group"
 ---
 
 管理已有用户池中的用户组，支持创建、查询、修改描述和删除
@@ -30,7 +31,7 @@ title: "用户组管理"
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit group create --user-pool-id pool-example --name reviewers --description "Review team"
 ```
 
@@ -47,7 +48,7 @@ agentkit group create --user-pool-id pool-example --name reviewers --description
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit group update --user-pool-id pool-example --group-id group-example --description "Release reviewers"
 ```
 
@@ -66,7 +67,7 @@ agentkit group update --user-pool-id pool-example --group-id group-example --des
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit group list --user-pool-id pool-example --max-results 20 --json
 ```
 
@@ -89,6 +90,6 @@ agentkit group list --user-pool-id pool-example --max-results 20 --json
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit group delete --user-pool-id pool-example --group-id group-example --yes
 ```

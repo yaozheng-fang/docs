@@ -1,5 +1,6 @@
 ---
 title: "网页搜索"
+en_link: "/productions/veadk/archives/1.0.0/en/components/tools/web-search"
 ---
 
 ## 功能说明
@@ -27,7 +28,7 @@ title: "网页搜索"
 
 或在 `config.yaml` 中配置：
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 model:
   agent:
     provider: openai
@@ -42,7 +43,7 @@ volcengine:
 
 ## 使用方法
 
-```python title="examples/tools/web_search/agent.py"
+```python title="examples/tools/web_search/agent.py" lines
 import asyncio
 
 from veadk import Agent, Runner

@@ -1,5 +1,6 @@
 ---
 title: "使用 Redis 存储"
+en_link: "/productions/veadk/archives/1.1.13/en/components/memory/redis"
 ---
 
 `redis` 后端使用 Redis 作为向量存储。记忆文本先经 embedding 模型向量化，再写入 Redis，并按用户隔离索引（实际索引名为 `veadk-ltm/{index}/{user_id}`），检索时按余弦相似度召回。
@@ -11,7 +12,7 @@ title: "使用 Redis 存储"
 
 ## 依赖
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
@@ -19,7 +20,7 @@ Redis 需支持 RediSearch（向量检索）能力。
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -34,7 +35,7 @@ agent = Agent(
 
 也可以通过 `backend_config` 显式传入连接配置：
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 from veadk.configs.database_configs import RedisConfig
 
@@ -91,7 +92,7 @@ ltm = LongTermMemory(
 
 ## 环境变量配置
 
-```bash
+```bash lines
 # Redis 连接
 export DATABASE_REDIS_HOST="localhost"
 export DATABASE_REDIS_PORT=6379

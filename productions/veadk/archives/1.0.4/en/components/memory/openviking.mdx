@@ -1,5 +1,6 @@
 ---
 title: "Store memory in OpenViking"
+zh_link: "/productions/veadk/archives/1.0.4/zh/components/memory/openviking"
 ---
 
 The `openviking` backend submits sessions to OpenViking, which extracts user-related entities, events, and preferences for retrieval in later sessions. It includes both user messages and agent responses so OpenViking can derive memory from the complete conversation.
@@ -16,12 +17,12 @@ The `openviking` backend submits sessions to OpenViking, which extracts user-rel
 
 ## Configure long-term memory
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -67,7 +68,7 @@ A new session with the same `user_id` can retrieve memories committed by earlier
 
 Explicit configuration example:
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 memory = LongTermMemory(
@@ -87,7 +88,7 @@ In production, inject `api_key` through environment variables or a secret manage
 
 By default, the OpenViking peer identifier equals the VeADK `user_id`. A multitenant application can provide `peer_id_resolver` to combine tenant and user values into one safe identifier:
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 
 

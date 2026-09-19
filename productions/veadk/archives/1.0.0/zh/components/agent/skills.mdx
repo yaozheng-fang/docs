@@ -1,5 +1,6 @@
 ---
 title: "技能"
+en_link: "/productions/veadk/archives/1.0.0/en/components/agent/skills"
 ---
 
 技能是可复用的提示词包，用于为智能体提供特定领域的知识、操作流程和脚本。VeADK 1.0.0 会先加载技能的名称与说明，并在需要使用技能时再读取完整内容，以控制上下文长度。
@@ -18,7 +19,7 @@ VeADK 1.0.0 支持三种技能运行模式：
 
 `skills` 中的本地路径应指向技能根目录。根目录下的每个子目录代表一个技能，并包含 `SKILL.md`：
 
-```text
+```text lines
 skills/
 └── kb-skill/
     ├── SKILL.md
@@ -29,7 +30,7 @@ skills/
 
 `SKILL.md` 的 frontmatter 必须提供 `name` 与 `description`，且 `name` 应与所在目录名一致：
 
-```markdown title="skills/kb-skill/SKILL.md"
+```markdown title="skills/kb-skill/SKILL.md" lines
 ---
 name: kb-skill
 description: 查询知识库并整理答案。
@@ -40,7 +41,7 @@ description: 查询知识库并整理答案。
 
 ## 使用本地技能
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -55,7 +56,7 @@ agent = Agent(
 
 将技能空间标识传给 `skills`，显式选择 `skills_sandbox`，并添加 `execute_skills`：
 
-```python
+```python lines
 import os
 
 from veadk import Agent
@@ -74,7 +75,7 @@ agent = Agent(
 
 技能可以在定义中包含检查清单。设置 `enable_skills_checklist=True` 后，VeADK 会在技能开始执行时初始化检查项，并提示模型通过 `update_check_list` 逐项更新状态：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(
@@ -88,7 +89,7 @@ agent = Agent(
 
 设置 `enable_dynamic_load_skills=True` 后，VeADK 会在运行期间检查并重新加载技能配置：
 
-```python
+```python lines
 from veadk import Agent
 
 agent = Agent(

@@ -1,5 +1,6 @@
 ---
 title: "Use OpenViking storage"
+zh_link: "/productions/veadk/archives/1.1.0/zh/components/knowledge/openviking"
 ---
 
 The `openviking` backend delegates resource parsing, indexing, and retrieval to OpenViking, so VeADK does not need a local embedding model. Each `index` maps to `viking://user/<openviking_user_id>/resources/<index>/` by default, where `openviking_user_id` is the owner/context the resources belong to; it defaults to `default`. This backend is available in VeADK 1.0.3 and later.
@@ -12,13 +13,13 @@ The `openviking` backend delegates resource parsing, indexing, and retrieval to 
 
 The OpenViking SDK is part of VeADK's base dependencies:
 
-```bash
+```bash lines
 pip install veadk-python
 ```
 
 Prepare a reachable OpenViking service and a service-owner API key. In production, inject credentials through environment variables or a secret manager:
 
-```bash
+```bash lines
 export DATABASE_OPENVIKING_URL="https://openviking.example.com"
 export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 ```
@@ -29,7 +30,7 @@ export DATABASE_OPENVIKING_API_KEY="your-openviking-api-key"
 
 ## Example
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -51,7 +52,7 @@ agent = Agent(knowledgebase=kb)
 
 When `backend_config` is omitted, `url`, `api_key`, and `openviking_user_id` are read from the `DATABASE_OPENVIKING_*` environment variables, and `index` comes from `KnowledgeBase(index=...)` or `app_name`:
 
-```python
+```python lines
 kb = KnowledgeBase(
     backend="openviking",
     index="product_docs",
@@ -61,7 +62,7 @@ kb.add_from_directory("./docs")
 
 Call `close()` to release the OpenViking client held by the backend when the knowledge base is no longer needed:
 
-```python
+```python lines
 kb.close()
 ```
 

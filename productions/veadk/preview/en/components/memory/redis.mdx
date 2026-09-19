@@ -1,5 +1,6 @@
 ---
 title: "Use Redis storage"
+zh_link: "/productions/veadk/preview/zh/components/memory/redis"
 ---
 
 The `redis` backend uses Redis as the vector store. Memory text is embedded by an embedding model, written to Redis with a per-user index (the actual index name is `veadk-ltm/{index}/{user_id}`), and retrieved by cosine similarity.
@@ -11,7 +12,7 @@ The `redis` backend uses Redis as the vector store. Memory text is embedded by a
 
 ## Dependencies
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
@@ -19,7 +20,7 @@ Redis must support RediSearch (vector search).
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -34,7 +35,7 @@ agent = Agent(
 
 You can also pass connection config explicitly via `backend_config`:
 
-```python
+```python lines
 from veadk.memory.long_term_memory import LongTermMemory
 from veadk.configs.database_configs import RedisConfig
 
@@ -91,7 +92,7 @@ ltm = LongTermMemory(
 
 ## Environment variables
 
-```bash
+```bash lines
 # Redis connection
 export DATABASE_REDIS_HOST="localhost"
 export DATABASE_REDIS_PORT=6379

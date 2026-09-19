@@ -1,5 +1,6 @@
 ---
 title: "Release"
+zh_link: "/productions/agentkit-cli/archives/0.51.1/zh/commands/release"
 ---
 
 `release` runs the full `.agentkit/agentkit.yaml` release pipeline: scaffold release config, build the image in the cloud, create or update the AgentKit Runtime, and optionally release Feishu, WeCom, DingTalk proxies or a frontend BFF. If you use the root `agentkit.yaml` lifecycle config, use [`launch`](/productions/agentkit-cli/archives/0.51.1/en/commands/launch) instead.
@@ -17,7 +18,7 @@ Without a subcommand, `release` runs the full pipeline. If `.agentkit/agentkit.y
 | `--im-feishu-app-id <id>` | Feishu App ID for the proxy. | `im.feishu.app_id` or `FEISHU_APP_ID` |
 | `--im-feishu-app-secret <secret>` | Feishu App Secret for the proxy; prefer `FEISHU_APP_SECRET`. | `im.feishu.app_secret` or `FEISHU_APP_SECRET` |
 
-```bash
+```bash lines
 agentkit release --name my-agent --region cn-beijing --project default
 ```
 
@@ -36,7 +37,7 @@ Generate `.agentkit/agentkit.yaml` and a Dockerfile.
 | `-p, --project <name>` | AgentKit project. | `default` |
 | `-f, --force` | Overwrite existing generated files. | `false` |
 
-```bash
+```bash lines
 agentkit release config --name my-agent --force
 ```
 
@@ -48,7 +49,7 @@ Build the image in the cloud from `.agentkit/agentkit.yaml` and write build arti
 | --- | --- | --- |
 | _(no options)_ | This subcommand takes no options. | — |
 
-```bash
+```bash lines
 agentkit release build
 ```
 
@@ -60,7 +61,7 @@ Create or update the runtime from the latest built artifact.
 | --- | --- | --- |
 | _(no options)_ | This subcommand takes no options. | — |
 
-```bash
+```bash lines
 agentkit release apply
 ```
 

@@ -1,5 +1,6 @@
 ---
 title: "Use in-memory storage"
+zh_link: "/productions/veadk/archives/1.1.2/zh/components/memory/local"
 ---
 
 The `local` backend keeps long-term memory in **the current process's memory**. Memory text is embedded by an embedding model and written to a llama-index in-memory vector index; retrieval recalls by semantic similarity.
@@ -16,13 +17,13 @@ Because the data lives only in process memory, it is cleared when the process ex
 
 The `local` backend relies on vector search, which requires the extensions:
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -64,7 +65,7 @@ Usually you only pass `index` or `app_name` to `LongTermMemory`. To customize em
 
 ## Environment variables
 
-```bash
+```bash lines
 # Embedding model; if unset, defaults are used and the agent model's key is reused when no key is set
 export MODEL_EMBEDDING_NAME="doubao-embedding-vision-250615"
 export MODEL_EMBEDDING_DIM=2048

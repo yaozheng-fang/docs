@@ -1,5 +1,6 @@
 ---
 title: "Use sandboxes"
+zh_link: "/productions/agentkit-cli/archives/0.50.8/zh/commands/sandbox"
 ---
 
 The `sandbox` command group creates and manages AgentKit sandbox tools, then uses sandbox sessions to run commands, invoke agents, transfer files, open web previews, or inject local model subscription credentials. Current sandbox tool types are `CodeEnv`, `SkillEnv`, and `Private`.
@@ -47,7 +48,7 @@ Build a custom sandbox image in cloud Code Pipeline. After a successful build, t
 | `--namespace <name>` | Container Registry namespace. | `agentkit` |
 | `--project-dir <path>` | Project directory to package as the Docker build context. | Current directory |
 
-```bash
+```bash lines
 agentkit sandbox build --project-dir . --dockerfile Dockerfile --image-name custom-sandbox
 ```
 
@@ -61,7 +62,7 @@ Generate a sandbox Dockerfile template. When no template is specified, the comma
 | `-o, --output <path>` | Output Dockerfile path. | Template default path |
 | `-f, --force` | Overwrite an existing output file. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox init --template code-web-server --output Dockerfile.sandbox
 ```
 
@@ -75,7 +76,7 @@ Configure local defaults for sandbox commands. The config file is `.agentkit/san
 | `--unset <KEY>` | Remove a config value; repeatable. | — |
 | `--list` | Print the current effective config. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox config \
   --set tool-type=CodeEnv \
   --set session-id=dev \
@@ -146,13 +147,13 @@ Create a sandbox tool. After creation, the CLI waits until the tool reaches `Rea
 | `--network-subnet-ids <ids>` | Comma-separated subnet IDs. | Config value or — |
 | `--json` | Output JSON. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox create --tool-type CodeEnv --tool-name dev-code --cpu 4
 ```
 
 To create a custom `Private` tool, prepare an image URL first:
 
-```bash
+```bash lines
 agentkit sandbox create \
   --tool-type Private \
   --tool-name private-dev \
@@ -174,7 +175,7 @@ Deleting a sandbox tool or session cannot be undone. Files, runtime state, and s
 | `--tool-name <name>` | Sandbox tool name. | — |
 | `--force` | Skip the confirmation prompt. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox delete --tool-id tool-123 --session-id dev --force
 
 agentkit sandbox delete --tool-name private-dev --force
@@ -189,7 +190,7 @@ List locally cached sandbox sessions, or inspect one cached session. This comman
 | `-s, --session-id <id>, --sid <id>` | User session id to look up. | — |
 | `--tool-id <id>` | Filter the local cache by sandbox tool id. | — |
 
-```bash
+```bash lines
 agentkit sandbox list
 
 agentkit sandbox list --tool-id tool-123 --session-id dev
@@ -207,7 +208,7 @@ Open a TOS-mounted sandbox session directory in TosBrowser. The target tool must
 | `--tool-name <name>` | Sandbox tool name. | Config value or — |
 | `--tool-type <type>` | Sandbox tool type. | Config value or `CodeEnv` |
 
-```bash
+```bash lines
 agentkit sandbox mount --tool-id tool-123 --session-id dev
 ```
 
@@ -234,7 +235,7 @@ Connect to a sandbox terminal and execute a command. Use `--command` to provide 
 | `--model-base-url <url>` | Model API base URL injected into the session. | Config value or — |
 | `--disable-websearch-apikey` | Do not inject the WebSearch API key for this session. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox exec --session-id dev --command "npm test"
 
 agentkit sandbox exec \
@@ -268,7 +269,7 @@ Invoke an agent in a sandbox through A2A. The default tool type is `SkillEnv`, a
 | `--history-length <count>` | A2A task history length to request. | `20` |
 | `--a2a-path <path>` | A2A JSON-RPC path on the sandbox endpoint. | `/a2a` |
 
-```bash
+```bash lines
 agentkit sandbox invoke --tool-id skill-tool-123 --session-id task-dev --prompt "Summarize the project structure"
 
 agentkit sandbox invoke --tool-id skill-tool-123 --prompt "Run the long task" --async
@@ -284,7 +285,7 @@ Read a YAML file and convert its entries into `agentkit sandbox exec` commands. 
 | `--terminal <count>` | Number of exec entries to open or run. | `1` |
 | `--dry-run` | Print the `sandbox exec` commands without running them. | `false` |
 
-```yaml title="agentkit-sandbox-run.yaml"
+```yaml title="agentkit-sandbox-run.yaml" lines
 exec:
   - session_id: dev
     cwd: .
@@ -293,7 +294,7 @@ exec:
     command: "cd /home/gem/app && npm test"
 ```
 
-```bash
+```bash lines
 agentkit sandbox run --config agentkit-sandbox-run.yaml --dry-run
 ```
 
@@ -314,7 +315,7 @@ Run a non-interactive shell command in the sandbox and print the JSON result. Th
 | `--copy <sourceAndDestination...>` | Upload local SOURCE to sandbox DESTINATION before running the command. | — |
 | `--git-config <source>` | Git identity source: `local` or an INI/TOML/JSON file. | Config value or — |
 
-```bash
+```bash lines
 agentkit sandbox shell --session-id dev --command "python --version"
 ```
 
@@ -330,7 +331,7 @@ Open the sandbox web preview and print JSON containing the URL, tool id, session
 | `--tool-type <type>` | Sandbox tool type. | `CodeEnv` |
 | `--no-open` | Return the web URL without opening a browser. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox web --session-id dev --no-open
 ```
 
@@ -355,7 +356,7 @@ Inject local Codex or Claude subscription credentials into a sandbox session. `m
 | `--tool-type <type>` | Sandbox tool type. | `CodeEnv` |
 | `--dry-run` | Print the redacted injection command without creating a session. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox codex-login --session-id dev --provider codex
 
 agentkit sandbox model-login --session-id dev --provider claude --dry-run
@@ -378,7 +379,7 @@ agentkit sandbox model-login --session-id dev --provider claude --dry-run
 | `--tool-type <type>` | Sandbox tool type. | `CodeEnv` |
 | `--dry-run` | Print the redacted injection command without creating a session. | `false` |
 
-```bash
+```bash lines
 agentkit sandbox model-login --session-id dev --provider codex
 ```
 
@@ -393,7 +394,7 @@ Transfer files or directories between local storage and an existing sandbox sess
 | `-s, --session-id <id>, --sid <id>` | User session id used for the transfer. | Config value or — |
 | `--tool-id <id>` | Sandbox tool id used to disambiguate the local session cache. | — |
 
-```bash
+```bash lines
 agentkit sandbox scp ./local.txt sandbox:/home/gem/local.txt --session-id dev
 
 agentkit sandbox scp sandbox:/home/gem/result.json ./result.json --session-id dev

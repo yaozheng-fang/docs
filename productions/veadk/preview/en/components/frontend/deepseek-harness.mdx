@@ -1,5 +1,6 @@
 ---
 title: "DeepSeek Harness creation and deployment"
+zh_link: "/productions/veadk/preview/zh/components/frontend/deepseek-harness"
 ---
 
 DeepSeek Harness creation mode is an agent creation method in Studio for configuring, previewing, and deploying a containerized agent runtime based on DeepSeek Harness. This mode generates a complete container project including a Dockerfile, configuration files, and a runtime adapter, which can be deployed directly to an AgentKit Runtime or exported as a ZIP for local build and execution.
@@ -154,7 +155,7 @@ The DeepSeek Harness native web service runs privately on `127.0.0.1:3080` insid
 
 `POST /invocations` request body:
 
-```json title="Request body"
+```json title="Request body" lines
 {
   "prompt": "Hello",
   "session_id": "optional-session-id"
@@ -163,7 +164,7 @@ The DeepSeek Harness native web service runs privately on `127.0.0.1:3080` insid
 
 Success response:
 
-```json title="Success response"
+```json title="Success response" lines
 {
   "response": "...",
   "session_id": "...",
@@ -185,13 +186,13 @@ Session and workspace files depend on mounted persistent storage. Without persis
 
 The exported project includes a Dockerfile that can be built directly. In the project directory:
 
-```bash
+```bash lines
 docker build -t deepseek-harness-agent .
 ```
 
 When using the default DeepSeek provider, set `DEEPSEEK_API_KEY` and run:
 
-```bash
+```bash lines
 docker run --rm -p 127.0.0.1:8000:8000 -e DEEPSEEK_API_KEY deepseek-harness-agent
 ```
 

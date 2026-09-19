@@ -1,5 +1,6 @@
 ---
 title: "Manage users"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/user"
 ---
 
 Manage users in an existing user pool, including batch creation, exact-match queries, updates, and deletion
@@ -38,7 +39,7 @@ Create 1-1000 users in a user pool (batch; reports per-user success/failure)
 | `--json` | output JSON results instead of a table | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit user create --user-pool-id pool-example --preferred-username alice --name Alice --email alice@example.com
 ```
 
@@ -58,7 +59,7 @@ Update one user's fields in a user pool (omitted flags keep current values; an e
 | `--json` | output a JSON summary instead of a human-readable line | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit user update --user-pool-id pool-example --user-id user-example --name "Alice Chen"
 ```
 
@@ -79,7 +80,7 @@ Deletion is irreversible. Check the user pool and resource IDs. Interactive term
 | `--json` | output a JSON summary instead of a human-readable line | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit user delete --user-pool-id pool-example --user-id user-example --yes
 ```
 
@@ -99,7 +100,7 @@ List users in a user pool (exact-match filters; token-based pagination)
 | `--json` | output JSON results instead of a table | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit user list --user-pool-id pool-example --max-results 20 --json
 ```
 
@@ -109,7 +110,7 @@ Pass the returned `nextToken` to `--next-token` to read subsequent pages; the CL
 
 Create `users.json` as an array or an object containing a `users` array. Each user requires `preferredUsername`; other fields are optional
 
-```json title="users.json"
+```json title="users.json" lines
 {
   "users": [
     {"preferredUsername": "alice", "name": "Alice", "email": "alice@example.com"},
@@ -118,7 +119,7 @@ Create `users.json` as an array or an object containing a `users` array. Each us
 }
 ```
 
-```bash
+```bash lines
 agentkit user create --user-pool-id pool-example --file users.json --json
 ```
 

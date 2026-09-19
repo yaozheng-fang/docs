@@ -1,5 +1,6 @@
 ---
 title: "Cozeloop"
+en_link: "/productions/veadk/archives/1.0.8/en/components/observability/cozeloop"
 ---
 
 `CozeloopExporter` 将 span 数据以 OTLP（HTTP）协议上报至Cozeloop平台。接入后，可通过Cozeloop的 Trace 功能观测调用链路，或通过其评测功能对智能体进行评测。数据按工作空间隔离。
@@ -12,7 +13,7 @@ title: "Cozeloop"
 
 ## 使用示例
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -33,7 +34,7 @@ asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_
 
 也可以通过 `CozeloopExporterConfig` 显式传入连接参数：
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.cozeloop_exporter import (
     CozeloopExporter,
     CozeloopExporterConfig,
@@ -76,7 +77,7 @@ exporter = CozeloopExporter(
 
 ## 环境变量配置
 
-```bash
+```bash lines
 export OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT="https://api.coze.cn/v1/loop/opentelemetry/v1/traces"
 export OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY="your-cozeloop-token"
 export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME="your-cozeloop-space-id"
@@ -84,7 +85,7 @@ export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME="your-cozeloop-space-id
 
 也可以让 `Agent` 依据环境变量自动挂载 Cozeloop 导出器，无需显式构造：
 
-```bash
+```bash lines
 export ENABLE_COZELOOP=true
 ```
 

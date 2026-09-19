@@ -1,5 +1,6 @@
 ---
 title: "Content-safety guardrail"
+zh_link: "/productions/veadk/archives/1.0.1/zh/components/security/content-safety"
 ---
 
 ## Overview
@@ -34,7 +35,7 @@ Notes:
 
 Before using `content_safety`, purchase an instance, add assets, and obtain its AppID. Set the environment variable `TOOL_LLM_SHIELD_APP_ID`, or configure it in `config.yaml`:
 
-```yaml title="config.yaml"
+```yaml title="config.yaml" lines
 tool:
   llm_shield:
     app_id: <your_app_id>
@@ -44,7 +45,7 @@ tool:
 
 Hook the `content_safety` callbacks onto the agent to audit its execution:
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner

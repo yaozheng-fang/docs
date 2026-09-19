@@ -1,5 +1,6 @@
 ---
 title: "TLS 日志服务"
+en_link: "/productions/veadk/archives/1.1.12/en/components/observability/tls"
 ---
 
 `TLSExporter` 将 span 数据以 OTLP（HTTP）协议上报至火山引擎日志服务 TLS。数据按 TLS 主题组织，适合集中存储、长期留存与跨服务的链路分析。
@@ -14,7 +15,7 @@ title: "TLS 日志服务"
 
 TLS 接入通常分两步：先用 `VeTLS` 客户端创建日志项目与追踪实例，再用 `TLSExporter` 上报数据。
 
-```python
+```python lines
 import asyncio
 from os import getenv
 
@@ -51,7 +52,7 @@ asyncio.run(runner.run(messages="北京天气怎么样？", session_id="session_
 
 不显式传入 `config` 时，`topic_id` 会在缺省情况下自动获取追踪主题 ID：
 
-```python
+```python lines
 from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
 
 exporter = TLSExporter()
@@ -87,7 +88,7 @@ exporter = TLSExporter()
 
 ## 环境变量配置
 
-```bash
+```bash lines
 export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT="https://tls-cn-beijing.volces.com:4318/v1/traces"
 export OBSERVABILITY_OPENTELEMETRY_TLS_REGION="cn-beijing"
 export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME="your-tls-trace-topic"
@@ -99,7 +100,7 @@ export VOLCENGINE_SECRET_KEY="your-secret-key"
 
 也可以让 `Agent` 依据环境变量自动挂载 TLS 导出器，无需显式构造：
 
-```bash
+```bash lines
 export ENABLE_TLS=true
 ```
 

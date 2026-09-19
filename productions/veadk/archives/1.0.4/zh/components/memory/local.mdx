@@ -1,5 +1,6 @@
 ---
 title: "使用本地内存"
+en_link: "/productions/veadk/archives/1.0.4/en/components/memory/local"
 ---
 
 `local` 后端把长期记忆保存在**当前进程的内存**中。记忆文本先经 embedding 模型向量化，再写入一个基于 llama-index 的内存向量索引，检索时按语义相似度召回。
@@ -16,13 +17,13 @@ title: "使用本地内存"
 
 `local` 后端依赖向量检索能力，需要安装扩展依赖：
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
 ## 使用示例
 
-```python
+```python lines
 from veadk import Agent
 from veadk.memory.long_term_memory import LongTermMemory
 
@@ -64,7 +65,7 @@ agent = Agent(
 
 ## 环境变量配置
 
-```bash
+```bash lines
 # embedding 模型；若不设置将使用默认值，并在缺少 API Key 时复用智能体模型的密钥
 export MODEL_EMBEDDING_NAME="doubao-embedding-vision-250615"
 export MODEL_EMBEDDING_DIM=2048

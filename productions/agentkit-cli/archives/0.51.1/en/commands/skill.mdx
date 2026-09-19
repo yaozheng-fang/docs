@@ -1,5 +1,6 @@
 ---
 title: "Manage platform skills"
+zh_link: "/productions/agentkit-cli/archives/0.51.1/zh/commands/skill"
 ---
 
 The `skill` command group manages skills on the AgentKit skill platform: list, show details, list versions, list skill spaces, and delete skills.
@@ -14,7 +15,7 @@ List skills.
 | `-p, --project <name>` | Project name | default |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill list
 ```
 
@@ -28,7 +29,7 @@ Show a skill's details.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill show sk-xxxxxxxx
 ```
 
@@ -42,7 +43,7 @@ List a skill's versions.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill versions sk-xxxxxxxx
 ```
 
@@ -55,7 +56,7 @@ List skill spaces.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill spaces
 ```
 
@@ -69,6 +70,6 @@ Delete a skill.
 | `-r, --region <region>` | Volcengine region | None |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 
-```bash
+```bash lines
 agentkit skill delete sk-xxxxxxxx --yes
 ```

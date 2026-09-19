@@ -1,5 +1,6 @@
 ---
 title: "使用 MySQL 存储"
+en_link: "/productions/veadk/archives/1.0.0/en/components/session/mysql"
 ---
 
 `mysql` 后端把会话存储到 MySQL 数据库。多个智能体实例可连接同一数据库，实现会话共享与分布式持久化。
@@ -13,7 +14,7 @@ title: "使用 MySQL 存储"
 
 连接信息通过 `config.yaml`（或对应环境变量）提供，不要把密码写进代码。
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 
@@ -25,7 +26,7 @@ runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
 
 如需透传连接池等 SQLAlchemy 驱动参数，可使用 `db_kwargs`：
 
-```python
+```python lines
 stm = ShortTermMemory(
     backend="mysql",
     db_kwargs={"pool_size": 10, "pool_recycle": 3600},
@@ -34,7 +35,7 @@ stm = ShortTermMemory(
 
 也可以用 `backend_configs` 在代码中直接注入 `MysqlConfig`，覆盖环境变量（不推荐把密码写进代码）：
 
-```python
+```python lines
 import os
 
 from veadk.configs.database_configs import MysqlConfig
@@ -69,7 +70,7 @@ stm = ShortTermMemory(
 
 配置类 `MysqlConfig` 的环境变量前缀为 `DATABASE_MYSQL_`。
 
-```yaml config.yaml
+```yaml config.yaml lines
 database:
   mysql:
     host:       # 主机或 IP

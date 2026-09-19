@@ -1,5 +1,6 @@
 ---
 title: "Studio 智能体工作台"
+en_link: "/productions/veadk/archives/1.0.8/en/components/frontend/studio"
 ---
 
 VeADK Studio 1.0.8 使用与 VeADK Frontend 相同的服务和完整界面，提供对话、搜索、历史会话、技能中心，以及智能体创建、测试、部署和管理功能，启动后默认进入对话页面。
@@ -10,7 +11,7 @@ VeADK 1.0.8 可通过自定义配置创建项目；智能模式、模板和工�
 
 从智能体目录的上一级目录运行：
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -25,7 +26,7 @@ veadk studio --agents-dir ./agents --open
 
 使用 `--site-title` 设置最多 6 个字符的系统名称，使用 `--site-logo` 指定本地图片或 HTTP(S) 图片 URL。Logo 会用于侧边栏、登录页和浏览器 favicon，系统名称也会作为浏览器页面标题；省略 `--site-title` 时使用默认名称 `VeADK Studio`。
 
-```bash
+```bash lines
 veadk studio \
   --site-title "火山助手" \
   --site-logo "./logo.png"
@@ -174,7 +175,7 @@ Skill 创建仅对 `developer` 和 `admin` 开放。每个候选使用独立 Ses
 
 本地使用临时会话和 Skill 创建前，分别准备两个处于 `Ready` 状态的 AgentKit CodeEnv Tool，并配置其 ID：
 
-```bash
+```bash lines
 export SANDBOX_CHAT_CODEX="your-chat-code-env-tool-id"
 export SANDBOX_SKILL_CREATOR="your-skill-code-env-tool-id"
 
@@ -224,7 +225,7 @@ veadk studio --agents-dir ./agents --open
 
 准备用户池 UID、用户池客户端 UID 和符合权限要求的火山引擎凭证，然后执行：
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -276,7 +277,7 @@ veadk studio deploy \
 
 `veadk studio update` 从本地 VeADK 源码重新构建 Studio，更新已有 VeFaaS Function 的代码并重新发布原 Application。运行前安装 Node.js 与 npm，并在 VeADK 源码目录执行：
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 
@@ -302,7 +303,7 @@ veadk studio update --vefaas-app-name "veadk-studio"
 
 `--admin` 和 `--developer` 各自接收逗号分隔的本地用户名或 OAuth 邮箱名单。空格会被忽略，身份匹配不区分大小写；同一身份同时出现在两个名单时，`admin` 优先。本地启动示例：
 
-```bash
+```bash lines
 veadk studio \
   --admin "admin,admin@example.com" \
   --developer "alice,alice@example.com,bob"
@@ -310,7 +311,7 @@ veadk studio \
 
 也可以分别通过 `VEADK_STUDIO_ADMINS` 和 `VEADK_STUDIO_DEVELOPERS` 环境变量设置这两个名单。部署 Studio 时使用相同参数：
 
-```bash
+```bash lines
 veadk studio deploy \
   --user-pool-id "your-user-pool-id" \
   --allowed-client-id "your-user-pool-client-id" \

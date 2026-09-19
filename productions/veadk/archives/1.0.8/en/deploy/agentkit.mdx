@@ -1,5 +1,6 @@
 ---
 title: "Deploy to AgentKit"
+zh_link: "/productions/veadk/archives/1.0.8/zh/deploy/agentkit"
 ---
 
 VeADK can deploy a local agent as an AgentKit Runtime. Shared AgentKit application infrastructure provides conversation endpoints, health checks, agent topology, the built-in Web UI, short-term session defaults, and an optional Feishu lifecycle.
@@ -15,7 +16,7 @@ VeADK can deploy a local agent as an AgentKit Runtime. Shared AgentKit applicati
 
 Studio-generated projects call `create_agentkit_app`. Manually created projects can use the same entry point:
 
-```python title="app.py"
+```python title="app.py" lines
 from agents.customer_support.agent import root_agent
 from veadk.integrations.agentkit import create_agentkit_app
 
@@ -38,7 +39,7 @@ The application exposes AgentKit conversation APIs and these public endpoints:
 
 Run these commands in the project directory:
 
-```bash
+```bash lines
 veadk agentkit init
 veadk agentkit config
 veadk agentkit launch
@@ -46,7 +47,7 @@ veadk agentkit launch
 
 After deployment, inspect the Runtime and invoke it:
 
-```bash
+```bash lines
 veadk agentkit status
 veadk agentkit invoke -m "Describe your capabilities"
 ```

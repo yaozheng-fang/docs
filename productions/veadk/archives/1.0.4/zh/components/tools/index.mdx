@@ -1,5 +1,6 @@
 ---
 title: "概述"
+en_link: "/productions/veadk/archives/1.0.4/en/components/tools"
 ---
 
 工具让智能体在推理之外获得与外部世界交互的能力：网页搜索、代码执行、图像与视频生成、访问第三方服务等。VeADK 把这些能力封装为可直接注册的工具，智能体在运行时根据用户输入与指令**自主决定**是否调用，框架在调用时自动执行并把结果回填到推理过程。
@@ -8,7 +9,7 @@ title: "概述"
 
 无论何种类型的工具，注册方式一致：把工具放进 `Agent` 的 `tools` 列表。
 
-```python
+```python lines
 from veadk import Agent
 from veadk.tools.builtin_tools.web_search import web_search
 

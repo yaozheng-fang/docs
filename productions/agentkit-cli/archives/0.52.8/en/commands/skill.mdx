@@ -1,5 +1,6 @@
 ---
 title: "Manage platform and local skills"
+zh_link: "/productions/agentkit-cli/archives/0.52.8/zh/commands/skill"
 ---
 
 The `skill` command group manages skills on the AgentKit skill platform: list, show details, list versions, list skill spaces, and delete skills. The `skills` command group works with local AgentKit skill packages and currently provides bulk secure Skill generation.
@@ -25,7 +26,7 @@ List skills.
 | `-p, --project <name>` | Project name | default |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill list
 ```
 
@@ -39,7 +40,7 @@ Show a skill's details.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill show sk-xxxxxxxx
 ```
 
@@ -53,7 +54,7 @@ List a skill's versions.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill versions sk-xxxxxxxx
 ```
 
@@ -66,7 +67,7 @@ List skill spaces.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill spaces
 ```
 
@@ -80,7 +81,7 @@ Delete a skill.
 | `-r, --region <region>` | Volcengine region | None |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 
-```bash
+```bash lines
 agentkit skill delete sk-xxxxxxxx --yes
 ```
 
@@ -95,7 +96,7 @@ Generate secure Skill wrappers in bulk from a local skills directory. The source
 | `--force` | Overwrite existing generated files. | `false` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit skills secure ./skills
 
 agentkit skills secure ./skills --output ./skills-secure --force

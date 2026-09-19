@@ -1,5 +1,6 @@
 ---
 title: "agentkit.yaml"
+en_link: "/productions/agentkit-cli/archives/0.50.6/en/agentkit-yaml"
 ---
 
 `agentkit.yaml` 是部署配置的唯一来源。先用 `agentkit init` 创建项目，再执行 `agentkit deploy config`，即会在项目的 `.agentkit/` 下生成它；`agentkit deploy`、`deploy build` 与 `deploy apply` 都从中读取，无需额外传参。生成的文件里必填与常用字段处于启用状态，其余可选字段以注释形式给出完整结构——取消注释并填值即可启用。
@@ -15,7 +16,7 @@ CLI 在解析前会先加载项目目录下的 `.env`，因此把取值写入 `.
 
 ## 完整示例
 
-```yaml .agentkit/agentkit.yaml
+```yaml .agentkit/agentkit.yaml lines
 # agentkit.yaml — AgentKit deploy configuration (fully yaml-driven).
 #
 # `agentkit deploy` reads everything from this file — no flags required.
@@ -184,7 +185,7 @@ infrastructure:
 
 `envs` 声明注入运行时的环境变量。为避免把密钥写进仓库，值用 `${VAR}` 引用部署环境（语法见本页开头），由 CLI 在部署时解析后注入运行时。
 
-```yaml
+```yaml lines
 envs:
   MODEL_AGENT_API_KEY: ${MODEL_AGENT_API_KEY:?set MODEL_AGENT_API_KEY in your env}
   LOG_LEVEL: ${LOG_LEVEL:-info}

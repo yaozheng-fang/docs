@@ -1,5 +1,6 @@
 ---
 title: "鉴权与登录"
+en_link: "/productions/agentkit-cli/archives/0.52.7/en/commands/auth"
 ---
 
 `auth` 命令组用于 SSO 鉴权：通过浏览器登录并存储短时 STS 凭据或仅保存用户 OIDC 会话、清除会话、查看当前身份、管理登录配置，以及为组织准备 CLI SSO 登录资源。`login`、`logout`、`whoami` 同时提供为顶层命令（如 `agentkit login`）。
@@ -16,7 +17,7 @@ title: "鉴权与登录"
 | `--identity-only` | 只保存用户 OIDC 会话，不执行 STS 角色交换。 | `false` |
 | `--no-open` | 不打开浏览器，仅打印登录 URL（用于无头环境/SSH） | `false` |
 
-```bash
+```bash lines
 agentkit auth login
 agentkit auth login --identity-only <sso-address>
 ```
@@ -39,7 +40,7 @@ agentkit auth login --identity-only <sso-address>
 | `scope` | OAuth scope 列表，必须包含 `openid`。 | `openid profile email offline_access` |
 | `shared_harnesses` | 可选的共享 Harness 别名映射，供 [`chat`](/productions/agentkit-cli/preview/zh/commands/chat) 解析 Runtime ID 与 HTTPS endpoint。 | — |
 
-```bash
+```bash lines
 agentkit auth login https://login.example.com/team-a
 agentkit auth login --identity-only ./local-discovery.json
 ```
@@ -59,7 +60,7 @@ agentkit auth login --identity-only ./local-discovery.json
 | `-p, --profile <name>` | SSO 配置名称 | 当前活跃配置 |
 | `--all` | 清除所有配置的会话 | `false` |
 
-```bash
+```bash lines
 agentkit auth logout
 ```
 
@@ -71,7 +72,7 @@ agentkit auth logout
 | --- | --- | --- |
 | `-p, --profile <name>` | SSO 配置名称 | 当前活跃配置 |
 
-```bash
+```bash lines
 agentkit auth whoami
 ```
 
@@ -89,7 +90,7 @@ agentkit auth whoami
 | `--region <region>` | 区域 | `cn-beijing` |
 | `--identity-only` | 保存无需 STS 角色的 OIDC-only profile。 | `false` |
 
-```bash
+```bash lines
 agentkit auth profile set my-profile \
   --issuer https://example.com \
   --client-id abc123 \
@@ -104,7 +105,7 @@ agentkit auth profile set my-profile \
 
 该命令不接受任何参数或选项。
 
-```bash
+```bash lines
 agentkit auth profile list
 ```
 
@@ -116,7 +117,7 @@ agentkit auth profile list
 | --- | --- | --- |
 | `[name]` | 配置名称 | 当前活跃配置 |
 
-```bash
+```bash lines
 agentkit auth profile show my-profile
 ```
 
@@ -133,7 +134,7 @@ agentkit auth profile show my-profile
 | `--data-plane` | 同时检查凭证托管前置条件 | `true` |
 | `--no-data-plane` | 跳过凭证托管前置条件检查 | — |
 
-```bash
+```bash lines
 agentkit auth admin doctor --account <account-id> --region cn-beijing
 ```
 
@@ -151,7 +152,7 @@ agentkit auth admin doctor --account <account-id> --region cn-beijing
 | `--account <account>` | 预期的账号 ID；当前凭证不属于该账号时拒绝继续 | — |
 | `--region <region>` | 云区域 | 当前云厂商的默认区域 |
 
-```bash
+```bash lines
 agentkit auth admin create-userpool --name agentkit-cli-pool --account <account-id>
 ```
 
@@ -169,7 +170,7 @@ agentkit auth admin create-userpool --name agentkit-cli-pool --account <account-
 | `--account <account>` | 预期的账号 ID；当前凭证不属于该账号时拒绝继续 | — |
 | `--region <region>` | 云区域 | 当前云厂商的默认区域 |
 
-```bash
+```bash lines
 agentkit auth admin provision --user-pool <user-pool-id> --account <account-id>
 ```
 
@@ -197,7 +198,7 @@ agentkit auth admin provision --user-pool <user-pool-id> --account <account-id>
 | `--provider-name <name>` | IAM OIDC provider 名称 | CLI 内置名称 |
 | `--role-name <name>` | STS 角色名称 | CLI 内置名称 |
 
-```bash
+```bash lines
 # 交互配置；敏感的上游身份凭证可在隐藏输入提示中填写
 agentkit auth admin sso-setup --account <account-id> --region cn-beijing
 
@@ -232,7 +233,7 @@ agentkit auth admin sso-setup --yes \
 | `--role-trn <trn>` | 已有目标账号 STS role TRN；仅发布模式必填，且必须属于当前鉴权账号。 | — |
 | `--provider-trn <trn>` | 已有目标账号 IAM OIDC provider TRN；仅发布模式必填，且必须属于当前鉴权账号。 | — |
 
-```bash
+```bash lines
 agentkit auth admin publish \
   --user-pool <user-pool-id> \
   --bucket <discovery-bucket> \

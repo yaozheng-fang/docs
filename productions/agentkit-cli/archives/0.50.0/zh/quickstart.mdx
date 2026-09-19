@@ -1,5 +1,6 @@
 ---
 title: "快速开始"
+en_link: "/productions/agentkit-cli/archives/0.50.0/en/quickstart"
 ---
 
 ## 安装
@@ -8,12 +9,12 @@ title: "快速开始"
 
 <Tabs>
   <Tab title="wget">
-    ```bash
+    ```bash lines
     wget -qO- https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
     ```
   </Tab>
   <Tab title="curl">
-    ```bash
+    ```bash lines
     curl -fsSL https://agentkit-cli.tos-cn-beijing.volces.com/install.sh | sh
     ```
   </Tab>
@@ -21,7 +22,7 @@ title: "快速开始"
 
 安装完成后验证：
 
-```bash
+```bash lines
 agentkit --help
 ```
 
@@ -37,7 +38,7 @@ CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
   <Tab title="AK/SK">
     在环境变量或本地 `.env`（已被 git 忽略）中设置：
 
-    ```bash
+    ```bash lines
     VOLCENGINE_ACCESS_KEY=...
     VOLCENGINE_SECRET_KEY=...
     VOLCENGINE_REGION=cn-beijing   # 可选，默认 cn-beijing
@@ -46,7 +47,7 @@ CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
   <Tab title="SSO">
     浏览器登录，存储短期 STS 凭证。
 
-    ```bash
+    ```bash lines
     agentkit login <sso-address>
     agentkit whoami
     ```
@@ -61,18 +62,18 @@ CLI 会对每一次 Volcengine OpenAPI 请求签名，凭证二选一：
 
 <Steps>
   <Step title="脚手架项目">
-    ```bash
+    ```bash lines
     agentkit init my-agent -L python -t basic-agent
     cd my-agent
     ```
   </Step>
   <Step title="构建并部署">
-    ```bash
+    ```bash lines
     agentkit deploy --name my-agent
     ```
   </Step>
   <Step title="调用运行时">
-    ```bash
+    ```bash lines
     agentkit invoke my-agent -m "hello"
     ```
   </Step>

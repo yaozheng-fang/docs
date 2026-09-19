@@ -1,5 +1,6 @@
 ---
 title: "Manage platform and local skills"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/skill"
 ---
 
 `skill` manages skills and spaces on AgentKit. `skills` generates wrappers, uploads and downloads packages, and publishes paired real and secure skills
@@ -29,7 +30,7 @@ List skills.
 | `-p, --project <name>` | Project name | default |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill list
 ```
 
@@ -43,7 +44,7 @@ Show a skill's details.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill show sk-xxxxxxxx
 ```
 
@@ -57,7 +58,7 @@ List a skill's versions.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill versions sk-xxxxxxxx
 ```
 
@@ -70,7 +71,7 @@ List skill spaces.
 | `-r, --region <region>` | Volcengine region | None |
 | `--json` | Output raw JSON | `false` |
 
-```bash
+```bash lines
 agentkit skill spaces
 ```
 
@@ -84,7 +85,7 @@ Delete a skill.
 | `-r, --region <region>` | Volcengine region | None |
 | `-y, --yes` | Skip the confirmation prompt | `false` |
 
-```bash
+```bash lines
 agentkit skill delete sk-xxxxxxxx --yes
 ```
 
@@ -99,7 +100,7 @@ Generate secure Skill wrappers in bulk from a local skills directory. The source
 | `--force` | Overwrite existing generated files. | `false` |
 | `--json` | Output raw JSON. | `false` |
 
-```bash
+```bash lines
 agentkit skills secure ./skills
 
 agentkit skills secure ./skills --output ./skills-secure --force
@@ -128,7 +129,7 @@ Uploading sends skill instructions, scripts, and resources to the destination an
 | `--dry-run` | Validate and show the upload plan without sending files | `false` |
 | `--json` | Output JSON results | `false` |
 
-```bash
+```bash lines
 agentkit skills upload ./skills --source agentkit --skill-space-id ss-example --dry-run
 agentkit skills upload ./skills --source agentkit --skill-space-id ss-example
 agentkit skills upload ./skills/report --source ark_ma
@@ -156,7 +157,7 @@ Extraction overwrites files with matching names without confirmation. Use a new 
 | `-p, --project <name>` | AgentKit project | — |
 | `--json` | Output JSON results | `false` |
 
-```bash
+```bash lines
 agentkit skills download s-example --output ./downloaded-skill --source agentkit
 ```
 
@@ -179,7 +180,7 @@ Extraction overwrites files with matching names without confirmation. Use a new 
 | `-p, --project <name>` | AgentKit project | — |
 | `--json` | Output JSON results | `false` |
 
-```bash
+```bash lines
 agentkit skills download-space ss-example --output ./downloaded-space --source agentkit
 ```
 
@@ -205,7 +206,7 @@ Publication creates two spaces and uploads packages. The real space contains the
 | `-y, --yes` | Skip publication confirmation; required non-interactively | `false` |
 | `--json` | Output JSON results | `false` |
 
-```bash
+```bash lines
 agentkit skills publish-secure ./skills --dry-run
 agentkit skills publish-secure ./skills --space-name-prefix reports --output-dir ./secure-skills --yes
 ```

@@ -1,5 +1,6 @@
 ---
 title: "Use PostgreSQL storage"
+zh_link: "/productions/veadk/archives/1.1.7/zh/components/session/postgresql"
 ---
 
 The `postgresql` backend stores sessions in a PostgreSQL database. Multiple agent instances can connect to the same database for shared, distributed persistence.
@@ -13,7 +14,7 @@ The `postgresql` backend stores sessions in a PostgreSQL database. Multiple agen
 
 Provide connection details via `config.yaml` (or the matching environment variables) — never hard-code the password.
 
-```python
+```python lines
 from veadk import Agent, Runner
 from veadk.memory.short_term_memory import ShortTermMemory
 
@@ -25,7 +26,7 @@ runner = Runner(agent=agent, short_term_memory=stm, app_name="memory_demo")
 
 To forward SQLAlchemy driver args such as connection pooling, use `db_kwargs`:
 
-```python
+```python lines
 stm = ShortTermMemory(
     backend="postgresql",
     db_kwargs={"pool_size": 10, "pool_recycle": 3600},
@@ -34,7 +35,7 @@ stm = ShortTermMemory(
 
 You can also inject a `PostgreSqlConfig` directly through `backend_configs` to override the environment variables:
 
-```python
+```python lines
 import os
 
 from veadk.configs.database_configs import PostgreSqlConfig
@@ -71,7 +72,7 @@ stm = ShortTermMemory(
 
 The `PostgreSqlConfig` config class uses the env prefix `DATABASE_POSTGRESQL_`.
 
-```yaml config.yaml
+```yaml config.yaml lines
 database:
   postgresql:
     host:       # host or IP

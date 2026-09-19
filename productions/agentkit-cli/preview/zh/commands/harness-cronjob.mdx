@@ -1,5 +1,6 @@
 ---
 title: "Harness 定时任务"
+en_link: "/productions/agentkit-cli/preview/en/commands/harness-cronjob"
 ---
 
 定时任务在 Harness 内按计划执行消息，将任务、执行状态和结果保存在 TOS。适合周期报告、巡检和指定时间执行的工作
@@ -12,11 +13,11 @@ title: "Harness 定时任务"
 
 先准备已有 TOS 桶，在包含 `harness.yaml` 的项目目录运行
 
-```bash
+```bash lines
 agentkit harness deploy --cronjob --cronjob-tos-bucket my-harness-jobs --region cn-beijing
 ```
 
-```yaml title="harness.yaml"
+```yaml title="harness.yaml" lines
 cronjob:
   enabled: true
   tos_bucket: my-harness-jobs
@@ -76,7 +77,7 @@ BytePlus 使用 `cloud.provider: byteplus`、对应运行时区域和 TOS 桶；
 | `--idempotency-key <key>` | 创建请求的幂等键；重试时保持相同 | 随机 UUID |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob create my-harness --name morning-report --cron "0 9 * * 1-5" --timezone Asia/Shanghai --prompt "Summarize yesterday’s progress" --idempotency-key morning-report-v1
 ```
 
@@ -98,7 +99,7 @@ agentkit harness cronjob create my-harness --name morning-report --cron "0 9 * *
 | `--cursor <cursor>` | 上一页返回的 next_cursor | — |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob list my-harness
 ```
 
@@ -118,7 +119,7 @@ agentkit harness cronjob list my-harness
 | `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob status my-harness
 ```
 
@@ -137,7 +138,7 @@ agentkit harness cronjob status my-harness
 | `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob get my-harness "$CRONJOB_ID"
 ```
 
@@ -156,7 +157,7 @@ agentkit harness cronjob get my-harness "$CRONJOB_ID"
 | `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob pause my-harness "$CRONJOB_ID"
 ```
 
@@ -175,7 +176,7 @@ agentkit harness cronjob pause my-harness "$CRONJOB_ID"
 | `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob resume my-harness "$CRONJOB_ID"
 ```
 
@@ -196,7 +197,7 @@ agentkit harness cronjob resume my-harness "$CRONJOB_ID"
 | `--cursor <cursor>` | 上一页返回的 next_cursor | — |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob runs my-harness "$CRONJOB_ID"
 ```
 
@@ -218,7 +219,7 @@ agentkit harness cronjob runs my-harness "$CRONJOB_ID"
 | `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob result my-harness "$CRONJOB_ID" "$RUN_ID"
 ```
 
@@ -238,7 +239,7 @@ agentkit harness cronjob result my-harness "$CRONJOB_ID" "$RUN_ID"
 | `--json` | 输出 JSON；当前所有定时任务子命令均返回 JSON | `false` |
 | `-h, --help` | 显示帮助 | — |
 
-```bash
+```bash lines
 agentkit harness cronjob cancel my-harness "$CRONJOB_ID" "$RUN_ID"
 ```
 

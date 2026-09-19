@@ -1,5 +1,6 @@
 ---
 title: "TOS ContextBucket"
+zh_link: "/productions/veadk/archives/1.1.7/zh/components/memory/tos-context"
 ---
 
 `tos_context` is a VeADK long-term memory backend that stores and retrieves memories with the ContextBucket capability of Volcengine [TOS](https://www.volcengine.com/product/TOS). Memory inference and retrieval run in the managed service, so you do not need to deploy a vector database or configure an embedding model.
@@ -27,7 +28,7 @@ ContextBucket availability, control endpoints, and IAM permissions are provided 
 
 ContextBucket requires TOS SDK `tos>=2.9.4b1`. VeADK's base dependencies also permit earlier TOS SDK releases, so upgrade the SDK separately in the VeADK environment:
 
-```bash
+```bash lines
 python -m pip install --upgrade "tos>=2.9.4b1"
 ```
 
@@ -35,7 +36,7 @@ The version constraint explicitly includes the `2.9.4b1` pre-release, so pip doe
 
 Verify the installed version with:
 
-```bash
+```bash lines
 python -c "from importlib.metadata import version; print(version('tos'))"
 ```
 
@@ -43,7 +44,7 @@ python -c "from importlib.metadata import version; print(version('tos'))"
 
 The following example supplies credentials through environment variables so that AK/SK values are not stored in code or configuration files:
 
-```bash
+```bash lines
 export VOLCENGINE_ACCESS_KEY="your-access-key"
 export VOLCENGINE_SECRET_KEY="your-secret-key"
 export DATABASE_TOS_CONTEXT_ACCOUNT_ID="your-account-id"
@@ -62,7 +63,7 @@ The first initialization checks for and may create a ContextBucket. The first sa
 
 The following example saves one session and then retrieves the same user's long-term memory from a new session. Before running it, configure model credentials as described in [Model configuration](/productions/veadk/preview/en/components/agent/model).
 
-```python
+```python lines
 import asyncio
 
 from veadk import Agent, Runner
@@ -117,7 +118,7 @@ After a successful run, the second session can retrieve the peanut allergy saved
 
 In addition to environment variables, you can use `backend_config` for non-secret connection settings. The backend must ultimately receive a valid `index`; set it on the outer `LongTermMemory` object and VeADK fills it into the backend configuration.
 
-```python
+```python lines
 from veadk.configs.database_configs import TOSContextBucketConfig
 from veadk.memory.long_term_memory import LongTermMemory
 

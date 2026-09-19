@@ -1,5 +1,6 @@
 ---
 title: "Manage groups"
+zh_link: "/productions/agentkit-cli/preview/zh/commands/group"
 ---
 
 Create, list, update descriptions for, and delete groups in an existing user pool
@@ -30,7 +31,7 @@ Create a group in a user pool
 | `--json` | output JSON result instead of a human-readable summary | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit group create --user-pool-id pool-example --name reviewers --description "Review team"
 ```
 
@@ -47,7 +48,7 @@ Update a group's description in a user pool (the group name is immutable; descri
 | `--json` | output a JSON summary instead of a human-readable line | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit group update --user-pool-id pool-example --group-id group-example --description "Release reviewers"
 ```
 
@@ -66,7 +67,7 @@ List groups in a user pool (exact-match filters; token-based pagination)
 | `--json` | output JSON results instead of a table | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit group list --user-pool-id pool-example --max-results 20 --json
 ```
 
@@ -89,6 +90,6 @@ Deletion is irreversible. Check the user pool and resource IDs. Interactive term
 | `--json` | output a JSON summary instead of a human-readable line | `false` |
 | `-h, --help` | Show command help | — |
 
-```bash
+```bash lines
 agentkit group delete --user-pool-id pool-example --group-id group-example --yes
 ```

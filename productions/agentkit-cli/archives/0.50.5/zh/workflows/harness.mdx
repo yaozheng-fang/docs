@@ -1,5 +1,6 @@
 ---
 title: "使用 Harness"
+en_link: "/productions/agentkit-cli/archives/0.50.5/en/workflows/harness"
 ---
 
 harness 路径适合无需自定义代码的场景：智能体的模型、工具、知识库、记忆与提示词全部写在一个 `harness.yaml` 里，由 CLI 直接构建并部署为运行时。整个闭环只围绕一个文件展开——初始化、配置、部署、调用，再回到配置持续迭代。
@@ -16,7 +17,7 @@ harness 路径适合无需自定义代码的场景：智能体的模型、工具
   <Step title="初始化 harness">
     创建一个 harness 目录，其中包含 `harness.yaml` 与 `.env.example`。
 
-    ```bash
+    ```bash lines
     agentkit harness init my-harness
     cd my-harness
     ```
@@ -24,7 +25,7 @@ harness 路径适合无需自定义代码的场景：智能体的模型、工具
   <Step title="配置智能体">
     用 `harness set` 逐项写入字段。仅显式传入的标志会被修改，因此可以分多次补充配置。
 
-    ```bash
+    ```bash lines
     agentkit harness set \
       --name my-harness \
       --model-name doubao-seed-1-6-250615 \
@@ -39,21 +40,21 @@ harness 路径适合无需自定义代码的场景：智能体的模型、工具
   <Step title="构建并部署">
     根据 `harness.yaml` 在云端构建镜像，并创建或更新运行时。
 
-    ```bash
+    ```bash lines
     agentkit harness deploy --project default --region cn-beijing
     ```
   </Step>
   <Step title="调用运行时">
     按名称调用刚部署的运行时，CLI 会自动解析端点与鉴权。调用属于数据面操作，两种凭证均可使用：AK/SK，或先经 `agentkit login` 完成 SSO 登录后得到的 STS 凭证。
 
-    ```bash
+    ```bash lines
     agentkit invoke my-harness -m "你好，介绍一下你自己"
     ```
   </Step>
   <Step title="迭代">
     修改配置后重新部署即可发布新版本；运行时行为异常时，查看实例日志定位问题。
 
-    ```bash
+    ```bash lines
     agentkit harness set --name my-harness --system-prompt "更换后的指令。"
     agentkit harness deploy
     agentkit runtime logs my-harness --limit 200
@@ -67,7 +68,7 @@ harness 路径适合无需自定义代码的场景：智能体的模型、工具
 删除 Runtime 不可恢复，并会停止线上调用。执行前确认名称、项目和地域，保留需要的配置、日志与业务数据。
 </Warning>
 
-```bash
+```bash lines
 agentkit runtime delete my-harness -y
 ```
 

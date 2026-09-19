@@ -1,5 +1,6 @@
 ---
 title: "Use OpenSearch storage"
+zh_link: "/productions/veadk/archives/1.0.9/zh/components/knowledge/opensearch"
 ---
 
 The `opensearch` backend uses OpenSearch as the vector store. Knowledge text is embedded by an embedding model, written to OpenSearch via LlamaIndex, and retrieved by similarity.
@@ -11,13 +12,13 @@ The `opensearch` backend uses OpenSearch as the vector store. Knowledge text is 
 
 ## Dependencies
 
-```bash
+```bash lines
 pip install "veadk-python[extensions]"
 ```
 
 ## Usage
 
-```python
+```python lines
 from veadk import Agent
 from veadk.knowledgebase import KnowledgeBase
 
@@ -34,7 +35,7 @@ agent = Agent(
 
 You can also pass connection and embedding config explicitly via `backend_config`:
 
-```python
+```python lines
 from veadk.knowledgebase import KnowledgeBase
 from veadk.configs.database_configs import OpensearchConfig
 
@@ -94,7 +95,7 @@ kb = KnowledgeBase(
 
 ## Environment variables
 
-```bash
+```bash lines
 # OpenSearch connection
 export DATABASE_OPENSEARCH_HOST="localhost"
 export DATABASE_OPENSEARCH_PORT=9200

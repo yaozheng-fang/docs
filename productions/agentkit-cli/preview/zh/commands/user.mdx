@@ -1,5 +1,6 @@
 ---
 title: "用户管理"
+en_link: "/productions/agentkit-cli/preview/en/commands/user"
 ---
 
 管理已有用户池中的用户，支持批量创建、精确查询、更新和删除
@@ -38,7 +39,7 @@ title: "用户管理"
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit user create --user-pool-id pool-example --preferred-username alice --name Alice --email alice@example.com
 ```
 
@@ -58,7 +59,7 @@ agentkit user create --user-pool-id pool-example --preferred-username alice --na
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit user update --user-pool-id pool-example --user-id user-example --name "Alice Chen"
 ```
 
@@ -79,7 +80,7 @@ agentkit user update --user-pool-id pool-example --user-id user-example --name "
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit user delete --user-pool-id pool-example --user-id user-example --yes
 ```
 
@@ -99,7 +100,7 @@ agentkit user delete --user-pool-id pool-example --user-id user-example --yes
 | `--json` | 输出 JSON 结果 | `false` |
 | `-h, --help` | 显示命令帮助 | — |
 
-```bash
+```bash lines
 agentkit user list --user-pool-id pool-example --max-results 20 --json
 ```
 
@@ -109,7 +110,7 @@ agentkit user list --user-pool-id pool-example --max-results 20 --json
 
 创建 `users.json`，可使用数组或包含 `users` 数组的对象。每个用户必须有 `preferredUsername`，其余字段可省略
 
-```json title="users.json"
+```json title="users.json" lines
 {
   "users": [
     {"preferredUsername": "alice", "name": "Alice", "email": "alice@example.com"},
@@ -118,7 +119,7 @@ agentkit user list --user-pool-id pool-example --max-results 20 --json
 }
 ```
 
-```bash
+```bash lines
 agentkit user create --user-pool-id pool-example --file users.json --json
 ```
 
