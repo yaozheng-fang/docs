@@ -9,6 +9,8 @@ en_link: "/productions/veadk/preview/en/changelog"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 评测 | 评测集和评测案例改为存储在 Studio 持久化存储（TOS）中，不再使用 AgentKit 评测接口。对话中的赞/踩反馈和自动评测案例使用相同的 TOS 记录；评测数据按 Runtime ID 存储，不依赖应用名、项目或地域。评价反馈支持 BytePlus 部署（需配置 TOS）。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#自动评测与优化反馈) |
+| Studio 部署 | 创建新 Runtime 时实例数上限和下限在创建阶段直接设置，不再在创建后单独更新；部署完成后等待所配置的实例数就绪再报告部署成功，避免首次对话落在临时启动实例上。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#配置部署参数) |
 | Studio 部署 | `veadk studio deploy` 和 `veadk studio update` 在终端实时显示 VeFaaS 发布进度：代码上传阶段显示进度条（百分比、速率和预计剩余时间），发布阶段显示发布状态、版本号、构建阶段（安装依赖、构建镜像、发布服务、启动服务）和已用时；构建日志在可用时实时输出并抑制重复行，静默期间每 15 秒输出一次阶段进度；日志在输出前完成凭据脱敏。定时任务调度器的扫描器与执行器 Function 分别独立显示部署进度与构建日志。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#部署到-vefaas) |
 | Studio 部署 | Studio 本身的新部署默认使用 8 vCPU、16 GB 内存和 1 个实例，火山引擎与 BytePlus 保持一致；不改变工作台内创建的智能体 Runtime 的项目配置。 | [Studio 部署](/productions/veadk/preview/zh/components/frontend/studio#部署到-vefaas) |
 | Studio 迁移 | 迁移工作区改为单栏布局，移除侧边导航。首页上方为上传入口，下方以表格展示最近迁移（默认 5 条，可就地展开），已过期的迁移环境仅支持查看。「已迁移项目」移至顶部导航栏入口。返回首页或打开项目库不会中断正在进行的迁移；迁移能力加载与会话列表加载失败时分别独立提示，上传入口保持可用，每种失败均可单独重试。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
