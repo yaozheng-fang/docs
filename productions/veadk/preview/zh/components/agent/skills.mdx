@@ -152,6 +152,27 @@ if __name__ == "__main__":
 
 云端技能中非标准的 frontmatter 字段，例如 `allowed-tools`、`triggers` 和 `requires`，会保存在 `metadata` 中。保留这些字段不代表自动执行其权限或依赖声明
 
+### 技能空间策略
+
+设置 `SKILL_SPACE_POLICY` 环境变量可以按技能 ID 筛选从云端技能空间加载的技能。该变量为 JSON 对象，包含以下字段：
+
+| 字段 | 类型 | 说明 |
+| :--- | :--- | :--- |
+| `mode` | `"allow" \| "deny"` | 筛选模式 |
+| `ids` | `list[str]` | 参与筛选的技能 ID 列表 |
+
+`mode` 为 `allow` 时仅加载 ID 在列表中的技能；`mode` 为 `deny` 时排除 ID 在列表中的技能。未设置该变量时加载全部技能
+
+```bash lines
+export SKILL_SPACE_POLICY='{"mode": "allow", "ids": ["skill-1", "skill-2"]}'
+```
+
+<Note>
+策略值最大为 8192 字节。设置格式错误的策略时不会加载任何云端技能，以避免因疏忽暴露不受限的技能集合
+</Note>
+
+设置 `SKILL_SPACE_POLICY` 后，VeADK 会自动将其转发到远端沙箱会话，使沙箱中的技能加载遵循相同的筛选规则。使用 `execute_skills`、`invoke_skill`、`poll_skill` 或 `run_sandbox_agent` 时无需手动传递策略，详见[代码沙箱](/productions/veadk/preview/zh/components/tools/code-sandbox)
+
 ## Harness 技能中心
 
 先按 [Harness 服务部署](/productions/veadk/preview/zh/deploy/harness) 创建项目并配置部署凭证，再将下方示例名称和 ID 替换为可访问的技能。普通名称或 slug 表示 Skill Hub 技能，`space:` 前缀表示 AgentKit 技能空间

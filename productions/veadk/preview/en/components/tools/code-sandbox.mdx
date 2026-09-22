@@ -267,6 +267,10 @@ if __name__ == "__main__":
   Values in `extra_env_vars` are passed to the remote sandbox process. Do not put long-lived credentials in source code; use the sandbox's supported credential-hosting mechanism when credentials are required.
 </Warning>
 
+<Note>
+When `SKILL_SPACE_POLICY` is set, VeADK automatically forwards it to sandbox sessions created by `execute_skills`, `invoke_skill`, `poll_skill`, and `run_sandbox_agent`, so skill loading inside the sandbox follows the same filter as the local environment. No manual pass-through via `extra_env_vars` is needed. See [Skills](/productions/veadk/preview/en/components/agent/skills#skill-space-policy)
+</Note>
+
 ## Skill sandbox execution
 
 `execute_skills` runs a workflow in the skills sandbox through the A2A protocol. It sends a non-blocking `message/send` request and then polls the task status at exponentially increasing intervals until the task reaches a terminal state or the timeout expires. The maximum execution time is 1800 seconds (30 minutes).

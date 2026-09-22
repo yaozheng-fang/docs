@@ -32,6 +32,7 @@ en_link: "/productions/veadk/preview/en/changelog"
 | 前端组件预览 | 组件预览页按 Foundation、Base、Block、AI App、Node、Layout 分组重新组织，组内按组件名称排序；Foundation 下新增前端开发规范页面；每个组件页面提供本页目录，支持通过 `#组件/小节` 链接跳转到变种子节和参数区。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend#组件预览) |
 | 前端对话 | 长时任务进度组件（LongRunningState）重新设计为左对齐的单栏布局，依次展示当前进度名称、循环加载条和内容区；进度名称切换时向上渐隐再滑入，完成后停止动画并保留结果，支持减少动态效果偏好。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
 | 前端对话 | 对话流组件（ConversationFlow）新追加的步骤先展开所需空间再渐显内容，状态更新和展开历史详情时不重复进场；减少动态效果模式下直接显示。 | [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) |
+| 技能 | 新增 `SKILL_SPACE_POLICY` 环境变量，支持按技能 ID 筛选从云端技能空间加载的技能：`mode` 为 `allow` 时仅加载指定技能，`deny` 时排除指定技能；策略格式错误时禁用全部云端技能。设置后自动转发到 `execute_skills`、`invoke_skill`、`poll_skill` 和 `run_sandbox_agent` 的沙箱会话。 | [技能](/productions/veadk/preview/zh/components/agent/skills#技能空间策略) |
 | 云端部署 | CloudApp 与已部署智能体端点的 A2A 通信调整 HTTP 代理选择，与 VeFaaS SDK 对齐：根据端点协议读取对应环境变量（`HTTPS_PROXY`/`HTTP_PROXY`，大写优先），不再使用 `ALL_PROXY`、`NO_PROXY` 或系统代理设置。此前依赖 `ALL_PROXY` 的环境需改用与端点协议匹配的代理变量。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#部署网络模式) |
 
 ## 1.1.13

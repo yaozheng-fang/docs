@@ -266,6 +266,10 @@ if __name__ == "__main__":
   `extra_env_vars` 的值会传入远端沙箱进程。不要在代码中写入长期凭证；需要凭证时，使用沙箱支持的凭据托管方式。
 </Warning>
 
+<Note>
+设置 `SKILL_SPACE_POLICY` 环境变量后，VeADK 会自动将其转发到 `execute_skills`、`invoke_skill`、`poll_skill` 和 `run_sandbox_agent` 创建的沙箱会话，使沙箱中的技能加载遵循与本地相同的筛选规则。无需通过 `extra_env_vars` 手动传递。详见[技能](/productions/veadk/preview/zh/components/agent/skills#技能空间策略)
+</Note>
+
 ## 技能沙箱执行
 
 `execute_skills` 通过 A2A 协议在技能沙箱中执行工作流。调用时发送非阻塞的 `message/send` 请求，随后按指数递增的间隔轮询任务状态，直到任务达到终态或超时。支持的最长执行时间为 1800 秒（30 分钟）。
