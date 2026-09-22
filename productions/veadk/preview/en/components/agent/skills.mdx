@@ -152,6 +152,27 @@ Creating a registry does not download every skill. `search_skills` fetches all s
 
 Nonstandard cloud frontmatter fields such as `allowed-tools`, `triggers`, and `requires` are retained in `metadata`. Retention does not automatically enforce their permission or dependency declarations
 
+### Skill space policy
+
+Set the `SKILL_SPACE_POLICY` environment variable to filter which skills are loaded from a cloud skill space by skill ID. The variable is a JSON object with the following fields:
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `mode` | `"allow" \| "deny"` | Filter mode |
+| `ids` | `list[str]` | Skill IDs participating in the filter |
+
+When `mode` is `allow`, only skills whose IDs are in the list are loaded. When `mode` is `deny`, skills whose IDs are in the list are excluded. When the variable is not set, all skills are loaded
+
+```bash lines
+export SKILL_SPACE_POLICY='{"mode": "allow", "ids": ["skill-1", "skill-2"]}'
+```
+
+<Note>
+The policy value must not exceed 8192 bytes. A malformed policy disables all cloud skill loading to avoid accidentally exposing an unrestricted set of skills
+</Note>
+
+When `SKILL_SPACE_POLICY` is set, VeADK automatically forwards it to remote sandbox sessions so that skill loading inside the sandbox follows the same filter. No manual pass-through is needed when using `execute_skills`, `invoke_skill`, `poll_skill`, or `run_sandbox_agent`; see [Code sandboxes](/productions/veadk/preview/en/components/tools/code-sandbox)
+
 ## Harness skills center
 
 Create a project and configure deployment credentials using [Harness deployment](/productions/veadk/preview/en/deploy/harness). Replace the example names and IDs with accessible skills. Plain names or slugs identify Skill Hub skills; the `space:` prefix identifies an AgentKit skill space
