@@ -1255,6 +1255,10 @@ A private VPC runtime does not return a public data-plane address after deployme
   After a deployment completes, Studio automatically connects to the newly created runtime. Studio retries probing the runtime endpoint for up to 60 seconds before timing out. If the runtime deployed successfully but Studio still cannot reach it after the timeout (the gateway domain may still be propagating, or the current network or DNS cannot access the runtime), the deployment task is marked "Deployed, not yet connected" and the progress card with its message stays visible. You can retry the connection from Manage Agents.
 </Note>
 
+<Note>
+  When CloudApp communicates with a deployed agent endpoint over the A2A protocol, HTTP proxy selection follows the VeFaaS SDK convention: it reads the environment variable matching the endpoint URL scheme (`HTTPS_PROXY` or `HTTP_PROXY`, uppercase preferred over lowercase) and does not use `ALL_PROXY`, `NO_PROXY`, or system proxy settings. To reach a deployed agent through a proxy, set the proxy environment variable matching the endpoint scheme.
+</Note>
+
 ## Manage agents
 
 Manage Agents lists the AgentKit Runtimes visible to the current user. Visibility is determined by the signed-in account role: `admin` sees all Runtimes, while `developer` and regular users see their own Runtimes and agents approved as enterprise-visible. The list defaults to the Beijing region and can be switched to Shanghai. When the visible scope includes all Runtimes, Runtimes created by the current user are marked "Created by me." Each agent card shows its visibility status (private or enterprise-visible) and review status (pending, approved, returned, withdrawn). The list exposes:
