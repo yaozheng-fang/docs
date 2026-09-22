@@ -84,6 +84,10 @@ Default tools are `list_skills`, `load_skill`, `load_skill_resource`, and `run_s
 `UnsafeLocalCodeExecutor` runs skill code in the current process environment without sandbox isolation. Enable it only for reviewed, trusted skills: code can access the process's files, network, and credentials. Use a restricted container or remote sandbox when isolation is required
 </Warning>
 
+<Note>
+When a shell script times out or is cancelled, the entire process group (including child processes spawned by the script) is terminated with up to 5 seconds for cleanup, preventing orphaned processes
+</Note>
+
 For a skill with executable `scripts/`, replace the toolset and agent configuration after loading `skill` above:
 
 ```python  lines
