@@ -35,7 +35,7 @@ Use the following commands in a separate virtual environment to reproduce this P
 ```bash
 git clone https://github.com/volcengine/veadk-python.git veadk-preview
 cd veadk-preview
-git checkout adcdfdcc6a5a213b249a8caad435b939c01df7f6
+git checkout 763865db9fb3b643e9fc0f04e2e0790ea5a4fc65
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -737,7 +737,10 @@ The following frameworks are supported:
   Before deploying a migration artifact to AgentKit, the migration tool must confirm the artifact is deploy-ready to Runtime. If deploy readiness has not been confirmed, deployment is rejected with a message that the migration artifact has not been confirmed as deploy-ready to Runtime; retry after the migration completes.
 </Note>
 <Note>
-  During analysis and migration, the "Codex activity" panel renders Codex's progress in a structured form: analysis and migration plans show per-item completion status and progress, with the first incomplete plan step automatically marked as in progress; command execution, file updates, external tool calls, web searches, and sub-task coordination each display their input, output, and exit code or error details, and activity items that fail are automatically expanded to show error details. All activity content is redacted server-side before reaching the browser; keys, tokens, and other sensitive fields are removed.
+  During analysis and migration, the "Codex activity" panel renders Codex's progress in a structured form: analysis and migration plans show per-item completion status and progress, with the first incomplete plan step automatically marked as in progress; command execution, file updates, external tool calls, web searches, and sub-task coordination each display their input, output, and exit code or error details, and activity items that fail are automatically expanded to show error details. The panel header shows a live status label for the current migration phase (analyzing the project, running the migration, verifying the migration, packaging the migration, reviewing the delivery). Progress is pushed through a live event stream that reconnects automatically on connection loss and resumes the progress display. All activity content is redacted server-side before reaching the browser; keys, tokens, and other sensitive fields are removed.
+</Note>
+<Note>
+  When Codex needs user input during migration, the "Codex activity" panel shows the pending question. The user's answer continues the current step without restarting it. Pending questions support selecting preset options or entering a free-form answer.
 </Note>
 <Note>
   The migration composer includes a model selector next to the archive upload button, used to specify the model the Dev Sandbox Codex uses for migration analysis and conversion. The model list is fetched by the Studio server from Ark models activated under the current account, showing only models that the current cloud provider allows for intelligent development, with their display name, ID, vendor, and lifecycle status; the list supports search filtering. The default model comes from the migration capabilities; when none is configured, the first available model is selected. The list can be reloaded on load failure. Once a task is created, the model cannot be changed. The selected model's name, provider, and API base URL are injected into the migration session environment by the Studio server without sending model credentials to the browser.
@@ -930,7 +933,7 @@ The generated configuration follows these rules:
 - The root agent is preferably an LLM agent so it can reason and respond directly to the user. An orchestrator is used as the root only when strict workflow control is essential to the requested result, not merely because the requirement involves multiple tasks or steps.
 - Orchestrator agents (sequential, parallel, loop) only schedule sub-agents and do not carry a model, instruction, tools, memory, knowledge base, or tracing configuration.
 - LLM agents are always leaf nodes. Their name, description, instruction, model, and tools are populated automatically, and they cannot contain sub-agents.
-- Every generated LLM agent uses the `doubao-seed-2-1-pro-260628` model.
+- Every generated LLM agent uses the `doubao-seed-1-6-250615` model.
 - The iteration limit for orchestrator agents defaults to `3`; loop agents use the limit stated in the requirement.
 - All agent and custom-tool names are globally unique snake_case Python identifiers.
 - Tools are enabled only when the requirement needs them; review-only agents are not given media-generation tools.
@@ -2748,7 +2751,7 @@ Deployment also provisions a snapshot-enabled Studio Sandbox Tool concurrently a
 
 You can override the image with the `STUDIO_WORKSPACE_IMAGE` environment variable to specify an image accessible in the selected region. The launch command uses the image's built-in `/opt/gem/run.sh` and no longer injects editor patches. Volcengine defaults to Chinese and BytePlus defaults to English; model configuration follows the Studio configuration for the respective cloud environment. You can specify an existing persistent Tool via `--studio-sandbox-tool-id` (or the `STUDIO_WORKSPACE_TOOL_ID` environment variable); in that case the Tool is reused without creating or modifying its configuration. After deployment, the workspace is bound via the `STUDIO_WORKSPACE_TOOL_ID` environment variable, and the System info page displays the corresponding Tool ID.
 
-The model, endpoint, and candidate regions for sandbox Tools differ by cloud provider: Volcengine uses the `doubao-seed-2-1-pro-260628` model with `https://ark.cn-beijing.volces.com/api/v3`, and candidate regions `cn-beijing` and `cn-shanghai`; BytePlus uses the `dola-seed-2-1-turbo-260628` model with `https://ark.ap-southeast.bytepluses.com/api/v3`, and candidate region `ap-southeast-1`.
+The model, endpoint, and candidate regions for sandbox Tools differ by cloud provider: Volcengine uses the `doubao-seed-2-1-pro-260915` model with `https://ark.cn-beijing.volces.com/api/v3`, and candidate regions `cn-beijing` and `cn-shanghai`; BytePlus uses the `dola-seed-2-1-turbo-260628` model with `https://ark.ap-southeast.bytepluses.com/api/v3`, and candidate region `ap-southeast-1`.
 
 <Note>
   When creating sandbox Tools during deployment and updates, the CLI automatically retries transient errors such as rate limits, network failures, and temporary server errors. Concurrent Tool creations are staggered to avoid triggering rate limits. Each creation request carries an idempotency token so that retries do not create duplicate Tools. When Tool provisioning fails, error messages include the Tool ID and cloud service error details (error code, status code, and request ID) to help with troubleshooting.
