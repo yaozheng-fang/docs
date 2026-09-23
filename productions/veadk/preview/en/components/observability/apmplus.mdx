@@ -9,6 +9,10 @@ zh_link: "/productions/veadk/preview/zh/components/observability/apmplus"
 When content tracing is enabled, reasoning content in model output is labeled with the `reasoning` type to distinguish it from regular text, making it easier to inspect the reasoning process separately in APMPlus.
 </Note>
 
+<Note>
+Token usage metrics are recorded in three dimensions: `input`, `output`, and `cache_read`. The `cache_read` dimension represents cached input tokens and is a subset of `input`, not additional usage.
+</Note>
+
 ## When to use
 
 - You want unified trace observation for your agent on Volcengine APMPlus;

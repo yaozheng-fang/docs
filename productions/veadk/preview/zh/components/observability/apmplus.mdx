@@ -9,6 +9,10 @@ en_link: "/productions/veadk/preview/en/components/observability/apmplus"
 启用内容追踪时，模型输出中的推理内容以 `reasoning` 类型标注，与普通文本内容区分，便于在 APMPlus 中单独查看推理过程。
 </Note>
 
+<Note>
+token 用量指标按 `input`、`output` 和 `cache_read` 三个维度分别记录。`cache_read` 表示命中的缓存输入 token 数量，是 `input` 的子集而非额外用量。
+</Note>
+
 ## 何时使用
 
 - 需要在火山引擎 APMPlus 平台上统一观测智能体的调用链路；
