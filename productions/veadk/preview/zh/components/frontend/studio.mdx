@@ -3186,6 +3186,11 @@ veadk studio update --vefaas-app-name "veadk-studio"
   更新完成后，命令会将 VeFaaS 函数的最小实例数设置为 1，保留一个预热实例以避免首次访问冷启动。
 </Note>
 
+<Note>
+  使用 `--provider byteplus` 更新时，生成的依赖文件会在顶部添加 `--extra-index-url https://pypi.org/simple`，使 pip 在 BytePlus 默认包索引中找不到包时回退到 PyPI 公共源，避免因缺少包导致更新失败。
+</Note>
+
+
 | 选项 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- |
 | `--provider` | `volcengine` \| `byteplus` | `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER`，然后 `volcengine` | 已部署 Studio 的云服务商。未指定时依次读取 `AGENTKIT_CLOUD_PROVIDER` 与 `CLOUD_PROVIDER` 环境变量，均未设置时使用 `volcengine`；选择 `byteplus` 时使用 `BYTEPLUS_ACCESS_KEY`、`BYTEPLUS_SECRET_KEY` 和可选的 `BYTEPLUS_SESSION_TOKEN` 提供凭证。 |

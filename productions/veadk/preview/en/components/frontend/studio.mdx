@@ -3188,6 +3188,11 @@ The update also creates or updates the scheduled-task scheduler functions and co
   After the update, the command sets the VeFaaS function's minimum instance count to 1, keeping one warm instance to avoid a cold start on the first request.
 </Note>
 
+<Note>
+  When updating with `--provider byteplus`, the generated requirements file includes `--extra-index-url https://pypi.org/simple` at the top, allowing pip to fall back to the public PyPI index when packages are unavailable from the BytePlus default package index, preventing update failures caused by missing packages.
+</Note>
+
+
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `--provider` | `volcengine` \| `byteplus` | `AGENTKIT_CLOUD_PROVIDER`/`CLOUD_PROVIDER`, then `volcengine` | Cloud provider of the existing Studio deployment. Defaults to `AGENTKIT_CLOUD_PROVIDER` then `CLOUD_PROVIDER`, falling back to `volcengine` when neither is set; when `byteplus` is selected, credentials are read from `BYTEPLUS_ACCESS_KEY`, `BYTEPLUS_SECRET_KEY`, and the optional `BYTEPLUS_SESSION_TOKEN`. |
