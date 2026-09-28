@@ -125,7 +125,7 @@ kb.close()
 | `add_from_files` | `strict`、`reason`、`instruction`、`directly_upload_media`、`telemetry` | `false`、`""`、`""`、`true`、`false` | 控制单文件导入行为 |
 | `search` | `target_uri`、`score_threshold`、`use_context_search` | 使用实例配置 | 覆盖检索范围、阈值与搜索方式 |
 | `search` | `filter`、`context_type`、`tags` | `None` | 向 OpenViking 传递检索过滤条件 |
-| `search` | `session`、`session_id` | `None` | 使用上下文搜索时提供会话信息 |
+| `search` | `session_id` | `None` | 使用上下文搜索时提供会话标识 |
 | `search` | `telemetry` | `false` | 是否为本次检索启用 OpenViking 遥测 |
 
 使用 `wait=False` 只确认提交导入，不能确认知识已可检索。`hydrate_results=True` 会额外读取命中资源，受 `read_limit` 限制，不保证完整文档全部返回。`Runner.user_id` 不会自动改变知识库的资源目录；面向不同租户时显式配置目录与服务端访问权限

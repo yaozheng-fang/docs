@@ -125,7 +125,7 @@ Constructor parameters define the defaults. These keyword arguments can override
 | `add_from_files` | `strict`, `reason`, `instruction`, `directly_upload_media`, `telemetry` | `false`, `""`, `""`, `true`, `false` | Control single-file ingestion behavior. |
 | `search` | `target_uri`, `score_threshold`, `use_context_search` | Instance configuration | Override the search scope, threshold, and search mode. |
 | `search` | `filter`, `context_type`, `tags` | `None` | Pass retrieval filters to OpenViking. |
-| `search` | `session`, `session_id` | `None` | Supply session information for context search. |
+| `search` | `session_id` | `None` | Supply the session ID for context search. |
 | `search` | `telemetry` | `false` | Enable OpenViking telemetry for this search. |
 
 `wait=False` confirms submission only, not search readiness. `hydrate_results=True` adds content reads for matched resources, limited by `read_limit`; it does not guarantee the complete document is returned. `Runner.user_id` does not automatically change the resource directory; configure explicit directories and service permissions for separate tenants
