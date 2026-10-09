@@ -124,6 +124,10 @@ Run `python codex_runtime.py`. Register function and MCP tools through `Agent.to
 | `personality` | `"none" \| "friendly" \| "pragmatic"` | `"pragmatic"` | Response style |
 | `max_tool_iterations` | `int` | `32` | Bridged ADK tool iteration budget for the whole turn, from 1 to 256; not a universal limit on native operations |
 | `tool_timeout_seconds` | `float \| None` | `120.0` | Bridged tool timeout in seconds; must be positive, or `None` to omit this timeout |
+| `turn_timeout_seconds` | `float \| None` | `1800.0` | Upper bound for one Codex turn in seconds; the turn is interrupted and the invocation fails on timeout; `None` removes the bound |
+| `auto_compact_token_limit` | `int \| None` | `None` | Token count at which Codex compacts the thread history itself (direct transport only); `None` keeps Codex's default |
+| `model_transport` | `"auto" \| "direct" \| "shim"` | `"auto"` | How Codex reaches the model: `direct` calls the endpoint's Responses API directly and serves ADK tools over an MCP bridge; `shim` routes through VeADK's in-process Responses-to-chat shim that runs the tools; `auto` selects `direct` for endpoints known to serve the Responses API and `shim` for the rest |
+| `thread_mode` | `"resume" \| "ephemeral"` | `"resume"` | `resume` keeps one Codex thread per session, resumed on the next turn instead of replaying a transcript; `ephemeral` starts a fresh thread every invocation. Only `direct` supports resume; `shim` is always ephemeral |
 
 <Warning>
 `auto_review` automatically approves escalation and file changes; it is not model-based review. `full_access` broadens host access, and `reuse_workspace=True` can share files across invocations. Use them only when explicitly needed in trusted environments. `network_access=False` cannot restrict `full_access`, so that combination is rejected. `read_only` also ignores this network switch
@@ -137,6 +141,67 @@ These environment variables override constructor settings:
 | `VEADK_CODEX_APPROVAL_MODE` | Unset | Overrides `approval_mode` |
 | `VEADK_CODEX_WORKSPACE_ROOT` | Unset | Overrides `workspace_root` |
 | `VEADK_CODEX_NETWORK_ACCESS` | Unset | Overrides `network_access`; `1`, `true`, `yes`, and `on` enable it, case-insensitively |
+| `VEADK_CODEX_MODEL_TRANSPORT` | Unset | Overrides `model_transport`, case-insensitively |
+| `VEADK_CODEX_THREAD_MODE` | Unset | Overrides `thread_mode`, case-insensitively |
+
+### Model transport
+
+`model_transport` controls how Codex reaches the model and runs tools:
+
+| Transport | Model access | Tool execution | Thread resume |
+| :--- | :--- | :--- | :--- |
+| `direct` | Codex calls the endpoint's Responses API directly | ADK tools are served to Codex over an in-process MCP bridge; Codex drives the tool loop | Supported |
+| `shim` | Routed through VeADK's in-process Responses-to-chat shim | The shim runs ADK tools itself; Codex is unaware of them | Not supported; always ephemeral |
+| `auto` | Endpoints known to serve the Responses API use `direct`; the rest use `shim` | Same as above | `direct` supports it |
+
+In `auto` mode, Volcengine Ark (`*.volces.com`), BytePlus ModelArk (`*.bytepluses.com`), and `api.openai.com` endpoints use `direct`; all others use `shim`
+
+### Thread resume
+
+With `thread_mode="resume"`, each session keeps one Codex thread. The thread's rollout is stored alongside the session (in its database when the short-term memory is database-backed) and resumed on the next turn, so Codex keeps its own full history instead of being handed a replayed transcript. `ephemeral` starts a fresh thread every invocation
+
+<Note>
+Thread resume only works with the `direct` transport. The `shim` transport is always ephemeral because the tools it runs never reach Codex's history. Thread persistence depends on session storage; with in-memory session storage, threads do not survive a process restart
+</Note>
+
+### Steer a running turn
+
+`Runner.steer(session_id, text)` adds an instruction to the turn currently running for a session without starting a new one. The agent adjusts course without losing its progress
+
+```python steer.py lines
+import asyncio
+from veadk import Agent, Runner
+from veadk.runtime.codex import CodexRuntimeConfig
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    codex_runtime_config=CodexRuntimeConfig(
+        model_transport="direct",
+        thread_mode="resume",
+    ),
+)
+runner = Runner(agent=agent, app_name="steer-demo", user_id="demo-user")
+
+async def main():
+    async def send():
+        print(await runner.run(
+            messages='Write a Python function to sort a list.', session_id="steer-demo"
+        ))
+    async def steer():
+        await asyncio.sleep(2)
+        delivered = await runner.steer(
+            session_id="steer-demo", text="Also add type hints."
+        )
+        print(f"Steer delivered: {delivered}")
+
+    await asyncio.gather(send(), steer())
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+`steer` returns `True` when the text was delivered to a running turn, `False` when no turn is running or the runtime does not support steering. Only the `direct` transport supports it, and the turn must be running in the current process
 
 ### Codex observability
 

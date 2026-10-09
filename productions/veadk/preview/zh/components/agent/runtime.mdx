@@ -124,6 +124,10 @@ if __name__ == "__main__":
 | `personality` | `"none" \| "friendly" \| "pragmatic"` | `"pragmatic"` | 回答风格 |
 | `max_tool_iterations` | `int` | `32` | 整轮调用中桥接 ADK 工具的迭代预算，范围 1–256，不是所有原生操作的统一上限 |
 | `tool_timeout_seconds` | `float \| None` | `120.0` | 单次桥接工具超时秒数，数值必须大于 0；`None` 不设置该超时 |
+| `turn_timeout_seconds` | `float \| None` | `1800.0` | 单次 Codex 轮次的超时上限，超时后中断当前轮次并使调用失败；`None` 表示不限制 |
+| `auto_compact_token_limit` | `int \| None` | `None` | Codex 自行压缩线程历史的 token 阈值，仅 direct 传输模式生效；`None` 使用 Codex 默认值 |
+| `model_transport` | `"auto" \| "direct" \| "shim"` | `"auto"` | Codex 访问模型的方式：`direct` 直接调用模型端点的 Responses API 并通过 MCP 桥接 ADK 工具；`shim` 通过 VeADK 进程内 Responses 到 chat 的适配层执行工具；`auto` 对已知支持 Responses API 的端点选择 `direct`，其余选择 `shim` |
+| `thread_mode` | `"resume" \| "ephemeral"` | `"resume"` | `resume` 为每个会话保持一个 Codex 线程，后续轮次恢复该线程而非重放对话；`ephemeral` 每次调用创建新线程。仅 `direct` 传输模式支持恢复；`shim` 始终为临时线程 |
 
 <Warning>
 `auto_review` 会自动批准提权和文件修改请求，不是模型审核步骤。`full_access` 放宽主机访问，`reuse_workspace=True` 可能在调用间共享文件；仅在明确需要且可信的环境中设置。`network_access=False` 不能限制 `full_access`，该组合会在配置时被拒绝。`read_only` 也不使用这个网络开关
@@ -137,6 +141,68 @@ if __name__ == "__main__":
 | `VEADK_CODEX_APPROVAL_MODE` | 未设置 | 覆盖 `approval_mode` |
 | `VEADK_CODEX_WORKSPACE_ROOT` | 未设置 | 覆盖 `workspace_root` |
 | `VEADK_CODEX_NETWORK_ACCESS` | 未设置 | 覆盖 `network_access`；`1`、`true`、`yes`、`on` 为开启，不区分大小写 |
+| `VEADK_CODEX_MODEL_TRANSPORT` | 未设置 | 覆盖 `model_transport`，不区分大小写 |
+| `VEADK_CODEX_THREAD_MODE` | 未设置 | 覆盖 `thread_mode`，不区分大小写 |
+
+### 模型传输模式
+
+`model_transport` 决定 Codex 如何访问模型和执行工具：
+
+| 传输模式 | 模型访问 | 工具执行 | 线程恢复 |
+| :--- | :--- | :--- | :--- |
+| `direct` | Codex 直接调用模型端点的 Responses API | ADK 工具通过进程内 MCP 桥接交给 Codex，由 Codex 驱动工具循环 | 支持 |
+| `shim` | 通过 VeADK 进程内 Responses 到 chat 的适配层 | 适配层执行 ADK 工具，Codex 不感知工具 | 不支持，始终为临时线程 |
+| `auto` | 已知支持 Responses API 的端点使用 `direct`，其余使用 `shim` | 同上 | `direct` 时支持 |
+
+`auto` 模式下，火山引擎方舟（`*.volces.com`）、BytePlus ModelArk（`*.bytepluses.com`）和 `api.openai.com` 的端点使用 `direct`，其他端点使用 `shim`
+
+### 线程恢复
+
+`thread_mode="resume"` 时，每个会话保持一个 Codex 线程。线程的 rollout 随会话一起存储（使用数据库会话存储时保存在数据库中），后续调用恢复该线程，Codex 保留自身完整历史而无需重放对话。`ephemeral` 模式每次调用创建新的临时线程
+
+<Note>
+线程恢复仅在 `direct` 传输模式下生效。`shim` 模式始终使用临时线程，因为适配层执行的工具不会进入 Codex 的历史记录。线程恢复依赖会话存储的持久性；使用内存会话存储时，线程不会在进程重启后保留
+</Note>
+
+### 运行时转向
+
+`Runner.steer(session_id, text)` 在当前正在运行的轮次中插入一条附加指令，无需开始新的轮次。智能体在执行过程中调整方向而不丢失已有进展
+
+```python steer.py lines
+import asyncio
+from veadk import Agent, Runner
+from veadk.runtime.codex import CodexRuntimeConfig
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    codex_runtime_config=CodexRuntimeConfig(
+        model_transport="direct",
+        thread_mode="resume",
+    ),
+)
+runner = Runner(agent=agent, app_name="steer-demo", user_id="demo-user")
+
+async def main():
+    import asyncio as _asyncio
+    async def send():
+        print(await runner.run(
+            messages='Write a Python function to sort a list.', session_id="steer-demo"
+        ))
+    async def steer():
+        await _asyncio.sleep(2)
+        delivered = await runner.steer(
+            session_id="steer-demo", text="Also add type hints."
+        )
+        print(f"Steer delivered: {delivered}")
+
+    await _asyncio.gather(send(), steer())
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+`steer` 返回 `True` 表示指令已送达正在运行的轮次，`False` 表示当前没有正在运行的轮次或运行时不支持转向。仅在 `direct` 传输模式下支持，且轮次必须在当前进程内运行
 
 ### Codex 可观测性
 

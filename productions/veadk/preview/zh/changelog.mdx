@@ -9,6 +9,12 @@ en_link: "/productions/veadk/preview/en/changelog"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 运行时 | Codex 运行时新增 `model_transport` 配置：`direct` 模式让 Codex 直接调用模型端点的 Responses API，ADK 工具通过进程内 MCP 桥接交给 Codex 驱动工具循环；`shim` 模式通过 Responses 到 chat 的适配层执行工具；`auto` 对已知支持 Responses API 的端点自动选择 `direct`。可通过环境变量 `VEADK_CODEX_MODEL_TRANSPORT` 覆盖。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#模型传输模式) |
+| 运行时 | Codex 运行时新增 `thread_mode` 配置：`resume` 为每个会话保持一个 Codex 线程，后续调用恢复线程而非重放对话；`ephemeral` 每次调用创建新线程。仅 `direct` 传输模式支持恢复。可通过环境变量 `VEADK_CODEX_THREAD_MODE` 覆盖。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#线程恢复) |
+| 运行时 | Codex 运行时新增 `turn_timeout_seconds` 配置：设置单次 Codex 轮次的超时上限，超时后中断轮次并使调用失败，防止长时间运行的轮次阻塞后续会话调用。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#codex-安全配置) |
+| 运行时 | Codex 运行时新增 `auto_compact_token_limit` 配置：设置 Codex 自行压缩线程历史的 token 阈值，仅 `direct` 传输模式生效。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#codex-安全配置) |
+| 运行时 | 新增 `Runner.steer(session_id, text)` 方法：在当前正在运行的 Codex 轮次中插入附加指令，智能体无需开始新轮次即可调整方向。仅 `direct` 传输模式支持。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#运行时转向) |
+| 依赖 | `openai-codex` 依赖从 0.1.0b3 升级至 0.159.2，SDK 自动固定匹配的 CLI 二进制版本，不再单独声明 `openai-codex-cli-bin`。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime#使用-codex-运行时) |
 | Studio 部署 | 修复 A2A 注册（远程智能体）节点的部署校验：远程智能体节点在其父智能体上配置发现能力，不要求填写本地智能体名称，可在标准 Runtime 更新中新增或保留而无需启用 Sidecar 或配置 MCP。保留源码更新仍要求保持原有智能体结构（包括子智能体和 A2A 注册节点）不变。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#添加远程智能体) · [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新模式) |
 | Studio 部署 | 部署校验按类别分别报告问题：智能体名称或结构、Skill 文件或配置、MCP 配置、源镜像仓库，每类返回对应的可操作错误提示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#管理智能体) |
 | 可观测 | APMPlus 指标新增 `cache_read` token 维度：当模型返回缓存命中信息时，将命中的输入 token 数量作为 `cache_read` 维度单独记录，表示 `input` 的子集而非额外用量；同时移除了此前错误填充的 cache creation token 属性。 | [APMPlus](/productions/veadk/preview/zh/components/observability/apmplus) |
