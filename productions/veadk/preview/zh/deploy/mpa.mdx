@@ -1,0 +1,307 @@
+---
+title: "部署 MPA 智能体"
+en_link: "/productions/veadk/preview/en/deploy/mpa"
+---
+
+MPA（Managed Production Agent）是 VeADK 提供的托管智能体运行模式。通过 `veadk mpa` 命令可以一键准备前置资源（网络、APIG、PostgreSQL、Skill Space、Worker）并部署智能体到 AgentKit Runtime，无需检出 `agentkit-mpa-agent` 源码。Studio 和 CLI 共用同一编排实现。
+
+MPA 智能体使用预构建的容器镜像，支持账号共享 APIG 注册和元数据初始化。部署后可通过 `veadk mpa control` 子命令组管理智能体生命周期，包括查看绑定关系、创建和更新智能体、管理配置版本和会话配置。
+
+<Warning>
+  MPA 智能体部署会创建或更新云端 Runtime、VeFaaS 应用、APIG 网关、PostgreSQL 数据库和网络等云资源，并可能产生费用。执行前确认云账号、地域、访问鉴权和数据库配置。
+</Warning>
+
+## 前置条件
+
+- 已安装 `veadk-python`（Preview 源码安装方式见[安装](/productions/veadk/preview/zh/get-started/installation#安装-preview-源码)）。
+- 已配置火山引擎访问凭据（`VOLCENGINE_ACCESS_KEY`、`VOLCENGINE_SECRET_KEY`，可选 `VOLCENGINE_SESSION_TOKEN`）。
+- 已准备 PostgreSQL 数据库（可使用 AIDAP 自动准备，也可手动创建）。
+- 已准备预构建的 MPA 智能体容器镜像。
+- 部署账号须具备 AgentKit Runtime、Skill Space、Tool、VPC/子网、APIG/IM Gateway 及 `GetCallerIdentity` 操作权限。
+
+## 命令总览
+
+`veadk mpa` 命令组包含以下子命令：
+
+| 子命令 | 说明 |
+| --- | --- |
+| `provision` | 从 YAML 配置准备前置资源并部署 MPA 智能体。 |
+| `create` | 通过命令行选项创建 MPA 智能体实例，支持 `--config` YAML 提供默认值。 |
+| `init-admin-db` | 初始化 MPA 管理数据库，支持从旧注册库迁移。 |
+| `control` | MPA 控制面子命令组，管理智能体生命周期。 |
+
+## 使用 YAML 配置部署
+
+`veadk mpa provision` 从 YAML 配置文件准备前置资源（网络、共享 APIG、数据库、Skill Space 和 Worker），然后部署 Runtime。适合可重复部署和团队协作场景。
+
+```bash lines
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+
+veadk mpa provision \
+  --config mpa-create.config.yaml \
+  --agent-id my-mpa-agent \
+  --description "Customer support MPA agent"
+```
+
+`--agent-id` 为稳定标识，复用同一 ID 可恢复失败的部署。使用 `--dry-run` 可在本地验证配置并查看资源计划，不执行任何云操作。
+
+| 选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--config` | `str`（必填） | — | YAML 配置文件路径。配置中可包含 PostgreSQL、OpenViking、模型、网络等设置。文件不应提交到 Git。 |
+| `--agent-id` | `str`（必填） | — | 智能体稳定标识，用于恢复失败部署。1–64 个小写字母、数字、下划线或连字符。 |
+| `--description` | `str` | `""` | 智能体描述。 |
+| `--dry-run` | 标志 | 关闭 | 验证配置并输出资源计划，不执行云操作或数据库写入。 |
+
+YAML 配置支持自动准备 PostgreSQL（`managed.postgres.mode: auto`），无需手动提供数据库地址和凭据。示例配置参考仓库中的 `prd-spec/features/mpa-agent-oneclick-provision/mpa-create.config.example.yaml`。
+
+## 通过命令行创建
+
+`veadk mpa create` 通过命令行选项创建 MPA 智能体实例，编排流程为：确认工作负载身份 → 确认 Skill Space → 确认 Tool → 预置元数据 → 计算面部署 → 校验绑定 → 验证实例。
+
+支持 `--config` 传入 YAML 文件提供选项默认值，显式命令行选项优先级更高。
+
+```bash lines
+veadk mpa create \
+  --image "registry.example.com/mpa/mpa_agent:latest" \
+  --registry-name "my-registry" \
+  --account-id "1234567890" \
+  --pg-host "pg.example.com" \
+  --pg-database "mpa_db" \
+  --pg-user "mpa" \
+  --pg-password "$PG_PASSWORD" \
+  --model-provider "volcengine" \
+  --model-api-base "https://ark.cn-beijing.volces.com/api/v3" \
+  --model-api-key "$MODEL_API_KEY" \
+  --model-name "doubao-seed-2-1-pro-260628" \
+  --user-pool-name "my-user-pool" \
+  --user-pool-client-name "my-client" \
+  --identity-callback-url "https://studio.example.com/oauth/callback" \
+  --region cn-beijing
+```
+
+主要选项如下表所示：
+
+| 选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--config` | `str` | — | YAML 配置文件，提供选项默认值。显式命令行选项优先。文件不应提交到 Git。 |
+| `--image` | `str`（必填） | — | 预构建的 MPA 智能体容器镜像地址。 |
+| `--registry-name` | `str`（必填） | — | VPC 隧道使用的容器仓库名称。 |
+| `--mpa-agent-id` | `str` | 自动生成 | MPA 实例 ID（`mi-*`）。省略时自动生成全局唯一 ID。 |
+| `--account-id` | `str`（必填） | — | 云账号 ID，用于 `resource_account_id` 和派生的 `CLAW_SPACE_ID`。 |
+| `--region` | `str` | `cn-beijing` | 部署地域。 |
+| `--pg-host` | `str`（必填） | — | PostgreSQL 主机地址。 |
+| `--pg-port` | `str` | `5432` | PostgreSQL 端口。 |
+| `--pg-database` | `str`（必填） | — | PostgreSQL 数据库名称。 |
+| `--pg-user` | `str`（必填） | — | PostgreSQL 用户名。 |
+| `--pg-password` | `str`（必填） | — | PostgreSQL 密码。 |
+| `--pg-sslmode` | `str` | `require` | PostgreSQL SSL 模式。 |
+| `--model-provider` | `str`（必填） | — | 模型提供方。 |
+| `--model-api-base` | `str`（必填） | — | 模型 API 地址。 |
+| `--model-api-key` | `str`（必填） | — | 模型 API Key。 |
+| `--model-name` | `str`（必填） | — | 模型名称。 |
+| `--selectable-model` | 多值 | — | 可在 Studio 会话中选择的额外模型 ID，可重复使用。 |
+| `--compute-plane` | `runtime` \| `vefaas` | `runtime` | 计算面类型。`runtime` 使用 AgentKit CreateRuntime；`vefaas` 使用 `deploy_image`。 |
+| `--agentkit-tool-id` | `str` | — | 已有的 Codex Worker Tool ID。设置后跳过 Tool 创建。 |
+| `--tool-image` | `str` | — | Codex Worker 镜像。设置后创建新 Tool。 |
+| `--skill-space-id` | `str` | — | 已有的 Skill Space ID。 |
+| `--skill-space-name` | `str` | — | 创建或选择 Skill Space 并注入 `SKILL_SPACE_ID`。 |
+| `--min-instance` | `int` | `1` | Runtime 最小实例数。 |
+| `--max-instance` | `int` | `1` | Runtime 最大实例数。 |
+| `--user-pool-name` | `str`（必填） | — | VeIdentity 用户池名称，可由 `MPA_USER_POOL_NAME` 环境变量提供。 |
+| `--user-pool-client-name` | `str`（必填） | — | VeIdentity 用户池客户端名称，可由 `MPA_USER_POOL_CLIENT_NAME` 环境变量提供。 |
+| `--identity-callback-url` | `str`（必填） | — | Studio 公网回调地址，以 `/oauth/callback` 结尾，可由 `IDENTITY_CALLBACK_URL` 环境变量提供。 |
+| `--openviking-url` | `str` | — | OpenViking 服务地址。 |
+| `--openviking-resource-id` | `str` | — | OpenViking 资源 ID。 |
+| `--openviking-api-key` | `str` | — | OpenViking API Key。 |
+| `--tos-bucket` | `str` | — | TOS 存储桶，挂载到 `/data/output`。需同时提供 `--tos-access-key` 和 `--tos-secret-key`。 |
+| `--dry-run` | 标志 | 关闭 | 解析并输出资源计划，密钥脱敏，不执行云或数据库写入。 |
+
+<Note>
+  `compute-plane` 为 `runtime` 时，须提供 `--tool-image` 以创建专用 Tool，或通过 `--agentkit-tool-id` 指定已有 Tool。TOS 挂载设置要求创建新 Tool，不能与 `--agentkit-tool-id` 同时使用。
+</Note>
+
+## 初始化管理数据库
+
+`veadk mpa init-admin-db` 在配置的管理 Workspace 上准备 `mpa_admin_db`。自动模式下（`managed.postgres.mode: auto`），会通过 AIDAP 自动准备 PostgreSQL Workspace；手动模式下使用已有 PostgreSQL 实例。
+
+```bash lines
+veadk mpa init-admin-db \
+  --config mpa-create.config.yaml
+```
+
+从旧注册库迁移时，通过 `--source-url-env` 指定保存旧注册库 URL 的环境变量名称。命令会原子复制注册记录，不搬迁业务库，不修改运行中 Runtime 的环境变量。
+
+| 选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--config` | `str`（必填） | — | YAML 配置文件路径。 |
+| `--source-url-env` | `str` | — | 保存旧注册库 URL 的环境变量名称。用于迁移场景。 |
+
+## 控制面命令
+
+`veadk mpa control` 子命令组通过 AgentKit Studio BFF 管理 MPA 智能体生命周期。所有命令支持 `--studio-url`、`--token` 和 `--timeout` 全局选项，可分别通过 `VEADK_MPA_STUDIO_URL`、`VEADK_MPA_STUDIO_TOKEN` 环境变量提供。
+
+| 全局选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--studio-url` | `str` | — | AgentKit Studio BFF 地址。 |
+| `--token` | `str` | — | Studio Bearer Token。 |
+| `--timeout` | `float` | `30.0` | HTTP 请求超时（秒）。 |
+
+### 查看智能体
+
+```bash lines
+veadk mpa control view \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123"
+```
+
+| 选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--mpa-instance-id` | `str`（必填） | — | MPA 实例 ID。 |
+| `--runtime-id` | `str` | — | Runtime ID。 |
+| `--region` | `str` | `all` | 地域。 |
+
+### 创建智能体
+
+```bash lines
+veadk mpa control create \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --request operation.json \
+  --idempotency-key "create-abc-001"
+```
+
+| 选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--request` | `str`（必填） | — | 操作请求 JSON 文件路径，`-` 表示从标准输入读取。 |
+| `--idempotency-key` | `str`（必填） | — | 调用方持久化的幂等键，同一逻辑写入复用。 |
+
+### 更新智能体
+
+```bash lines
+veadk mpa control update \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --request operation.json \
+  --idempotency-key "update-abc-001"
+```
+
+| 选项 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `--mpa-instance-id` | `str`（必填） | — | MPA 实例 ID。 |
+| `--request` | `str`（必填） | — | 操作请求 JSON 文件路径，`-` 表示从标准输入读取。 |
+| `--idempotency-key` | `str`（必填） | — | 幂等键。 |
+
+### 操作管理
+
+```bash lines
+# 列出活跃操作
+veadk mpa control operation list \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN"
+
+# 查看单个操作
+veadk mpa control operation get \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --operation-id "op-xyz789"
+
+# 重试操作
+veadk mpa control operation retry \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --operation-id "op-xyz789" \
+  --request operation.json
+```
+
+| 子命令 | 选项 | 说明 |
+| :--- | :--- | :--- |
+| `operation list` | — | 列出当前认证主体拥有的活跃操作。 |
+| `operation get` | `--operation-id`（必填） | 查看单个活跃或已终止操作。 |
+| `operation retry` | `--operation-id`（必填）、`--request`（必填） | 使用原始请求重试操作。 |
+
+### 配置版本管理
+
+```bash lines
+# 查看当前配置版本
+veadk mpa control profile status \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --runtime-id "r-abc123"
+
+# 应用新配置版本
+veadk mpa control profile apply \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --runtime-id "r-abc123" \
+  --source-profile-id "profile-001" \
+  --profile profile.json \
+  --idempotency-key "apply-001"
+```
+
+| 子命令 | 说明 |
+| :--- | :--- |
+| `profile status` | 查看当前 Profile 版本及其 ETag。 |
+| `profile apply` | 向 Runtime 绑定应用新的 Profile 版本。`--create` 用于首次应用，`--runtime-revision` 指定当前版本用于更新。 |
+
+### 会话配置管理
+
+```bash lines
+# 查看会话配置
+veadk mpa control session config-get \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --session-id "session-001" \
+  --runtime-id "r-abc123"
+
+# 更新会话配置
+veadk mpa control session config-patch \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --session-id "session-001" \
+  --runtime-id "r-abc123" \
+  --etag "etag-001" \
+  --changes changes.json
+
+# 升级会话配置版本
+veadk mpa control session profile-upgrade \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --session-id "session-001" \
+  --runtime-id "r-abc123" \
+  --etag "etag-001" \
+  --target-profile-revision 2 \
+  --idempotency-key "upgrade-001"
+```
+
+| 子命令 | 说明 |
+| :--- | :--- |
+| `session config-get` | 查看会话生效配置及其 ETag。 |
+| `session config-patch` | 使用 CAS（`--etag`）应用显式会话配置变更。`--changes` 为变更数组 JSON 文件。 |
+| `session profile-upgrade` | 将会话升级到更高的不可变 Profile 版本。 |
+
+### 删除预览
+
+```bash lines
+veadk mpa control delete-preview \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --runtime-id "r-abc123"
+```
+
+预览授权清理影响，不删除实际资源。
+
+## 在 Studio 中使用
+
+部署 Studio 后，Studio 自动复用已部署 Studio 的 UserPool、客户端、Identity 地域和 `/oauth/callback` 进行 MPA 智能体托管创建。Studio 无需创建 YAML，直接使用代码内置的北京地域配置。
+
+选择**智能体 → MPA 智能体 → 创建 MPA 智能体**进入三步创建流程：填写基础信息、PostgreSQL 自动准备说明，以及可选的 OpenViking 配置。填写 Runtime 名称（4–64 个 ASCII 字母、数字、下划线或连字符），服务端生成智能体 ID 并注入 Agent 和 Worker。提交后依次准备账号网络、APIG、Worker、独立业务库和 Skill Space，然后部署并检查 Runtime 就绪状态。成功后刷新列表查看。
+
+<Note>
+  Studio 内置配置使用北京地域的默认镜像和模型。模型 API Key 从 `VEADK_MPA_CONFIG_MODEL_AGENT_API_KEY` 环境变量读取。选择其他地域时 Studio 会返回配置错误。
+</Note>

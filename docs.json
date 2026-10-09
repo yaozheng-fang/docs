@@ -188,6 +188,7 @@
                     "group": "部署",
                     "pages": [
                       "productions/veadk/preview/zh/deploy/agentkit",
+                      "productions/veadk/preview/zh/deploy/mpa",
                       "productions/veadk/preview/zh/deploy/harness"
                     ]
                   }
@@ -5140,6 +5141,7 @@
                     "group": "Deployment",
                     "pages": [
                       "productions/veadk/preview/en/deploy/agentkit",
+                      "productions/veadk/preview/en/deploy/mpa",
                       "productions/veadk/preview/en/deploy/harness"
                     ]
                   }

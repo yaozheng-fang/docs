@@ -51,6 +51,10 @@ en_link: "/productions/veadk/preview/en/changelog"
 | Studio 迁移 | 迁移过程中 Codex 如需用户确认，可在「Codex 执行动态」面板中展示待回答问题，用户回答后在当前步骤继续执行，无需重新开始。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#从存量项目迁移) |
 | 知识库 | OpenViking 知识库后端的上下文检索不再转发 `session` 参数，仅保留 `session_id` 用于会话标识。适配 OpenViking SDK 的 options API，`openviking-sdk` 最低版本提升至 0.1.9。 | [使用 OpenViking 存储](/productions/veadk/preview/zh/components/knowledge/openviking) |
 
+| MPA 智能体 | 新增 `veadk mpa` 命令组：支持一键准备前置资源（网络、APIG、PostgreSQL、Skill Space、Worker）并部署 MPA 智能体到 AgentKit Runtime，无需检出 `agentkit-mpa-agent` 源码。包含 `provision`（YAML 配置部署）、`create`（命令行创建）、`init-admin-db`（管理数据库初始化）和 `control`（控制面生命周期管理）子命令。 | [部署 MPA 智能体](/productions/veadk/preview/zh/deploy/mpa) |
+| Studio | Studio 支持 MPA 智能体托管创建：选择「MPA 智能体 → 创建 MPA 智能体」进入三步创建流程，自动复用已部署 Studio 的用户池和回调地址，使用内置北京地域默认镜像和模型，支持 PostgreSQL 自动准备和可选 OpenViking 配置。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#创建智能体) · [部署 MPA 智能体](/productions/veadk/preview/zh/deploy/mpa) |
+| 依赖 | `agentkit-sdk-python` 最低版本从 0.8.0 提升至 0.8.5。 | [安装](/productions/veadk/preview/zh/get-started/installation) |
+
 ## 1.1.13
 
 VeADK 1.1.13 发布于 2026 年 9 月 15 日。下表列出该版本的公开用户能力变化；完整提交记录见 [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.1.13)。

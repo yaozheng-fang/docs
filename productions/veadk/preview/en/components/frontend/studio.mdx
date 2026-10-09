@@ -152,6 +152,10 @@ Your language choice is persisted in browser local storage, so subsequent visits
 </Note>
 
 <Note>
+  Studio supports an MPA agent managed creation mode: select **Agents → MPA Agents → Create MPA Agent** to enter a three-step creation flow with basic information, PostgreSQL auto-provisioning details, and optional OpenViking configuration. Studio automatically reuses the deployed Studio's user pool, client, and callback URL, using code-built-in Beijing region default images and models without a YAML config file. After submission, it sequentially prepares account network, APIG, Worker, independent business database, and Skill Space, then deploys and checks Runtime readiness. See [Deploy MPA Agents](/productions/veadk/preview/en/deploy/mpa).
+</Note>
+
+<Note>
   Resource pickers in custom creation (such as agent centers and knowledge-base collections) support local keyword filtering: type in the dropdown to filter the currently loaded options. Filtering applies only to the loaded list and does not change the region, project scope, or refresh behavior.
 </Note>
 
