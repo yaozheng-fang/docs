@@ -51,6 +51,10 @@ This changelog cumulatively lists all public user-facing changes from VeADK 1.0.
 | Studio migration | When Codex needs user input during migration, a pending question is shown in the "Codex activity" panel; the user's answer continues the current step without restarting it. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio#migrate-an-existing-project) |
 | Knowledge base | The OpenViking knowledge base context search no longer forwards the `session` parameter; only `session_id` is used for session identification. Adapted to the OpenViking SDK options API; the minimum `openviking-sdk` version is raised to 0.1.9. | [Use OpenViking storage](/productions/veadk/preview/en/components/knowledge/openviking) |
 
+| MPA Agents | Added `veadk mpa` command group: supports one-click provisioning of prerequisite resources (network, APIG, PostgreSQL, Skill Space, Worker) and deployment of MPA agents to AgentKit Runtime without checking out `agentkit-mpa-agent` source. Includes `provision` (YAML config deployment), `create` (CLI creation), `init-admin-db` (management database initialization), and `control` (control-plane lifecycle management) subcommands. | [Deploy MPA Agents](/productions/veadk/preview/en/deploy/mpa) |
+| Studio | Studio supports MPA agent managed creation: select "MPA Agents → Create MPA Agent" to enter a three-step creation flow that automatically reuses the deployed Studio's user pool and callback URL, using built-in Beijing region default images and models, with PostgreSQL auto-provisioning and optional OpenViking configuration. | [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio#create-an-agent) · [Deploy MPA Agents](/productions/veadk/preview/en/deploy/mpa) |
+| Dependencies | Minimum `agentkit-sdk-python` version raised from 0.8.0 to 0.8.5. | [Installation](/productions/veadk/preview/en/get-started/installation) |
+
 ## 1.1.13
 
 VeADK 1.1.13 was released on September 15, 2026. The following table lists its public user-facing changes. See the [GitHub Release](https://github.com/volcengine/veadk-python/releases/tag/1.1.13) for the complete commit history.

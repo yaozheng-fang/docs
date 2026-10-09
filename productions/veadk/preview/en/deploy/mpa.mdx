@@ -1,0 +1,307 @@
+---
+title: "Deploy MPA Agents"
+zh_link: "/productions/veadk/preview/zh/deploy/mpa"
+---
+
+MPA (Managed Production Agent) is a managed agent runtime mode provided by VeADK. The `veadk mpa` command performs one-click provisioning of prerequisite resources (network, APIG, PostgreSQL, Skill Space, Worker) and deploys the agent to an AgentKit Runtime, without checking out the `agentkit-mpa-agent` source. Studio and the CLI share the same orchestration implementation.
+
+MPA agents use prebuilt container images and support account-shared APIG registration and metadata initialization. After deployment, the `veadk mpa control` subgroup manages the agent lifecycle, including viewing bindings, creating and updating agents, managing profile revisions, and session configuration.
+
+<Warning>
+  MPA agent deployment creates or updates cloud resources including Runtime, VeFaaS applications, APIG gateways, PostgreSQL databases, and networking. Confirm your cloud account, region, authentication, and database configuration before proceeding.
+</Warning>
+
+## Prerequisites
+
+- Install `veadk-python` (for Preview source installation see [Installation](/productions/veadk/preview/en/get-started/installation#install-preview-from-source)).
+- Configure Volcengine credentials (`VOLCENGINE_ACCESS_KEY`, `VOLCENGINE_SECRET_KEY`, optional `VOLCENGINE_SESSION_TOKEN`).
+- Prepare a PostgreSQL database (auto-provisioning via AIDAP is supported, or create manually).
+- Prepare a prebuilt MPA agent container image.
+- The deployment account must have AgentKit Runtime, Skill Space, Tool, VPC/subnet, APIG/IM Gateway, and `GetCallerIdentity` permissions.
+
+## Command Overview
+
+The `veadk mpa` command group includes the following subcommands:
+
+| Subcommand | Description |
+| --- | --- |
+| `provision` | Provision prerequisite resources and deploy an MPA agent from a YAML config. |
+| `create` | Create an MPA agent instance via CLI options, with optional `--config` YAML defaults. |
+| `init-admin-db` | Initialize the MPA management database, with optional migration from a legacy registry. |
+| `control` | MPA control-plane subgroup for managing agent lifecycle. |
+
+## Deploy with YAML Config
+
+`veadk mpa provision` prepares prerequisite resources (network, shared APIG, database, Skill Space, Worker) from a YAML config file, then deploys the Runtime. Suitable for repeatable deployments and team collaboration.
+
+```bash lines
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+
+veadk mpa provision \
+  --config mpa-create.config.yaml \
+  --agent-id my-mpa-agent \
+  --description "Customer support MPA agent"
+```
+
+`--agent-id` is a stable identifier; reusing the same ID resumes a failed deployment. Use `--dry-run` to validate configuration and view the resource plan locally without cloud calls.
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--config` | `str` (required) | — | YAML config file path. May include PostgreSQL, OpenViking, model, and network settings. Must not be committed to Git. |
+| `--agent-id` | `str` (required) | — | Stable agent identifier for resuming failed deployments. 1–64 lowercase letters, digits, underscores, or hyphens. |
+| `--description` | `str` | `""` | Agent description. |
+| `--dry-run` | flag | off | Validate config and print the resource plan without cloud or database writes. |
+
+The YAML config supports auto-provisioning PostgreSQL (`managed.postgres.mode: auto`), eliminating the need to manually provide database addresses and credentials. An example config is available at `prd-spec/features/mpa-agent-oneclick-provision/mpa-create.config.example.yaml` in the repository.
+
+## Create via CLI
+
+`veadk mpa create` creates an MPA agent instance via CLI options. The orchestration flow is: ensure workload identity → ensure Skill Space → ensure Tool → pre-seed metadata → compute plane deployment → validate bindings → verify instance.
+
+A `--config` YAML file can provide option defaults; explicit CLI options take precedence.
+
+```bash lines
+veadk mpa create \
+  --image "registry.example.com/mpa/mpa_agent:latest" \
+  --registry-name "my-registry" \
+  --account-id "1234567890" \
+  --pg-host "pg.example.com" \
+  --pg-database "mpa_db" \
+  --pg-user "mpa" \
+  --pg-password "$PG_PASSWORD" \
+  --model-provider "volcengine" \
+  --model-api-base "https://ark.cn-beijing.volces.com/api/v3" \
+  --model-api-key "$MODEL_API_KEY" \
+  --model-name "doubao-seed-2-1-pro-260628" \
+  --user-pool-name "my-user-pool" \
+  --user-pool-client-name "my-client" \
+  --identity-callback-url "https://studio.example.com/oauth/callback" \
+  --region cn-beijing
+```
+
+Key options are listed below:
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--config` | `str` | — | YAML config file providing option defaults. Explicit CLI options take precedence. Must not be committed to Git. |
+| `--image` | `str` (required) | — | Prebuilt MPA agent container image URL. |
+| `--registry-name` | `str` (required) | — | Container registry name for VPC tunnel. |
+| `--mpa-agent-id` | `str` | auto-generated | MPA instance ID (`mi-*`). Omit to auto-generate a globally unique ID. |
+| `--account-id` | `str` (required) | — | Cloud account ID, used for `resource_account_id` and derived `CLAW_SPACE_ID`. |
+| `--region` | `str` | `cn-beijing` | Deploy region. |
+| `--pg-host` | `str` (required) | — | PostgreSQL host. |
+| `--pg-port` | `str` | `5432` | PostgreSQL port. |
+| `--pg-database` | `str` (required) | — | PostgreSQL database name. |
+| `--pg-user` | `str` (required) | — | PostgreSQL user. |
+| `--pg-password` | `str` (required) | — | PostgreSQL password. |
+| `--pg-sslmode` | `str` | `require` | PostgreSQL SSL mode. |
+| `--model-provider` | `str` (required) | — | Model provider. |
+| `--model-api-base` | `str` (required) | — | Model API base URL. |
+| `--model-api-key` | `str` (required) | — | Model API Key. |
+| `--model-name` | `str` (required) | — | Model name. |
+| `--selectable-model` | multiple | — | Additional model IDs selectable per Studio conversation. Repeat the option. |
+| `--compute-plane` | `runtime` \| `vefaas` | `runtime` | Compute plane type. `runtime` uses AgentKit CreateRuntime; `vefaas` uses `deploy_image`. |
+| `--agentkit-tool-id` | `str` | — | Existing Codex Worker Tool ID. When set, Tool creation is skipped. |
+| `--tool-image` | `str` | — | Codex Worker image. When set, a new Tool is created. |
+| `--skill-space-id` | `str` | — | Existing Skill Space ID. |
+| `--skill-space-name` | `str` | — | Create or select a Skill Space and inject `SKILL_SPACE_ID`. |
+| `--min-instance` | `int` | `1` | Minimum Runtime instances. |
+| `--max-instance` | `int` | `1` | Maximum Runtime instances. |
+| `--user-pool-name` | `str` (required) | — | VeIdentity user pool name. Also via `MPA_USER_POOL_NAME` env var. |
+| `--user-pool-client-name` | `str` (required) | — | VeIdentity user pool client name. Also via `MPA_USER_POOL_CLIENT_NAME` env var. |
+| `--identity-callback-url` | `str` (required) | — | Studio public callback URL ending in `/oauth/callback`. Also via `IDENTITY_CALLBACK_URL` env var. |
+| `--openviking-url` | `str` | — | OpenViking service URL. |
+| `--openviking-resource-id` | `str` | — | OpenViking resource ID. |
+| `--openviking-api-key` | `str` | — | OpenViking API Key. |
+| `--tos-bucket` | `str` | — | TOS bucket mounted at `/data/output`. Requires `--tos-access-key` and `--tos-secret-key`. |
+| `--dry-run` | flag | off | Resolve and print the plan with masked secrets; no cloud or database writes. |
+
+<Note>
+  When `--compute-plane` is `runtime`, you must provide `--tool-image` to create a dedicated Tool, or use `--agentkit-tool-id` to specify an existing one. TOS mount settings require Tool creation and cannot be combined with `--agentkit-tool-id`.
+</Note>
+
+## Initialize Management Database
+
+`veadk mpa init-admin-db` prepares `mpa_admin_db` on the configured management Workspace. In auto mode (`managed.postgres.mode: auto`), it provisions the PostgreSQL Workspace via AIDAP; in manual mode, it uses an existing PostgreSQL instance.
+
+```bash lines
+veadk mpa init-admin-db \
+  --config mpa-create.config.yaml
+```
+
+For migration from a legacy registry, use `--source-url-env` to specify the environment variable name holding the legacy registry URL. The command atomically copies registry records without moving business databases or modifying running Runtime environments.
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--config` | `str` (required) | — | YAML config file path. |
+| `--source-url-env` | `str` | — | Environment variable name holding the legacy registry URL. Used for migration. |
+
+## Control-Plane Commands
+
+The `veadk mpa control` subgroup manages MPA agent lifecycle through the AgentKit Studio BFF. All commands support `--studio-url`, `--token`, and `--timeout` global options, which can be provided via `VEADK_MPA_STUDIO_URL` and `VEADK_MPA_STUDIO_TOKEN` environment variables.
+
+| Global option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--studio-url` | `str` | — | AgentKit Studio BFF base URL. |
+| `--token` | `str` | — | Studio bearer token. |
+| `--timeout` | `float` | `30.0` | HTTP request timeout in seconds. |
+
+### View Agent
+
+```bash lines
+veadk mpa control view \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123"
+```
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--mpa-instance-id` | `str` (required) | — | MPA instance ID. |
+| `--runtime-id` | `str` | — | Runtime ID. |
+| `--region` | `str` | `all` | Region. |
+
+### Create Agent
+
+```bash lines
+veadk mpa control create \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --request operation.json \
+  --idempotency-key "create-abc-001"
+```
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--request` | `str` (required) | — | Operation request JSON file path, or `-` for stdin. |
+| `--idempotency-key` | `str` (required) | — | Caller-persisted idempotency key for the same logical write. |
+
+### Update Agent
+
+```bash lines
+veadk mpa control update \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --request operation.json \
+  --idempotency-key "update-abc-001"
+```
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--mpa-instance-id` | `str` (required) | — | MPA instance ID. |
+| `--request` | `str` (required) | — | Operation request JSON file path, or `-` for stdin. |
+| `--idempotency-key` | `str` (required) | — | Idempotency key. |
+
+### Operation Management
+
+```bash lines
+# List active operations
+veadk mpa control operation list \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN"
+
+# Get a single operation
+veadk mpa control operation get \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --operation-id "op-xyz789"
+
+# Retry an operation
+veadk mpa control operation retry \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --operation-id "op-xyz789" \
+  --request operation.json
+```
+
+| Subcommand | Options | Description |
+| :--- | :--- | :--- |
+| `operation list` | — | List active operations owned by the authenticated principal. |
+| `operation get` | `--operation-id` (required) | Get a single active or terminal operation. |
+| `operation retry` | `--operation-id` (required), `--request` (required) | Retry an operation using its original request. |
+
+### Profile Management
+
+```bash lines
+# View current profile status
+veadk mpa control profile status \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --runtime-id "r-abc123"
+
+# Apply a new profile revision
+veadk mpa control profile apply \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --runtime-id "r-abc123" \
+  --source-profile-id "profile-001" \
+  --profile profile.json \
+  --idempotency-key "apply-001"
+```
+
+| Subcommand | Description |
+| :--- | :--- |
+| `profile status` | Show the active Profile revision and its ETag. |
+| `profile apply` | Apply a new Profile revision to a Runtime binding. Use `--create` for first apply, `--runtime-revision` to specify current revision for an update. |
+
+### Session Configuration
+
+```bash lines
+# Get session configuration
+veadk mpa control session config-get \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --session-id "session-001" \
+  --runtime-id "r-abc123"
+
+# Patch session configuration
+veadk mpa control session config-patch \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --session-id "session-001" \
+  --runtime-id "r-abc123" \
+  --etag "etag-001" \
+  --changes changes.json
+
+# Upgrade session to a later profile revision
+veadk mpa control session profile-upgrade \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --session-id "session-001" \
+  --runtime-id "r-abc123" \
+  --etag "etag-001" \
+  --target-profile-revision 2 \
+  --idempotency-key "upgrade-001"
+```
+
+| Subcommand | Description |
+| :--- | :--- |
+| `session config-get` | Show effective session configuration and its ETag. |
+| `session config-patch` | Apply explicit session configuration changes with CAS (`--etag`). `--changes` is a change array JSON file. |
+| `session profile-upgrade` | Upgrade a session to a later immutable Profile revision. |
+
+### Delete Preview
+
+```bash lines
+veadk mpa control delete-preview \
+  --studio-url "https://studio.example.com" \
+  --token "$STUDIO_TOKEN" \
+  --mpa-instance-id "mi-abc123" \
+  --runtime-id "r-abc123"
+```
+
+Preview the authorized cleanup impact without deleting resources.
+
+## Using in Studio
+
+After deploying Studio, it automatically reuses the deployed Studio's UserPool, client, Identity region, and `/oauth/callback` for MPA agent managed creation. Studio does not require a YAML file; it uses the code-built-in Beijing region configuration.
+
+Select **Agents → MPA Agents → Create MPA Agent** to enter a three-step creation flow: fill in basic information, PostgreSQL auto-provisioning details, and optional OpenViking configuration. Enter the Runtime name (4–64 ASCII letters, digits, underscores, or hyphens); the server generates the agent ID and injects it into the Agent and Worker. After submission, it sequentially prepares account network, APIG, Worker, independent business database, and Skill Space, then deploys and checks Runtime readiness. Refresh the list to view the result after success.
+
+<Note>
+  Studio's built-in configuration uses the Beijing region default images and models. The model API Key is read from the `VEADK_MPA_CONFIG_MODEL_AGENT_API_KEY` environment variable. Selecting other regions returns a configuration error.
+</Note>
