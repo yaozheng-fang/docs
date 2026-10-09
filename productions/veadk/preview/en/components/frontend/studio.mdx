@@ -1034,6 +1034,11 @@ For each turn, the parent agent discovers remote agents in the selected center t
 
 For example, create an LLM root agent named `support_router`, add a remote-agent child, select the Customer Service agent center, and keep the recall count at `3` and the region set to the Volcengine Beijing default. During testing, enter “Investigate this order's delivery exception and recommend a resolution.” If the center contains a matching capability, the root agent invokes the corresponding remote agent to complete the task.
 
+
+<Note>
+  Remote-agent (A2A registry) nodes configure discovery on their parent agent and do not require a local agent name. They can be retained or added during a standard Runtime update without enabling Sidecar or configuring MCP. Source-preserving updates still require the original agent structure (including sub-agents and A2A registry nodes) to be preserved; use regenerate mode for structural changes to sub-agents or A2A nodes.
+</Note>
+
 ### Troubleshoot remote agents
 
 | Symptom | Check |
@@ -1294,6 +1299,11 @@ The agent workspace unifies deployed Runtimes and local drafts. Each deployed ag
   When a build or deployment stage fails, Studio shows the complete error message returned by the service, expanded by default and copyable, so you can locate the problem directly. Deployment and update failures can also be retried from the error panel. When a deployment fails or is cancelled, the progress card provides a "Return to edit" button that takes you back to the draft so you can adjust the configuration and start a new deployment.
 </Note>
 
+<Note>
+  Deployment validation reports problems by category — agent name or structure, skill files or configuration, MCP configuration, and source-image registry — each with a specific, actionable error message for quick diagnosis and resolution.
+</Note>
+
+
 ### Manage drafts
 
 During custom creation, Studio saves unpublished agent drafts in the current browser, isolated by signed-in user. Drafts appear alongside deployed Runtimes in the Manage agents list, each showing its update time and a "Draft" badge. A draft being deployed shows a "Deploying" badge and lets you view its deployment progress. Drafts can be edited or deleted; deletion asks for confirmation first.
@@ -1305,6 +1315,11 @@ During custom creation, Studio saves unpublished agent drafts in the current bro
 <Note>
   MCP tool auth tokens are converted to environment-variable references: generated source retains only the `${ENV_NAME}` reference, with the token value written to deployment environment variables; YAML exports and browser drafts preserve the corresponding environment value. Updating a deployed Runtime reloads existing environment values, and entering a replacement Token overrides the previous value. When an MCP tool’s service URL is changed, the stored credential is not silently replayed; the Token input is always editable and supports a show/hide toggle.
 </Note>
+
+<Note>
+  Source-preserving updates require the original agent structure (including sub-agents and A2A registry nodes) to be preserved. Modifying sub-agent or A2A structure is not supported in source-preserving mode; use regenerate mode for structural changes.
+</Note>
+
 
 Drafts use the browser's local storage. When storage is full or writes are rejected, Studio shows the corresponding reason; remove unneeded drafts or clear site storage and retry.
 
