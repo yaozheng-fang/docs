@@ -198,7 +198,7 @@ Beyond the basic fields written by `veadk harness add`, `harness.yaml` supports 
 | Field | Environment variable | Description |
 | :--- | :--- | :--- |
 | `builtin_tools` | `TOOLS` + tool-level env vars | Structured built-in tool list; each entry has an `id` and optional `config` |
-| `selected_skills` | `SELECTED_SKILLS_JSON` | Structured skill list; each entry has a `source` and a `slug` or `skill_space_id` |
+| `selected_skills` | `SELECTED_SKILLS_JSON` | Structured skill list; each entry has a `source` and a `slug` or `skill_space_id`; `skillspace` entries optionally set `skill_space_policy` to filter skills per space |
 | `mcp` | `MCP_SERVERS_JSON` | Streamable HTTP MCP server list; each entry has a `name`, `server_url`, and optional `bear_token` |
 | `mcp_router_id` | `MCP_ROUTER_ID` | AgentKit MCP toolset id |
 | `temperature` | `MODEL_AGENT_TEMPERATURE` | Model temperature |
@@ -235,6 +235,35 @@ harness:
       app_name: kb-index
       project: default
       region: cn-beijing
+```
+
+A `selected_skills` entry with `source` set to `skillspace` can include a `skill_space_policy` field to filter which skills are loaded from that space by skill ID. This field is only valid when `source` is `skillspace` and requires `skill_space_id` to be set
+
+| Field | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `mode` | `"allow" \| "deny"` | — | Filter mode |
+| `ids` | `list[str]` | `[]` | Skill IDs participating in the filter |
+
+When `mode` is `allow`, only skills whose IDs are in the list are loaded. When `mode` is `deny`, skills whose IDs are in the list are excluded. Multiple `skillspace` entries can each set their own `skill_space_policy` for independent per-space filtering. When any entry sets a `skill_space_policy`, the `SKILL_SPACE_POLICY` environment variable is ignored; see [Skills](/productions/veadk/preview/en/components/agent/skills#harness-skill-space-filtering)
+
+```yaml title="harness.yaml" lines
+harness:
+  selected_skills:
+    - source: skillspace
+      skill_space_id: ss-a
+      skill_space_policy:
+        mode: allow
+        ids:
+          - skill-1
+          - skill-2
+    - source: skillspace
+      skill_space_id: ss-b
+      skill_space_policy:
+        mode: deny
+        ids:
+          - skill-4
+    - source: skillhub
+      slug: team/reporting
 ```
 
 ### Execution enhancement configuration
