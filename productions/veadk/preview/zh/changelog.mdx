@@ -9,6 +9,8 @@ en_link: "/productions/veadk/preview/en/changelog"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| Studio 部署 | 修复 A2A 注册（远程智能体）节点的部署校验：远程智能体节点在其父智能体上配置发现能力，不要求填写本地智能体名称，可在标准 Runtime 更新中新增或保留而无需启用 Sidecar 或配置 MCP。保留源码更新仍要求保持原有智能体结构（包括子智能体和 A2A 注册节点）不变。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#添加远程智能体) · [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新模式) |
+| Studio 部署 | 部署校验按类别分别报告问题：智能体名称或结构、Skill 文件或配置、MCP 配置、源镜像仓库，每类返回对应的可操作错误提示。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#管理智能体) |
 | 可观测 | APMPlus 指标新增 `cache_read` token 维度：当模型返回缓存命中信息时，将命中的输入 token 数量作为 `cache_read` 维度单独记录，表示 `input` 的子集而非额外用量；同时移除了此前错误填充的 cache creation token 属性。 | [APMPlus](/productions/veadk/preview/zh/components/observability/apmplus) |
 | Studio 评测 | 评测集和评测案例改为存储在 Studio 持久化存储（TOS）中，不再使用 AgentKit 评测接口。对话中的赞/踩反馈和自动评测案例使用相同的 TOS 记录；评测数据按 Runtime ID 存储，不依赖应用名、项目或地域。评价反馈支持 BytePlus 部署（需配置 TOS）。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#自动评测与优化反馈) |
 | Studio 部署 | 创建新 Runtime 时实例数上限和下限在创建阶段直接设置，不再在创建后单独更新；部署完成后等待所配置的实例数就绪再报告部署成功，避免首次对话落在临时启动实例上。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#配置部署参数) |
