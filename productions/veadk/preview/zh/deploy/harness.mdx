@@ -198,7 +198,7 @@ short_term_memory:
 | 字段 | 环境变量 | 说明 |
 | :--- | :--- | :--- |
 | `builtin_tools` | `TOOLS` + 工具级环境变量 | 结构化内置工具列表，每个条目包含 `id` 和可选 `config` |
-| `selected_skills` | `SELECTED_SKILLS_JSON` | 结构化技能列表，每个条目包含 `source`、`slug` 或 `skill_space_id` |
+| `selected_skills` | `SELECTED_SKILLS_JSON` | 结构化技能列表，每个条目包含 `source`、`slug` 或 `skill_space_id`；`skillspace` 来源可选 `skill_space_policy` 按空间筛选技能 |
 | `mcp` | `MCP_SERVERS_JSON` | 可流式传输的 HTTP MCP 服务器列表，每个条目包含 `name`、`server_url` 和可选 `bear_token` |
 | `mcp_router_id` | `MCP_ROUTER_ID` | AgentKit MCP 工具集 ID |
 | `temperature` | `MODEL_AGENT_TEMPERATURE` | 模型温度 |
@@ -235,6 +235,35 @@ harness:
       app_name: kb-index
       project: default
       region: cn-beijing
+```
+
+`selected_skills` 中 `skillspace` 来源的条目可设置 `skill_space_policy` 字段，按技能 ID 筛选该空间中加载的技能。该字段仅适用于 `source` 为 `skillspace` 的条目，且必须同时设置 `skill_space_id`
+
+| 字段 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `mode` | `"allow" \| "deny"` | — | 筛选模式 |
+| `ids` | `list[str]` | `[]` | 参与筛选的技能 ID 列表 |
+
+`mode` 为 `allow` 时仅加载 ID 在列表中的技能；`mode` 为 `deny` 时排除 ID 在列表中的技能。多个 `skillspace` 条目可分别设置各自的 `skill_space_policy`，按空间独立筛选。当任一条目设置了 `skill_space_policy` 时，`SKILL_SPACE_POLICY` 环境变量不再生效，详见[技能](/productions/veadk/preview/zh/components/agent/skills#harness-技能空间筛选)
+
+```yaml title="harness.yaml" lines
+harness:
+  selected_skills:
+    - source: skillspace
+      skill_space_id: ss-a
+      skill_space_policy:
+        mode: allow
+        ids:
+          - skill-1
+          - skill-2
+    - source: skillspace
+      skill_space_id: ss-b
+      skill_space_policy:
+        mode: deny
+        ids:
+          - skill-4
+    - source: skillhub
+      slug: team/reporting
 ```
 
 ### 执行增强配置
