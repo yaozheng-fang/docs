@@ -1,0 +1,12 @@
+{
+  "docs_project": "veadk-go",
+  "source_repo": "git@github.com:volcengine/veadk-go.git",
+  "source_branch": "main",
+  "previous_source_head_sha": "648522f4cbd943f75be122fef2ecac281c9cb46f",
+  "source_head_sha": "d9e8c76285cbbae1f158287a29f66d5a7648ca33",
+  "event_base_ref": "648522f4cbd943f75be122fef2ecac281c9cb46f",
+  "event_head_ref": "d9e8c76285cbbae1f158287a29f66d5a7648ca33",
+  "bootstrap_preview_base_ref": "648522f4cbd943f75be122fef2ecac281c9cb46f",
+  "generated_at": "2026-10-22T04:38:14Z",
+  "task_type": "preview"
+}
