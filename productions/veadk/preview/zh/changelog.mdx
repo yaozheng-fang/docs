@@ -9,6 +9,11 @@ en_link: "/productions/veadk/preview/en/changelog"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 可观测 | APMPlus 的 AppKey 解析新增 `TENANT_APMPLUS_APPKEY` 环境变量作为回退：依次读取非空的 `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` 与 `TENANT_APMPLUS_APPKEY`，两者均未设置时根据云凭证自动获取 APMPlus 令牌。解析为懒加载，成功值按 `APMPlusConfig` 实例缓存；解析失败不缓存、不返回空 Key，而是抛出脱敏后的错误。 | [APMPlus](/productions/veadk/preview/zh/components/observability/apmplus) |
+| Studio MPA | 新增 MPA 协作智能体（A2A 中心）：管理员可管理 MPA 与协作空间的绑定（创建、切换、解绑与删除），注册协作智能体（JSON 或 HTTPS URL 互斥导入，单一 Runtime 选择器），管理智能体别名、成员与删除，并在智能体详情查看服务地址与技能元数据；旧版本地注册接口已废弃，鉴权后返回 `legacy_registration_retired`（410）。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#协作智能体与-a2a-中心) |
+| Studio MPA | 新增 MPA AGENTS.md 编辑器：在 MPA 智能体信息栏编辑所选 Runtime 的 AGENTS.md 文档，需管理员身份与 Runtime 可见性授权，凭据由 Studio 服务端注入；文档上限 40,000 字符，使用版本号（CAS）并发控制，较旧 Runtime 不支持时显示升级提示并保留元数据查看。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#编辑-agentsmd) |
+| Studio MPA | 新增 MPA 容器镜像更新：对 MPA 智能体的 Runtime 和 Worker 组件分别独立更新容器镜像，支持公开标签、手动镜像地址与 `latest` 解析三种互斥来源；公开目录使用固定公共仓库，不接受任意仓库输入。提交仅表示已提交、不表示已健康，且不自动重试。 | [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#更新容器镜像) |
+| Studio MPA | 创建 MPA 智能体失败时显示本地化安全原因，支持展开并复制失败阶段、操作以及可选的已校验错误码与请求 ID，不展示原始 SDK、SQL 或异常文本；已知配额、鉴权、超时与资源状态错误给出对应说明，缺失细节明确标注为未知。 | [部署 MPA 智能体](/productions/veadk/preview/zh/deploy/mpa) · [Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio#create-an-agent) |
 | 技能 | 修复旧本地技能入口中模型可能因工具名称指引不一致而无法正确调用命令执行工具的问题：生成的执行指引现使用实际工具名称，避免模型因名称歧义调用不存在的工具。 | [技能](/productions/veadk/preview/zh/components/agent/skills#旧本地入口已废弃) |
 | MPA 部署 | Studio 托管创建 MPA 智能体时，配置中引用的 `latest` 镜像标签会在部署前被匿名解析为同一公共仓库中已发布且 manifest digest 完全一致的具体版本标签，并持久化该选择；重试部署时验证已保存的版本标签，确保部署内容不变。镜像发布方须在每次发布 `latest` 时保留对应版本标签且不得覆盖；无匹配标签、公共读取不可用或内容变更时部署明确失败。使用固定版本标签的部署、已有智能体和独立 CLI 部署不受影响。 | [部署 MPA 智能体](/productions/veadk/preview/zh/deploy/mpa) |
 | 内容安全 | `content_safety` 新增 AgentSentry V3 私有审查模式：设置 `AGENTSENTRY_URL` 后启用独立的 V3 私有审查，使用端点 AK/SK 签名鉴权，优先于 `TOOL_LLM_SHIELD_*` 配置；仅审查用户输入与工具调用前的模型可见计划，不审查模型输出和工具返回；工具调用要求模型提供可见计划，缺失时阻止执行；审查服务降级或超时时阻止执行而非放行。可通过 `AGENTSENTRY_ENABLED` 独立关闭。 | [内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety) |

@@ -98,11 +98,11 @@ exporter = APMPlusExporter(
 | Config | Environment variable | Type | Default | Description |
 | :--- | :--- | :--- | :--- | :--- |
 | `endpoint` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT` | `str` | Derived from cloud provider and region | APMPlus OTLP endpoint (gRPC), formatted as `http://apmplus-{region}.volces.com:4317`. |
-| `app_key` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` | `str` | Fetches an APMPlus token automatically when unset | Application key used for authentication. |
+| `app_key` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY`, `TENANT_APMPLUS_APPKEY` | `str` | Fetches an APMPlus token automatically when unset | Application key used for authentication. Reads `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` then `TENANT_APMPLUS_APPKEY`; when neither is set, an APMPlus token is fetched automatically using cloud credentials. |
 | `service_name` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME` | `str` | `veadk_tracing` | Service name shown in the APMPlus console to identify the source. |
 
 <Note>
-When `app_key` is not provided via environment variable, the exporter fetches an APMPlus token automatically based on the cloud provider: Volcengine uses `open.volcengineapi.com` and BytePlus uses `open.byteplusapi.com`, so valid credentials for the corresponding provider are required (Volcengine uses `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`; BytePlus uses `BYTEPLUS_ACCESS_KEY` / `BYTEPLUS_SECRET_KEY`; when using temporary credentials, the corresponding Session Token must also be provided). The `endpoint` connects over gRPC without transport encryption.
+The AppKey is resolved with the following precedence: a non-blank `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY`, then a non-blank `TENANT_APMPLUS_APPKEY`, and finally an APMPlus token fetched automatically based on the cloud provider (Volcengine uses `open.volcengineapi.com` and BytePlus uses `open.byteplusapi.com`, so valid credentials for the corresponding provider are required: Volcengine uses `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`; BytePlus uses `BYTEPLUS_ACCESS_KEY` / `BYTEPLUS_SECRET_KEY`; when using temporary credentials, the corresponding Session Token must also be provided). Resolution is lazy and successful values are cached per `APMPlusConfig` instance; failures are not cached and never returned as an empty key — a sanitized error is raised instead. The `endpoint` connects over gRPC without transport encryption.
 </Note>
 
 <Note>

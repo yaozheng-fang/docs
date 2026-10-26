@@ -317,3 +317,6 @@ Select **Agents → MPA Agents → Create MPA Agent** to enter a three-step crea
 
   Image publishers must retain a matching version tag alongside each `latest` publication and must not overwrite existing tags. If no matching version tag exists, public read access is unavailable, or the saved content has changed, deployment fails explicitly. Deployments using fixed version tags, existing agents, and standalone CLI deployments are unaffected by this behavior.
 </Note>
+<Note>
+  When MPA agent creation fails, Studio shows a localized safe reason with expandable and copyable stage, operation, and optional validated error code and request ID; raw SDK, SQL, or exception text is never displayed. Known quota, authorization, timeout, and resource-state errors get matching safe explanations, and missing details are explicitly marked as unknown. Successful creation and the general agent view are unaffected.
+</Note>
