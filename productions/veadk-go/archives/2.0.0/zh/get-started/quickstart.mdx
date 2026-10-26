@@ -1,0 +1,153 @@
+---
+title: "快速开始"
+en_link: "/productions/veadk-go/archives/2.0.0/en/get-started/quickstart"
+---
+
+本教程介绍如何配置模型、创建一个最小 VeADK Go 智能体，并通过命令行或 Web UI 运行。示例使用 V2 模块路径。
+
+## 前置条件
+
+- 已完成[安装](/productions/veadk-go/archives/2.0.0/zh/get-started/installation)，并在项目中安装 `github.com/volcengine/veadk-go/v2`
+- 已准备火山方舟或 OpenAI 兼容模型服务的 API Key，并拥有所选模型的调用权限
+- 以下命令使用 Bash 或 zsh；配置与运行命令应在同一终端执行
+
+## 配置模型
+
+在项目根目录创建 `config.yaml`，写入模型名称和服务地址：
+
+```yaml
+model:
+  agent:
+    provider: openai
+    name: deepseek-v4-flash-ga-260731
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+```
+
+再在当前终端导出 API Key：
+
+```bash
+export MODEL_AGENT_API_KEY="your-ark-api-key"
+```
+
+`provider: openai` 表示使用 OpenAI 兼容协议，请求会发送到 `api_base` 指定的模型服务地址。模型名称应替换为当前账号可调用的名称。
+
+## 编写智能体
+
+在项目根目录创建 `main.go`：
+
+```go
+package main
+
+import (
+	"context"
+	"os"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/log"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/cmd/launcher"
+	"google.golang.org/adk/v2/cmd/launcher/full"
+	"google.golang.org/adk/v2/session"
+)
+
+func main() {
+	ctx := context.Background()
+
+	a, err := veagent.New(&veagent.Config{})
+	if err != nil {
+		log.Errorf("New agent failed: %v", err)
+		return
+	}
+
+	config := &launcher.Config{
+		AgentLoader:    agent.NewSingleLoader(a),
+		SessionService: session.InMemoryService(),
+	}
+
+	l := full.NewLauncher()
+	if err = l.Execute(ctx, config, os.Args[1:]); err != nil {
+		log.Errorf("Run failed: %v\n\n%s", err, l.CommandLineSyntax())
+		return
+	}
+}
+```
+
+`veagent.New(&veagent.Config{})` 会读取前面配置的模型。`launcher.Config` 使用单个智能体和内存会话服务；`full.NewLauncher()` 提供命令行和 Web UI 启动入口。
+
+## 运行命令行入口
+
+在 `main.go` 所在目录运行：
+
+```bash
+go run .
+```
+
+该命令启动 ADK launcher 的命令行入口。若当前 launcher 需要更多参数或子命令，终端会输出可用语法；按照输出继续输入提示词或选择运行方式。
+
+看到模型返回非空回答，表示模型配置和智能体启动路径已经打通。
+
+## 打开 Web UI
+
+同一个 `main.go` 也可以启动 ADK Web 界面：
+
+```bash
+go run . web api webui
+```
+
+如果智能体运行时间较长，可以增加读写超时：
+
+```bash
+go run . web -read-timeout 3m -write-timeout 3m api webui
+```
+
+## 在代码中直接调用 Runner
+
+如果不需要启动 launcher，而是要在自己的 Go 服务中直接调用智能体，可以使用 VeADK Go 的 `runner` 包：
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	verunner "github.com/volcengine/veadk-go/v2/runner"
+	"google.golang.org/adk/v2/agent"
+)
+
+func main() {
+	ctx := context.Background()
+
+	a, err := veagent.New(&veagent.Config{})
+	if err != nil {
+		panic(err)
+	}
+
+	r, err := verunner.New(verunner.Config{
+		AppName:           "demo",
+		Agent:             a,
+		AutoCreateSession: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	answer, err := r.RunText(ctx, "user", "session", "hello", agent.RunConfig{})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(answer)
+}
+```
+
+`RunText` 适合纯文本输入并直接获取最终文本响应。需要多模态或多 part 输入时，可以使用 `runner.UserParts`、`runner.UserBytes` 或 `runner.UserURI` 构造用户消息，再消费 `Run` 返回的事件流。
+
+## 排查首次运行问题
+
+| 现象 | 检查与处理 |
+| --- | --- |
+| `go get` 找不到 V2 稳定版本 | 确认使用 `github.com/volcengine/veadk-go/v2@v2.0.0` 安装；检查 Go 版本是否满足 1.26.5 或更高。 |
+| 模型认证或权限失败 | 确认 `MODEL_AGENT_API_KEY` 已在当前终端导出，并与 `api_base`、模型名称和账号权限匹配。 |
+| 模型不存在或不可用 | 在模型服务控制台确认模型名称及可用范围，再修改 `MODEL_AGENT_NAME` 或 `config.yaml`。 |
+| 修改 `config.yaml` 后仍使用旧配置 | 检查同名环境变量；已存在的环境变量不会被 `.env` 或 `config.yaml` 覆盖。 |

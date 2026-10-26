@@ -1,0 +1,212 @@
+---
+title: "Tools"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/components/tools"
+---
+
+Tools let an agent call deterministic business logic, external services, or runtime capabilities. VeADK Go supports ADK Go function tools and toolsets, plus Volcengine-oriented built-in tools.
+
+## Minimal Function Tool
+
+Function tools are best for deterministic business actions such as calculation, internal lookups, or writing application data. The `json` and `jsonschema` tags on the argument struct help the model produce valid JSON arguments.
+
+```go
+package main
+
+import (
+	"fmt"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/tool"
+	"google.golang.org/adk/v2/tool/functiontool"
+)
+
+type CalculatorAddArgs struct {
+	A float64 `json:"a" jsonschema:"First number. Integer or decimal."`
+	B float64 `json:"b" jsonschema:"Second number. Integer or decimal."`
+}
+
+func CalculatorAddTool() (tool.Tool, error) {
+	handler := func(ctx agent.Context, args CalculatorAddArgs) (map[string]any, error) {
+		result := args.A + args.B
+		return map[string]any{
+			"result":  result,
+			"explain": fmt.Sprintf("%g + %g = %g", args.A, args.B, result),
+		}, nil
+	}
+
+	return functiontool.New(
+		functiontool.Config{
+			Name:        "calculator_add",
+			Description: "Adds two numbers. Args: a, b. Returns: result.",
+		},
+		handler,
+	)
+}
+
+func newAgentWithTools() (agent.Agent, error) {
+	addTool, err := CalculatorAddTool()
+	if err != nil {
+		return nil, err
+	}
+
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "tool_agent",
+			Description: "Agent with business tools.",
+			Instruction: "Use tools when deterministic calculation or external data is needed.",
+			Tools:       []tool.Tool{addTool},
+		},
+	})
+}
+```
+
+The handler receives an `agent.Context`. It can read `AppName()`, `AgentName()`, `UserID()`, `SessionID()`, and related runtime fields, which is useful for correlating tool calls with business requests.
+
+## Web Search and Link Reading
+
+Web Search lets the agent search open web material. Link Reader is useful when the user provides URLs and the agent needs to read the main content from pages, PDFs, or video links.
+
+```go
+webSearch, err := web_search.NewWebSearchTool(&web_search.Config{})
+if err != nil {
+	return nil, err
+}
+
+linkReader, err := builtin_tools.NewLinkReaderTool(&builtin_tools.LinkReaderConfig{})
+if err != nil {
+	return nil, err
+}
+
+agentWithSearch, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "research_agent",
+		Description: "Search and read external material.",
+		Instruction: "Use web_search for open-ended research and link_reader when the user gives URLs.",
+		Tools:       []tool.Tool{webSearch, linkReader},
+	},
+})
+```
+
+Use `builtin_tools.NewWebFetchTool(...)` when you only need to fetch a specified page. For stronger scraping behavior, see `NewWebScraperTool(...)`.
+
+## MCP Router Toolset
+
+MCP Router is mounted as a `Toolset`. It is useful when tools are centrally managed by the platform and should be exposed to the agent without reimplementing each tool in application code.
+
+```go
+mcpSet, err := builtin_tools.NewMcpRouterToolset()
+if err != nil {
+	return nil, err
+}
+
+agentWithMCP, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:     "mcp_agent",
+		Toolsets: []tool.Toolset{mcpSet},
+	},
+})
+```
+
+Use an explicit MCP Router endpoint:
+
+```bash
+export TOOL_MCP_ROUTER_URL="https://your-mcp-router-endpoint/mcp"
+export TOOL_MCP_ROUTER_API_KEY="your-api-key"
+```
+
+Or provide an AgentKit MCP Toolset ID and let VeADK Go resolve the endpoint and API key through AgentKit:
+
+```bash
+export MCP_ROUTER_ID="mt-xxxx"
+export VOLCENGINE_ACCESS_KEY="your-ak"
+export VOLCENGINE_SECRET_KEY="your-sk"
+```
+
+`MCP_TOOLSET_ID` is accepted as an alias for `MCP_ROUTER_ID`. Explicit `url` or `api_key` values override values resolved from the ID.
+
+## Run Code and Skills Sandbox
+
+`NewRunCodeSandboxTool` creates the long-running `run_code` tool and delegates code execution to AgentKit Code Sandbox.
+
+```go
+runCode, err := builtin_tools.NewRunCodeSandboxTool()
+if err != nil {
+	return nil, err
+}
+
+agentWithCode, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "code_agent",
+		Instruction: "Use run_code only when code execution is needed.",
+		Tools:       []tool.Tool{runCode},
+	},
+})
+```
+
+At runtime, provide the AgentKit tool ID. `run_code` first looks for the script-specific tool ID:
+
+```bash
+export AGENTKIT_TOOL_ID_SCRIPT="your-code-sandbox-tool-id"
+# or use the generic fallback
+export AGENTKIT_TOOL_ID="your-code-sandbox-tool-id"
+```
+
+Skills Sandbox is for delegating a larger workflow to a remote Skill environment. Use `execute_skills` when the agent should wait for the final result; use `invoke_skill` plus `poll_skill` for non-blocking tasks.
+
+```go
+executeSkills, err := builtin_tools.NewExecuteSkillsSandboxTool()
+if err != nil {
+	return nil, err
+}
+
+agentWithSkills, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "skills_agent",
+		Instruction: "Delegate workflow requests to execute_skills.",
+		Tools:       []tool.Tool{executeSkills},
+	},
+})
+```
+
+Skills Sandbox usually needs:
+
+```bash
+export AGENTKIT_TOOL_ID_SKILLS="your-skills-sandbox-tool-id"
+export SKILL_SPACE_ID="your-skill-space-id"
+```
+
+If the agent also needs to read remote Skill instructions, combine it with `skilltool.NewReadOnlySkillToolset(...)` or `skilltool.NewSkillToolset(...)` and put the result in `Toolsets`.
+
+## Common Tool Types
+
+| Type | Constructor | Best for |
+| --- | --- | --- |
+| Function tool | `functiontool.New(...)` | Business lookups, calculations, internal actions. |
+| Web Search | `web_search.NewWebSearchTool(...)` | Open web search and external material. |
+| Link Reader | `builtin_tools.NewLinkReaderTool(...)` | Reading user-provided links, PDFs, or video content. |
+| MCP Router | `builtin_tools.NewMcpRouterToolset(...)` | Platform-managed MCP toolsets. |
+| Run Code Sandbox | `builtin_tools.NewRunCodeSandboxTool()` | Isolated code execution and data processing. |
+| Skills Sandbox | `NewExecuteSkillsSandboxTool` / `NewInvokeSkillSandboxTool` / `NewPollSkillSandboxTool` | Remote Skill workflow delegation. |
+| Media tools | `NewImageGenerateTool`, `NewImageEditTool`, `NewVideoGenerateTool`, `NewTTSTool` | Image, video, or speech generation and editing. |
+
+## Recommendations
+
+- Keep tool names stable and describe inputs, outputs, and side effects.
+- Add confirmation for writes, orders, approvals, or other irreversible actions.
+- Pass external credentials through environment variables, secrets, or runtime state.
+- Set reasonable timeouts for long-running tools and expose in-progress state in the caller or UI.
+- Return structured errors from external services so the model can decide whether to retry, switch tools, or ask the user for clarification.
+
+## Safety Boundaries for Side Effects
+
+When a tool modifies an external system, submits an approval, sends a message, deletes resources, or spends money, do not rely only on the model's judgment. Add confirmation, authorization, and auditing in the business layer.
+
+| Risk | Recommendation |
+| --- | --- |
+| Writing or deleting data | Ask the user to confirm key fields and validate them again in the handler. |
+| External cost or long runtime | Set timeouts, budgets, and cancellation paths. |
+| Credential leakage | Do not put tokens, AK/SK, or API keys in tool descriptions, prompts, or docs examples. |
+| Irreversible actions | Return a pending plan and let the UI or business service perform the final submission. |
+

@@ -1,0 +1,210 @@
+---
+title: "Deploy to AgentKit"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/deploy/agentkit"
+---
+
+VeADK Go can wrap an agent as an HTTP service through `apps/agentkit_server_app`. The server combines Simple API, A2A, ADK REST, and optional WebUI routes. Use it for local integration, AgentKit Runtime deployment, or embedding an agent service in a Go application.
+
+<Warning>
+  Before exposing the service publicly or deploying it to a cloud runtime, provide model, tool, knowledge-base, memory, observability, and AgentKit credentials through environment variables or secrets. Do not bake API keys, AK/SK, tokens, or private endpoints into images or repositories.
+</Warning>
+
+## Prerequisites
+
+- Use the `github.com/volcengine/veadk-go/v2` module.
+- Configure model credentials, such as the API key required by Ark or an OpenAI-compatible model.
+- Make sure external tool, knowledge-base, memory, and observability services are reachable from the deployment environment.
+- If you need an A2A Agent Card, decide the externally reachable `PublicURL` or trusted reverse-proxy strategy.
+
+## Minimal Service
+
+The following example creates an agent and starts AgentKit Server App on local port `8000`.
+
+```go
+package main
+
+import (
+	"context"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/apps"
+	"github.com/volcengine/veadk-go/v2/apps/agentkit_server_app"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/session"
+)
+
+func main() {
+	ctx := context.Background()
+
+	rootAgent, err := veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "support_agent",
+			Description: "Answer product questions.",
+			Instruction: "Answer with concise and accurate product guidance.",
+		},
+		ModelName: "deepseek-v4-flash-ga-260731",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	api := apps.DefaultApiConfig().
+		SetHost("127.0.0.1").
+		SetPort(8000)
+
+	app := agentkit_server_app.NewAgentkitServerApp(api)
+	if err := app.Run(ctx, &apps.RunConfig{
+		AgentLoader:    agent.NewSingleLoader(rootAgent),
+		SessionService: session.InMemoryService(),
+	}); err != nil {
+		panic(err)
+	}
+}
+```
+
+After startup, the default `ApiConfig` exposes Simple API, A2A, ADK REST, and WebUI routes. `SetHost("127.0.0.1")` listens only on localhost. In containers, use the default empty host or the listen address required by the platform.
+
+## Invoke and Verify
+
+When Simple API is enabled, call `/invoke` to verify one agent turn:
+
+```bash
+curl -X POST http://127.0.0.1:8000/invoke \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"hello"}'
+```
+
+The health endpoint is `/health`:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+If `ApiPathPrefix` is configured, ADK REST routes are mounted under that prefix:
+
+```go
+api := apps.DefaultApiConfig().
+	SetHost("127.0.0.1").
+	SetPort(8000).
+	SetApiPathPrefix("/api")
+```
+
+## Configure `RunConfig`
+
+`apps.RunConfig` passes the agent, sessions, memory, artifacts, plugins, and telemetry into the app server.
+
+| Field | Description |
+| --- | --- |
+| `AgentLoader` | Required. Usually `agent.NewSingleLoader(rootAgent)`. |
+| `SessionService` / `ShortTermMemory` | Short-term session service. If unset, `apps.Run` uses an in-memory session service. |
+| `MemoryService` / `LongTermMemory` | Long-term memory service, which can work with agent memory configuration. |
+| `ArtifactService` | File or artifact storage service. |
+| `PluginConfig` | ADK plugin configuration. The default path appends the VeADK Go observability plugin. |
+| `TelemetryOptions` | ADK telemetry options. The default path appends the provider reuse option from VeADK Go. |
+| `AutoSaveSession` | Saves sessions into long-term memory when enabled. |
+| `DisableObservability` | Disables the default observability plugin and shutdown hook. |
+
+Production deployments should replace in-memory sessions with persistent storage when conversations must survive restarts.
+
+## Configure the HTTP Server
+
+`apps.ApiConfig` controls listen address, paths, timeouts, CORS, request-body size, and the public A2A URL.
+
+```go
+api := apps.DefaultApiConfig().
+	SetHost("0.0.0.0").
+	SetPort(8000).
+	SetApiPathPrefix("/api").
+	SetSSEWriteTimeout(300).
+	SetShutdownTimeout(30).
+	SetMaxRequestBodyBytes(8 << 20).
+	SetCORS(&apps.CORSConfig{
+		AllowedOrigins: []string{"https://console.example.com"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type", "Authorization"},
+	})
+```
+
+| Method | Description |
+| --- | --- |
+| `SetHost` / `SetPort` | Sets listen address and port. |
+| `SetApiPathPrefix` | Sets the ADK REST API prefix. |
+| `SetSimpleAPIEnabled` | Enables or disables `/invoke` and `/health`. |
+| `SetWebUIEnabled` | Enables or disables ADK WebUI routes. |
+| `SetSSEWriteTimeout` | Sets streaming response write timeout. |
+| `SetShutdownTimeout` | Sets graceful shutdown timeout. |
+| `SetMaxRequestBodyBytes` | Limits request body size. |
+| `SetCORS` | Configures CORS. Passing `nil` disables the CORS middleware. |
+
+<Warning>
+  If browser clients can call the service cross-origin, do not allow every origin by default. When credentials are involved, pin trusted origins explicitly.
+</Warning>
+
+## Configure the A2A Public Address
+
+Agent Cards need to advertise a reachable A2A address. By default, the server does not trust `Host`, `Forwarded`, or `X-Forwarded-*` request headers, so production deployments should set `PublicURL` explicitly.
+
+```go
+api := apps.DefaultApiConfig().
+	SetHost("0.0.0.0").
+	SetPort(8000).
+	SetPublicURL("https://agent.example.com").
+	SetA2APath("/a2a").
+	SetA2APublicPath("/agents/support/a2a")
+```
+
+Use `ForwardedAgentCardURL` only behind a trusted reverse proxy that overwrites client-supplied forwarding headers:
+
+```go
+api.SetAgentCardURLResolver(apps.ForwardedAgentCardURL)
+```
+
+## Extend Routes and Middleware
+
+`AgentkitServerApp` can add custom routes after built-in exact routes and before ADK REST/WebUI fallback routes. Middleware runs in declaration order.
+
+```go
+app := agentkit_server_app.NewAgentkitServerApp(
+	api,
+	agentkit_server_app.WithMiddleware(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Service", "veadk-go")
+			next.ServeHTTP(w, r)
+		})
+	}),
+	agentkit_server_app.WithRouteSetup(func(router *mux.Router, _ *apps.RunConfig) error {
+		router.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}).Methods(http.MethodGet)
+		return nil
+	}),
+)
+```
+
+## Add Observability
+
+`apps.Run` appends `observability.NewPlugin()` and `observability.ADKTelemetryOptions()` by default, then performs bounded shutdown after SIGTERM. The deployment environment only needs exporter configuration:
+
+```bash
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318
+export OTEL_SERVICE_NAME=veadk-go-agent
+```
+
+If you manage the OpenTelemetry provider yourself, set:
+
+```go
+DisableObservability: true
+```
+
+## Production Notes
+
+| Concern | Recommendation |
+| --- | --- |
+| Versioning | Pin a VeADK Go release tag or reviewed commit. |
+| Credentials | Use platform secrets or environment variables, not image layers. |
+| Sessions | Use persistent `SessionService` and define how `userID` and `sessionID` are generated. |
+| Observability | Configure OTLP, APMPlus, Cozeloop, or TLS, and review masking policy. |
+| Networking | Define listen address, reverse proxy, CORS, request-body limit, and public paths. |
+| Shutdown | Configure enough SIGTERM grace period for requests and trace flushing to finish. |

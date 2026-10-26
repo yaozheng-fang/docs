@@ -1,0 +1,109 @@
+---
+title: "安装"
+en_link: "/productions/veadk-go/archives/2.0.0/en/get-started/installation"
+---
+
+安装 VeADK Go 后，可以在 Go 项目中创建、运行和封装智能体。新项目默认使用 V2 模块路径；存量 V1 项目继续使用 V1 维护线。
+
+## 前置条件
+
+- Go 1.26.5 或更高版本。该要求来自当前主线 `go.mod`。
+- 调用模型时需要可用的模型和 API Key；安装模块本身不需要模型凭证。
+- 使用 V2 能力时，固定到 `v2.0.0` tag。
+
+## 新项目安装 V2
+
+在你的项目目录初始化 Go module：
+
+```bash
+mkdir veadk-go-demo
+cd veadk-go-demo
+go mod init example.com/veadk-go-demo
+```
+
+固定到 `v2.0.0` tag 安装：
+
+```bash
+go get github.com/volcengine/veadk-go/v2@v2.0.0
+```
+
+安装后，代码中使用 V2 import 路径：
+
+```go
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"google.golang.org/adk/v2/agent"
+)
+```
+
+<Note>
+  V2 包含 ADK v2 和 A2A v2 所需的破坏性更新。生产项目应固定到 `v2.0.0` 或经过验证的版本。
+</Note>
+
+## 存量项目安装 V1
+
+如果项目仍使用 ADK v1，可以安装 V1 维护版本：
+
+```bash
+go get github.com/volcengine/veadk-go@v1.0.1
+```
+
+V1 import 路径不带 `/v2`：
+
+```go
+import (
+	veagent "github.com/volcengine/veadk-go/agent/llmagent"
+	"google.golang.org/adk/agent"
+)
+```
+
+V1 维护分支是 `release/v1`。查看 V1 示例或修复时，切换到该分支：
+
+```bash
+git checkout release/v1
+```
+
+## 配置模型
+
+VeADK Go 会从当前工作目录读取 `.env` 和 `config.yaml`。`.env` 不会覆盖已经存在的环境变量；`config.yaml` 中的键会转换为环境变量格式，且同样不会覆盖已存在的环境变量。因此，已导出的环境变量优先级高于文件配置。
+
+在项目根目录创建 `config.yaml`：
+
+```yaml
+model:
+  agent:
+    provider: openai
+    name: deepseek-v4-flash-ga-260731
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+```
+
+API Key 建议通过环境变量提供：
+
+```bash
+export MODEL_AGENT_API_KEY="your-ark-api-key"
+```
+
+也可以完全使用环境变量配置模型：
+
+```bash
+export MODEL_AGENT_PROVIDER="openai"
+export MODEL_AGENT_NAME="deepseek-v4-flash-ga-260731"
+export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+export MODEL_AGENT_API_KEY="your-ark-api-key"
+```
+
+<Warning>
+  不要把真实 API Key、AK/SK 或 Token 写入版本库。运行示例会向所选模型服务发送提示词，并可能产生模型调用费用。
+</Warning>
+
+## 从源码验证
+
+需要验证 V2 能力或本地修改时，克隆源码仓库：
+
+```bash
+git clone https://github.com/volcengine/veadk-go.git
+cd veadk-go
+git checkout v2.0.0
+```
+
+在源码仓中可以运行公开示例或测试。首次验证建议先选择不依赖外部模型的示例，例如 Runner 基础示例；需要调用模型的示例需先配置模型凭证。

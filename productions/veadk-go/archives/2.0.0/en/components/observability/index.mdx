@@ -1,0 +1,217 @@
+---
+title: "Observability"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/components/observability"
+---
+
+Observability records HTTP requests, Runner invocations, model calls, tool calls, errors, latency, and token usage during an agent run. VeADK Go provides `observability.NewPlugin()`, `observability.ADKTelemetryOptions()`, HTTP middleware, exporter configuration, and bounded shutdown on top of OpenTelemetry.
+
+## When to Use
+
+- Debug latency or errors across model, tool, knowledge-base, and memory paths.
+- Export agent traces to APMPlus, Cozeloop, TLS, an OTLP Collector, stdout, or a file.
+- Keep AgentKit Server App, Simple App, and custom ADK launcher spans in one trace pipeline.
+- Flush queued spans and metrics before process shutdown.
+
+## Enable It in Runner or Launcher Code
+
+If you use ADK launcher directly or assemble `runner.PluginConfig` yourself, register the VeADK Go observability plugin and bind ADK telemetry to the same OpenTelemetry provider.
+
+```go
+package main
+
+import (
+	"context"
+	"os"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/observability"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/cmd/launcher"
+	"google.golang.org/adk/v2/cmd/launcher/full"
+	"google.golang.org/adk/v2/plugin"
+	"google.golang.org/adk/v2/runner"
+	"google.golang.org/adk/v2/session"
+)
+
+func main() {
+	ctx := context.Background()
+	defer observability.Shutdown(ctx)
+
+	a, err := veagent.New(&veagent.Config{
+		ModelName: "deepseek-v4-flash-ga-260731",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	config := &launcher.Config{
+		AgentLoader:    agent.NewSingleLoader(a),
+		SessionService: session.InMemoryService(),
+		PluginConfig: runner.PluginConfig{
+			Plugins: []*plugin.Plugin{observability.NewPlugin()},
+		},
+		TelemetryOptions: observability.ADKTelemetryOptions(),
+	}
+
+	l := full.NewLauncher()
+	if err := l.Execute(ctx, config, os.Args[1:]); err != nil {
+		panic(err)
+	}
+}
+```
+
+`observability.NewPlugin()` initializes exporters from the global config or environment variables. If no exporter is configured, it returns a no-op plugin and agent calls can still proceed.
+
+## Enable It in App Servers
+
+When you start Simple App, A2A App, or AgentKit Server App through `apps.Run`, `RunConfig` adds the observability plugin and ADK telemetry options by default. Set `DisableObservability: true` only when you manage the provider and plugin lifecycle yourself.
+
+```go
+app := agentkit_server_app.NewAgentkitServerApp(
+	apps.DefaultApiConfig().
+		SetHost("127.0.0.1").
+		SetPort(8000),
+)
+
+err := app.Run(context.Background(), &apps.RunConfig{
+	AgentLoader:    agent.NewSingleLoader(rootAgent),
+	SessionService: session.InMemoryService(),
+})
+```
+
+App servers also install `observability.HTTPMiddleware` around the HTTP API handler so HTTP requests and downstream ADK spans can share one trace path.
+
+## Configure Exporters
+
+VeADK Go supports environment variables and `config.yaml`. Environment variables are usually better for containers, CI, and AgentKit Runtime. `config.yaml` works well for local development or fixed deployment packages.
+
+### stdout
+
+stdout is useful for local span-shape checks and does not require any external service.
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_STDOUT_ENABLE=true
+export OTEL_SERVICE_NAME=veadk-go-local
+```
+
+### File
+
+File export is useful for local debugging or offline inspection.
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_FILE_PATH=./traces.jsonl
+export OTEL_SERVICE_NAME=veadk-go-file
+```
+
+### OTLP
+
+Standard OTLP works with OpenTelemetry Collector. `OTEL_TRACES_EXPORTER=otlp` enables the standard OTLP trace exporter. HTTP protobuf defaults to `http://localhost:4318/v1/traces`; gRPC defaults to `http://localhost:4317`.
+
+```bash
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_SERVICE_NAME=veadk-go-agent
+```
+
+Use trace-specific variables when you need to pass a complete trace URL:
+
+```bash
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://collector.example.com:4318/v1/traces
+export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/protobuf
+export OTEL_EXPORTER_OTLP_TRACES_HEADERS='authorization=Bearer%20${OTLP_TOKEN}'
+```
+
+### APMPlus
+
+APMPlus requires an endpoint, API key, and service name. When an APMPlus API key is configured, VeADK Go enables GenAI metrics and APMPlus custom metrics.
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT=https://apmplus-cn-beijing.volces.com:4318
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY=${APMPLUS_API_KEY}
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME=veadk-go-agent
+```
+
+### Cozeloop
+
+Cozeloop uses its own endpoint, API key, and service name.
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT=${COZELOOP_ENDPOINT}
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY=${COZELOOP_API_KEY}
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME=veadk-go-agent
+```
+
+### TLS
+
+TLS export requires an endpoint, region, topic ID, and AK/SK. Inject AK/SK through environment variables or platform secrets.
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT=${TLS_ENDPOINT}
+export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME=veadk-go-agent
+export OBSERVABILITY_OPENTELEMETRY_TLS_REGION=cn-beijing
+export OBSERVABILITY_OPENTELEMETRY_TLS_TOPIC_ID=${TLS_TOPIC_ID}
+export OBSERVABILITY_OPENTELEMETRY_TLS_ACCESS_KEY=${VOLCENGINE_ACCESS_KEY}
+export OBSERVABILITY_OPENTELEMETRY_TLS_SECRET_KEY=${VOLCENGINE_SECRET_KEY}
+```
+
+## `config.yaml` Example
+
+```yaml
+observability:
+  opentelemetry:
+    stdout:
+      enable: true
+    apmplus:
+      endpoint: "https://apmplus-cn-beijing.volces.com:4318"
+      api_key: "${APMPLUS_API_KEY}"
+      service_name: "veadk-go-agent"
+    otlp:
+      endpoint: "http://localhost:4318/v1/traces"
+      protocol: "http/protobuf"
+```
+
+Environment variables override matching config values. A running provider is not reconfigured when environment variables change, so set the full configuration before service startup.
+
+## Configuration Reference
+
+| Config | Environment variable | Description |
+| --- | --- | --- |
+| `opentelemetry.stdout.enable` | `OBSERVABILITY_OPENTELEMETRY_STDOUT_ENABLE` | Writes spans to stdout. |
+| `opentelemetry.file.path` | `OBSERVABILITY_OPENTELEMETRY_FILE_PATH` | Writes spans to a file path. |
+| `opentelemetry.otlp.endpoint` | `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | OTLP endpoint. Trace-specific endpoint is treated as a complete trace URL. |
+| `opentelemetry.otlp.protocol` | `OTEL_EXPORTER_OTLP_PROTOCOL` / `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` | Supports `http/protobuf` and `grpc`. |
+| `opentelemetry.apmplus.endpoint` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT` | APMPlus exporter endpoint. |
+| `opentelemetry.apmplus.api_key` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` | APMPlus API key. |
+| `opentelemetry.apmplus.service_name` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME` | Service name, also usable as `OTEL_SERVICE_NAME`. |
+| `opentelemetry.cozeloop.endpoint` | `OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT` | Cozeloop exporter endpoint. |
+| `opentelemetry.cozeloop.api_key` | `OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY` | Cozeloop API key. |
+| `opentelemetry.tls.topic_id` | `OBSERVABILITY_OPENTELEMETRY_TLS_TOPIC_ID` | TLS trace log topic. |
+| `opentelemetry.enable_metrics` | `OBSERVABILITY_OPENTELEMETRY_ENABLE_METRICS` | Controls metrics. APMPlus configuration enables metrics automatically. |
+
+## What Gets Collected
+
+| Object | Typical content |
+| --- | --- |
+| Invocation | App name, user ID, session ID, invocation ID. |
+| Agent | Agent name, call hierarchy, duration. |
+| Model | Model name, request parameters, input tokens, output tokens, latency, errors. |
+| Tool | Tool name, input, output, errors, latency. |
+| HTTP | HTTP request path for app-server APIs. |
+
+<Warning>
+  Before collecting prompts, tool input, tool output, or model responses, confirm whether they can contain user data, file contents, credentials, or other sensitive information. In production, define masking and retention policies before exporting data to an external observability platform.
+</Warning>
+
+## Lifecycle
+
+`observability.Init` initializes once. The first `NewPlugin` call triggers initialization. Before process exit, call `observability.Shutdown(ctx)` or rely on the default `apps.Run` shutdown path. `Shutdown` and `ForceFlush` respect the caller deadline and an internal five-second upper bound; spans still queued after the deadline may be lost.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| No trace output | Configure at least one exporter, or set `OTEL_TRACES_EXPORTER=otlp` / `console`. |
+| OTLP endpoint is not what you expected | Generic `OTEL_EXPORTER_OTLP_ENDPOINT` follows OTLP endpoint construction rules; use `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` for a complete trace URL. |
+| App starts but no observability data appears | `NewPlugin` returns a no-op plugin when exporter config fails; check startup logs for exporter initialization messages. |
+| Data is incomplete after shutdown | Ensure the service receives SIGTERM with enough shutdown time, or call `observability.Shutdown(ctx)` in custom processes. |
+| You do not want the default plugin | Set `DisableObservability: true` in `apps.RunConfig` and manage provider, plugin, and shutdown yourself. |

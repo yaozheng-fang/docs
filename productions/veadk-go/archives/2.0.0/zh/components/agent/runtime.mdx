@@ -1,0 +1,126 @@
+---
+title: "Runner 与执行"
+en_link: "/productions/veadk-go/archives/2.0.0/en/components/agent/runtime"
+---
+
+`github.com/volcengine/veadk-go/v2/runner` 用于在 Go 代码中直接运行智能体。它封装 ADK Go Runner，并补充默认会话服务、长期记忆自动接线、保存会话到长期记忆、文本响应收集和多模态输入 helper。
+
+## 最小调用
+
+当你只需要把一段文本发给智能体并拿到最终文本响应时，使用 `RunText`：
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	verunner "github.com/volcengine/veadk-go/v2/runner"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+)
+
+func main() {
+	ctx := context.Background()
+
+	a, err := veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "assistant",
+			Description: "Answer short questions.",
+			Instruction: "Answer concisely.",
+		},
+		ModelName: "deepseek-v4-flash-ga-260731",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	r, err := verunner.New(verunner.Config{
+		AppName:           "runner_demo",
+		Agent:             a,
+		AutoCreateSession: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	answer, err := r.RunText(ctx, "user_1", "session_1", "hello", agent.RunConfig{})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(answer)
+}
+```
+
+`runner.New` 要求 `Agent` 必填；如果没有传 `SessionService`，会默认使用 `session.InMemoryService()`。多轮对话时，复用相同的 `userID` 和 `sessionID`。
+
+## 消费事件流
+
+需要流式 UI、工具调用观察、artifact 或底层 ADK 事件时，使用 `Run`。`Run` 返回事件序列；如果只想把事件流收集成最终文本，可以用 `CollectFinalText`。
+
+```go
+events := r.Run(ctx, "user_1", "session_2", verunner.UserText("show raw events"), agent.RunConfig{})
+for event, err := range events {
+	if err != nil {
+		return err
+	}
+	if event.Content == nil {
+		continue
+	}
+	for _, part := range event.Content.Parts {
+		if part != nil && !part.Thought && part.Text != "" {
+			fmt.Print(part.Text)
+		}
+	}
+}
+```
+
+多 part 或多模态输入可以用 helper 构造：
+
+```go
+msg := verunner.UserParts(
+	genai.NewPartFromText("describe this image"),
+	genai.NewPartFromBytes(imageBytes, "image/png"),
+)
+
+answer, err := verunner.CollectFinalText(
+	r.Run(ctx, "user_1", "image_session", msg, agent.RunConfig{}),
+)
+```
+
+## Runner 配置
+
+| 配置 | 作用 |
+| --- | --- |
+| `AppName` | 会话和记忆所属应用名；未设置时使用默认应用名。 |
+| `Agent` | root agent，必填。 |
+| `SessionService` / `ShortTermMemory` | 短期会话服务；二者是同一能力的两个命名。 |
+| `ArtifactService` | ADK artifact 服务，用于保存输入 blob 或运行产物。 |
+| `MemoryService` / `LongTermMemory` | 长期记忆服务；二者是同一能力的两个命名。 |
+| `PluginConfig` | ADK Runner 插件配置，例如观测或自动保存插件。 |
+| `AutoCreateSession` | 自动创建缺失会话。 |
+| `AutoSaveSession` | 运行时安装自动保存会话到长期记忆的插件。 |
+
+## context、userID 和 sessionID
+
+`context.Context` 是 Go 标准取消、超时和请求作用域上下文，不是对话上下文。对话历史由 `userID`、`sessionID` 和 `SessionService` 决定。
+
+| 值 | 建议 |
+| --- | --- |
+| `userID` | 使用业务用户 ID、租户内用户 ID 或匿名用户稳定 ID。 |
+| `sessionID` | 一段对话固定一个 ID；新对话生成新 ID。 |
+| `context.Context` | 用于超时、取消、trace ID 或请求级 metadata。 |
+
+## 直接 Runner 与 App
+
+直接 `runner.New` 适合嵌入自己的 Go 流程，例如后端 handler、worker、CLI 或测试。`apps/simple_app`、`apps/a2a_app`、`apps/agentkit_server_app` 适合启动 VeADK 提供的 HTTP / A2A / AgentKit 服务面。
+
+| 方式 | 适合场景 |
+| --- | --- |
+| 直接 `runner.New` | 自己控制请求入口、鉴权、会话 ID 和响应格式。 |
+| `apps/simple_app` | 快速暴露本地 HTTP 调用面。 |
+| `apps/a2a_app` | 对接 A2A 协议和远程智能体。 |
+| `apps/agentkit_server_app` | 部署到 AgentKit Runtime 或平台托管环境。 |
+

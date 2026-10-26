@@ -1,0 +1,129 @@
+---
+title: "Short-Term Sessions"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/components/session"
+---
+
+Short-term sessions store conversation events for the same `userID` and `sessionID`. They support multi-turn context, tool-call history, and event recovery.
+
+## Minimal Runner Example
+
+For local development, use ADK Go's `session.InMemoryService()`. Reusing the same `userID` and `sessionID` gives the agent access to the same conversation history.
+
+```go
+package main
+
+import (
+	"context"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	verunner "github.com/volcengine/veadk-go/v2/runner"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/session"
+)
+
+func runWithSession(ctx context.Context) (string, error) {
+	a, err := veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "support_agent",
+			Instruction: "Answer user questions with the current conversation context.",
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	r, err := verunner.New(verunner.Config{
+		AppName:           "support_app",
+		Agent:             a,
+		ShortTermMemory:   session.InMemoryService(),
+		AutoCreateSession: true,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	userID := "user-1"
+	sessionID := "case-1001"
+
+	if _, err := r.RunText(ctx, userID, sessionID, "My order ID is A-1024.", agent.RunConfig{}); err != nil {
+		return "", err
+	}
+	return r.RunText(ctx, userID, sessionID, "What is my order ID?", agent.RunConfig{})
+}
+```
+
+`context.Context` controls cancellation, deadlines, and request-scoped values. It is not the conversation context. Conversation state comes from `userID`, `sessionID`, and `ShortTermMemory` / `SessionService`.
+
+## Persistent Short-Term Sessions
+
+`session.InMemoryService()` is fine for examples and single-process debugging, but data disappears when the process exits. Production deployments should use persistent storage. VeADK Go provides the `NewShortTermMemoryService` entry point:
+
+```go
+sessionService, err := vem.NewShortTermMemoryService(vem.BackendShortTermPostgreSQL, nil)
+if err != nil {
+	return err
+}
+
+r, err := verunner.New(verunner.Config{
+	AppName:           "support_app",
+	Agent:             a,
+	ShortTermMemory:   sessionService,
+	AutoCreateSession: true,
+})
+```
+
+Available backends:
+
+| Backend | Constant | Best for |
+| --- | --- | --- |
+| Local memory | `BackendShortTermLocal` | Local debugging, unit checks, demos. |
+| SQLite | `BackendShortTermSQLite` | Single-node persistence and small tests. |
+| PostgreSQL | `BackendShortTermPostgreSQL` | Production services and shared databases. |
+| MySQL | `BackendShortTermMySQL` | Production services with existing MySQL infrastructure. |
+
+When `config` is `nil`, VeADK reads the matching database config from the global config. Pass the backend-specific config struct when you need explicit settings.
+
+## App Integration
+
+When using a VeADK Go app launcher, `apps.RunConfig.ShortTermMemory` is an alias for `SessionService`. It uses the same session concept as direct Runner usage.
+
+```go
+app := agentkit_server_app.NewAgentkitServerApp(apps.DefaultApiConfig())
+
+err := app.Run(ctx, &apps.RunConfig{
+	AgentLoader:     agent.NewSingleLoader(a),
+	ShortTermMemory: sessionService,
+})
+```
+
+Simple app, A2A app, and AgentKit server app all use the configured session service in the runtime path. The app owns the HTTP or protocol entry point; Runner is better when you call the agent directly inside your Go process.
+
+## Multi-Turn Rules
+
+| Parameter | Purpose |
+| --- | --- |
+| `AppName` | Separates session namespaces for different applications. |
+| `userID` | Identifies the user or caller. |
+| `sessionID` | Identifies one continuous conversation. |
+| `ShortTermMemory` | Stores the event history for that conversation. |
+
+Reuse the same `userID` and `sessionID` for multi-turn conversations. A different `sessionID` starts a new conversation. A different `userID` should be treated as a different user context even when the session ID string is the same.
+
+## Session versus Long-Term Memory
+
+| Capability | Stores | Typical lifetime | Read path |
+| --- | --- | --- | --- |
+| Short-term session | Current conversation events, messages, and tool-call history | One conversation or task | Runner automatically reads history for the same `userID` / `sessionID`. |
+| Long-term memory | Reusable preferences, facts, and conclusions across sessions | Multiple sessions or longer | Retrieved through memory service and memory tools. |
+
+They can be configured together. Short-term sessions keep one conversation continuous. Long-term memory lets separate conversations recall important information.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| The second turn forgets the first turn | Confirm `userID`, `sessionID`, and `AppName` match, and that the same persistent session service is used. |
+| Sessions disappear after restart | Do not use `session.InMemoryService()` for production storage; use SQLite, PostgreSQL, or MySQL. |
+| Users see each other's context | Check `userID` generation and authorization boundaries. |
+| Sessions grow forever | Define lifecycle, cleanup, and context-trimming policies. |

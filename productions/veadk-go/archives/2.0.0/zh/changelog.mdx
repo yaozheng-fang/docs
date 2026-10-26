@@ -1,0 +1,27 @@
+---
+title: "更新日志"
+en_link: "/productions/veadk-go/archives/2.0.0/en/changelog"
+---
+
+本页记录 VeADK Go `v2.0.0` 的用户可见能力。`v2.0.0` 是 V2 版本线的首个正式发布版本。
+
+## v2.0.0
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| 版本线 | 模块路径升级为 `github.com/volcengine/veadk-go/v2`，底层依赖 `google.golang.org/adk/v2`。V2 包含 ADK v2 和 A2A v2 所需的破坏性更新。 | [概述](/productions/veadk-go/archives/2.0.0/zh) |
+| 安装 | 固定 `go get github.com/volcengine/veadk-go/v2@v2.0.0`，使用 V2 import 路径。 | [安装](/productions/veadk-go/archives/2.0.0/zh/get-started/installation) |
+| 智能体 | 使用 `agent/llmagent.New` 创建智能体，支持模型配置、工具、知识库、长期记忆、PromptManager 和 Skills 发现。 | [模型与智能体](/productions/veadk-go/archives/2.0.0/zh/components/agent/model) |
+| 执行 | 使用 `runner.RunText`、`runner.Run`、`runner.UserParts`、`runner.UserBytes` 和 `runner.UserURI` 进行纯文本、多 part、多模态和事件流调用。 | [Runner 与执行](/productions/veadk-go/archives/2.0.0/zh/components/agent/runtime) |
+| 工具 | 提供函数工具、Web Search、Link Reader、MCP Router、Run Code Sandbox、Skills Sandbox 和媒体生成工具。 | [工具](/productions/veadk-go/archives/2.0.0/zh/components/tools) |
+| 短期会话 | 提供内存、SQLite、PostgreSQL 和 MySQL 后端。 | [短期会话](/productions/veadk-go/archives/2.0.0/zh/components/session) |
+| 长期记忆 | 提供本地、Viking、Mem0、Redis 和 OpenSearch 后端，支持自动保存。 | [长期记忆](/productions/veadk-go/archives/2.0.0/zh/components/memory) |
+| 知识库 | 提供 local、Viking、OpenSearch 和 Redis 后端。 | [知识库](/productions/veadk-go/archives/2.0.0/zh/components/knowledge) |
+| 可观测 | 基于 OpenTelemetry，支持 stdout、文件、OTLP、APMPlus、Cozeloop 和 TLS 导出。 | [可观测](/productions/veadk-go/archives/2.0.0/zh/components/observability) |
+| 部署 | 通过 AgentKit Server App 封装智能体为 HTTP 服务。 | [部署到 AgentKit](/productions/veadk-go/archives/2.0.0/zh/deploy/agentkit) |
+
+## V1
+
+| 模块 | 变更细节 | 链接 |
+| --- | --- | --- |
+| V1 维护线 | 当前可见 V1 发布版本包括 `v1.0.0` 和 `v1.0.1`。存量 V1 项目继续使用不带 `/v2` 的模块路径。 | [安装](/productions/veadk-go/archives/2.0.0/zh/get-started/installation) |

@@ -1,0 +1,212 @@
+---
+title: "工具"
+en_link: "/productions/veadk-go/archives/2.0.0/en/components/tools"
+---
+
+工具让智能体可以调用确定性的业务逻辑、外部服务或运行时能力。VeADK Go 同时支持 ADK Go 的函数工具、Toolset，以及 VeADK 提供的火山引擎内置工具。
+
+## 最小函数工具
+
+函数工具适合封装确定性的业务动作，例如计算、查询内部系统、读写业务对象。参数结构体上的 `json` 和 `jsonschema` tag 会帮助模型生成正确的 JSON 入参。
+
+```go
+package main
+
+import (
+	"fmt"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/tool"
+	"google.golang.org/adk/v2/tool/functiontool"
+)
+
+type CalculatorAddArgs struct {
+	A float64 `json:"a" jsonschema:"第一个加数，支持整数或小数"`
+	B float64 `json:"b" jsonschema:"第二个加数，支持整数或小数"`
+}
+
+func CalculatorAddTool() (tool.Tool, error) {
+	handler := func(ctx agent.Context, args CalculatorAddArgs) (map[string]any, error) {
+		result := args.A + args.B
+		return map[string]any{
+			"result":  result,
+			"explain": fmt.Sprintf("%g + %g = %g", args.A, args.B, result),
+		}, nil
+	}
+
+	return functiontool.New(
+		functiontool.Config{
+			Name:        "calculator_add",
+			Description: "执行两数相加。参数: a, b; 返回: result。",
+		},
+		handler,
+	)
+}
+
+func newAgentWithTools() (agent.Agent, error) {
+	addTool, err := CalculatorAddTool()
+	if err != nil {
+		return nil, err
+	}
+
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "tool_agent",
+			Description: "Agent with business tools.",
+			Instruction: "Use tools when deterministic calculation or external data is needed.",
+			Tools:       []tool.Tool{addTool},
+		},
+	})
+}
+```
+
+工具 handler 的第一个参数是 `agent.Context`。它可以读取 `AppName()`、`AgentName()`、`UserID()`、`SessionID()` 等运行上下文，适合把工具调用和业务请求串起来。
+
+## Web Search 与链接读取
+
+Web Search 适合让智能体主动检索网页资料；Link Reader 适合在用户给出 URL 后读取页面、PDF 或视频链接的主要内容。
+
+```go
+webSearch, err := web_search.NewWebSearchTool(&web_search.Config{})
+if err != nil {
+	return nil, err
+}
+
+linkReader, err := builtin_tools.NewLinkReaderTool(&builtin_tools.LinkReaderConfig{})
+if err != nil {
+	return nil, err
+}
+
+agentWithSearch, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "research_agent",
+		Description: "Search and read external material.",
+		Instruction: "Use web_search for open-ended research and link_reader when the user gives URLs.",
+		Tools:       []tool.Tool{webSearch, linkReader},
+	},
+})
+```
+
+如果只需要读取指定网页，也可以使用 `builtin_tools.NewWebFetchTool(...)`。如果需要更强的网页抓取能力，可以查看 `NewWebScraperTool(...)`。
+
+## MCP Router Toolset
+
+MCP Router 以 `Toolset` 形式接入。它适合把平台统一管理的一组工具暴露给智能体，而不是在应用代码里逐个实现工具。
+
+```go
+mcpSet, err := builtin_tools.NewMcpRouterToolset()
+if err != nil {
+	return nil, err
+}
+
+agentWithMCP, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:     "mcp_agent",
+		Toolsets: []tool.Toolset{mcpSet},
+	},
+})
+```
+
+可以用显式 MCP Router 地址：
+
+```bash
+export TOOL_MCP_ROUTER_URL="https://your-mcp-router-endpoint/mcp"
+export TOOL_MCP_ROUTER_API_KEY="your-api-key"
+```
+
+也可以只提供 AgentKit MCP Toolset ID，让 VeADK Go 通过 AgentKit 解析 endpoint 和 API key：
+
+```bash
+export MCP_ROUTER_ID="mt-xxxx"
+export VOLCENGINE_ACCESS_KEY="your-ak"
+export VOLCENGINE_SECRET_KEY="your-sk"
+```
+
+`MCP_TOOLSET_ID` 也可以作为 `MCP_ROUTER_ID` 的别名。若同时配置了 `url` 或 `api_key`，显式配置会覆盖通过 ID 解析出的值。
+
+## Run Code 与 Skills Sandbox
+
+`NewRunCodeSandboxTool` 会创建名为 `run_code` 的长耗时工具，把代码执行委托给 AgentKit Code Sandbox。
+
+```go
+runCode, err := builtin_tools.NewRunCodeSandboxTool()
+if err != nil {
+	return nil, err
+}
+
+agentWithCode, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "code_agent",
+		Instruction: "Use run_code only when code execution is needed.",
+		Tools:       []tool.Tool{runCode},
+	},
+})
+```
+
+运行时需要提供 AgentKit 工具 ID。`run_code` 会优先读取脚本类工具 ID：
+
+```bash
+export AGENTKIT_TOOL_ID_SCRIPT="your-code-sandbox-tool-id"
+# 或使用通用回退
+export AGENTKIT_TOOL_ID="your-code-sandbox-tool-id"
+```
+
+Skills Sandbox 适合把一个较完整的工作流交给远程 Skill 环境执行。同步等待结果时使用 `execute_skills`；需要非阻塞任务时使用 `invoke_skill` + `poll_skill`。
+
+```go
+executeSkills, err := builtin_tools.NewExecuteSkillsSandboxTool()
+if err != nil {
+	return nil, err
+}
+
+agentWithSkills, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "skills_agent",
+		Instruction: "Delegate workflow requests to execute_skills.",
+		Tools:       []tool.Tool{executeSkills},
+	},
+})
+```
+
+Skills Sandbox 通常需要：
+
+```bash
+export AGENTKIT_TOOL_ID_SKILLS="your-skills-sandbox-tool-id"
+export SKILL_SPACE_ID="your-skill-space-id"
+```
+
+如果智能体还需要读取远程 Skill 说明，可以配合 `skilltool.NewReadOnlySkillToolset(...)` 或 `skilltool.NewSkillToolset(...)`，再放入 `Toolsets`。
+
+## 常见工具类型
+
+| 类型 | 构造方式 | 适合场景 |
+| --- | --- | --- |
+| 函数工具 | `functiontool.New(...)` | 业务查询、计算、内部系统动作。 |
+| Web Search | `web_search.NewWebSearchTool(...)` | 开放网页搜索、补充最新外部资料。 |
+| Link Reader | `builtin_tools.NewLinkReaderTool(...)` | 读取用户给出的链接、PDF 或视频内容。 |
+| MCP Router | `builtin_tools.NewMcpRouterToolset(...)` | 接入平台统一管理的 MCP 工具集。 |
+| Run Code Sandbox | `builtin_tools.NewRunCodeSandboxTool()` | 隔离执行代码、数据处理、临时脚本。 |
+| Skills Sandbox | `NewExecuteSkillsSandboxTool` / `NewInvokeSkillSandboxTool` / `NewPollSkillSandboxTool` | 委托远程 Skill 工作流。 |
+| 媒体工具 | `NewImageGenerateTool`、`NewImageEditTool`、`NewVideoGenerateTool`、`NewTTSTool` | 图片、视频、语音生成或编辑。 |
+
+## 使用建议
+
+- 工具名称要稳定，描述要说明输入、输出和副作用。
+- 涉及写入、下单、审批等动作时，建议增加确认逻辑。
+- 外部工具凭证通过环境变量、Secret 或运行时状态传入，不写入文档仓或源码仓。
+- 长耗时工具应设置合理超时，并在 UI 或调用方展示执行中状态。
+- 对外部服务返回值做结构化错误处理，让模型能判断是否重试、换工具或向用户澄清。
+
+## 有副作用工具的安全边界
+
+当工具会修改外部系统、提交审批、发送消息、删除资源或产生费用时，不要只依赖模型自行判断。建议在业务层增加确认、权限和审计：
+
+| 风险 | 建议 |
+| --- | --- |
+| 写入或删除数据 | 工具执行前要求用户确认关键字段，并在 handler 内再次校验。 |
+| 外部费用或长时间运行 | 设置超时、预算和取消路径。 |
+| 凭证泄露 | 不把 token、AK/SK、API key 放进工具描述、prompt 或文档示例。 |
+| 不可逆动作 | 返回待确认计划，由上层 UI 或业务服务执行最终提交。 |
+

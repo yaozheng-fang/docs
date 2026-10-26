@@ -1,0 +1,96 @@
+---
+title: "Models and Agents"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/components/agent/model"
+---
+
+The VeADK Go agent entry point is `github.com/volcengine/veadk-go/v2/agent/llmagent`. It extends ADK Go `llmagent.Config` with Volcengine Ark/OpenAI-compatible model settings, knowledge bases, long-term memory, PromptManager, Skills discovery, and VeADK built-ins.
+
+## Minimal Agent
+
+`llmagent.New` accepts `*veagent.Config` and returns the ADK Go `agent.Agent` interface. A minimal config declares the agent name, description, and instruction. Model settings can be passed explicitly or resolved from environment/global defaults.
+
+```go
+package main
+
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+)
+
+func newAssistant() (agent.Agent, error) {
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "assistant",
+			Description: "Answer product and engineering questions.",
+			Instruction: "You are a concise engineering assistant.",
+		},
+		ModelName:     "deepseek-v4-flash-ga-260731",
+		ModelProvider: "ark",
+	})
+}
+```
+
+When `ModelName`, `ModelProvider`, `ModelAPIKey`, or `ModelAPIBase` is omitted, VeADK Go resolves defaults from environment variables and global config. For Ark models, if no API key is supplied, it can fall back to the default-region Ark token provider.
+
+## Agent with Tools
+
+Tools are configured on the embedded ADK `llmagent.Config.Tools`. The example below uses VeADK Go's built-in Web Search tool. Function tools, MCP toolsets, and Sandbox tools follow the same mounting pattern.
+
+```go
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/tool/builtin_tools/web_search"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/tool"
+)
+
+func newSearchAgent() (agent.Agent, error) {
+	searchTool, err := web_search.NewWebSearchTool(&web_search.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "search_agent",
+			Description: "Search the web when fresh information is needed.",
+			Instruction: "Use web search for current facts, then cite the retrieved evidence.",
+			Tools:       []tool.Tool{searchTool},
+		},
+		ModelName: "deepseek-v4-flash-ga-260731",
+	})
+}
+```
+
+## Config Reference
+
+| Config | Purpose |
+| --- | --- |
+| `Config` | Embedded ADK Go `llmagent.Config` for `Name`, `Description`, `Instruction`, `Tools`, `Toolsets`, and related fields. |
+| `ModelName` | Model name. If omitted, VeADK Go reads environment/global defaults. |
+| `ModelProvider` | Model provider; source supports `ark` and OpenAI-compatible paths. |
+| `ModelAPIBase` / `ModelAPIKey` | Model endpoint and credential. Inject them through environment variables or secrets in production. |
+| `ModelExtraConfig` / `ModelExtraHeaders` | Extra body/header values for the model client. |
+| `KnowledgeBase` | Adds the knowledge-base retrieval tool automatically. |
+| `LongTermMemory` | Adds the `loadMemory` tool; pass the same memory service to Runner or App. |
+| `PromptManager` | Supplies the instruction when `Instruction` is not set explicitly. |
+| `Skills` | Local Skills root directories; child directories are discovered when the agent is created. |
+| `DisableThought` | Adds model-specific config to disable thought output where supported. |
+
+## Knowledge and Memory Wiring
+
+`KnowledgeBase` and `LongTermMemory` are VeADK Go's higher-level additions on top of ADK agents. They do not change how `agent.Agent` is called; they add tools the model can use:
+
+- `KnowledgeBase` adds retrieval through `LoadKnowledgeBaseTool`.
+- `LongTermMemory` adds `loadmemorytool.New()`.
+- `LongTermMemory` is also associated with the agent so `runner.New` can reuse it when `MemoryService` is not passed explicitly.
+
+## Recommendations
+
+- Use the `github.com/volcengine/veadk-go/v2` module path for new projects. Use the corresponding V1 historical-version documentation for the V1 maintenance line.
+- Do not commit model, tool, or knowledge-base credentials.
+- Make tool policies explicit in the instruction: when to retrieve, when to call external tools, and how to answer when material is missing.
+- Add confirmation logic for tools with side effects.
+

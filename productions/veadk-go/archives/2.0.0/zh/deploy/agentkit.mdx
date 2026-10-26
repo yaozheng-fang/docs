@@ -1,0 +1,210 @@
+---
+title: "部署到 AgentKit"
+en_link: "/productions/veadk-go/archives/2.0.0/en/deploy/agentkit"
+---
+
+VeADK Go 可以通过 `apps/agentkit_server_app` 把一个智能体封装成 HTTP 服务。该服务组合了 Simple API、A2A、ADK REST 和可选 WebUI，适合本地联调、部署到 AgentKit Runtime，或嵌入到已有 Go 服务中。
+
+<Warning>
+  部署到公网或云上运行环境前，应确认模型、工具、知识库、记忆、观测平台和 AgentKit 凭证都通过环境变量或 Secret 注入。不要把 API Key、AK/SK、Token 或私有 endpoint 写入镜像和代码仓。
+</Warning>
+
+## 前提条件
+
+- 使用 `github.com/volcengine/veadk-go/v2` 模块。
+- 已配置模型凭证，例如火山方舟或 OpenAI-compatible 模型所需的 API Key。
+- 如果启用工具、知识库、记忆或可观测导出，相关外部服务在部署环境中可访问。
+- 如果需要 A2A Agent Card，已明确外部可访问的 `PublicURL` 或可信反向代理策略。
+
+## 最小服务
+
+下面示例创建一个智能体，并通过 AgentKit Server App 在本地 `8000` 端口启动服务。
+
+```go
+package main
+
+import (
+	"context"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/apps"
+	"github.com/volcengine/veadk-go/v2/apps/agentkit_server_app"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/session"
+)
+
+func main() {
+	ctx := context.Background()
+
+	rootAgent, err := veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "support_agent",
+			Description: "Answer product questions.",
+			Instruction: "Answer with concise and accurate product guidance.",
+		},
+		ModelName: "deepseek-v4-flash-ga-260731",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	api := apps.DefaultApiConfig().
+		SetHost("127.0.0.1").
+		SetPort(8000)
+
+	app := agentkit_server_app.NewAgentkitServerApp(api)
+	if err := app.Run(ctx, &apps.RunConfig{
+		AgentLoader:    agent.NewSingleLoader(rootAgent),
+		SessionService: session.InMemoryService(),
+	}); err != nil {
+		panic(err)
+	}
+}
+```
+
+启动后，默认 `ApiConfig` 会暴露 Simple API、A2A、ADK REST 和 WebUI 相关路由。`SetHost("127.0.0.1")` 只监听本机；部署到容器时通常使用默认空 host 或显式设置为平台要求的监听地址。
+
+## 调用和验证
+
+Simple API 启用时，可以用 `/invoke` 验证服务是否能完成一次智能体调用：
+
+```bash
+curl -X POST http://127.0.0.1:8000/invoke \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"hello"}'
+```
+
+健康检查路径为 `/health`：
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+如果设置了 `ApiPathPrefix`，ADK REST 路由会挂到对应前缀下：
+
+```go
+api := apps.DefaultApiConfig().
+	SetHost("127.0.0.1").
+	SetPort(8000).
+	SetApiPathPrefix("/api")
+```
+
+## 配置 `RunConfig`
+
+`apps.RunConfig` 把智能体、会话、记忆、artifact、插件和 telemetry 交给 App 服务。
+
+| 字段 | 说明 |
+| --- | --- |
+| `AgentLoader` | 必填。通常使用 `agent.NewSingleLoader(rootAgent)`。 |
+| `SessionService` / `ShortTermMemory` | 短期会话服务。未设置时，`apps.Run` 会使用内存会话服务。 |
+| `MemoryService` / `LongTermMemory` | 长期记忆服务，可与智能体记忆配置联动。 |
+| `ArtifactService` | 文件或 artifact 存储服务。 |
+| `PluginConfig` | ADK 插件配置。默认会追加 VeADK Go 可观测插件。 |
+| `TelemetryOptions` | ADK telemetry options。默认会追加 VeADK Go 的 provider 复用选项。 |
+| `AutoSaveSession` | 开启后会把会话保存到长期记忆服务。 |
+| `DisableObservability` | 设为 `true` 后不追加默认可观测插件和 shutdown hook。 |
+
+生产环境通常需要把 `SessionService` 从内存实现替换成持久化后端，避免重启后丢失会话。
+
+## 配置 HTTP 服务
+
+`apps.ApiConfig` 控制监听地址、路径、超时、CORS、请求体大小和 A2A 对外 URL。
+
+```go
+api := apps.DefaultApiConfig().
+	SetHost("0.0.0.0").
+	SetPort(8000).
+	SetApiPathPrefix("/api").
+	SetSSEWriteTimeout(300).
+	SetShutdownTimeout(30).
+	SetMaxRequestBodyBytes(8 << 20).
+	SetCORS(&apps.CORSConfig{
+		AllowedOrigins: []string{"https://console.example.com"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type", "Authorization"},
+	})
+```
+
+| 方法 | 说明 |
+| --- | --- |
+| `SetHost` / `SetPort` | 设置监听地址和端口。 |
+| `SetApiPathPrefix` | 设置 ADK REST API 前缀。 |
+| `SetSimpleAPIEnabled` | 启用或禁用 `/invoke` 和 `/health`。 |
+| `SetWebUIEnabled` | 启用或禁用 ADK WebUI 路由。 |
+| `SetSSEWriteTimeout` | 设置流式响应写超时。 |
+| `SetShutdownTimeout` | 设置优雅关闭超时。 |
+| `SetMaxRequestBodyBytes` | 限制请求体大小。 |
+| `SetCORS` | 设置跨域策略；传入 `nil` 会禁用 CORS middleware。 |
+
+<Warning>
+  如果允许浏览器跨域调用服务，不要把 `AllowedOrigins` 简单设置为任意来源。需要携带凭证时，更应固定可信域名。
+</Warning>
+
+## 配置 A2A 对外地址
+
+Agent Card 需要向客户端展示可访问的 A2A 地址。服务默认不会信任请求头里的 `Host`、`Forwarded` 或 `X-Forwarded-*`，因此生产环境应显式设置 `PublicURL`。
+
+```go
+api := apps.DefaultApiConfig().
+	SetHost("0.0.0.0").
+	SetPort(8000).
+	SetPublicURL("https://agent.example.com").
+	SetA2APath("/a2a").
+	SetA2APublicPath("/agents/support/a2a")
+```
+
+只有在可信反向代理会覆盖客户端传入的 forwarding headers 时，才使用 `ForwardedAgentCardURL`：
+
+```go
+api.SetAgentCardURLResolver(apps.ForwardedAgentCardURL)
+```
+
+## 扩展路由和中间件
+
+`AgentkitServerApp` 支持在内置精确路由之后、ADK REST/WebUI fallback 路由之前添加自定义路由，也支持按声明顺序安装 middleware。
+
+```go
+app := agentkit_server_app.NewAgentkitServerApp(
+	api,
+	agentkit_server_app.WithMiddleware(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Service", "veadk-go")
+			next.ServeHTTP(w, r)
+		})
+	}),
+	agentkit_server_app.WithRouteSetup(func(router *mux.Router, _ *apps.RunConfig) error {
+		router.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNoContent)
+		}).Methods(http.MethodGet)
+		return nil
+	}),
+)
+```
+
+## 接入可观测
+
+`apps.Run` 默认会追加 `observability.NewPlugin()` 和 `observability.ADKTelemetryOptions()`，并在收到 SIGTERM 后执行有界关闭。部署环境只需要配置导出器：
+
+```bash
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4318
+export OTEL_SERVICE_NAME=veadk-go-agent
+```
+
+如需完全自行管理 OpenTelemetry provider，设置：
+
+```go
+DisableObservability: true
+```
+
+## 生产建议
+
+| 关注点 | 建议 |
+| --- | --- |
+| 版本 | 固定 VeADK Go release tag 或经过审查的提交。 |
+| 凭证 | 使用平台 Secret 或环境变量，不打入镜像。 |
+| 会话 | 使用持久化 `SessionService`，并明确 `userID` / `sessionID` 的生成规则。 |
+| 观测 | 配置 OTLP、APMPlus、Cozeloop 或 TLS，并检查脱敏策略。 |
+| 网络 | 明确监听地址、反向代理、CORS、请求体大小和公网路径。 |
+| 关闭 | 给容器或平台配置足够的 SIGTERM grace period，保证请求和 trace flush 有时间完成。 |

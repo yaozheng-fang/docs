@@ -1,0 +1,109 @@
+---
+title: "Installation"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/get-started/installation"
+---
+
+After installing VeADK Go, you can create, run, and package agents in Go projects. New projects should use the V2 module path by default. Existing V1 projects can stay on the V1 maintenance line.
+
+## Prerequisites
+
+- Go 1.26.5 or later. This requirement comes from the current mainline `go.mod`.
+- A model and API Key are required when you call a model. Installing the module itself does not require model credentials.
+- To use V2 capabilities, pin to the `v2.0.0` tag.
+
+## Install V2 for New Projects
+
+Initialize a Go module in your project directory:
+
+```bash
+mkdir veadk-go-demo
+cd veadk-go-demo
+go mod init example.com/veadk-go-demo
+```
+
+Pin to the `v2.0.0` tag:
+
+```bash
+go get github.com/volcengine/veadk-go/v2@v2.0.0
+```
+
+Use V2 import paths in your code:
+
+```go
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"google.golang.org/adk/v2/agent"
+)
+```
+
+<Note>
+  V2 contains breaking changes required by ADK v2 and A2A v2. Production projects should pin to `v2.0.0` or a validated version.
+</Note>
+
+## Install V1 for Existing Projects
+
+If your project still uses ADK v1, install a V1 maintenance release:
+
+```bash
+go get github.com/volcengine/veadk-go@v1.0.1
+```
+
+V1 import paths do not include `/v2`:
+
+```go
+import (
+	veagent "github.com/volcengine/veadk-go/agent/llmagent"
+	"google.golang.org/adk/agent"
+)
+```
+
+The V1 maintenance branch is `release/v1`. To inspect V1 examples or fixes, switch to that branch:
+
+```bash
+git checkout release/v1
+```
+
+## Configure the Model
+
+VeADK Go reads `.env` and `config.yaml` from the current working directory. `.env` does not override existing environment variables. Keys in `config.yaml` are converted to environment variable names and also do not override existing environment variables. As a result, exported environment variables have higher priority than file-based configuration.
+
+Create `config.yaml` in your project root:
+
+```yaml
+model:
+  agent:
+    provider: openai
+    name: deepseek-v4-flash-ga-260731
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+```
+
+Provide the API Key through an environment variable:
+
+```bash
+export MODEL_AGENT_API_KEY="your-ark-api-key"
+```
+
+You can also configure the model entirely with environment variables:
+
+```bash
+export MODEL_AGENT_PROVIDER="openai"
+export MODEL_AGENT_NAME="deepseek-v4-flash-ga-260731"
+export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+export MODEL_AGENT_API_KEY="your-ark-api-key"
+```
+
+<Warning>
+  Do not commit real API Keys, AK/SK pairs, or tokens. Running examples sends prompts to the selected model service and may incur model usage charges.
+</Warning>
+
+## Verify from Source
+
+To verify V2 capabilities or local changes, clone the source repository:
+
+```bash
+git clone https://github.com/volcengine/veadk-go.git
+cd veadk-go
+git checkout v2.0.0
+```
+
+In the source repository, you can run public examples or tests. For first verification, start with examples that do not require an external model, such as the basic Runner example. Examples that call a model require model credentials first.

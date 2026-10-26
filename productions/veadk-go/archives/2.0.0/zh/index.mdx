@@ -1,0 +1,48 @@
+---
+title: "概述"
+en_link: "/productions/veadk-go/archives/2.0.0/en"
+---
+
+VeADK Go 是面向 Go 开发者的智能体开发框架。它在 ADK Go 的智能体、Runner、会话和事件流之上，补充火山方舟模型配置、工具、记忆、知识库、可观测和应用封装能力，让 Go 应用可以直接嵌入或对外提供智能体能力。
+
+VeADK Go `v2.0.0` 是 V2 版本线的首个正式发布版本，模块路径为 `github.com/volcengine/veadk-go/v2`，底层依赖 `google.golang.org/adk/v2`。`github.com/volcengine/veadk-go` V1 只作为维护线，适合暂时无法迁移的存量项目。
+
+## 适用场景
+
+- 使用 Go 构建能够调用模型、工具、知识库或记忆的智能体；
+- 在服务端代码中通过 `Runner` 直接调用智能体，并控制用户、会话和事件流；
+- 使用 Workflow Agent 编排顺序、并行或循环执行流程；
+- 将智能体封装为 Simple App、A2A App 或 AgentKit Server App；
+- 为智能体接入 OpenTelemetry、APMPlus、Cozeloop 等可观测能力。
+
+## 版本线
+
+| 版本线 | 模块路径 | ADK 依赖 | 分支 | Tag | 适用场景 |
+| --- | --- | --- | --- | --- | --- |
+| V2 | `github.com/volcengine/veadk-go/v2` | `google.golang.org/adk/v2` | `main` | `v2.0.0` | 新项目默认选择。首个正式发布版本。 |
+| V1 | `github.com/volcengine/veadk-go` | `google.golang.org/adk` | `release/v1` | — | 存量 V1 项目维护，主要接收兼容性、安全和关键修复。 |
+
+<Note>
+  生产项目应固定到 `v2.0.0` 或经过确认的提交。
+</Note>
+
+## 核心模块
+
+| 模块 | 作用 |
+| --- | --- |
+| `agent/llmagent` | 创建默认 LLM 智能体，接入模型、提示词、工具、技能、知识库和长期记忆。 |
+| `runner` | 在 Go 代码中直接运行智能体，管理应用名、用户、会话、事件流、短期会话和长期记忆。 |
+| `agent/workflowagents` | 创建顺序、并行和循环工作流智能体。 |
+| `tool/builtin_tools` | 提供 Web Search、Web Fetch、Link Reader、MCP、图像、视频、语音、代码执行等内置工具。 |
+| `memory` | 提供短期会话和长期记忆封装，支持多种本地或外部存储后端。 |
+| `knowledgebase` | 构建知识库并通过工具让智能体检索外部资料。 |
+| `observability` | 接入 OpenTelemetry，并导出到 stdout、文件、APMPlus、Cozeloop、TLS 或 OTLP 端点。 |
+| `apps` | 将智能体封装为 HTTP App、A2A App 或 AgentKit Server App。 |
+
+## 使用路径
+
+| 目标 | 文档 |
+| --- | --- |
+| 安装并配置 VeADK Go | [安装](/productions/veadk-go/archives/2.0.0/zh/get-started/installation) |
+| 运行第一个智能体 | [快速开始](/productions/veadk-go/archives/2.0.0/zh/get-started/quickstart) |
+| 查看版本变化 | [更新日志](/productions/veadk-go/archives/2.0.0/zh/changelog) |

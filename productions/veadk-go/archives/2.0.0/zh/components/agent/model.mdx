@@ -1,0 +1,96 @@
+---
+title: "模型与智能体"
+en_link: "/productions/veadk-go/archives/2.0.0/en/components/agent/model"
+---
+
+VeADK Go 的智能体入口是 `github.com/volcengine/veadk-go/v2/agent/llmagent`。它在 ADK Go `llmagent.Config` 之上补充火山方舟/OpenAI-compatible 模型配置、知识库、长期记忆、PromptManager、Skills 发现和部分 VeADK 内置能力。
+
+## 最小智能体
+
+`llmagent.New` 接收 `*veagent.Config`，返回 ADK Go 的 `agent.Agent` 接口。最小配置只需要声明名称、说明和系统提示词；模型参数可以显式传入，也可以从环境变量和全局配置兜底。
+
+```go
+package main
+
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+)
+
+func newAssistant() (agent.Agent, error) {
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "assistant",
+			Description: "Answer product and engineering questions.",
+			Instruction: "You are a concise engineering assistant.",
+		},
+		ModelName:     "deepseek-v4-flash-ga-260731",
+		ModelProvider: "ark",
+	})
+}
+```
+
+如果没有显式设置 `ModelName`、`ModelProvider`、`ModelAPIKey` 或 `ModelAPIBase`，VeADK Go 会按环境变量和全局配置补默认值；当没有 API key 时，Ark 模型路径会尝试使用默认区域的 Ark token provider。
+
+## 带工具的智能体
+
+工具放在底层 ADK `llmagent.Config.Tools` 中。下面示例使用 VeADK Go 的 Web Search 内置工具；其他函数工具、MCP Toolset、Sandbox 工具也按同样方式挂载。
+
+```go
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/tool/builtin_tools/web_search"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/tool"
+)
+
+func newSearchAgent() (agent.Agent, error) {
+	searchTool, err := web_search.NewWebSearchTool(&web_search.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "search_agent",
+			Description: "Search the web when fresh information is needed.",
+			Instruction: "Use web search for current facts, then cite the retrieved evidence.",
+			Tools:       []tool.Tool{searchTool},
+		},
+		ModelName: "deepseek-v4-flash-ga-260731",
+	})
+}
+```
+
+## 配置项说明
+
+| 配置 | 作用 |
+| --- | --- |
+| `Config` | 嵌入的 ADK Go `llmagent.Config`，用于声明 `Name`、`Description`、`Instruction`、`Tools`、`Toolsets` 等。 |
+| `ModelName` | 模型名称。未设置时会读取环境变量或全局默认模型。 |
+| `ModelProvider` | 模型提供方；源码中内置 `ark` 和 OpenAI-compatible 路径。 |
+| `ModelAPIBase` / `ModelAPIKey` | 模型服务地址和凭证。生产环境应通过环境变量或 Secret 注入。 |
+| `ModelExtraConfig` / `ModelExtraHeaders` | 传给模型客户端的额外 body/header。 |
+| `KnowledgeBase` | 配置后会自动追加知识库检索工具。 |
+| `LongTermMemory` | 配置后会自动追加 `loadMemory` 工具；同一个 memory service 还需要传给 Runner 或 App。 |
+| `PromptManager` | 未显式设置 `Instruction` 时，可从 PromptManager 读取系统提示词。 |
+| `Skills` | 本地 Skills 根目录列表；创建智能体时会发现子目录中的 skill。 |
+| `DisableThought` | 给支持的模型增加关闭思考内容的额外配置。 |
+
+## 知识库和长期记忆
+
+`KnowledgeBase` 和 `LongTermMemory` 是 VeADK Go 在 ADK 智能体之上补的高层入口。它们不会改变 `agent.Agent` 的调用方式，而是给模型补可调用工具：
+
+- 设置 `KnowledgeBase` 时，VeADK Go 会通过 `LoadKnowledgeBaseTool` 暴露检索能力。
+- 设置 `LongTermMemory` 时，VeADK Go 会补 `loadmemorytool.New()`。
+- `LongTermMemory` 还会被记录到 agent 上，`runner.New` 在未显式传 `MemoryService` 时可以自动取出。
+
+## 编写建议
+
+- 新项目使用 `github.com/volcengine/veadk-go/v2` 模块路径；V1 维护线应参考对应的 V1 历史版本文档。
+- 模型凭证、工具凭证、知识库凭证都不要写进源码或文档仓。
+- 系统提示词里明确工具使用边界，例如何时检索知识库、何时调用外部工具、找不到资料时如何回答。
+- 对有副作用的工具增加确认逻辑，不要只靠提示词约束。
+

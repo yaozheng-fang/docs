@@ -3594,6 +3594,73 @@
                 ]
               },
               {
+                "dropdown": "2.0.0",
+                "groups": [
+                  {
+                    "group": "概览",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/zh/index",
+                      "productions/veadk-go/archives/2.0.0/zh/changelog"
+                    ]
+                  },
+                  {
+                    "group": "快速开始",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/zh/get-started/installation",
+                      "productions/veadk-go/archives/2.0.0/zh/get-started/quickstart"
+                    ]
+                  },
+                  {
+                    "group": "核心组件",
+                    "pages": [
+                      {
+                        "group": "智能体",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/zh/components/agent/model",
+                          "productions/veadk-go/archives/2.0.0/zh/components/agent/runtime"
+                        ]
+                      },
+                      {
+                        "group": "工具",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/zh/components/tools/index"
+                        ]
+                      },
+                      {
+                        "group": "短期会话",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/zh/components/session/index"
+                        ]
+                      },
+                      {
+                        "group": "长期记忆",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/zh/components/memory/index"
+                        ]
+                      },
+                      {
+                        "group": "知识库",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/zh/components/knowledge/index"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "可观测",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/zh/components/observability/index"
+                    ]
+                  },
+                  {
+                    "group": "部署",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/zh/deploy/agentkit"
+                    ]
+                  }
+                ]
+              },
+              {
                 "dropdown": "1.0.1",
                 "groups": [
                   {
@@ -8820,6 +8887,73 @@
                     "group": "Deploy",
                     "pages": [
                       "productions/veadk-go/preview/en/deploy/agentkit"
+                    ]
+                  }
+                ]
+              },
+              {
+                "dropdown": "2.0.0",
+                "groups": [
+                  {
+                    "group": "Overview",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/en/index",
+                      "productions/veadk-go/archives/2.0.0/en/changelog"
+                    ]
+                  },
+                  {
+                    "group": "Get Started",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/en/get-started/installation",
+                      "productions/veadk-go/archives/2.0.0/en/get-started/quickstart"
+                    ]
+                  },
+                  {
+                    "group": "Core Components",
+                    "pages": [
+                      {
+                        "group": "Agents",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/en/components/agent/model",
+                          "productions/veadk-go/archives/2.0.0/en/components/agent/runtime"
+                        ]
+                      },
+                      {
+                        "group": "Tools",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/en/components/tools/index"
+                        ]
+                      },
+                      {
+                        "group": "Short-Term Sessions",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/en/components/session/index"
+                        ]
+                      },
+                      {
+                        "group": "Long-Term Memory",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/en/components/memory/index"
+                        ]
+                      },
+                      {
+                        "group": "Knowledge Base",
+                        "pages": [
+                          "productions/veadk-go/archives/2.0.0/en/components/knowledge/index"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "group": "Observability",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/en/components/observability/index"
+                    ]
+                  },
+                  {
+                    "group": "Deploy",
+                    "pages": [
+                      "productions/veadk-go/archives/2.0.0/en/deploy/agentkit"
                     ]
                   }
                 ]

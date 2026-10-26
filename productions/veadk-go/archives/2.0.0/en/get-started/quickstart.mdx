@@ -1,0 +1,153 @@
+---
+title: "Quickstart"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/get-started/quickstart"
+---
+
+This tutorial shows how to configure a model, create a minimal VeADK Go agent, and run it from the command line or Web UI. The example uses the V2 module path.
+
+## Prerequisites
+
+- You have completed [Installation](/productions/veadk-go/archives/2.0.0/en/get-started/installation) and installed `github.com/volcengine/veadk-go/v2` in your project.
+- You have an API Key for Volcengine Ark or another OpenAI-compatible model service, and permission to call the selected model.
+- The following commands use Bash or zsh. Run configuration and execution commands in the same terminal.
+
+## Configure the Model
+
+Create `config.yaml` in the project root with the model name and endpoint:
+
+```yaml
+model:
+  agent:
+    provider: openai
+    name: deepseek-v4-flash-ga-260731
+    api_base: https://ark.cn-beijing.volces.com/api/v3/
+```
+
+Then export the API Key in the current terminal:
+
+```bash
+export MODEL_AGENT_API_KEY="your-ark-api-key"
+```
+
+`provider: openai` means the OpenAI-compatible protocol is used. Requests are sent to the model service configured by `api_base`. Replace the model name with one your account can call.
+
+## Write the Agent
+
+Create `main.go` in the project root:
+
+```go
+package main
+
+import (
+	"context"
+	"os"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/log"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/cmd/launcher"
+	"google.golang.org/adk/v2/cmd/launcher/full"
+	"google.golang.org/adk/v2/session"
+)
+
+func main() {
+	ctx := context.Background()
+
+	a, err := veagent.New(&veagent.Config{})
+	if err != nil {
+		log.Errorf("New agent failed: %v", err)
+		return
+	}
+
+	config := &launcher.Config{
+		AgentLoader:    agent.NewSingleLoader(a),
+		SessionService: session.InMemoryService(),
+	}
+
+	l := full.NewLauncher()
+	if err = l.Execute(ctx, config, os.Args[1:]); err != nil {
+		log.Errorf("Run failed: %v\n\n%s", err, l.CommandLineSyntax())
+		return
+	}
+}
+```
+
+`veagent.New(&veagent.Config{})` reads the model configuration you created earlier. `launcher.Config` uses a single agent and an in-memory session service. `full.NewLauncher()` provides command-line and Web UI entry points.
+
+## Run the Command-Line Entry Point
+
+Run this command in the directory that contains `main.go`:
+
+```bash
+go run .
+```
+
+This command starts the ADK launcher command-line entry point. If the current launcher needs more arguments or subcommands, the terminal prints the available syntax. Follow that output to enter a prompt or choose a run mode.
+
+When the model returns a non-empty answer, the model configuration and agent startup path are working.
+
+## Open the Web UI
+
+The same `main.go` can start the ADK Web UI:
+
+```bash
+go run . web api webui
+```
+
+If the agent run may take longer, increase read and write timeouts:
+
+```bash
+go run . web -read-timeout 3m -write-timeout 3m api webui
+```
+
+## Call the Runner Directly
+
+If you do not need the launcher and want to call an agent from your own Go service, use the VeADK Go `runner` package:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	verunner "github.com/volcengine/veadk-go/v2/runner"
+	"google.golang.org/adk/v2/agent"
+)
+
+func main() {
+	ctx := context.Background()
+
+	a, err := veagent.New(&veagent.Config{})
+	if err != nil {
+		panic(err)
+	}
+
+	r, err := verunner.New(verunner.Config{
+		AppName:           "demo",
+		Agent:             a,
+		AutoCreateSession: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	answer, err := r.RunText(ctx, "user", "session", "hello", agent.RunConfig{})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(answer)
+}
+```
+
+`RunText` is useful for plain text input when you only need the final text response. For multimodal or multi-part input, use `runner.UserParts`, `runner.UserBytes`, or `runner.UserURI` to build the user message, then consume the event stream returned by `Run`.
+
+## Troubleshooting the First Run
+
+| Symptom | Check and fix |
+| --- | --- |
+| `go get` cannot find a stable V2 version | Confirm you installed `github.com/volcengine/veadk-go/v2@v2.0.0`; check that your Go version is 1.26.5 or later. |
+| Model authentication or permission fails | Confirm that `MODEL_AGENT_API_KEY` is exported in the current terminal and matches `api_base`, the model name, and account permissions. |
+| Model does not exist or is unavailable | Check the model name and availability in the model service console, then update `MODEL_AGENT_NAME` or `config.yaml`. |
+| Editing `config.yaml` does not change the model | Check same-named environment variables. Existing environment variables are not overridden by `.env` or `config.yaml`. |

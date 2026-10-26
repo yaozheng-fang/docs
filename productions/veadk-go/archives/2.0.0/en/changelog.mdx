@@ -1,0 +1,27 @@
+---
+title: "Changelog"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/changelog"
+---
+
+This page records user-visible capabilities in VeADK Go `v2.0.0`. `v2.0.0` is the first stable release of the V2 version line.
+
+## v2.0.0
+
+| Module | Change | Link |
+| --- | --- | --- |
+| Version lines | The module path is now `github.com/volcengine/veadk-go/v2` with ADK dependency `google.golang.org/adk/v2`. V2 contains breaking changes required by ADK v2 and A2A v2. | [Overview](/productions/veadk-go/archives/2.0.0/en) |
+| Installation | Pin `go get github.com/volcengine/veadk-go/v2@v2.0.0` and use V2 import paths. | [Installation](/productions/veadk-go/archives/2.0.0/en/get-started/installation) |
+| Agents | Create agents with `agent/llmagent.New`, supporting model configuration, tools, knowledge bases, long-term memory, PromptManager, and Skills discovery. | [Models and Agents](/productions/veadk-go/archives/2.0.0/en/components/agent/model) |
+| Execution | Use `runner.RunText`, `runner.Run`, `runner.UserParts`, `runner.UserBytes`, and `runner.UserURI` for plain text, multi-part, multimodal, and event-stream invocation. | [Runner and Execution](/productions/veadk-go/archives/2.0.0/en/components/agent/runtime) |
+| Tools | Provides function tools, Web Search, Link Reader, MCP Router, Run Code Sandbox, Skills Sandbox, and media generation tools. | [Tools](/productions/veadk-go/archives/2.0.0/en/components/tools) |
+| Short-term sessions | Provides in-memory, SQLite, PostgreSQL, and MySQL backends. | [Short-term Sessions](/productions/veadk-go/archives/2.0.0/en/components/session) |
+| Long-term memory | Provides local, Viking, Mem0, Redis, and OpenSearch backends with auto-save support. | [Long-Term Memory](/productions/veadk-go/archives/2.0.0/en/components/memory) |
+| Knowledge base | Provides local, Viking, OpenSearch, and Redis backends. | [Knowledge Base](/productions/veadk-go/archives/2.0.0/en/components/knowledge) |
+| Observability | Built on OpenTelemetry, supporting stdout, file, OTLP, APMPlus, Cozeloop, and TLS exporters. | [Observability](/productions/veadk-go/archives/2.0.0/en/components/observability) |
+| Deployment | Wrap agents as HTTP services through AgentKit Server App. | [Deploy to AgentKit](/productions/veadk-go/archives/2.0.0/en/deploy/agentkit) |
+
+## V1
+
+| Module | Change | Link |
+| --- | --- | --- |
+| V1 maintenance line | Visible V1 releases currently include `v1.0.0` and `v1.0.1`. Existing V1 projects continue to use the module path without `/v2`. | [Installation](/productions/veadk-go/archives/2.0.0/en/get-started/installation) |

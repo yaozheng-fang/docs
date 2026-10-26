@@ -1,0 +1,171 @@
+---
+title: "长期记忆"
+en_link: "/productions/veadk-go/archives/2.0.0/en/components/memory"
+---
+
+长期记忆用于在不同会话之间保留用户偏好、任务结论或可复用事实。VeADK Go 在 ADK MemoryService 之上提供了统一入口，并在示例中展示了本地、Viking、Mem0 等后端接入方式。
+
+## 最小记忆示例
+
+下面的流程展示“先在一个会话中告诉智能体偏好，再保存到长期记忆，然后在新会话中回忆”的完整路径。
+
+```go
+package main
+
+import (
+	"context"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	verunner "github.com/volcengine/veadk-go/v2/runner"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	adkmemory "google.golang.org/adk/v2/memory"
+	"google.golang.org/adk/v2/session"
+)
+
+func runWithLongTermMemory(ctx context.Context) (string, error) {
+	sessionService := session.InMemoryService()
+	memoryService := adkmemory.InMemoryService()
+
+	a, err := veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "personal_assistant",
+			Instruction: "Before answering personal questions, retrieve relevant memory first.",
+		},
+		LongTermMemory: memoryService,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	r, err := verunner.New(verunner.Config{
+		AppName:           "memory_demo",
+		Agent:             a,
+		ShortTermMemory:   sessionService,
+		LongTermMemory:    memoryService,
+		AutoCreateSession: true,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	userID := "user-1"
+	sessionID := "session-1"
+
+	if _, err := r.RunText(ctx, userID, sessionID, "My favorite project is Project Alpha.", agent.RunConfig{}); err != nil {
+		return "", err
+	}
+	if err := r.SaveSessionToLongTermMemory(ctx, userID, sessionID, nil); err != nil {
+		return "", err
+	}
+
+	return r.RunText(ctx, userID, "session-2", "What is my favorite project?", agent.RunConfig{})
+}
+```
+
+关键点：
+
+1. `ShortTermMemory` 保存 `session-1` 的事件历史。
+2. `SaveSessionToLongTermMemory` 把这一段会话写入长期记忆。
+3. 新会话 `session-2` 仍使用同一个 `userID`，智能体可以通过长期记忆检索旧信息。
+
+## 使用 VeADK 后端
+
+本地内存适合调试。生产环境可以通过 `NewLongTermMemoryService` 接入 Viking、Mem0、Redis 或 OpenSearch。
+
+```go
+memoryService, err := vem.NewLongTermMemoryService(vem.BackendLongTermMem0, nil)
+if err != nil {
+	return err
+}
+
+a, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "personal_assistant",
+		Instruction: "Retrieve long-term memory before answering personal questions.",
+	},
+	LongTermMemory: memoryService,
+})
+```
+
+可选后端：
+
+| 后端 | 常量 | 适合场景 |
+| --- | --- | --- |
+| 本地内存 | `BackendLongTermLocal` | 本地调试、单元验证。 |
+| Viking | `BackendLongTermViking` | 火山引擎 Viking 记忆后端。 |
+| Mem0 | `BackendLongTermMem0` | Mem0 记忆服务。 |
+| Redis | `BackendLongTermRedis` | Redis 向量检索或轻量记忆后端。 |
+| OpenSearch | `BackendLongTermOpenSearch` | OpenSearch 向量检索后端。 |
+
+`NewLongTermMemoryService(backend, config, topK...)` 的第三个参数控制检索返回数量，未传时默认 `5`。
+
+## 自动保存
+
+如果希望每次运行后自动把新增会话事件写入长期记忆，可以启用 `AutoSaveSession`。
+
+```go
+r, err := verunner.New(verunner.Config{
+	AppName:           "memory_demo",
+	Agent:             a,
+	ShortTermMemory:   session.InMemoryService(),
+	LongTermMemory:    memoryService,
+	AutoCreateSession: true,
+	AutoSaveSession:   true,
+})
+```
+
+App 入口同样支持：
+
+```go
+err := app.Run(ctx, &apps.RunConfig{
+	AgentLoader:     agent.NewSingleLoader(a),
+	ShortTermMemory: sessionService,
+	LongTermMemory:  memoryService,
+	AutoSaveSession: true,
+})
+```
+
+自动保存默认只保存用户文本。需要保存更多事件时，可以传入 `MemoryAutoSavePolicy`：
+
+```go
+policy := &vem.MemoryAutoSavePolicy{
+	Preset: vem.MemoryAutoSaveAll,
+}
+
+r, err := verunner.New(verunner.Config{
+	AppName:              "memory_demo",
+	Agent:                a,
+	LongTermMemory:       memoryService,
+	AutoCreateSession:    true,
+	AutoSaveSession:      true,
+	AutoSaveMemoryPolicy: policy,
+})
+```
+
+`MemoryAutoSaveDefault` 默认只保留用户文本；`MemoryAutoSaveAll` 会保留更多角色和事件，包括 assistant 内容、工具事件和媒体相关内容。生产环境一般建议先使用默认策略，再按业务需要扩展。
+
+## 适合写入长期记忆的内容
+
+- 用户稳定偏好，例如语言、格式、业务约束。
+- 已确认的项目背景、术语和常用资源。
+- 可以复用的排障结论或任务执行经验。
+
+## 短期会话和长期记忆的分工
+
+| 能力 | 解决的问题 | 示例 |
+| --- | --- | --- |
+| 短期会话 | 让同一段对话持续有上下文。 | 用户刚刚说的订单号、工具调用结果、当前任务步骤。 |
+| 长期记忆 | 让不同会话之间能复用重要信息。 | 用户偏好、项目背景、长期任务约束。 |
+
+不要把所有会话都无脑写入长期记忆。先判断这段信息是否稳定、已确认、未来会复用。
+
+## 常见问题
+
+| 现象 | 排查方向 |
+| --- | --- |
+| 新会话检索不到旧信息 | 确认已经调用 `SaveSessionToLongTermMemory` 或开启 `AutoSaveSession`，并使用同一个 `userID`。 |
+| 自动保存报错 | `AutoSaveSession` 需要配置 `LongTermMemory` 或 `MemoryService`。 |
+| 记忆内容过多或不干净 | 使用默认策略，或自定义 `MemoryAutoSavePolicy` 过滤角色和事件类型。 |
+| 敏感数据进入记忆 | 在写入前做脱敏、授权和删除策略；不要保存 token、AK/SK、API key。 |
+

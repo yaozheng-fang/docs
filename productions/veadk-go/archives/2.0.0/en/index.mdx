@@ -1,0 +1,48 @@
+---
+title: "Overview"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh"
+---
+
+VeADK Go is an agent development framework for Go developers. It builds on ADK Go agents, runners, sessions, and event streams, then adds Volcengine model configuration, tools, memory, knowledge bases, observability, and app wrappers so Go applications can embed or serve agent capabilities.
+
+VeADK Go `v2.0.0` is the first stable release of the V2 version line. The module path is `github.com/volcengine/veadk-go/v2` with ADK dependency `google.golang.org/adk/v2`.
+
+## Use Cases
+
+- Build Go agents that call models, tools, knowledge bases, or memory.
+- Invoke agents directly from server-side Go code through `Runner`, while controlling users, sessions, and event streams.
+- Compose sequential, parallel, or loop execution with Workflow Agents.
+- Package agents as Simple Apps, A2A Apps, or AgentKit Server Apps.
+- Add observability with OpenTelemetry, APMPlus, Cozeloop, and related exporters.
+
+## Version Lines
+
+| Version line | Module path | ADK dependency | Branch | Tag | Status |
+| --- | --- | --- | --- | --- | --- |
+| V2 | `github.com/volcengine/veadk-go/v2` | `google.golang.org/adk/v2` | `main` | `v2.0.0` | First stable release |
+| V1 | `github.com/volcengine/veadk-go` | `google.golang.org/adk` | `release/v1` | — | Maintenance for existing V1 projects, mainly for compatibility, security, and critical fixes. |
+
+<Note>
+  Production projects should pin to `v2.0.0` or a reviewed commit.
+</Note>
+
+## Core Modules
+
+| Module | Purpose |
+| --- | --- |
+| `agent/llmagent` | Creates a default LLM agent with model, prompt, tool, skill, knowledge base, and long-term memory wiring. |
+| `runner` | Runs agents from Go code, managing app name, user, session, event stream, short-term session, and long-term memory. |
+| `agent/workflowagents` | Creates sequential, parallel, and loop workflow agents. |
+| `tool/builtin_tools` | Provides built-in tools for Web Search, Web Fetch, Link Reader, MCP, image, video, speech, code execution, and Volcengine services. |
+| `memory` | Provides short-term session and long-term memory wrappers with local and external storage backends. |
+| `knowledgebase` | Builds knowledge bases and exposes retrieval to agents through tools. |
+| `observability` | Integrates OpenTelemetry and exports traces or metrics to stdout, files, APMPlus, Cozeloop, TLS, or OTLP endpoints. |
+| `apps` | Wraps agents as HTTP apps, A2A apps, or AgentKit Server apps. |
+
+## Usage Paths
+
+| Goal | Documentation |
+| --- | --- |
+| Install and configure VeADK Go | [Installation](/productions/veadk-go/archives/2.0.0/en/get-started/installation) |
+| Run your first agent | [Quickstart](/productions/veadk-go/archives/2.0.0/en/get-started/quickstart) |
+| Review mainline changes | [Changelog](/productions/veadk-go/archives/2.0.0/en/changelog) |

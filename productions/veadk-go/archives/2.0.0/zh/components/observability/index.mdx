@@ -1,0 +1,219 @@
+---
+title: "可观测"
+en_link: "/productions/veadk-go/archives/2.0.0/en/components/observability"
+---
+
+可观测能力用于记录一次智能体调用中的 HTTP 请求、Runner 调用、模型调用、工具调用、错误、延迟和 token 使用量。VeADK Go 基于 OpenTelemetry 提供 `observability.NewPlugin()`、`observability.ADKTelemetryOptions()`、HTTP middleware、导出器配置和有界关闭能力。
+
+## 何时使用
+
+- 需要定位模型、工具、知识库或记忆链路的耗时和错误。
+- 需要把智能体服务接入 APMPlus、Cozeloop、TLS、OTLP Collector、stdout 或文件。
+- 需要在 AgentKit Server App、Simple App 或自定义 ADK launcher 中保留同一条 trace 链路。
+- 需要在退出进程前尽量 flush 已排队的 spans 和 metrics。
+
+## 在 Runner 或 launcher 中启用
+
+如果你直接使用 ADK launcher 或自己组装 `runner.PluginConfig`，需要显式注册 VeADK Go 的可观测插件，并把 ADK telemetry 绑定到同一个 OpenTelemetry provider。
+
+```go
+package main
+
+import (
+	"context"
+	"os"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/observability"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/cmd/launcher"
+	"google.golang.org/adk/v2/cmd/launcher/full"
+	"google.golang.org/adk/v2/plugin"
+	"google.golang.org/adk/v2/runner"
+	"google.golang.org/adk/v2/session"
+)
+
+func main() {
+	ctx := context.Background()
+	defer observability.Shutdown(ctx)
+
+	a, err := veagent.New(&veagent.Config{
+		ModelName: "deepseek-v4-flash-ga-260731",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	config := &launcher.Config{
+		AgentLoader:    agent.NewSingleLoader(a),
+		SessionService: session.InMemoryService(),
+		PluginConfig: runner.PluginConfig{
+			Plugins: []*plugin.Plugin{observability.NewPlugin()},
+		},
+		TelemetryOptions: observability.ADKTelemetryOptions(),
+	}
+
+	l := full.NewLauncher()
+	if err := l.Execute(ctx, config, os.Args[1:]); err != nil {
+		panic(err)
+	}
+}
+```
+
+`observability.NewPlugin()` 会根据全局配置或环境变量初始化 exporter。没有任何 exporter 配置时，它会返回一个空插件，业务调用仍可继续执行。
+
+## 在 App 服务中启用
+
+通过 `apps.Run` 启动 Simple App、A2A App 或 AgentKit Server App 时，`RunConfig` 默认会追加可观测插件和 ADK telemetry options。只有在你需要完全自行管理 provider 和插件生命周期时，才设置 `DisableObservability: true`。
+
+```go
+app := agentkit_server_app.NewAgentkitServerApp(
+	apps.DefaultApiConfig().
+		SetHost("127.0.0.1").
+		SetPort(8000),
+)
+
+err := app.Run(context.Background(), &apps.RunConfig{
+	AgentLoader:    agent.NewSingleLoader(rootAgent),
+	SessionService: session.InMemoryService(),
+})
+```
+
+App 服务还会在 HTTP API handler 外层安装 `observability.HTTPMiddleware`，用于把 HTTP 请求和后续 ADK 调用关联到同一条链路。
+
+## 配置导出器
+
+VeADK Go 支持两类配置方式：环境变量和 `config.yaml`。环境变量适合容器、CI 和 AgentKit Runtime；`config.yaml` 适合本地开发或固定部署包。
+
+### stdout
+
+stdout 适合本地确认 span 结构，不需要外部服务。
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_STDOUT_ENABLE=true
+export OTEL_SERVICE_NAME=veadk-go-local
+```
+
+### 文件
+
+文件导出适合本地调试或离线排查。
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_FILE_PATH=./traces.jsonl
+export OTEL_SERVICE_NAME=veadk-go-file
+```
+
+### OTLP
+
+标准 OTLP 适合接入 OpenTelemetry Collector。`OTEL_TRACES_EXPORTER=otlp` 会启用标准 OTLP trace exporter；HTTP protobuf 默认使用 `http://localhost:4318/v1/traces`，gRPC 默认使用 `http://localhost:4317`。
+
+```bash
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_SERVICE_NAME=veadk-go-agent
+```
+
+如果需要传完整 trace URL，使用 trace-specific 变量：
+
+```bash
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://collector.example.com:4318/v1/traces
+export OTEL_EXPORTER_OTLP_TRACES_PROTOCOL=http/protobuf
+export OTEL_EXPORTER_OTLP_TRACES_HEADERS='authorization=Bearer%20${OTLP_TOKEN}'
+```
+
+### APMPlus
+
+APMPlus 需要 endpoint、API Key 和 service name。配置 APMPlus API Key 后，VeADK Go 会启用 GenAI 指标和 APMPlus 自定义指标。
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT=https://apmplus-cn-beijing.volces.com:4318
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY=${APMPLUS_API_KEY}
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME=veadk-go-agent
+```
+
+### Cozeloop
+
+Cozeloop 使用独立 endpoint、API Key 和 service name。
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT=${COZELOOP_ENDPOINT}
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY=${COZELOOP_API_KEY}
+export OBSERVABILITY_OPENTELEMETRY_COZELOOP_SERVICE_NAME=veadk-go-agent
+```
+
+### TLS
+
+TLS 导出需要 endpoint、region、topic ID 和 AK/SK。AK/SK 应由环境变量或平台 Secret 注入。
+
+```bash
+export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT=${TLS_ENDPOINT}
+export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME=veadk-go-agent
+export OBSERVABILITY_OPENTELEMETRY_TLS_REGION=cn-beijing
+export OBSERVABILITY_OPENTELEMETRY_TLS_TOPIC_ID=${TLS_TOPIC_ID}
+export OBSERVABILITY_OPENTELEMETRY_TLS_ACCESS_KEY=${VOLCENGINE_ACCESS_KEY}
+export OBSERVABILITY_OPENTELEMETRY_TLS_SECRET_KEY=${VOLCENGINE_SECRET_KEY}
+```
+
+## `config.yaml` 示例
+
+```yaml
+observability:
+  opentelemetry:
+    stdout:
+      enable: true
+    apmplus:
+      endpoint: "https://apmplus-cn-beijing.volces.com:4318"
+      api_key: "${APMPLUS_API_KEY}"
+      service_name: "veadk-go-agent"
+    otlp:
+      endpoint: "http://localhost:4318/v1/traces"
+      protocol: "http/protobuf"
+```
+
+环境变量会覆盖对应配置。运行中的 provider 不会因为后续环境变量变化而重新初始化，应在服务启动前设置完整配置。
+
+## 配置项
+
+| 配置 | 环境变量 | 说明 |
+| --- | --- | --- |
+| `opentelemetry.stdout.enable` | `OBSERVABILITY_OPENTELEMETRY_STDOUT_ENABLE` | 是否把 span 输出到 stdout。 |
+| `opentelemetry.file.path` | `OBSERVABILITY_OPENTELEMETRY_FILE_PATH` | span 文件输出路径。 |
+| `opentelemetry.otlp.endpoint` | `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | OTLP endpoint。trace-specific endpoint 会按完整 trace URL 使用。 |
+| `opentelemetry.otlp.protocol` | `OTEL_EXPORTER_OTLP_PROTOCOL` / `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` | 支持 `http/protobuf` 和 `grpc`。 |
+| `opentelemetry.apmplus.endpoint` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT` | APMPlus exporter endpoint。 |
+| `opentelemetry.apmplus.api_key` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` | APMPlus API Key。 |
+| `opentelemetry.apmplus.service_name` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME` | 服务名，同时可写入 `OTEL_SERVICE_NAME`。 |
+| `opentelemetry.cozeloop.endpoint` | `OBSERVABILITY_OPENTELEMETRY_COZELOOP_ENDPOINT` | Cozeloop exporter endpoint。 |
+| `opentelemetry.cozeloop.api_key` | `OBSERVABILITY_OPENTELEMETRY_COZELOOP_API_KEY` | Cozeloop API Key。 |
+| `opentelemetry.tls.topic_id` | `OBSERVABILITY_OPENTELEMETRY_TLS_TOPIC_ID` | TLS trace log topic。 |
+| `opentelemetry.enable_metrics` | `OBSERVABILITY_OPENTELEMETRY_ENABLE_METRICS` | 是否启用 metrics。APMPlus 配置会自动启用指标。 |
+
+## 采集内容
+
+VeADK Go 会围绕以下对象记录 trace 和指标：
+
+| 对象 | 典型内容 |
+| --- | --- |
+| Invocation | app name、user ID、session ID、invocation ID。 |
+| 智能体 | 智能体名称、调用层级、执行耗时。 |
+| 模型 | 模型名、请求参数、输入 token、输出 token、耗时、错误。 |
+| 工具 | 工具名、输入、输出、错误、耗时。 |
+| HTTP | 通过 App 暴露的 HTTP 请求链路。 |
+
+<Warning>
+  开启 prompt、工具输入、工具输出或模型响应采集前，应确认这些内容是否包含用户数据、文件内容、凭证或其他敏感信息。生产环境建议先制定脱敏和保留策略，再接入外部观测平台。
+</Warning>
+
+## 生命周期
+
+`observability.Init` 只会初始化一次；`NewPlugin` 首次运行时会触发初始化。服务退出前应调用 `observability.Shutdown(ctx)` 或依赖 `apps.Run` 的默认关闭流程。`Shutdown` 和 `ForceFlush` 会受调用方 deadline 和内部五秒上限约束，超过期限的排队 spans 可能丢失。
+
+## 常见问题
+
+| 现象 | 排查方向 |
+| --- | --- |
+| 没有 trace 输出 | 确认至少配置了一个 exporter，或设置了 `OTEL_TRACES_EXPORTER=otlp` / `console`。 |
+| OTLP endpoint 不符合预期 | 泛化变量 `OTEL_EXPORTER_OTLP_ENDPOINT` 会按协议拼接路径；完整 trace URL 用 `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`。 |
+| 应用启动但没有观测数据 | `NewPlugin` 配置失败时会返回空插件；检查启动日志中的 exporter 初始化信息。 |
+| 退出时数据不完整 | 确认服务收到 SIGTERM 后有足够 shutdown 时间，或在自定义进程中显式调用 `observability.Shutdown(ctx)`。 |
+| 不想使用默认插件 | 在 `apps.RunConfig` 中设置 `DisableObservability: true`，并自行管理 provider、插件和 shutdown。 |

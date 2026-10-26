@@ -1,0 +1,160 @@
+---
+title: "Knowledge Base"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/components/knowledge"
+---
+
+Knowledge bases connect external documents, FAQs, product material, or business data to an agent. The model can retrieve trusted material before answering. VeADK Go provides the `knowledgebase` package and backend directions such as local, OpenSearch, Redis, and Viking.
+
+## Minimal Local Example
+
+The local backend is the fastest way to validate the knowledge-base path. It does not require an external service. Write a few text snippets with `AddFromText`, then attach the `KnowledgeBase` to `llmagent`.
+
+```go
+package main
+
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/knowledgebase"
+	"github.com/volcengine/veadk-go/v2/knowledgebase/backend/local_knowledge_backend"
+	"github.com/volcengine/veadk-go/v2/knowledgebase/ktypes"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+)
+
+func newAgentWithLocalKnowledge() (agent.Agent, error) {
+	kb, err := knowledgebase.NewKnowledgeBase(
+		ktypes.LocalBackend,
+		knowledgebase.WithName("product_docs"),
+		knowledgebase.WithDescription("Search product documentation before answering."),
+		knowledgebase.WithBackendConfig(&local_knowledge_backend.Config{
+			Index: "veadk_go_docs",
+			TopK:  3,
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := kb.Backend.AddFromText([]string{
+		"VeADK Go uses Runner to execute an agent with a user ID and session ID.",
+		"KnowledgeBase lets an agent retrieve trusted product documentation.",
+	}); err != nil {
+		return nil, err
+	}
+
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "docs_agent",
+			Description: "Answer questions with product documentation.",
+			Instruction: "Answer with the knowledge base first when product facts are needed.",
+		},
+		ModelName:     "deepseek-v4-flash-ga-260731",
+		KnowledgeBase: kb,
+	})
+}
+```
+
+The local backend also supports `AddFromFiles` and `AddFromDirectory`, which is useful when testing with Markdown files, FAQs, or a small document set.
+
+## Viking Knowledge Example
+
+Production deployments normally use a managed knowledge service or vector retrieval backend. The following flow is based on `examples/knowledgebase/agent_with_knowledge.go`: create the Viking backend, ingest text, and pass the knowledge base into the agent.
+
+```go
+knowledgeBase, err := knowledgebase.NewKnowledgeBase(
+	ktypes.VikingBackend,
+	knowledgebase.WithBackendConfig(
+		&viking_knowledge_backend.Config{
+			Index:            "veadk_go_docs",
+			CreateIfNotExist: true,
+			TosConfig: &ve_tos.Config{
+				Bucket: "veadk-go-bucket",
+			},
+		},
+	),
+)
+if err != nil {
+	return err
+}
+
+if err := knowledgeBase.Backend.AddFromText([]string{
+	"VeADK Go supports agents, runners, tools, memory, and knowledge bases.",
+	"AgentKit Server App can expose a VeADK Go agent as a runtime service.",
+}); err != nil {
+	return err
+}
+
+veAgent, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "chat_agent",
+		Description: "Answer questions with retrieved product knowledge.",
+		Instruction: "Search the knowledge base before answering product questions.",
+	},
+	ModelName:     "deepseek-v4-flash-ga-260731",
+	KnowledgeBase: knowledgeBase,
+})
+```
+
+`VikingKnowledgeBackend` uses Viking Knowledge and TOS. Pass credentials with `AK`, `SK`, and `SessionToken`, or use the team's standard runtime credential injection.
+
+## Backend Selection
+
+| Backend | Common use | Key config |
+| --- | --- | --- |
+| `local` | Local development, unit checks, small demos | `Index`, `TopK`, optional `Embedder`. |
+| `viking` | Volcengine Viking knowledge-base integration | `Index`, `Project`, `Region`, `TosConfig`, credentials. |
+| `opensearch` | Self-hosted or managed OpenSearch vector retrieval | `Host`, `Port`, `Index`, embedding model config. |
+| `redis` | Redis vector index or lightweight retrieval backend | `Host`, `Port`, `DB`, `Index`, embedding model config. |
+
+## Ingest and Search Interface
+
+All backends implement the same `KnowledgeBackend` interface:
+
+```go
+type KnowledgeBackend interface {
+	Index() string
+	Search(query string, opts ...map[string]any) ([]ktypes.KnowledgeEntry, error)
+	AddFromText(text []string, opts ...map[string]any) error
+	AddFromFiles(files []string, opts ...map[string]any) error
+	AddFromDirectory(directory string, opts ...map[string]any) error
+}
+```
+
+Call `Search` directly when debugging the retrieval path:
+
+```go
+entries, err := knowledgeBase.Backend.Search("How does Runner keep session context?", map[string]any{
+	"top_k": 3,
+})
+if err != nil {
+	return err
+}
+for _, entry := range entries {
+	fmt.Println(entry.Content)
+}
+```
+
+## Relationship to the Agent
+
+After `KnowledgeBase` is passed into `veagent.Config`, VeADK Go lets the agent use the knowledge-base tool when external material is needed. Make the retrieval policy explicit in the instruction, for example: "search the knowledge base before answering product facts" and "say when no relevant material is found."
+
+## Use cases
+
+- Product documentation Q&A.
+- Internal knowledge search.
+- Answers that need current business material.
+- Restricting retrieval to trusted sources.
+
+## Knowledge versus memory
+
+Knowledge bases usually hold shared team or product material. Long-term memory is usually scoped to users, sessions, or task history.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| Empty results | Confirm `AddFromText`, `AddFromFiles`, or `AddFromDirectory` was called, and check that `Index` matches. |
+| Production backend fails to initialize | Check credentials, region, project, index name, and network connectivity. |
+| Results are not relevant | Tune `TopK`, embedding model, chunking, or metadata filters. |
+| The model does not use the knowledge base | Make retrieval explicit in `Instruction` and confirm `KnowledgeBase` is set on the agent config. |
+

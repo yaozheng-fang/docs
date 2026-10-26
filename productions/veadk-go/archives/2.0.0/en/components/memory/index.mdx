@@ -1,0 +1,171 @@
+---
+title: "Long-Term Memory"
+zh_link: "/productions/veadk-go/archives/2.0.0/zh/components/memory"
+---
+
+Long-term memory keeps user preferences, task conclusions, and reusable facts across sessions. VeADK Go provides a unified entry point on top of ADK MemoryService and includes examples for local, Viking, Mem0, and related backends.
+
+## Minimal Memory Example
+
+The following flow stores a preference in one session, writes that session to long-term memory, and recalls the information from a new session.
+
+```go
+package main
+
+import (
+	"context"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	verunner "github.com/volcengine/veadk-go/v2/runner"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	adkmemory "google.golang.org/adk/v2/memory"
+	"google.golang.org/adk/v2/session"
+)
+
+func runWithLongTermMemory(ctx context.Context) (string, error) {
+	sessionService := session.InMemoryService()
+	memoryService := adkmemory.InMemoryService()
+
+	a, err := veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "personal_assistant",
+			Instruction: "Before answering personal questions, retrieve relevant memory first.",
+		},
+		LongTermMemory: memoryService,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	r, err := verunner.New(verunner.Config{
+		AppName:           "memory_demo",
+		Agent:             a,
+		ShortTermMemory:   sessionService,
+		LongTermMemory:    memoryService,
+		AutoCreateSession: true,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	userID := "user-1"
+	sessionID := "session-1"
+
+	if _, err := r.RunText(ctx, userID, sessionID, "My favorite project is Project Alpha.", agent.RunConfig{}); err != nil {
+		return "", err
+	}
+	if err := r.SaveSessionToLongTermMemory(ctx, userID, sessionID, nil); err != nil {
+		return "", err
+	}
+
+	return r.RunText(ctx, userID, "session-2", "What is my favorite project?", agent.RunConfig{})
+}
+```
+
+Key points:
+
+1. `ShortTermMemory` stores the event history for `session-1`.
+2. `SaveSessionToLongTermMemory` writes that conversation to long-term memory.
+3. The new `session-2` still uses the same `userID`, so the agent can retrieve previous information.
+
+## VeADK Backends
+
+In-memory storage is useful for debugging. Production deployments can use `NewLongTermMemoryService` with Viking, Mem0, Redis, or OpenSearch.
+
+```go
+memoryService, err := vem.NewLongTermMemoryService(vem.BackendLongTermMem0, nil)
+if err != nil {
+	return err
+}
+
+a, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "personal_assistant",
+		Instruction: "Retrieve long-term memory before answering personal questions.",
+	},
+	LongTermMemory: memoryService,
+})
+```
+
+Available backends:
+
+| Backend | Constant | Best for |
+| --- | --- | --- |
+| Local memory | `BackendLongTermLocal` | Local debugging and unit checks. |
+| Viking | `BackendLongTermViking` | Volcengine Viking memory backend. |
+| Mem0 | `BackendLongTermMem0` | Mem0 memory service. |
+| Redis | `BackendLongTermRedis` | Redis vector retrieval or lightweight memory backend. |
+| OpenSearch | `BackendLongTermOpenSearch` | OpenSearch vector retrieval backend. |
+
+The optional third argument of `NewLongTermMemoryService(backend, config, topK...)` controls retrieval count. The default is `5`.
+
+## Auto Save
+
+Enable `AutoSaveSession` when you want each run to write newly added session events to long-term memory.
+
+```go
+r, err := verunner.New(verunner.Config{
+	AppName:           "memory_demo",
+	Agent:             a,
+	ShortTermMemory:   session.InMemoryService(),
+	LongTermMemory:    memoryService,
+	AutoCreateSession: true,
+	AutoSaveSession:   true,
+})
+```
+
+App launchers support the same option:
+
+```go
+err := app.Run(ctx, &apps.RunConfig{
+	AgentLoader:     agent.NewSingleLoader(a),
+	ShortTermMemory: sessionService,
+	LongTermMemory:  memoryService,
+	AutoSaveSession: true,
+})
+```
+
+By default, auto-save keeps user text only. Use `MemoryAutoSavePolicy` when more event types must be saved:
+
+```go
+policy := &vem.MemoryAutoSavePolicy{
+	Preset: vem.MemoryAutoSaveAll,
+}
+
+r, err := verunner.New(verunner.Config{
+	AppName:              "memory_demo",
+	Agent:                a,
+	LongTermMemory:       memoryService,
+	AutoCreateSession:    true,
+	AutoSaveSession:      true,
+	AutoSaveMemoryPolicy: policy,
+})
+```
+
+`MemoryAutoSaveDefault` keeps user text only. `MemoryAutoSaveAll` keeps more roles and event types, including assistant content, tool events, and media-related content. Production systems should usually start with the default policy and expand it deliberately.
+
+## Suitable content
+
+- Stable user preferences.
+- Confirmed project background and terminology.
+- Reusable troubleshooting or task conclusions.
+
+## Short-Term Session versus Long-Term Memory
+
+| Capability | Problem solved | Example |
+| --- | --- | --- |
+| Short-term session | Keeps one conversation continuous. | The order ID the user just provided, tool results, current task steps. |
+| Long-term memory | Reuses important information across conversations. | User preferences, project background, durable task constraints. |
+
+Do not write every conversation into long-term memory blindly. Store information only when it is stable, confirmed, and likely to be useful later.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| New sessions cannot recall old information | Confirm `SaveSessionToLongTermMemory` was called or `AutoSaveSession` is enabled, and reuse the same `userID`. |
+| Auto-save fails | `AutoSaveSession` requires `LongTermMemory` or `MemoryService`. |
+| Memory is noisy | Use the default policy, or customize `MemoryAutoSavePolicy` to filter roles and event types. |
+| Sensitive data enters memory | Mask data before writing and define authorization/deletion policies; do not store tokens, AK/SK, or API keys. |
+

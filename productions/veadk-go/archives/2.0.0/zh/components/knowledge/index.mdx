@@ -1,0 +1,160 @@
+---
+title: "知识库"
+en_link: "/productions/veadk-go/archives/2.0.0/en/components/knowledge"
+---
+
+知识库用于把外部文档、FAQ、产品资料或业务数据接入智能体，让模型在回答前检索可信资料。VeADK Go 提供 `knowledgebase` 包，并包含 local、OpenSearch、Redis、Viking 等后端方向。
+
+## 最小本地示例
+
+本地后端适合先验证知识库链路。它不依赖外部服务，可以用 `AddFromText` 直接写入几段文本，再把 `KnowledgeBase` 挂到 `llmagent`。
+
+```go
+package main
+
+import (
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	"github.com/volcengine/veadk-go/v2/knowledgebase"
+	"github.com/volcengine/veadk-go/v2/knowledgebase/backend/local_knowledge_backend"
+	"github.com/volcengine/veadk-go/v2/knowledgebase/ktypes"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+)
+
+func newAgentWithLocalKnowledge() (agent.Agent, error) {
+	kb, err := knowledgebase.NewKnowledgeBase(
+		ktypes.LocalBackend,
+		knowledgebase.WithName("product_docs"),
+		knowledgebase.WithDescription("Search product documentation before answering."),
+		knowledgebase.WithBackendConfig(&local_knowledge_backend.Config{
+			Index: "veadk_go_docs",
+			TopK:  3,
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := kb.Backend.AddFromText([]string{
+		"VeADK Go uses Runner to execute an agent with a user ID and session ID.",
+		"KnowledgeBase lets an agent retrieve trusted product documentation.",
+	}); err != nil {
+		return nil, err
+	}
+
+	return veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "docs_agent",
+			Description: "Answer questions with product documentation.",
+			Instruction: "Answer with the knowledge base first when product facts are needed.",
+		},
+		ModelName:     "deepseek-v4-flash-ga-260731",
+		KnowledgeBase: kb,
+	})
+}
+```
+
+本地后端还支持 `AddFromFiles` 和 `AddFromDirectory`，适合把 Markdown、FAQ 或小型资料集先导入进来做效果验证。
+
+## Viking 知识库示例
+
+生产环境通常会使用托管知识库或向量检索后端。下面的示例来自 `examples/knowledgebase/agent_with_knowledge.go` 的主流程：先创建 Viking 后端，再导入文本，最后把知识库传给智能体。
+
+```go
+knowledgeBase, err := knowledgebase.NewKnowledgeBase(
+	ktypes.VikingBackend,
+	knowledgebase.WithBackendConfig(
+		&viking_knowledge_backend.Config{
+			Index:            "veadk_go_docs",
+			CreateIfNotExist: true,
+			TosConfig: &ve_tos.Config{
+				Bucket: "veadk-go-bucket",
+			},
+		},
+	),
+)
+if err != nil {
+	return err
+}
+
+if err := knowledgeBase.Backend.AddFromText([]string{
+	"VeADK Go supports agents, runners, tools, memory, and knowledge bases.",
+	"AgentKit Server App can expose a VeADK Go agent as a runtime service.",
+}); err != nil {
+	return err
+}
+
+veAgent, err := veagent.New(&veagent.Config{
+	Config: llmagent.Config{
+		Name:        "chat_agent",
+		Description: "Answer questions with retrieved product knowledge.",
+		Instruction: "Search the knowledge base before answering product questions.",
+	},
+	ModelName:     "deepseek-v4-flash-ga-260731",
+	KnowledgeBase: knowledgeBase,
+})
+```
+
+`VikingKnowledgeBackend` 会使用 Viking Knowledge 和 TOS。凭证可以通过 `AK`、`SK`、`SessionToken` 字段显式传入，也可以沿用团队统一的运行环境凭证注入方式。
+
+## 后端选择
+
+| 后端 | 常见用途 | 配置重点 |
+| --- | --- | --- |
+| `local` | 本地开发、单元验证、小型 demo | `Index`、`TopK`，可选 `Embedder`。 |
+| `viking` | 火山引擎 Viking 知识库生产接入 | `Index`、`Project`、`Region`、`TosConfig`、凭证。 |
+| `opensearch` | 自建或托管 OpenSearch 向量检索 | `Host`、`Port`、`Index`、Embedding 模型配置。 |
+| `redis` | Redis 向量索引或轻量检索后端 | `Host`、`Port`、`DB`、`Index`、Embedding 模型配置。 |
+
+## 数据写入和检索接口
+
+所有后端都实现同一个 `KnowledgeBackend` 接口：
+
+```go
+type KnowledgeBackend interface {
+	Index() string
+	Search(query string, opts ...map[string]any) ([]ktypes.KnowledgeEntry, error)
+	AddFromText(text []string, opts ...map[string]any) error
+	AddFromFiles(files []string, opts ...map[string]any) error
+	AddFromDirectory(directory string, opts ...map[string]any) error
+}
+```
+
+可以直接调用 `Search` 做链路调试：
+
+```go
+entries, err := knowledgeBase.Backend.Search("How does Runner keep session context?", map[string]any{
+	"top_k": 3,
+})
+if err != nil {
+	return err
+}
+for _, entry := range entries {
+	fmt.Println(entry.Content)
+}
+```
+
+## 和智能体的关系
+
+将 `KnowledgeBase` 放进 `veagent.Config` 后，VeADK Go 会让智能体在需要外部资料时使用知识库工具。提示词里最好明确检索策略，例如“回答产品事实前先检索知识库”“如果资料中没有答案，明确说明没有检索到”。
+
+## 适用场景
+
+- 产品文档问答。
+- 企业内部知识检索。
+- 对话中需要引用最新业务资料。
+- 将搜索范围限制在可信数据源内。
+
+## 和长期记忆的区别
+
+知识库通常面向团队或产品资料，内容可被多个用户共享；长期记忆通常面向用户、会话或任务上下文，强调个体化和跨会话延续。
+
+## 常见问题
+
+| 现象 | 排查方向 |
+| --- | --- |
+| 检索结果为空 | 确认已调用 `AddFromText`、`AddFromFiles` 或 `AddFromDirectory`，并检查 `Index` 是否一致。 |
+| 生产后端初始化失败 | 检查凭证、地域、项目、索引名和网络连通性。 |
+| 检索内容不相关 | 调整 `TopK`、Embedding 模型、chunk 方式或元数据过滤。 |
+| 模型没有使用知识库 | 在 `Instruction` 中明确要求先检索，并确认智能体配置里传入了 `KnowledgeBase`。 |
+

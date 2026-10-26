@@ -1,0 +1,129 @@
+---
+title: "短期会话"
+en_link: "/productions/veadk-go/archives/2.0.0/en/components/session"
+---
+
+短期会话保存同一个 `userID` 和 `sessionID` 下的对话事件，用于支持多轮上下文、工具调用历史和流式事件恢复。
+
+## 最小 Runner 示例
+
+本地调试时可以直接使用 ADK Go 的 `session.InMemoryService()`。同一个 `userID` 和 `sessionID` 会复用同一段会话历史。
+
+```go
+package main
+
+import (
+	"context"
+
+	veagent "github.com/volcengine/veadk-go/v2/agent/llmagent"
+	verunner "github.com/volcengine/veadk-go/v2/runner"
+	"google.golang.org/adk/v2/agent"
+	"google.golang.org/adk/v2/agent/llmagent"
+	"google.golang.org/adk/v2/session"
+)
+
+func runWithSession(ctx context.Context) (string, error) {
+	a, err := veagent.New(&veagent.Config{
+		Config: llmagent.Config{
+			Name:        "support_agent",
+			Instruction: "Answer user questions with the current conversation context.",
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	r, err := verunner.New(verunner.Config{
+		AppName:           "support_app",
+		Agent:             a,
+		ShortTermMemory:   session.InMemoryService(),
+		AutoCreateSession: true,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	userID := "user-1"
+	sessionID := "case-1001"
+
+	if _, err := r.RunText(ctx, userID, sessionID, "My order ID is A-1024.", agent.RunConfig{}); err != nil {
+		return "", err
+	}
+	return r.RunText(ctx, userID, sessionID, "What is my order ID?", agent.RunConfig{})
+}
+```
+
+`context.Context` 只负责取消、超时和请求级数据；它不是对话上下文。对话上下文来自 `userID`、`sessionID` 和 `ShortTermMemory` / `SessionService`。
+
+## 持久化短期会话
+
+`session.InMemoryService()` 适合示例和单进程调试，进程退出后数据会丢失。生产环境应使用持久化后端。VeADK Go 提供统一入口 `NewShortTermMemoryService`：
+
+```go
+sessionService, err := vem.NewShortTermMemoryService(vem.BackendShortTermPostgreSQL, nil)
+if err != nil {
+	return err
+}
+
+r, err := verunner.New(verunner.Config{
+	AppName:           "support_app",
+	Agent:             a,
+	ShortTermMemory:   sessionService,
+	AutoCreateSession: true,
+})
+```
+
+可选后端：
+
+| 后端 | 常量 | 适合场景 |
+| --- | --- | --- |
+| 本地内存 | `BackendShortTermLocal` | 本地调试、单元验证、demo。 |
+| SQLite | `BackendShortTermSQLite` | 单机持久化、小规模测试。 |
+| PostgreSQL | `BackendShortTermPostgreSQL` | 生产服务、共享数据库。 |
+| MySQL | `BackendShortTermMySQL` | 生产服务、已有 MySQL 基础设施。 |
+
+当 `config` 传 `nil` 时，会读取全局配置里的数据库配置；如果要显式配置，可以传入对应 backend 的配置结构体。
+
+## App 集成
+
+如果使用 VeADK Go 提供的 app launcher，`apps.RunConfig.ShortTermMemory` 是 `SessionService` 的别名，和直接使用 Runner 是同一套概念。
+
+```go
+app := agentkit_server_app.NewAgentkitServerApp(apps.DefaultApiConfig())
+
+err := app.Run(ctx, &apps.RunConfig{
+	AgentLoader:     agent.NewSingleLoader(a),
+	ShortTermMemory: sessionService,
+})
+```
+
+simple app、A2A app 和 AgentKit server app 都会把这个 session service 用到运行时链路里。区别在于 app 负责 HTTP / 协议入口，而 Runner 适合在自己的 Go 流程中直接调用智能体。
+
+## 多轮会话规则
+
+| 参数 | 作用 |
+| --- | --- |
+| `AppName` | 隔离不同应用的会话命名空间。 |
+| `userID` | 标识用户或调用主体。 |
+| `sessionID` | 标识一段连续对话。 |
+| `ShortTermMemory` | 保存该会话内的事件历史。 |
+
+多轮对话要复用同一个 `userID` 和 `sessionID`。如果换了 `sessionID`，Runner 会把它当作新会话；如果换了 `userID`，即使 `sessionID` 相同，也不应该视作同一个用户上下文。
+
+## 和长期记忆的区别
+
+| 能力 | 保存什么 | 典型生命周期 | 读取方式 |
+| --- | --- | --- | --- |
+| 短期会话 | 当前会话事件、消息、工具调用历史 | 一段对话或一次任务 | Runner 自动读取相同 `userID` / `sessionID` 下的历史。 |
+| 长期记忆 | 跨会话可复用的用户偏好、事实、结论 | 多个会话甚至长期保存 | 通过 memory service 和 `loadMemory` 类工具检索。 |
+
+二者可以同时配置。短期会话让“这一轮对话”连续，长期记忆让“不同会话之间”能回忆重要信息。
+
+## 常见问题
+
+| 现象 | 排查方向 |
+| --- | --- |
+| 第二轮对话忘记第一轮内容 | 确认 `userID`、`sessionID`、`AppName` 都一致，并且使用同一个持久化 session service。 |
+| 进程重启后会话丢失 | 不要使用 `session.InMemoryService()` 作为生产存储，改用 SQLite、PostgreSQL 或 MySQL。 |
+| 不同用户串话 | 检查 `userID` 生成规则和鉴权边界，避免多个用户共用同一个 `userID`。 |
+| 会话无限增长 | 设计会话生命周期、清理策略和必要的上下文裁剪。 |
