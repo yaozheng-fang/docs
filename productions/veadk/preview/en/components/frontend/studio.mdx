@@ -153,6 +153,10 @@ Your language choice is persisted in browser local storage, so subsequent visits
 
 <Note>
   Studio supports an MPA agent managed creation mode: select **Agents → MPA Agents → Create MPA Agent** to enter a three-step creation flow with basic information, PostgreSQL auto-provisioning details, and OpenViking preparation. Studio automatically reuses the deployed Studio's user pool, client, and callback URL, using code-built-in Beijing region default images and models without a YAML config file. New Beijing-region requests automatically create an independent OpenViking collection using default VLM and Embedding models, without requiring manual service URL and API Key entry; BytePlus and already-submitted manual requests still require OpenViking configuration. New MPA agents default to an independent business Workspace, with each agent using a dedicated business database, and the Runtime name availability is pre-checked before creation. After submission, it sequentially prepares account network, APIG, Worker, independent business database, and Skill Space, then deploys and checks Runtime readiness. See [Deploy MPA Agents](/productions/veadk/preview/en/deploy/mpa).
+
+<Note>
+  When MPA agent creation fails, Studio shows a localized safe reason with expandable and copyable stage, operation, and optional validated error code and request ID; raw SDK, SQL, or exception text is never displayed. Known quota, authorization, timeout, and resource-state errors get matching safe explanations, and missing details are explicitly marked as unknown. Successful creation and the general agent view are unaffected.
+</Note>
 </Note>
 
 <Note>
@@ -3298,6 +3302,58 @@ Requests that target local sessions without a trusted signed-in identity receive
 
 Admins and super admins may access other users' local sessions for troubleshooting and support; such access is recorded in an audit log containing the actor, target user, request method, and path.
 
+
+## Manage MPA agents
+
+Studio administrators can manage deployed MPA agents' collaboration, AGENTS.md instruction documents, and container images from the workspace. All operations require the admin role and visibility authorization for the corresponding Runtime; credentials are injected by the Studio server and never sent to the browser.
+
+### Collaborating agents and the A2A Center
+
+Studio administrators manage the current MPA's association with a collaboration space via **Agents → MPA Agents → Collaborating Agents → A2A Center**. Each MPA keeps at most one association with a collaboration space at a time, using revision CAS for concurrency safety.
+
+Space management: administrators can select a target Runtime account, region, and collaboration space to create or switch the MPA-to-space binding. Creating a space requires a name (up to 128 characters), with optional project and semantic-search toggle; after creation the space is selected but not bound automatically. Switching spaces clears any prior confirmation; the unbind action is offered only when the selected space equals the bound space. Deleting a space checks the current binding, space identity, and an empty member list first — there is no cascade deletion, automatic unbinding, or automatic retry.
+
+Registering collaborating agents: registration uses an authorized paginated Runtime list (a single required Select, with no separate manual ID field); only an item still present in the current list with a matching endpoint can be submitted. Standard imports support JSON (an agentCard object) or URL (a cardUrl requiring HTTPS) as mutually exclusive options, and all requests carry a `spaceId`. Studio signs the create request with existing server credentials and returns only the agent ID; the browser never receives, logs, or persists Cards or credentials. Imported URLs are fetched by AgentKit — Studio does not fetch arbitrary URLs. Failures are not retried automatically; refresh or reconcile before retrying. Switching Runtime, region, or space aborts stale requests and clears input.
+
+Agent aliases: registered agent aliases belong to the current MPA's business database, scoped by MPA, region, space, and agent; list, discovery, and `@name` resolution share this data. Studio maintains revision CAS and ownership checks and forwards PUT only for binding and exact valid alias routes; older Runtimes that do not support alias editing show an upgrade message and do not auto-import shared aliases.
+
+Member actions and deletion: Studio provides sanitized read-only listing and confirmed deletion scoped by target Runtime, space, and region. Deletion of an agent or space checks IDs and an empty member list first; there is no cascade deletion, automatic unbinding, or automatic retry. A2A-specific structured errors distinguish known refusals from uncertain outcomes.
+
+Endpoint and skill metadata: agent details show service address (`serviceAddress`, possibly null), a skill list (`skills`, possibly null or truncated), and a truncation flag (`skillsTruncated`). Only bounded name, description, tags, examples, and IDs are shown; raw Cards or authentication are never displayed. A null value means unavailable, `[]` means confirmed empty, and more than 100 skills are explicitly marked as truncated.
+
+<Note>
+  Legacy local list, create, update, delete, and check endpoints return `legacy_registration_retired` (410) after authentication; their manual form and local write/resolution service have been removed. Upgrading or rolling back does not delete historical registry records, but those records are no longer used for discovery or dispatch.
+</Note>
+
+### Edit AGENTS.md
+
+The MPA agent information rail can edit the selected Runtime's AGENTS.md document. The Studio backend owns authorization and credential injection; the Runtime owns revision management and application to Main and Worker.
+
+Editing requires the Studio admin role and existing Runtime visibility authorization. Studio strips any browser-supplied `X-MPA-Studio-Key` and injects only the server-resolved current Runtime key; that key is never stored in the browser. GET returns the current content and revision; POST accepts the same shape, updates only the document, and returns the saved revision. Empty content clears custom instructions; the document limit is 40,000 characters. Concurrent edits return 409; missing or invalid credentials return 401/503; denied access returns 403; an invalid body returns 422. Older Runtimes may return 404/405/501, in which case an upgrade message is shown while metadata viewing is preserved.
+
+Saving is disabled while loading; when content is unchanged, over the limit, or when a previous save's result is uncertain; and when composing. Clearing or discarding edits requires confirmation; drafts are retained on errors. A conflict requires refreshing and reconciling the current revision before writing; network or 5xx errors require readback before another write to prevent repeat saves. The rail remounts when the Runtime or region target changes.
+
+<Note>
+  Running turns keep their document snapshot; the next Main turn uses saved content (including for reused conversations), and clearing removes only custom Main content while platform rules are retained. Worker files receive the snapshot, but natively reused Worker threads may keep old instructions; Worker hot reload remains deferred and a successful save does not guarantee immediate effect. The API verifies configuration delivery, not deterministic model behavior.
+</Note>
+
+### Update container images
+
+Studio can update the Runtime and Worker container images of an MPA agent independently. All image operations require agent-management permission, fresh owner/admin Runtime authorization (no shared-connection fallback), a valid provider region, and the MPA category. Runtime targets the authorized RuntimeId; Worker targets only the consistent Runtime.ToolId / `AGENTKIT_TOOL_ID` / deployment-record `worker_id` binding, with proven managed-ownership tags and project verified.
+
+The detail endpoint returns only component, resource ID, current image, status, repository, revision, canUpdate, reason, and operation; it never returns credentials or environments. An update accepts exactly one of these mutually exclusive forms: a public tag (`{tag, revision}`), a manual image reference (`{image, revision}`), or a `latest` resolution (`{tag:"latest", revision, selection:{image,digest}}`); providing both or neither source is rejected, as are unchanged targets and stale revisions.
+
+The public image catalog uses fixed public repositories (Volcengine: `agentkit-platform-2112682748-cn-beijing.cr.volces.com/mpa`; BytePlus: `agentkit-platform-3001037806-ap-southeast-1.cr.bytepluses.com/mpa`; Runtime suffix `mpa_agent`, Worker suffix `mpa_codex_worker`) and does not accept arbitrary repository input. OCI pagination shows up to 100 tags with load-more and no search field; no publication timestamps are fabricated or chronologically ordered.
+
+A `latest` update reuses the saved manifest-digest selection; a read-only preview resolves outside the deployment lock, rechecking resource identity before returning the target image and digest, and confirmation revalidates the digest-bearing selection without rereading latest. The preview deadline is 180 seconds; aborting discards late results.
+
+<Note>
+  A manual image reference can be used as an alternative to public-tag selection and may point to other registries. The format is an explicit registry host (containing a dot or port, or `localhost`) plus one or more repository path segments and a required tag, up to 2048 characters, with a lowercase host and path, an optional port 1–65535, and no scheme, embedded credentials, whitespace, query, fragment, or digest. Manual-address validation does not cause Studio to fetch arbitrary registry hosts; manual input remains usable when catalog loading fails. Runtime custom images use `ArtifactType=image`; matching fixed public images use `public_image`; Worker still submits only `ImageUrl`.
+</Note>
+
+<Warning>
+  An image-update acknowledgement means submitted, not healthy. Agents that are provisioning or deleting reject image writes. Existing sandbox sessions may keep their old Worker image; create a new session to use the updated template. Image writes are never retried automatically; uncertain outcomes (timeout, transport error, 5xx, or abort) require refresh and reconciliation before retrying.
+</Warning>
 
 ## View system information
 

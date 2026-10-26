@@ -98,11 +98,11 @@ exporter = APMPlusExporter(
 | 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
 | :--- | :--- | :--- | :--- | :--- |
 | `endpoint` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT` | `str` | 根据云服务商与地域自动生成 | APMPlus OTLP 接入点（gRPC），格式为 `http://apmplus-{region}.volces.com:4317`。 |
-| `app_key` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` | `str` | 未设置时自动获取 APMPlus 令牌 | 应用程序密钥，用于认证。 |
+| `app_key` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY`、`TENANT_APMPLUS_APPKEY` | `str` | 未设置时自动获取 APMPlus 令牌 | 应用程序密钥，用于认证。依次读取 `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` 与 `TENANT_APMPLUS_APPKEY`，均未设置时根据云凭证自动获取 APMPlus 令牌。 |
 | `service_name` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME` | `str` | `veadk_tracing` | 服务名，显示在 APMPlus 控制台，用于标识来源。 |
 
 <Note>
-`app_key` 未通过环境变量提供时，导出器会根据云服务商自动获取 APMPlus 令牌：火山引擎模式使用 `open.volcengineapi.com`，BytePlus 模式使用 `open.byteplusapi.com`，因此需要配置对应云服务商的有效凭证（火山引擎使用 `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`，BytePlus 使用 `BYTEPLUS_ACCESS_KEY` / `BYTEPLUS_SECRET_KEY`；使用临时凭证时还需提供对应的 Session Token）。`endpoint` 使用 gRPC 协议、以非加密方式连接。
+AppKey 按以下优先级解析：先读取非空的 `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY`，再读取非空的 `TENANT_APMPLUS_APPKEY`，两者均未设置时根据云服务商自动获取 APMPlus 令牌（火山引擎模式使用 `open.volcengineapi.com`，BytePlus 模式使用 `open.byteplusapi.com`，因此需要配置对应云服务商的有效凭证：火山引擎使用 `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`，BytePlus 使用 `BYTEPLUS_ACCESS_KEY` / `BYTEPLUS_SECRET_KEY`；使用临时凭证时还需提供对应的 Session Token）。解析为懒加载，成功取到的值会在每个 `APMPlusConfig` 实例上缓存；解析失败不会缓存，也不会返回空 Key，而是抛出脱敏后的错误。`endpoint` 使用 gRPC 协议、以非加密方式连接。
 </Note>
 
 <Note>
