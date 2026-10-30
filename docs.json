@@ -10782,5 +10782,11 @@
       ],
       "defaults": "required"
     }
+  },
+  "seo": {
+    "metatags": {
+      "title": "agent"
+    },
+    "indexing": "all"
   }
 }
