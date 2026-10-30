@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "AgentKit 文档",
+  "name": "AgentKit Documents",
   "metadata": {
     "timestamp": true
   },
