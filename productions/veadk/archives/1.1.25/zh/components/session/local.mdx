@@ -1,0 +1,72 @@
+---
+title: "使用本地内存"
+en_link: "/productions/veadk/preview/en/components/session/local"
+---
+
+`local` 后端把会话保存在进程内存中。它不依赖任何外部服务，也不落盘——进程退出，会话即清空。这是 `ShortTermMemory` 的默认后端。
+
+## 何时使用
+
+- 本地开发与调试；
+- 单元测试、示例脚本等临时场景；
+- 不需要会话跨进程或跨重启保留时。
+
+## 使用示例
+
+```python lines
+import asyncio
+
+from veadk.memory.short_term_memory import ShortTermMemory
+
+stm = ShortTermMemory(backend="local")
+
+async def main():
+    await stm.create_session(
+        app_name="memory_demo", user_id="user_42", session_id="chat_01"
+    )
+    session = await stm.session_service.get_session(
+        app_name="memory_demo", user_id="user_42", session_id="chat_01"
+    )
+    assert session is not None
+    print(session.id)
+
+asyncio.run(main())
+```
+
+成功后输出 `chat_01`，表示会话已创建并可读回；示例不调用模型。实际对话时将同一 `stm` 传给 `Runner(short_term_memory=stm, agent=agent)`，并保持应用、用户和会话标识一致
+
+由于 `local` 是默认值，以下写法均选择内存后端；不同实例不共享会话：
+
+```python lines
+ShortTermMemory()                    # 使用默认后端
+ShortTermMemory(backend="local")     # 显式指定
+# 甚至不给 Runner 传 short_term_memory，Runner 会自动兜底创建一个 local
+```
+
+<Note>
+若 `Runner` 未收到任何 `short_term_memory` 或 `session_service`，它会自动创建一个 `local` 实例兜底，因此本地跑通一个智能体不需要任何额外配置。
+</Note>
+
+## 参数
+
+`local` 没有后端专用配置；仅使用 `ShortTermMemory` 的通用参数，且其中大部分对 `local` 不生效。
+
+### ShortTermMemory 构造参数（local 场景）
+
+| 参数 | 类型 | 默认值 | 对 local 是否生效 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `backend` | `str` | `"local"` | 生效 | 设为 `"local"` 或省略此参数；空字符串不是合法后端 |
+| `db_url` | `str` | `""` | 生效（覆盖） | 一旦设置，将忽略 `backend`，改用数据库后端。若要保持内存模式，请勿设置 |
+| `backend_configs` | `dict` | `{}` | 不生效 | `local` 不读取此项 |
+| `db_kwargs` | `dict` | `{}` | 不生效 | 仅数据库后端使用 |
+| `local_database_path` | `str` | `/tmp/veadk_local_database.db` | 不生效 | 仅 `sqlite` 使用 |
+| `after_load_memory_callback` | `Callable \| None` | `None` | 生效 | 同步读取回调；接收 `Session` 或 `None`，以及查询时的参数，建议使用 `def callback(session, *args, **kwargs)` |
+| `after_create_session_callback` | `Callable \| None` | `None` | 生效 | 通过 `ShortTermMemory.create_session()` 首次创建会话后触发；支持同步或异步回调，接收新建的 `Session` |
+
+<Warning>
+`local` 后端不落盘，进程退出后所有会话数据都会丢失，切勿在生产环境用它保存需要长期保留的会话。需要持久化请改用 [SQLite](/productions/veadk/preview/zh/components/session/sqlite)、[MySQL](/productions/veadk/preview/zh/components/session/mysql) 或 [PostgreSQL](/productions/veadk/preview/zh/components/session/postgresql)。
+</Warning>
+
+## 环境变量
+
+`local` 后端不读取任何环境变量。

@@ -1,0 +1,134 @@
+---
+title: "APMPlus"
+zh_link: "/productions/veadk/preview/zh/components/observability/apmplus"
+---
+
+`APMPlusExporter` reports span data to the Volcengine APMPlus platform over OTLP (gRPC). Beyond traces, its built-in metrics uploader collects model invocation counts, token usage, operation duration, exception counts, tool latency, and skill download and load counts, writing them to APMPlus metrics dashboards.
+
+<Note>
+When content tracing is enabled, reasoning content in model output is labeled with the `reasoning` type to distinguish it from regular text, making it easier to inspect the reasoning process separately in APMPlus.
+</Note>
+
+<Note>
+Token usage metrics are recorded in three dimensions: `input`, `output`, and `cache_read`. The `cache_read` dimension represents cached input tokens and is a subset of `input`, not additional usage.
+</Note>
+
+<Note>
+Skill download and load counts are recorded through the `gen_ai_skill_download_count` and `gen_ai_skill_load_count` OTEL counters, with a unit of `1`. `gen_ai_skill_download_count` counts skill package acquisitions (including cache hits and failures), with dimensions `skill_source`, `skill_id`, `skill_name`, `skill_version`, and `skill_space_id`. `gen_ai_skill_load_count` counts successful skill instruction loads, with the same identity dimensions. The skill download process also produces a `download_skill {skill_name}` span annotating skill source, ID, name, version, space, consumer, outcome, and cache-hit attributes; the outcome (`success` or `error`) is recorded only on the span, not as a counter dimension. On successful skill instruction load, the existing tool span is renamed to `load_skill {skill_name}` and annotated with skill source, ID, name, version, space, and consumer attributes.
+</Note>
+
+## When to use
+
+- You want unified trace observation for your agent on Volcengine APMPlus;
+- You need model-level metrics such as token consumption, latency, and error rate;
+- You need cost tracking and performance monitoring in production.
+
+## Prerequisites
+
+Complete [installation](/productions/veadk/preview/en/get-started/installation) and [model configuration](/productions/veadk/preview/en/components/agent/model), then set the environment variables below before starting Python. Replace placeholders with accessible resources and valid credentials
+
+<Warning>
+APMPlus receives traces and metrics. Set an App Key explicitly where possible; otherwise VeADK uses cloud credentials to request a token. The current gRPC export connection is unencrypted, so use a network that meets your deployment requirements
+</Warning>
+
+```bash lines
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT="http://apmplus-cn-beijing.volces.com:4317"
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY="your-apmplus-app-key"
+export OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME="apmplus_veadk_demo"
+```
+
+## Usage
+
+Save as `app.py` and run `python app.py`. The example uses existing resources and flushes pending traces after one model call
+
+```python title="app.py" lines
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer(exporters=[APMPlusExporter()])
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("Explain the purpose of an agent in one sentence", session_id="demo-session")
+)
+print(response)
+tracer.force_export()
+print("Trace ID:", tracer.trace_id)
+```
+
+You can also pass connection parameters explicitly via `APMPlusExporterConfig`:
+
+```python lines
+import os
+
+from veadk.tracing.telemetry.exporters.apmplus_exporter import (
+    APMPlusExporter,
+    APMPlusExporterConfig,
+)
+
+exporter = APMPlusExporter(
+    config=APMPlusExporterConfig(
+        endpoint="http://apmplus-cn-beijing.volces.com:4317",
+        app_key=os.environ["OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY"],
+        service_name="apmplus_veadk_demo",
+    )
+)
+```
+
+
+## Parameters
+
+### Constructor parameters
+
+`APMPlusExporter` carries its connection parameters in the `config` field of type `APMPlusExporterConfig`; when omitted, each field is read automatically from the corresponding environment variable.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `config` | `APMPlusExporterConfig` | Read from environment variables | APMPlus connection and authentication config. |
+| `resource_attributes` | `dict` | `{}` | Resource attributes attached to spans; the exporter merges in `service.name` automatically. |
+| `headers` | `dict` | `{}` | Extra request headers; the exporter merges in the auth header `x-byteapm-appkey` automatically. |
+
+### APMPlus connection config
+
+`config` is an `APMPlusExporterConfig`; each field defaults from `APMPlusConfig`, with the following environment variables:
+
+| Config | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `endpoint` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_ENDPOINT` | `str` | Derived from cloud provider and region | APMPlus OTLP endpoint (gRPC), formatted as `http://apmplus-{region}.volces.com:4317`. |
+| `app_key` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY`, `TENANT_APMPLUS_APPKEY` | `str` | Fetches an APMPlus token automatically when unset | Application key used for authentication. Reads `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY` then `TENANT_APMPLUS_APPKEY`; when neither is set, an APMPlus token is fetched automatically using cloud credentials. |
+| `service_name` | `OBSERVABILITY_OPENTELEMETRY_APMPLUS_SERVICE_NAME` | `str` | `veadk_tracing` | Service name shown in the APMPlus console to identify the source. |
+
+<Note>
+The AppKey is resolved with the following precedence: a non-blank `OBSERVABILITY_OPENTELEMETRY_APMPLUS_API_KEY`, then a non-blank `TENANT_APMPLUS_APPKEY`, and finally an APMPlus token fetched automatically based on the cloud provider (Volcengine uses `open.volcengineapi.com` and BytePlus uses `open.byteplusapi.com`, so valid credentials for the corresponding provider are required: Volcengine uses `VOLCENGINE_ACCESS_KEY` / `VOLCENGINE_SECRET_KEY`; BytePlus uses `BYTEPLUS_ACCESS_KEY` / `BYTEPLUS_SECRET_KEY`; when using temporary credentials, the corresponding Session Token must also be provided). Resolution is lazy and successful values are cached per `APMPlusConfig` instance; failures are not cached and never returned as an empty key — a sanitized error is raised instead. The `endpoint` connects over gRPC without transport encryption.
+</Note>
+
+<Note>
+The default `endpoint` is derived dynamically from the cloud provider and region. In Volcengine mode, the region is resolved from the `REGION` environment variable, falling back to `cn-beijing`; in BytePlus mode, it is resolved from `BYTEPLUS_REGION`, falling back to `ap-southeast-1`. The cloud provider is determined by the `AGENTKIT_CLOUD_PROVIDER` or `CLOUD_PROVIDER` environment variable and defaults to Volcengine.
+</Note>
+
+
+
+You can also let `Agent` attach the APMPlus exporter automatically from an environment variable, without constructing it explicitly:
+
+```bash lines
+export ENABLE_APMPLUS=true
+```
+
+<Tip>
+With `ENABLE_APMPLUS=true`, `Agent` creates an `OpentelemetryTracer` and attaches `APMPlusExporter` automatically, even when the agent provides no `tracers`.
+</Tip>
+
+<Note>
+If a global `TracerProvider` already exists when `OpentelemetryTracer` is initialized, VeADK reuses that provider and skips registering the APMPlus span processor. The exporter object remains in the list; verify that the existing provider actually reports to APMPlus. You can check this with the `apmplus_managed_externally` property; see [Observability overview](/productions/veadk/preview/en/components/observability) for details.
+</Note>
+
+<Note>
+If the application has already configured a global `MeterProvider`, VeADK reuses it without changing its metric export target to APMPlus. Configure metric delivery in that provider. Traces and metrics use separate providers, so verify each destination
+</Note>
+
+## Verification and troubleshooting
+
+Search for the run's Trace ID in the target backend. A successful model response does not prove trace delivery. If data is missing, check the endpoint and region, credential permissions, target resource, and whether `tracer.force_export()` ran before the process exited

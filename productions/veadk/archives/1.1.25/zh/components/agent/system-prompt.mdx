@@ -1,0 +1,111 @@
+---
+title: "系统提示词"
+en_link: "/productions/veadk/preview/en/components/agent/system-prompt"
+---
+
+系统提示词定义智能体的任务、回答方式和行为边界。通过 `Agent.instruction` 提供固定文本、带会话状态的模板，或根据请求上下文生成提示词的函数
+
+运行以下示例前，先完成[安装与模型配置](/productions/veadk/preview/zh/get-started/quickstart)。将代码保存为标注的文件名，并使用 `python 文件名.py` 运行
+
+## 静态提示词
+
+固定职责适合直接写成字符串。描述任务、需要确认的信息和禁止请求的数据，比只设置角色名称更具体
+
+```python main.py lines
+import asyncio
+from veadk import Agent, Runner
+
+agent = Agent(
+    name="support_assistant",
+    instruction=(
+        "You help users troubleshoot billing issues. "
+        "Ask for missing details before suggesting a solution. "
+        "Do not ask for passwords or payment card numbers."
+    ),
+)
+
+async def main():
+    result = await Runner(agent=agent).run(
+        messages="My invoice total is different from last month.",
+        session_id="prompt-demo",
+    )
+    print(result)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+运行后会输出针对账单问题的回复；具体措辞由模型生成
+
+## 动态提示词
+
+### 使用会话状态
+
+字符串中的 `{name}` 会替换为当前会话状态中的同名值。下面先创建带初始状态的会话，再让智能体读取姓名和语言
+
+```python state_prompt.py lines
+import asyncio
+from veadk import Agent, Runner
+
+agent = Agent(
+    name="personal_assistant",
+    instruction="Address the user as {user_name}. Answer in {language}.",
+)
+
+async def main():
+    runner = Runner(agent=agent, app_name="prompt_demo", user_id="demo-user")
+    await runner.session_service.create_session(
+        app_name="prompt_demo",
+        user_id="demo-user",
+        session_id="state-demo",
+        state={"user_name": "Alex", "language": "English"},
+    )
+    print(await runner.run(messages="Introduce yourself.", session_id="state-demo"))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+| 写法 | 行为 |
+| :--- | :--- |
+| `{user_name}` | 读取必需状态；缺少该键时运行报错 |
+| `{user_name?}` | 读取可选状态；缺少该键时替换为空字符串 |
+| `{app:language}`、`{user:language}`、`{temp:language}` | 读取对应命名空间中的状态键 |
+
+状态值为 `None` 时也会替换为空字符串。工具和其他智能体可以在运行过程中更新状态，参见[会话管理](/productions/veadk/preview/zh/components/session/index)
+
+### 使用 InstructionProvider
+
+需要默认值、条件判断或组合多项状态时，将函数传给 `instruction`。函数接收 `ReadonlyContext` 并返回提示词字符串，也可以使用 `async def`
+
+```python dynamic_prompt.py lines
+import asyncio
+from google.adk.agents.readonly_context import ReadonlyContext
+from veadk import Agent, Runner
+
+def build_instruction(context: ReadonlyContext) -> str:
+    language = context.state.get("language", "English")
+    return f"Answer in {language}. Keep the explanation concise and factual."
+
+agent = Agent(name="assistant", instruction=build_instruction)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="What is a session?", session_id="provider-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+`context.state` 只允许读取。常用上下文还包括 `user_id`、`user_content`、`session` 和 `agent_name`。函数返回值不会再自动替换 `{name}`，需要在函数中完成拼接；如需沿用 ADK 模板替换，可在异步函数中调用 `await inject_session_state(template, context)`，该函数从 `google.adk.utils.instructions_utils` 导入
+
+## instruction 与 description 的区别
+
+| 参数 | 类型 | 默认值 | 用途 |
+| :--- | :--- | :--- | :--- |
+| `instruction` | `str` 或 `InstructionProvider` | VeADK 通用任务提示词 | 指导当前智能体处理任务和生成回答 |
+| `description` | `str` | VeADK 通用能力描述 | 向其他智能体说明能力，帮助选择任务转交目标 |
+| `prompt_manager` | `BasePromptManager \| None` | `None` | 设置后由管理器提供 `instruction`，覆盖显式传入的提示词 |
+
+在多智能体应用中，为每个智能体分别提供具体的 `instruction` 和简洁的 `description`。需要从外部服务维护提示词时，参见[提示词管理](/productions/veadk/preview/zh/components/agent/prompt-management)

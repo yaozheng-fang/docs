@@ -1,0 +1,69 @@
+---
+title: "Trusted MCP"
+zh_link: "/productions/veadk/preview/zh/components/security/trusted-mcp"
+---
+
+Trusted MCP adds remote attestation and end-to-end encryption to a configured MCP connection. Use it with tool services that support the corresponding trusted protocol
+
+## Scope of the trusted connection
+
+VeADK connects to Trusted MCP services through `TrustedMcpToolset`. With confidential-computing environments such as Jeddak AICC, the client verifies the remote service against its attestation policy and establishes a trusted channel for that MCP connection. Configure protection separately for the agent runtime, model services, and other data destinations
+
+## Prerequisites
+
+<Steps>
+  <Step title="Prepare a Trusted MCP service">
+    Obtain a Trusted MCP service address, e.g. `https://your-trusted-mcp.example.com/mcp`.
+  </Step>
+  <Step title="Prepare the AICC config">
+    Prepare the AICC config file `./aicc_config.json` (for the confidential environment and remote attestation); see the [official example](https://github.com/volcengine/AICC-Trusted-MCP/blob/main/README.md).
+  </Step>
+</Steps>
+
+## Usage
+
+Turn on `x-trusted-mcp: true` in the connection parameters, then connect with `TrustedMcpToolset`:
+
+```python title="agent.py" lines
+import asyncio
+import os
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+from veadk import Agent
+from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset
+
+async def main():
+    toolset = TrustedMcpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url=os.environ["TRUSTED_MCP_URL"],
+            headers={"x-trusted-mcp": "true"},
+        ),
+    )
+    try:
+        tools = await toolset.get_tools()
+        print("Available tools:", [tool.name for tool in tools])
+        agent = Agent(name="trusted_assistant", tools=[toolset])
+        print(await agent.run("Describe the tools available to you"))
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
+```
+
+## Options
+
+Key `TrustedMcpToolset` options:
+
+| Option | Location | Default | Description |
+| --- | --- | --- | --- |
+| `x-trusted-mcp` | Header | Unset | Whether to enable Trusted MCP and open the trusted channel |
+| AICC configuration | File path | `./aicc_config.json` | AICC config file path, for attestation and policy in the confidential-computing environment |
+
+For the config file's format and details, see the [Trusted MCP config reference](https://github.com/volcengine/AICC-Trusted-MCP/blob/main/README.md).
+
+## Connection requirements and verification
+
+Configure the model, set `TRUSTED_MCP_URL` to a Trusted MCP Streamable HTTP endpoint, and prepare the AICC configuration required by your provider. Running `python agent.py` should list available tools and then print a model response
+
+The trusted channel requires both `StreamableHTTPConnectionParams` and the `x-trusted-mcp` header with the string value `true`. Omitting the header or using SSE/stdio parameters does not enable this channel. AICC settings belong to the trusted client configuration, not a `TrustedMcpToolset(aicc_config=...)` constructor argument. Attestation policies must match the service requirements
+
+Successful tool discovery only verifies connectivity and discovery; also check the trusted client's attestation result. This channel does not protect data in other tools, model services, or logs

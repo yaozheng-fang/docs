@@ -1,0 +1,69 @@
+---
+title: "可信 MCP"
+en_link: "/productions/veadk/preview/en/components/security/trusted-mcp"
+---
+
+可信 MCP 为已配置的 MCP 连接增加远端证明与端到端加密通信，用于连接支持对应可信协议的工具服务
+
+## 可信连接的范围
+
+VeADK 通过 `TrustedMcpToolset` 连接可信 MCP 服务。结合 Jeddak AICC 等机密计算环境时，客户端依据证明策略验证远端服务，并为该 MCP 连接建立可信通道。智能体运行环境、模型服务和其他数据出口需要分别配置保护措施
+
+## 前提
+
+<Steps>
+  <Step title="准备可信 MCP 服务">
+    获取可用的可信 MCP 服务地址，例如 `https://your-trusted-mcp.example.com/mcp`。
+  </Step>
+  <Step title="准备 AICC 配置">
+    准备 AICC 配置文件 `./aicc_config.json`（用于机密环境与远端证明），参考[官方示例](https://github.com/volcengine/AICC-Trusted-MCP/blob/main/README.md)。
+  </Step>
+</Steps>
+
+## 使用方法
+
+在连接参数中开启 `x-trusted-mcp: true`，再用 `TrustedMcpToolset` 接入：
+
+```python title="agent.py" lines
+import asyncio
+import os
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+from veadk import Agent
+from veadk.tools.mcp_tool.trusted_mcp_toolset import TrustedMcpToolset
+
+async def main():
+    toolset = TrustedMcpToolset(
+        connection_params=StreamableHTTPConnectionParams(
+            url=os.environ["TRUSTED_MCP_URL"],
+            headers={"x-trusted-mcp": "true"},
+        ),
+    )
+    try:
+        tools = await toolset.get_tools()
+        print("Available tools:", [tool.name for tool in tools])
+        agent = Agent(name="trusted_assistant", tools=[toolset])
+        print(await agent.run("Describe the tools available to you"))
+    finally:
+        await toolset.close()
+
+asyncio.run(main())
+```
+
+## 配置项
+
+`TrustedMcpToolset` 的关键配置：
+
+| 配置 | 位置 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `x-trusted-mcp` | Header | 未设置 | 是否开启可信 MCP 并启用可信通道 |
+| AICC 配置 | 文件路径 | `./aicc_config.json` | AICC 配置文件路径，用于机密计算环境的证明与策略配置 |
+
+配置文件的示例与说明见 [可信 MCP 配置文件](https://github.com/volcengine/AICC-Trusted-MCP/blob/main/README.md)。
+
+## 连接条件与验证
+
+先完成模型配置，将 `TRUSTED_MCP_URL` 设置为支持可信协议的 Streamable HTTP 地址，并按服务提供方要求准备 AICC 配置。运行 `python agent.py` 后应先显示工具列表，再返回模型回复
+
+可信通道要求同时使用 `StreamableHTTPConnectionParams` 和字符串值为 `true` 的 `x-trusted-mcp` 请求头。省略请求头或使用 SSE/stdio 参数不会启用此可信通道。AICC 配置属于可信客户端配置，不是 `TrustedMcpToolset(aicc_config=...)` 构造参数；证明策略需与服务端约定一致
+
+工具列表查询成功只能验证连接和工具发现，还应检查可信客户端的证明结果。该通道不覆盖其他工具、模型服务或日志中的数据

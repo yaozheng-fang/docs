@@ -1,0 +1,74 @@
+---
+title: "Volcengine search"
+zh_link: "/productions/veadk/preview/zh/components/tools/vesearch"
+---
+
+## Overview
+
+Tool identifier `vesearch`.
+
+`vesearch` searches via Volcengine's [web-aware Q&A Agent](https://www.volcengine.com/docs/85508/1512748). The tool reads its own credentials from environment variables — you do not pass an `api_key` on the `Agent`.
+
+Import path: `from veadk.tools.builtin_tools.vesearch import vesearch`
+
+## Environment & prerequisites
+
+<Warning>
+Requirements:
+
+1. Configure the API key for the agent's reasoning model.
+2. Configure the Q&A Agent ID (create an agent in the [console](https://console.volcengine.com/ask-echo/my-agent), then copy its ID) into the `TOOL_VESEARCH_ENDPOINT` environment variable.
+3. Configure the Q&A Agent API key into the `TOOL_VESEARCH_API_KEY` environment variable.
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `TOOL_VESEARCH_ENDPOINT`: the Q&A Agent ID (**must be set as an environment variable**)
+- `TOOL_VESEARCH_API_KEY`: the Q&A Agent API key
+
+## Usage
+
+```python title="examples/tools/vesearch/agent.py" lines
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.vesearch import vesearch
+
+agent = Agent(
+    name="vesearch_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="An agent that answers questions with veSearch.",
+    instruction="You are a helpful assistant. Use the vesearch tool to look things up online.",
+    tools=[vesearch],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run("What's the weather in Hangzhou today?")
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Parameters and result checks
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `query` | `str` | Required | Query text for the online Q&A service |
+
+`TOOL_VESEARCH_ENDPOINT` is an existing agent ID, not an HTTP URL. The call returns a text summary, but failures may also return error text, so a string result alone does not establish success. The request timeout is 30 seconds. `CLOUD_PROVIDER=byteplus` does not switch this service.
+
+```python lines
+from veadk.tools.builtin_tools.vesearch import vesearch
+
+answer = vesearch("What is AgentKit?")
+print(answer)
+```
+
+This direct call uses only the Q&A service configuration. An outer reasoning model is additionally required when using the tool through `Runner`.

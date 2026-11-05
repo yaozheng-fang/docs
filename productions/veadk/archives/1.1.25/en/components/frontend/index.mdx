@@ -1,0 +1,22 @@
+---
+title: "Overview"
+zh_link: "/productions/veadk/preview/zh/components/frontend"
+---
+
+VeADK provides browser interfaces for debugging, conversations, and agent management. Choose an entry point by task. A2UI renders interfaces inside conversations; it is not a separate workbench
+
+## VeADK Web and VeADK Frontend
+
+| Entry point | Task | Start command |
+| --- | --- | --- |
+| [VeADK Web](/productions/veadk/preview/en/components/frontend/veadk-web) | Inspect local agents, sessions, and tool events | `veadk web ./agents` |
+| [VeADK Frontend](/productions/veadk/preview/en/components/frontend/veadk-frontend) | Use the React interface with local agents or cloud Runtimes | `veadk frontend --dev --agents-dir ./agents` |
+| [AgentKit Studio](/productions/veadk/preview/en/components/frontend/studio) | Create, test, deploy, and manage agents and workspaces | `veadk studio` |
+
+`veadk frontend` and `veadk studio` share the service and interface and connect to cloud Runtimes by default. Pass `--dev` to load local agents from `--agents-dir`. Cloud queries and deployment require provider credentials; local model calls require model credentials
+
+## A2UI
+
+[A2UI](/productions/veadk/preview/en/components/frontend/a2ui) lets tool-capable models return cards, forms, and layouts. Install its dependencies, enable it on the agent, and view responses in an A2UI-compatible frontend
+
+See [Studio](/productions/veadk/preview/en/components/frontend/studio) for creation flows, Preview availability, and deployment requirements. DeepSeek Harness generates a separate container runtime; see its [creation and deployment guide](/productions/veadk/preview/en/components/frontend/deepseek-harness)

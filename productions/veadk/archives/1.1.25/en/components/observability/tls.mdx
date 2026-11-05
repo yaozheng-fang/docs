@@ -1,0 +1,96 @@
+---
+title: "TLS log service"
+zh_link: "/productions/veadk/preview/zh/components/observability/tls"
+---
+
+`TLSExporter` reports span data to the Volcengine TLS log service over OTLP (HTTP). Data is organized by TLS topic, which suits centralized storage, long-term retention, and cross-service trace analysis.
+
+## When to use
+
+- You want your agent's execution traces stored centrally in the Volcengine TLS log service;
+- You need long-term retention and compliance/audit trails for trace data;
+- You want to observe traces with TLS alerting and analysis capabilities.
+
+## Prerequisites
+
+Complete [installation](/productions/veadk/preview/en/get-started/installation) and [model configuration](/productions/veadk/preview/en/components/agent/model), then set the environment variables below before starting Python. Replace placeholders with accessible resources and valid credentials
+
+<Warning>
+TLS receives traces and may incur storage charges. Specify an existing trace topic ID where possible; otherwise VeADK calls TLS to obtain or create default trace resources. This example uses a Volcengine TLS endpoint. With `CLOUD_PROVIDER=byteplus`, credential configuration can use BytePlus AK/SK. Match the endpoint, region, and topic to the target service; using a BytePlus model alone does not configure TLS
+</Warning>
+
+```bash lines
+export OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT="https://tls-cn-beijing.volces.com:4318/v1/traces"
+export OBSERVABILITY_OPENTELEMETRY_TLS_REGION="cn-beijing"
+export OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME="your-tls-trace-topic"
+
+# Volcengine credentials
+export VOLCENGINE_ACCESS_KEY="your-access-key"
+export VOLCENGINE_SECRET_KEY="your-secret-key"
+```
+
+## Usage
+
+Save as `app.py` and run `python app.py`. The example uses existing resources and flushes pending traces after one model call
+
+```python title="app.py" lines
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer(exporters=[TLSExporter()])
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("Explain the purpose of an agent in one sentence", session_id="demo-session")
+)
+print(response)
+tracer.force_export()
+print("Trace ID:", tracer.trace_id)
+```
+
+## Parameters
+
+### Constructor parameters
+
+`TLSExporter` carries its connection parameters in the `config` field of type `TLSExporterConfig`; when omitted, each field is read automatically from the corresponding environment variable.
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `config` | `TLSExporterConfig` | Read from environment variables | TLS connection and authentication config. |
+| `resource_attributes` | `dict` | `{}` | Resource attributes attached to spans. |
+| `headers` | `dict` | `{}` | TLS authentication headers come from the connection configuration. Additional custom headers are not sent to the export endpoint. |
+
+### TLS connection config
+
+`config` is a `TLSExporterConfig`; each field defaults from `TLSConfig` and Volcengine credentials, with the following environment variables:
+
+| Config | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `endpoint` | `OBSERVABILITY_OPENTELEMETRY_TLS_ENDPOINT` | `str` | `https://tls-cn-beijing.volces.com:4318/v1/traces` | TLS OTLP endpoint (HTTP). |
+| `region` | `OBSERVABILITY_OPENTELEMETRY_TLS_REGION` | `str` | `cn-beijing` | Region where the TLS service is deployed. |
+| `topic_id` | `OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME` | `str` | Fetches the tracing topic ID automatically when unset | TLS tracing topic ID for organizing log data. |
+| `access_key` | `VOLCENGINE_ACCESS_KEY` / `BYTEPLUS_ACCESS_KEY` | `str` | Read from credential configuration | Access key accepted by the target TLS service; BytePlus credential mapping requires `CLOUD_PROVIDER=byteplus` |
+| `secret_key` | `VOLCENGINE_SECRET_KEY` / `BYTEPLUS_SECRET_KEY` | `str` | Read from credential configuration | Secret key paired with the access key |
+
+<Note>
+When `topic_id` is not provided via `OBSERVABILITY_OPENTELEMETRY_TLS_SERVICE_NAME`, the exporter calls `VeTLS` to fetch the tracing topic ID automatically, so valid Volcengine credentials (`VOLCENGINE_ACCESS_KEY` and `VOLCENGINE_SECRET_KEY`) are required.
+</Note>
+
+
+
+You can also let `Agent` attach the TLS exporter automatically from an environment variable, without constructing it explicitly:
+
+```bash lines
+export ENABLE_TLS=true
+```
+
+<Tip>
+With `ENABLE_TLS=true`, `Agent` creates an `OpentelemetryTracer` and attaches `TLSExporter` automatically, even when the agent provides no `tracers`.
+</Tip>
+
+## Verification and troubleshooting
+
+Search for the run's Trace ID in the target backend. A successful model response does not prove trace delivery. If data is missing, check the endpoint and region, credential permissions, target resource, and whether `tracer.force_export()` ran before the process exited

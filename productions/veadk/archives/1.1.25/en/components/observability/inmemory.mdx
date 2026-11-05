@@ -1,0 +1,97 @@
+---
+title: "In-memory exporter"
+zh_link: "/productions/veadk/preview/zh/components/observability/inmemory"
+---
+
+`InMemoryExporter` keeps span data in process memory instead of reporting it to an external platform. It organizes spans by `session_id`, which is useful for local debugging, testing, and dumping a session's trace data to a JSON file for offline analysis.
+
+Locally retained spans are bounded by configurable limits; the oldest spans are evicted when either limit is reached. Multiple tracers under the same `TracerProvider` share one in-memory exporter instance.
+
+## When to use
+
+- Local development and debugging of agent execution flows;
+- Verifying spans in unit or integration tests;
+- Offline environments without external platform connectivity, where you need to retain and analyze trace data locally.
+
+## Automatic management
+
+`InMemoryExporter` is created and managed automatically by `OpentelemetryTracer` and records completed, sampled spans. It therefore **cannot** be added explicitly to the `exporters` list of `OpentelemetryTracer`, or initialization fails.
+
+```python lines
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+# The in-memory exporter is attached automatically even with no external exporters
+tracer = OpentelemetryTracer(exporters=[])
+```
+
+Multiple tracers under the same `TracerProvider` share a single `InMemoryExporter` instance; the first tracer registers it and subsequent tracers reuse the registered exporter.
+
+## Usage
+
+After a session run finishes, call the tracer's `dump` method to export that session's spans to a local JSON file:
+
+```python title="app.py" lines
+import asyncio
+from pathlib import Path
+
+from veadk import Agent, Runner
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer()
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("Explain the purpose of an agent in one sentence", session_id="demo-session")
+)
+print(response)
+Path("traces").mkdir(exist_ok=True)
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(path)
+```
+
+## Local cache limits
+
+The in-memory exporter enforces dual limits on locally retained spans — by span count and by estimated data size. When either limit is reached, the oldest span is evicted. A single span that exceeds the byte limit is not retained locally but is still forwarded to configured cloud exporters as before. By default, the most recent 1024 spans are retained, with an estimated data cap of 16 MiB.
+
+| Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED` | `bool` | `true` | Whether to retain local span history. When set to `false`, no spans are retained, but span annotation, Trace IDs in logs, and configured cloud export remain available. |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_SPANS` | `int` (non-negative) | `1024` | Maximum number of spans to retain. Set to `0` to retain none. |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_BYTES` | `int` (non-negative) | `16777216` | Estimated data size limit in bytes. Set to `0` to retain none. |
+
+```bash lines
+# Disable local cache and use cloud observability only
+export OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED=false
+```
+
+When local caching is disabled, `tracer.dump()` writes an empty array. When caching is enabled, `dump()` returns only the session history still retained; if a span used to correlate a session has been evicted, the corresponding trace may no longer appear in local exports. Query the full history on your cloud observability platform.
+
+The byte figure is an estimate of cached data and does not represent a process-wide memory limit. The configuration takes effect when the cache is first created; changing it requires restarting the application or creating a new `TracerProvider`.
+
+## Parameters
+
+### Constructor parameters
+
+`InMemoryExporter` usually does not need to be constructed by hand; its constructor parameters are:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | `inmemory_exporter` | Exporter instance identifier. |
+
+### `dump` method parameters
+
+`OpentelemetryTracer.dump` relies on spans retained by the in-memory exporter, with the following parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `str` | `unknown_user_id` | User identifier, used to organize and name the dump file. |
+| `session_id` | `str` | `unknown_session_id` | Session identifier, used to filter spans of that session. |
+| `path` | `str` | Agent directory | Output directory; it must already exist because `dump` does not create it. |
+
+The dump file is named like `{name}_{user_id}_{session_id}_{trace_id}.json`, and its content is a list of spans, each containing the name, `span_id`, `trace_id`, start/end times, attributes, and parent span.
+
+## Checking the export
+
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model), save the example as `app.py`, and run `python app.py`. The printed file path should exist, and its JSON list should contain spans from this model call
+
+In-memory data is lost when the process exits. Session filtering relies on session identifiers recorded by model-call spans. The file can be empty if no relevant model span was recorded, sampling omitted the data, or the session ID differs. `user_id` names the output file; it does not filter spans or enforce access control

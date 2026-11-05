@@ -1,0 +1,101 @@
+---
+title: "VeADK Web"
+zh_link: "/productions/veadk/preview/zh/components/frontend/veadk-web"
+---
+
+`veadk web` starts the Google ADK browser debugger to select local agents, send messages, and inspect events. It integrates memory configured on a VeADK root agent, offers optional OAuth2 login, and hides OpenAPI documentation pages by default
+
+## Start
+
+Complete [installation](/productions/veadk/preview/en/get-started/installation) and [model configuration](/productions/veadk/preview/en/components/agent/model). Create these two files in `agents/assistant/`
+
+```python title="agents/assistant/__init__.py"
+from . import agent
+```
+
+```python title="agents/assistant/agent.py"
+from veadk import Agent
+
+root_agent = Agent(name="assistant", instruction="Answer clearly and concisely.")
+```
+
+Run from the parent directory of `agents`:
+
+```bash
+veadk web ./agents --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000`, select `assistant`, and send text. A successful run shows a response and execution events. If the app is absent, check the directory, `root_agent`, and import errors
+
+<Warning>
+The default setup is for local debugging. Binding `0.0.0.0` allows other devices to connect. Hiding OpenAPI pages does not enable authentication; configure authentication and network controls for shared access
+</Warning>
+
+## Forwarded options
+
+This complete list was checked against `adk web --help` in Google ADK 2.2.0. VeADK forwards these options; check local help after upgrading ADK. `None` means unspecified, not that a service has been configured
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--enable_features` | `None` | Enable comma-separated ADK experimental features |
+| `--disable_features` | `None` | Disable comma-separated ADK features |
+| `--host` | `127.0.0.1` | Bind address |
+| `--port` | `8000` | Listening port |
+| `--allow_origins` | `None` | Allowed CORS origins; supports regex: patterns |
+| `-v` / `--verbose` | `False` | ADK debug shortcut; prefer explicit --log_level DEBUG with VeADK |
+| `--log_level` | `ERROR` | Log level; VeADK defaults to ERROR |
+| `--trace_to_cloud` | `False` | Export traces to Google Cloud; requires its credentials |
+| `--otel_to_cloud` | `False` | Export OpenTelemetry data to Google Cloud |
+| `--reload` / `--no-reload` | `True` | Restart on server code changes |
+| `--a2a` | `False` | Enable A2A endpoints |
+| `--reload_agents` | `False` | Reload changed agent definitions |
+| `--eval_storage_uri` | `None` | Evaluation storage URI, supports gs://bucket |
+| `--extra_plugins` | `None` | Comma-separated import paths of plugin classes or instances |
+| `--url_prefix` | `None` | Reverse-proxy path prefix; must start with / |
+| `--trigger_sources` | `None` | Comma-separated batch or event trigger sources |
+| `--logo-text` | `None` | Web UI logo text |
+| `--logo-image-url` | `None` | Web UI logo image URL |
+| `--session_service_uri` | `None` | ADK session service URI; memory:// uses memory |
+| `--artifact_service_uri` | `None` | Artifact storage URI: memory://, file://, or gs:// |
+| `--use_local_storage` / `--no_use_local_storage` | `True` | Use local .adk storage when service URIs are unset; may fall back to memory if unwritable |
+| `--memory_service_uri` | `None` | ADK memory service URI; distinct from VeADK backend configuration |
+| `--default_llm_model` | `None` | ADK default when an agent does not specify a model |
+| `AGENTS_DIR` | `.` | Parent directory of agent apps or one agent directory |
+| `--help` | — | Show VeADK-specific help; use `adk web --help` for forwarded options |
+
+Do not explicitly combine service URIs with `--use_local_storage`. ADK CLI URI syntax should not be confused with `db_url` when constructing a VeADK session backend directly
+
+```bash
+veadk web ./agents --log_level DEBUG --session_service_uri memory://
+```
+
+## VeADK OAuth2 options
+
+SSO requires both the user pool and client name. Provide credentials for the selected cloud environment and verify callback registration. Automatic setup may create a pool or client or update callback URLs
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--oauth2-user-pool` | `None` | User pool name |
+| `--oauth2-user-pool-client` | `None` | Web client name |
+| `--oauth2-redirect-uri` | `http://{host}:{port}/oauth2/callback` | Callback URL; set explicitly |
+
+```bash
+veadk web ./agents \
+  --oauth2-user-pool my-pool \
+  --oauth2-user-pool-client my-web-client \
+  --oauth2-redirect-uri http://127.0.0.1:8000/oauth2/callback
+```
+
+The command's OAuth2 adapter targets local HTTP debugging and permits non-HTTPS cookies. For production or public access, use [Frontend/Studio authentication](/productions/veadk/preview/en/components/frontend/veadk-frontend#authentication) or configure HTTPS middleware explicitly
+
+## Automatic memory integration
+
+When the root is a VeADK `Agent`, its `short_term_memory` and `long_term_memory` are used by the app runner. Workflow roots do not automatically adopt every child's memory configuration; choose session and memory services at the runner or app level. Deploy apps separately when they require different data boundaries and configure authorization
+
+## OpenAPI and default logging
+
+`/openapi.json`, `/docs`, and `/redoc` are disabled, and the default log level is `ERROR`. Set `--log_level DEBUG` explicitly for diagnostics. Debug logs may include user input and tool data; restore your required level afterward
+
+## Agent build graph serialization
+
+The debugger can display VeADK topology and model names. If the graph fails to load, confirm the root agent imports, then check the VeADK/Google ADK version combination and browser request errors

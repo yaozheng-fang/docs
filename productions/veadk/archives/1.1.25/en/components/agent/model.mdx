@@ -1,0 +1,245 @@
+---
+title: "Model"
+zh_link: "/productions/veadk/preview/zh/components/agent/model"
+---
+
+The model interprets input, selects tools, and generates responses. Agents read global model settings from environment variables or `config.yaml` by default. Use `Agent` parameters to give individual agents their own models, endpoints, and credentials
+
+## Set the model for a single agent
+
+Complete [installation](/productions/veadk/preview/en/get-started/installation), then select one platform configuration below. Enable the model in the corresponding account, or replace its name with an accessible model or inference endpoint
+
+<Tabs>
+<Tab title="Volcengine">
+```bash  lines
+export CLOUD_PROVIDER="volcengine"
+export MODEL_AGENT_NAME="doubao-seed-2-1-pro-260628"
+export MODEL_AGENT_API_BASE="https://ark.cn-beijing.volces.com/api/v3/"
+export MODEL_AGENT_API_KEY="<model-api-key>"
+```
+
+</Tab>
+<Tab title="BytePlus">
+```bash  lines
+export CLOUD_PROVIDER="byteplus"
+export MODEL_AGENT_NAME="seed-2-0-lite-260228"
+export MODEL_AGENT_API_BASE="https://ark.ap-southeast.bytepluses.com/api/v3"
+export MODEL_AGENT_API_KEY="<model-api-key>"
+```
+
+</Tab>
+</Tabs>
+
+Run this script from the same terminal:
+
+```python main.py lines
+import asyncio
+import os
+from veadk import Agent, Runner
+
+agent = Agent(
+    name="assistant",
+    model_name=os.environ["MODEL_AGENT_NAME"],
+    model_provider="openai",
+    model_api_base=os.environ["MODEL_AGENT_API_BASE"],
+    model_api_key=os.environ["MODEL_AGENT_API_KEY"],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain what an AI agent does in one paragraph.",
+        session_id="model-demo",
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python main.py` to print a response. If all agents share the settings above, `Agent(name="assistant")` is sufficient
+
+### Model parameters and global settings
+
+Explicit constructor arguments override their corresponding global settings. Unspecified fields retain global values. VeADK searches for `config.yaml` from the current directory upward, and existing environment variables take precedence over matching file settings. See [quickstart](/productions/veadk/preview/en/get-started/quickstart) for YAML configuration
+
+| Parameter | Type | Default | Environment variable or behavior |
+| :--- | :--- | :--- | :--- |
+| `model_name` | `str \| list[str]` | Platform default model | `MODEL_AGENT_NAME`; lists define fallbacks |
+| `model_provider` | `str` | `"openai"` | `MODEL_AGENT_PROVIDER`; LiteLLM provider identifier, with `openai` used for OpenAI-compatible Ark endpoints |
+| `model_api_base` | `str` | Platform default endpoint | `MODEL_AGENT_API_BASE` |
+| `model_api_key` | `str` | `""`, resolved at initialization | `MODEL_AGENT_API_KEY` |
+| `model_api_key_name` | `str` | `""` | `MODEL_AGENT_API_KEY_NAME`; looks up an Ark key by name |
+| `model_fallbacks` | `list[str \| ModelFallbackEndpoint]` | `[]` | Additional fallback models or endpoints; matching dictionaries are also accepted |
+| `model_extra_config` | `dict` | `{}` | Additional model request settings; supported fields depend on the API |
+| `enable_responses` | `bool` | `False` | Enables the Ark Responses API |
+| `enable_responses_cache` | `bool` | `True` | Controls caching in Responses mode |
+
+Without global overrides, Volcengine uses `doubao-seed-2-1-pro-260628` at `https://ark.cn-beijing.volces.com/api/v3/`. With `CLOUD_PROVIDER=byteplus`, the defaults are `seed-2-0-lite-260228` and `https://ark.ap-southeast.bytepluses.com/api/v3`. Check existing `MODEL_AGENT_*` variables when switching platforms so settings from the previous platform are not retained
+
+### Resolve an API key by name
+
+Key precedence is: nonempty `model_api_key`, `MODEL_AGENT_API_KEY`, a lookup using `model_api_key_name` or `MODEL_AGENT_API_KEY_NAME`, then the account's default key lookup
+
+```bash lines
+export MODEL_AGENT_API_KEY_NAME="production-key"
+```
+
+Name-based lookup requires account credentials permitted to read Ark API keys. The name is not the secret value. An existing key value takes precedence over lookup. This feature is available from VeADK 1.0.2
+
+### Rate-limit retries
+
+With the default `adk` runtime, Responses disabled, and no custom `model`, VeADK retries an HTTP 429 once if no model response has been emitted. A valid numeric `Retry-After` controls the delay, capped at 2 seconds; missing or invalid values use 0.5 seconds. This retry layer does not replay a request after output has started
+
+## Configure fallback models
+
+Set `BACKUP_MODEL_NAME` in addition to the earlier settings, then replace the `agent` definition with:
+
+```python  lines
+agent = Agent(
+    name="assistant",
+    model_name=[os.environ["MODEL_AGENT_NAME"], os.environ["BACKUP_MODEL_NAME"]],
+)
+```
+
+The first entry is primary; subsequent entries are fallback candidates sharing the provider, endpoint, and credentials. You can also append same-provider candidates with `model_fallbacks=["backup-model-name"]`. When both are configured, candidates from `model_name` precede those from `model_fallbacks`
+
+Same-provider name fallbacks are available for the default model API and Responses API. Every candidate must support the request's tools, input modalities, and output format. Fallbacks handle request failures; low-quality answers do not automatically trigger a switch
+
+## Configure cross-provider fallback models
+
+Use `ModelFallbackEndpoint` when a backup has a different provider, endpoint, or credentials. In addition to the primary settings, set `BACKUP_MODEL_NAME`, `BACKUP_MODEL_PROVIDER`, `BACKUP_MODEL_API_BASE`, and `BACKUP_MODEL_API_KEY` to the backup service's actual values
+
+```python fallback.py lines
+import asyncio
+import os
+from veadk import Agent, ModelFallbackEndpoint, Runner
+
+agent = Agent(
+    name="assistant",
+    model_fallbacks=[
+        ModelFallbackEndpoint(
+            model_name=os.environ["BACKUP_MODEL_NAME"],
+            model_provider=os.environ["BACKUP_MODEL_PROVIDER"],
+            model_api_base=os.environ["BACKUP_MODEL_API_BASE"],
+            model_api_key_env="BACKUP_MODEL_API_KEY",
+        ),
+    ],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages="Explain model fallback briefly.", session_id="fallback-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### `ModelFallbackEndpoint` parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `model_name` | `str` | Required | Model name; uses the primary provider when neither a prefix nor provider is supplied |
+| `model_provider` | `str \| None` | `None` | Backup provider; a different provider does not inherit primary credentials or endpoint |
+| `model_api_base` | `str \| None` | `None` | Backup endpoint; when omitted across providers, LiteLLM uses a provider default if available |
+| `model_api_key` | `str \| None` | `None` | Backup key value; takes precedence over `model_api_key_env` |
+| `model_api_key_env` | `str \| None` | `None` | Environment variable containing the key, read when creating the agent; if missing, LiteLLM tries provider-default credentials |
+| `model_extra_config` | `dict` | `{}` | Backup request settings; explicitly supplied `extra_headers` and `extra_body` dictionaries merge by key with their primary counterparts, with backup values winning; nested objects are not recursively merged |
+
+Dictionaries can replace endpoint objects. Supported aliases are `model`, `provider`, `api_base` or `base_url`, `api_key`, `api_key_env`, and `extra_config`. Explicitly specify the provider, endpoint, and credentials across providers to avoid inheriting unsuitable settings
+
+### Fallback limitations
+
+- `enable_responses=True` accepts only same-provider string fallbacks; endpoint objects or dictionaries fail at initialization
+- `codex` and `piagent` ignore fallback chains; use `adk` when fallbacks are required. See [runtime](/productions/veadk/preview/en/components/agent/runtime#switch-the-execution-backend)
+- With a custom `model` object in the default runtime, `model_fallbacks` is ignored; configure fallbacks on that object instead
+
+## Responses API
+
+The Responses API supports conversation continuation, multimodal input, and structured output. Confirm that the model and endpoint support the Ark Responses protocol. An OpenAI-compatible endpoint does not automatically support every feature described here
+
+### Enable
+
+Requires `google-adk>=1.34.0`. After configuring the model, set `Agent(enable_responses=True)`; the feature is disabled by default. For BytePlus, select an available model and endpoint that explicitly support the required capabilities; the flag alone does not add support
+
+### Multimodal input
+
+`FileData.file_uri` accepts the following sources. Set `mime_type` to match the content:
+
+| Source | Format | Requirement |
+| :--- | :--- | :--- |
+| Local file | `file:///absolute/path/example.png` | Readable by the process; VeADK uploads it through the Files API |
+| Uploaded file | `file_id://file-id` | An accessible Files API resource |
+| Network URL | `https://...` | Reachable by the model service |
+
+<Note>
+Local files are sent to the model service. Confirm that they are suitable for upload and check supported formats and size limits before running the example
+</Note>
+
+Save a PNG as `example.png` in the current directory, then run `python image_reader.py`:
+
+```python image_reader.py lines
+import asyncio
+from pathlib import Path
+from google.genai import types
+from veadk import Agent, Runner
+
+async def main():
+    image_path = Path("example.png").resolve(strict=True)
+    agent = Agent(name="image_reader", enable_responses=True)
+    runner = Runner(agent=agent, app_name="image_demo", user_id="demo-user")
+    await runner.session_service.create_session(
+        app_name="image_demo", user_id="demo-user", session_id="image-session"
+    )
+    message = types.Content(role="user", parts=[
+        types.Part(text="Describe this image."),
+        types.Part(file_data=types.FileData(
+            file_uri=image_path.as_uri(), mime_type="image/png"
+        )),
+    ])
+    async for event in runner.run_async(
+        user_id="demo-user", session_id="image-session", new_message=message
+    ):
+        if event.is_final_response() and event.content:
+            print("".join(part.text or "" for part in event.content.parts or []))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Set video metadata on `types.Part`, alongside `file_data`. This fragment can replace the image Part; the service determines the supported frame-rate range:
+
+```python  lines
+video_part = types.Part(
+    file_data=types.FileData(
+        file_uri=Path("example.mp4").resolve(strict=True).as_uri(),
+        mime_type="video/mp4",
+    ),
+    video_metadata=types.VideoMetadata(fps=1),
+)
+```
+
+### Configure Ark context management
+
+For models supporting `context_management`, pass settings through `model_extra_config`. This fragment requests removal of older thinking content while retaining the most recent thinking turn:
+
+```python  lines
+agent = Agent(
+    enable_responses=True,
+    model_extra_config={
+        "context_management": {
+            "edits": [{
+                "type": "clear_thinking",
+                "keep": {"type": "thinking_turns", "value": 1},
+            }],
+        },
+    },
+)
+```
+
+### Context caching
+
+Responses caching is enabled by default. Cache hits depend on the service and request content; reduced usage is not guaranteed. Set `enable_responses_cache=False` to disable it
+
+In event `usage_metadata`, `cached_content_token_count` counts cached input tokens and `prompt_token_count` counts total input tokens. Calculate their ratio only when the latter is greater than zero. Read events with `Runner.run_async` to inspect usage
+
+When `output_schema` is configured, VeADK removes cache settings that conflict with structured output. See [structured output](/productions/veadk/preview/en/components/agent/structured-output)

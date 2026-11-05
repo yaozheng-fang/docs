@@ -1,0 +1,71 @@
+---
+title: "网页读取"
+en_link: "/productions/veadk/preview/en/components/tools/link-reader"
+---
+
+## 功能说明
+
+对应工具标识 `link_reader`。
+
+`link_reader` 接收一组 URL，读取并解析其网页内容，常与搜索工具搭配，让智能体先检索链接再深入阅读。它使用 `MODEL_AGENT_API_KEY` 进行鉴权。
+
+导入路径：`from veadk.tools.builtin_tools.link_reader import link_reader`
+
+## 环境变量与前提
+
+环境变量：
+
+- `MODEL_AGENT_API_KEY`：智能体推理模型的 API Key
+
+## 使用方法
+
+```python title="examples/tools/link_reader/agent.py" lines
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.link_reader import link_reader
+
+agent = Agent(
+    name="link_reader_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="An agent that reads and summarizes web pages.",
+    instruction="Use the link_reader tool to read the given URLs, then summarize them.",
+    tools=[link_reader],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "读取 https://www.volcengine.com/docs/85508/1650263 并总结要点"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## 输入、结果与服务范围
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `url_list` | `list[str]` | 必填 | 待读取的 URL 列表，每次最多提交 3 个 |
+
+调用是异步的，成功时返回包含页面标题和正文的列表；没有可用结果或读取失败时可能返回空列表。凭证必须具备火山方舟 LinkReader 服务的访问权限，任意第三方模型 API Key 不能用于该服务。`CLOUD_PROVIDER=byteplus` 不会自动切换该工具的服务端点
+
+```python lines
+import asyncio
+from veadk.tools.builtin_tools.link_reader import link_reader
+
+async def main():
+    pages = await link_reader(["https://www.volcengine.com/docs/85508/1650263"])
+    if not pages:
+        print("No readable pages returned; check access and service configuration")
+    for page in pages:
+        print(page)
+
+asyncio.run(main())
+```

@@ -1,0 +1,199 @@
+---
+title: "Use VikingDB storage"
+zh_link: "/productions/veadk/preview/zh/components/memory/vikingdb"
+---
+
+<Note>
+API key authentication, custom service URLs, and the associated management-precheck behavior on this page are unreleased Preview features, verified against public source `adcdfdcc6a5a213b249a8caad435b939c01df7f6`. Stable VeADK 1.1.13 does not include them. Install that source before using the API key examples
+</Note>
+
+```bash
+python -m pip install "veadk-python @ git+https://github.com/volcengine/veadk-python.git@adcdfdcc6a5a213b249a8caad435b939c01df7f6"
+```
+
+The `viking` backend uses Volcengine [VikingDB memory](https://www.volcengine.com/product/vikingdb) as long-term storage. It is a managed service requiring no self-hosted vector store or local embedding — **recommended for production**. This backend also supports user profiles (`get_user_profile`), the only backend that does.
+
+The earlier `viking_mem` backend is deprecated and is automatically mapped to `viking`; both have the same behavior.
+
+## When to use
+
+- Production with persistence and managed operations;
+- When you want Volcengine's memory capabilities, including user profiles;
+- You have a Volcengine account with the corresponding AK/SK or IAM credentials.
+
+## Usage
+
+Enable VikingDB memory in the target region and configure credentials below before running. AK/SK initialization checks for and may create a collection and requires collection-management permissions. Writes send conversation content to the remote service. For BytePlus, use `CLOUD_PROVIDER=byteplus`, `BYTEPLUS_ACCESS_KEY`, and `BYTEPLUS_SECRET_KEY`, plus `BYTEPLUS_SESSION_TOKEN` for temporary credentials
+
+```python lines
+from veadk import Agent
+from veadk.memory.long_term_memory import LongTermMemory
+
+# index (collection name) must start with a letter, contain only letters/digits/underscores, length 1–128
+ltm = LongTermMemory(backend="viking", app_name="ltm_demo")
+
+agent = Agent(
+    name="demo",
+    instruction="Answer the user; when needed, use the `load_memory` tool to recall past conversations.",
+    long_term_memory=ltm,
+)
+```
+
+At init, if the collection does not exist, VeADK creates it from `memory_type`.
+
+<Note>
+When you select the VikingDB Memory backend in Studio's custom creation flow, you can browse and pick an existing VikingDB memory collection from the current account. Selecting an existing collection uses its name as the collection index, and Studio automatically fills the project, region, and memory-type environment variables. If you do not select one, the collection name is auto-generated from the agent name, and the collection is created at runtime if it does not exist. See the [Studio agent workbench](/productions/veadk/preview/en/components/frontend/studio#configure-memory).
+</Note>
+
+You can also pass config explicitly via `backend_config`:
+
+```python lines
+import os
+
+from veadk.memory.long_term_memory import LongTermMemory
+
+ltm = LongTermMemory(
+    backend="viking",
+    index="ltm_demo",
+    backend_config={
+        "index": "ltm_demo",
+        "volcengine_access_key": os.environ["VOLCENGINE_ACCESS_KEY"],
+        "volcengine_secret_key": os.environ["VOLCENGINE_SECRET_KEY"],
+        "region": "cn-beijing",
+        "volcengine_project": "default",
+        "memory_type": ["sys_event_v1", "sys_profile_v1"],
+    },
+)
+```
+
+Access an existing collection using an API key:
+
+```python lines
+import os
+
+from veadk.memory.long_term_memory import LongTermMemory
+
+ltm = LongTermMemory(
+    backend="viking",
+    index="ltm_demo",
+    backend_config={
+        "index": "ltm_demo",
+        "api_key": os.environ["DATABASE_VIKINGMEM_API_KEY"],
+        "volcengine_project": "default",
+        "memory_type": ["sys_event_v1", "sys_profile_v1"],
+    },
+)
+```
+
+### Get a user profile
+
+```python lines
+profile = ltm.get_user_profile(user_id="user-42")
+print(profile)
+```
+
+## Parameters
+
+### LongTermMemory parameters
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `backend` | `str \| BaseLongTermMemoryBackend` | `"opensearch"` | Set to `viking` for this page, or pass a configured backend instance |
+| `backend_config` | `dict` | `{}` | Backend settings; a supplied backend instance takes precedence |
+| `index` | `str` | `""` | Without backend_config, resolves from index, app_name, then default_app; supply a nonempty index with a configuration dictionary |
+| `app_name` | `str` | `""` | Fallback for index; the actual user comes from the saved Session or search arguments |
+| `top_k` | `int` | `5` | Number of retrieved chunks; use a positive integer |
+| `user_id` | `str` | `""` | Deprecated; does not select the runtime user |
+
+### Constructor parameters
+
+`backend_config` supports the following settings:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `index` | `str` | No default; provided by `LongTermMemory` | Memory collection name; must follow VikingDB naming rules. |
+| `api_key` | `str \| None` | Read from env var `DATABASE_VIKINGMEM_API_KEY`, defaults to `None` | VikingDB memory API key for memory operations on an existing collection. When set, memory operations use API key auth; collection management still requires AK/SK or IAM credentials. |
+| `volcengine_access_key` | `str \| None` | See below | Access key (AK). Reads `BYTEPLUS_ACCESS_KEY` in `byteplus` mode, otherwise `VOLCENGINE_ACCESS_KEY`. Falls back to VeFaaS IAM when absent. |
+| `volcengine_secret_key` | `str \| None` | See below | Secret key (SK). Reads `BYTEPLUS_SECRET_KEY` in `byteplus` mode, otherwise `VOLCENGINE_SECRET_KEY`. Falls back to VeFaaS IAM when absent. |
+| `session_token` | `str` | See below | STS temporary-credential token. Reads `BYTEPLUS_SESSION_TOKEN` in `byteplus` mode, otherwise `VOLCENGINE_SESSION_TOKEN`. |
+| `cloud_provider` | `str` | Reads env `CLOUD_PROVIDER`, defaults to `volces` | Cloud provider, `volces` or `byteplus`; affects the service host and region. In `byteplus` mode the region is fixed to `cn-hongkong`. |
+| `region` | `str` | See below | Region of the VikingDB memory. |
+| `volcengine_project` | `str` | Reads env `DATABASE_VIKINGMEM_PROJECT`, defaults to `default` | VikingDB memory project name. |
+| `memory_type` | `list[str]` | See below | Memory type list, used to create the collection and filter retrieval. |
+
+### Credential resolution order
+
+The backend prefers `volcengine_access_key` and `volcengine_secret_key` from explicit arguments or environment variables. When both are missing, it reads credentials from the VeFaaS IAM file, suitable for Volcengine cloud deployments.
+
+<Note>
+When `api_key` is set, memory read and write operations use API key auth. If `volcengine_access_key` and `volcengine_secret_key` are not configured, the backend skips collection management precheck (existence check and auto-creation). Creating, listing, and deleting collections still require AK/SK or IAM credentials. When both API key and AK/SK are configured, memory operations use the API key and management uses AK/SK or IAM.
+</Note>
+
+### Defaults for region and memory_type
+
+- `region`: in `byteplus` mode it is always `cn-hongkong`, ignoring the env var and any explicitly passed value; in other modes, when not set explicitly it reads `DATABASE_VIKING_REGION` and then `REGION`, defaulting to `cn-beijing` if neither is set.
+- `memory_type`: when not set explicitly, reads env `DATABASE_VIKINGMEM_MEMORY_TYPE` (a comma-separated string is parsed into a list); when still empty, defaults to `["sys_event_v1", "sys_profile_v1"]`.
+
+## Environment variables
+
+| Env var | Default | Description |
+| :--- | :--- | :--- |
+| `VOLCENGINE_ACCESS_KEY` | None | Volcengine Access Key. |
+| `VOLCENGINE_SECRET_KEY` | None | Volcengine Secret Key. |
+| `CLOUD_PROVIDER` | `volces` | Cloud provider, `volces` or `byteplus`. |
+| `DATABASE_VIKING_REGION` | `cn-beijing` (ignored in `byteplus` mode, which is fixed to `cn-hongkong`) | Memory region. Falls back to the `REGION` env var when not set. |
+| `DATABASE_VIKINGMEM_PROJECT` | `default` | Memory project name. |
+| `DATABASE_VIKINGMEM_MEMORY_TYPE` | `sys_event_v1,sys_profile_v1` | Memory types, comma-separated. |
+| `DATABASE_VIKINGMEM_API_KEY` | None | VikingDB memory API key for memory operations on an existing collection. |
+| `DATABASE_VIKINGMEM_BASE_URL` | None | Custom memory service URL; must start with `http://` or `https://`. Affects the scheme and host for both the memory SDK client and the management client. |
+
+```bash lines
+export VOLCENGINE_ACCESS_KEY="your-ak"
+export VOLCENGINE_SECRET_KEY="your-sk"
+export CLOUD_PROVIDER="volces"
+export DATABASE_VIKING_REGION="cn-beijing"
+export DATABASE_VIKINGMEM_PROJECT="default"
+export DATABASE_VIKINGMEM_MEMORY_TYPE="sys_event_v1,sys_profile_v1"
+# Optional: use API key to access an existing collection
+export DATABASE_VIKINGMEM_API_KEY="your-vikingdb-api-key"
+```
+
+<Note>
+`index` (the collection name) must follow VikingDB rules: start with an English letter, contain only letters, digits, and underscores, length 1–128; otherwise initialization fails.
+</Note>
+
+<Tip>
+`viking` is the only backend that supports `get_user_profile(user_id)`, returning the user's profile information; other backends return an empty string for that method.
+</Tip>
+
+## Verify writes and retrieval
+
+After configuring the dependencies and credentials on this page, run this standalone example. It saves user text and searches for that user directly without calling a conversation model
+
+```python lines
+import asyncio
+
+from google.adk.events import Event
+from google.adk.sessions import Session
+from google.genai import types
+from veadk.memory.long_term_memory import LongTermMemory
+
+async def main():
+    memory = LongTermMemory(backend="viking", index="ltm_demo")
+    session = Session(
+        id="memory_check", app_name="ltm_demo", user_id="user_42",
+        events=[Event(author="user", content=types.Content(
+            role="user", parts=[types.Part(text="My preferred language is Chinese")]
+        ))],
+    )
+    await memory.add_session_to_memory(session)
+    result = await memory.search_memory(
+        app_name="ltm_demo", user_id="user_42", query="preferred language"
+    )
+    for entry in result.memories:
+        print(entry.content)
+
+asyncio.run(main())
+```
+
+Results should contain the saved language preference. Managed services may extract memories asynchronously, so a completed write does not guarantee immediate retrieval. An empty result can also indicate permission, network, or service failure; check error logs and service records. The save method does not return a success Boolean
