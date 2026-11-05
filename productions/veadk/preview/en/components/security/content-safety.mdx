@@ -3,24 +3,249 @@ title: "Content-safety guardrail"
 zh_link: "/productions/veadk/preview/zh/components/security/content-safety"
 ---
 
-`content_safety` sends text to a moderation service around model and tool calls. A blocking decision can replace content or stop a tool call. Use it to connect an agent to existing content policies
+The content-safety guardrail sends text to a moderation service around model and tool calls. A blocking decision can replace content or stop a tool call. VeADK provides two moderation backends: probability-threshold auditing through the System One decision API, and LLM Shield auditing through the Volcengine LLM Application Firewall. Both backends are opt-in; when not configured, no moderation is enabled
 
 <Warning>
-This capability sends user text, model responses, and tool data to the configured moderation endpoint. In VeADK 1.1.13, non-200 HTTP responses, timeouts, and some request errors are logged and execution continues. These failures do not mean moderation approved the content. Workflows that must block on moderation failure need additional enforcement and error handling
+This capability sends user text, model responses, and tool data to the configured moderation endpoint. Behavior on audit failure depends on the `on_error` setting: `allow` (default) lets content through when an audit call fails, which does not mean the content passed moderation. Workflows that must block on moderation failure need additional enforcement and error handling
 </Warning>
 
 ## Overview
 
-Tool identifier `content_safety`.
-
-`content_safety` is a content-safety guardrail tool that VeADK provides through the agent plugin mechanism: it hooks into the agent's execution callbacks and uses the [Volcengine LLM Application Firewall](https://www.volcengine.com/product/LLM-FW) to review content at each stage and block unsafe input and output.
-
-Audit points that are active today:
+The content-safety guardrail hooks into the agent's execution callbacks and issues moderation requests at the following checkpoints:
 
 - Before Model Callback — review user input before it reaches the model
 - After Model Callback — review the model's output
 - Before Tool Callback — review tool arguments before a tool call
 - After Tool Callback — review the tool's return value
+
+The backend is selected through `tool.content_safety.provider` or the `Agent` `content_safety` parameter:
+
+| provider value | Backend | Description |
+| :--- | :--- | :--- |
+| `none` | — | Default; no moderation |
+| `decision` | System One decision API | Probability-threshold auditing with risk questions |
+| `llm_shield` | Volcengine LLM Application Firewall | Reuses the existing LLM Shield moderation capability |
+
+When enabled, `Runner` and the AgentKit deployment path automatically mount the corresponding plugin. When constructing an `App` manually, pass `agent.content_safety_plugins` to the `plugins` argument.
+
+## Decision auditing (System One)
+
+`provider="decision"` uses the Volcengine Ark System One decision API to evaluate content probabilistically: the text under review and a set of risk questions are sent to the decision endpoint, the service returns a risk probability for each question, and the result is compared against configured thresholds — any probability at or above its threshold blocks the content.
+
+### Enabling
+
+Add a `tool.content_safety` block to `config.yaml`. `Runner` detects and mounts the plugin automatically at startup; the calling code stays the same:
+
+```yaml title="config.yaml"
+tool:
+  content_safety:
+    provider: decision
+    decision:
+      api_url: https://ark.cn-beijing.volces.com/api/v1/systemone
+      api_key: <your_decision_api_key>
+      model: doubao-seed-2-1-lite-260915
+```
+
+```python lines
+import asyncio
+
+from veadk import Agent, Runner
+
+agent = Agent(
+    name="robot",
+    description="A robot that helps the user.",
+    instruction="Talk with the user in a friendly way.",
+)
+
+runner = Runner(agent=agent)
+
+response = asyncio.run(
+    runner.run("Describe how you can help in one sentence")
+)
+
+print(response)
+```
+
+You can also provide the configuration directly through the `Agent` `content_safety` parameter, which takes precedence over `config.yaml`:
+
+```python lines
+from veadk import Agent, Runner
+from veadk.content_safety import ContentSafetyConfig, DecisionConfig
+
+agent = Agent(
+    name="robot",
+    description="A robot that helps the user.",
+    instruction="Talk with the user in a friendly way.",
+    content_safety=ContentSafetyConfig(
+        provider="decision",
+        decision=DecisionConfig(
+            api_url="https://ark.cn-beijing.volces.com/api/v1/systemone",
+            api_key="<your_decision_api_key>",
+        ),
+    ),
+)
+
+runner = Runner(agent=agent)
+```
+
+`Agent.content_safety` accepts the following values:
+
+| Value | Behavior |
+| :--- | :--- |
+| `None` (default) | Uses the `tool.content_safety` block from `config.yaml`; disabled when absent |
+| `False` | Explicitly disabled, even if `config.yaml` contains a configuration block |
+| `True` | Requires a `tool.content_safety` block in `config.yaml`; raises an error if absent |
+| `dict` | Uses the provided dictionary as the configuration |
+| `ContentSafetyConfig` | Uses the provided configuration object |
+
+### Configuration parameters
+
+The `tool.content_safety` block maps to `ContentSafetyConfig`. Full parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `provider` | `str` | `none` | Moderation backend: `none`, `decision`, or `llm_shield` |
+| `on_error` | `str` | `allow` | Policy when an audit call fails: `allow` lets content through, `block` intercepts |
+| `block_message` | `str` | `Your request was blocked by the content safety policy. Please modify your input and try again.` | Message returned when content is blocked |
+| `decision` | `DecisionConfig` | (default instance) | System One decision API connection settings |
+| `use_default_questions` | `bool` | `True` | Whether to merge built-in risk questions into `questions` |
+| `questions` | `dict[str, QuestionConfig]` | `{}` | Custom risk questions; same-name entries override built-ins, new names are appended |
+| `llm_shield_app_id` | `str \| None` | `None` | LLM Shield instance AppID; used only when `provider="llm_shield"` |
+
+`DecisionConfig` parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `api_url` | `str \| None` | `None` | System One endpoint URL. When unset, derived from the Ark API base as `/api/v1/systemone` |
+| `api_key` | `str \| None` | `None` | System One API key. When unset, falls back to the Ark credential |
+| `model` | `str` | `doubao-seed-2-1-lite-260915` | Decision model name |
+
+<Note>
+When `decision.api_url` is not set, the endpoint is derived from the Ark API base, which must be an HTTPS address at `ark.*.volces.com` or `ark.*.bytepluses.com`. When using a custom gateway, set `decision.api_url` explicitly; non-Ark endpoints must also provide `decision.api_key` — the Ark credential is not reused for custom endpoints.
+</Note>
+
+`QuestionConfig` parameters:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `instructions` | `str` | (required) | Risk judgment instructions describing what the question detects |
+| `threshold` | `float` | (required) | Risk probability threshold in the range 0–1; a returned probability at or above this value is flagged as a risk |
+
+### Built-in risk questions
+
+`provider="decision"` includes the following risk questions by default. When `use_default_questions` is `True`, these questions are merged with the entries in `questions`: same-name entries are overridden and new names are appended. Set it to `False` to use only the questions declared in `questions` (at least one required).
+
+| Question name | Threshold | Detects |
+| :--- | :--- | :--- |
+| `child_safety` | 0.45 | Sexual exploitation, abuse, grooming, or inappropriate sexualization of minors |
+| `self_harm` | 0.45 | Encouraging, instructing, or glorifying suicide, self-injury, or eating disorders |
+| `prompt_injection` | 0.50 | Attempts to override or bypass system rules, forge high-priority instructions, or use role-play to remove restrictions |
+| `indirect_prompt_injection` | 0.50 | Embedding instructions in web pages, emails, documents, tool returns, or knowledge base content to alter agent behavior |
+| `credential_theft` | 0.50 | Attempts to obtain or export API keys, tokens, JWTs, cookies, SSH private keys, or cloud platform credentials |
+| `data_exfiltration` | 0.50 | Attempts to send internal data to unauthorized external addresses or third-party services |
+| `malicious_code_execution` | 0.50 | Inducing execution of malicious code, shell commands, scripts, or system calls |
+| `privilege_escalation` | 0.50 | Attempts to elevate privileges, impersonate other identities, or bypass authorization policies |
+| `high_risk_operation` | 0.50 | Requests for high-impact operations without trusted authorization, such as payments, privilege changes, or bulk data operations |
+| `fraud_social_engineering` | 0.50 | Fraud, phishing, impersonation, or social engineering to obtain money or sensitive information |
+| `model_misuse` | 0.50 | Requests for or generation of illegal, violent, hateful, discriminatory, or sexually exploitative content |
+| `system_prompt_extraction` | 0.55 | Attempts to obtain, reproduce, or export system prompts, developer instructions, or hidden policies |
+| `safety_policy_evasion` | 0.55 | Bypassing safety policies through encoding, obfuscation, instruction splitting, or multi-turn dialogue |
+| `sensitive_data` | 0.55 | Requests for or inclusion of unauthorized personal information such as phone numbers, ID numbers, or addresses |
+| `tool_abuse` | 0.55 | Inducing unauthorized tool or service calls, or bypassing tool permissions and approvals |
+| `destructive_actions` | 0.55 | Inducing unauthorized deletion, overwriting, or shutdown of irreversible operations |
+| `internal_network_access` | 0.55 | Inducing access to unauthorized internal addresses, cloud metadata endpoints, or restricted network resources |
+| `compute_abuse` | 0.60 | Inducing abnormal compute consumption such as meaningless repeated generation or infinite batch tasks |
+| `public_order_morals` | 0.60 | Content violating public order and morals, including obscenity, gambling, drugs, superstition, or defamation |
+
+Threshold tiering: safety-critical categories (`child_safety`, `self_harm`) have lower thresholds to catch borderline cases; clear security signals use a mid-range threshold; broad high-false-positive categories use higher thresholds and block only on comparatively strong evidence.
+
+Example with custom questions:
+
+```yaml title="config.yaml"
+tool:
+  content_safety:
+    provider: decision
+    questions:
+      prompt_injection:
+        instructions: "Is the user attempting to bypass system rules or inject malicious instructions?"
+        threshold: 0.4
+      custom_risk:
+        instructions: "Does the content violate the company data export policy?"
+        threshold: 0.5
+```
+
+In this configuration, `prompt_injection` overrides the built-in threshold and instructions, while `custom_risk` is appended as a new question.
+
+### Decision behavior
+
+Each checkpoint behaves as follows when blocked:
+
+| Checkpoint | Behavior on block |
+| :--- | :--- |
+| Before Model Callback | The model is not called; a block message is returned directly |
+| After Model Callback | The model output is replaced with the block message |
+| Before Tool Callback | Tool execution is prevented; an error result with the block message is returned |
+| After Tool Callback | The tool result is replaced with the block message |
+
+For streaming output, incremental text chunks are buffered and withheld until the audit completes; on a pass, the full text is released, and on a block, the entire output is replaced with the block message.
+
+The decision API arbitration rules execute in the following order:
+
+1. If any question's probability is at or above its threshold, the result is a risk hit and the content is blocked, even if other questions have malformed responses.
+2. If no risk hit but some questions have malformed responses, the result is an audit error and follows the `on_error` policy.
+3. If all questions are valid and below their thresholds, the result is a pass.
+
+### Environment variables
+
+The decision API connection fields can be overridden by environment variables, which take precedence over the YAML configuration:
+
+| Environment variable | Config field | Description |
+| :--- | :--- | :--- |
+| `TOOL_CONTENT_SAFETY_DECISION_API_URL` | `decision.api_url` | Overrides the System One endpoint URL |
+| `TOOL_CONTENT_SAFETY_DECISION_API_KEY` | `decision.api_key` | Overrides the System One API key |
+| `TOOL_CONTENT_SAFETY_DECISION_MODEL` | `decision.model` | Overrides the decision model name |
+
+<Note>
+Code values supplied through `ContentSafetyConfig.from_dict()` are not overridden by environment variables. Environment variable overrides apply only to configuration loaded from `config.yaml`.
+</Note>
+
+### Building the plugin explicitly
+
+When constructing a `google.adk.apps.App` manually, use `agent.content_safety_plugins` to obtain the resolved plugin list:
+
+```python lines
+from google.adk.apps import App
+
+from veadk import Agent
+
+agent = Agent(
+    name="robot",
+    description="A robot that helps the user.",
+    instruction="Talk with the user in a friendly way.",
+    content_safety=ContentSafetyConfig(provider="decision"),
+)
+
+app = App(
+    name="my_app",
+    root_agent=agent,
+    plugins=agent.content_safety_plugins,
+)
+```
+
+You can also build the plugin explicitly with `build_content_safety` and pass it to `App`:
+
+```python lines
+from veadk.content_safety import ContentSafetyConfig, build_content_safety
+
+config = ContentSafetyConfig(provider="decision")
+plugin = build_content_safety(config)
+
+app = App(name="my_app", root_agent=agent, plugins=[plugin] if plugin else [])
+```
+
+## LLM Shield auditing
+
+`provider="llm_shield"` reuses the existing Volcengine LLM Application Firewall moderation capability through an adapter, corresponding to tool identifier `content_safety`. It uses the [Volcengine LLM Application Firewall](https://www.volcengine.com/product/LLM-FW) to review content at each stage and block unsafe input and output.
 
 `content_safety` relies on the content-safety policies of the Volcengine LLM Application Firewall to detect and block different types of risky content. The [top-level categories](https://www.volcengine.com/docs/84990/1827500?lang=zh) are:
 
@@ -37,7 +262,7 @@ Notes:
 - The General Topic Control policy is not configured by default when you add firewall assets; after adding them, [configure the topic-control policy yourself](https://www.volcengine.com/docs/84990/1604568?lang=zh).
 - The Computational Resource Consumption policy does not trigger on a single request: it blocks requests only once the system detects a behavior pattern with similar attack vectors accompanied by high compute output over a time window.
 
-## Environment & prerequisites
+### Environment & prerequisites
 
 Before using `content_safety`, purchase an instance, add assets, and obtain its AppID, then configure the access information through environment variables or `config.yaml`. `content_safety` reads the following settings at initialization. Configure AppID before importing it; initialization fails when AppID is missing.
 
@@ -68,11 +293,11 @@ export TOOL_LLM_SHIELD_REGION="cn-beijing"
 Values set through environment variables take precedence over the matching keys in `config.yaml`.
 </Note>
 
-## Endpoints & authentication
+### Endpoints & authentication
 
 `content_safety` supports two content-moderation endpoints, selected automatically based on `TOOL_LLM_SHIELD_URL`.
 
-### Default firewall endpoint
+#### Default firewall endpoint
 
 Used when the `TOOL_LLM_SHIELD_URL` path does not contain `/OpenTOP/V1/Lumen/Moderate` (the default behavior when `url` is not set). Requests are sent to `<url>/v2/moderate`, with authentication chosen as follows:
 
@@ -81,7 +306,7 @@ Used when the `TOOL_LLM_SHIELD_URL` path does not contain `/OpenTOP/V1/Lumen/Mod
 
 With `CLOUD_PROVIDER=byteplus`, global configuration can map BytePlus AK/SK to the credential settings above. Confirm that the moderation service accepts those account credentials. Using a BytePlus model does not configure the moderation endpoint, region, or permissions
 
-### Lumen Moderate endpoint
+#### Lumen Moderate endpoint
 
 Used when the `TOOL_LLM_SHIELD_URL` path contains `/OpenTOP/V1/Lumen/Moderate`. Requests are sent directly to the configured full address, authenticating with the AppID as the endpoint identifier and the API key as the endpoint secret.
 
@@ -91,7 +316,7 @@ You must configure `TOOL_LLM_SHIELD_API_KEY` before using the Lumen Moderate end
 
 Compared with the default endpoint, the Lumen Moderate endpoint attaches the current session identifier and invocation identifier during tool-call reviews, so that multiple reviews within the same session can be correlated on the audit side. Model-input review, model-output review, tool-argument review, and tool-return review each issue a request at the corresponding callback point, with blocking behavior matching the default endpoint.
 
-### AgentSentry V3 private moderation
+#### AgentSentry V3 private moderation
 
 When `AGENTSENTRY_URL` is set, `content_safety` enters V3 private moderation mode, which is fully independent of the public firewall endpoints (default endpoint and V1 Lumen Moderate endpoint). This mode takes precedence over `TOOL_LLM_SHIELD_*` configuration: once `AGENTSENTRY_URL` is set, the public-mode settings no longer apply. V3 private moderation uses the AgentSentry V3 Moderate endpoint (path `/OpenTOP/V3/Lumen/Moderate`) with endpoint AK/SK signature authentication.
 
@@ -99,7 +324,7 @@ When `AGENTSENTRY_URL` is set, `content_safety` enters V3 private moderation mod
 V3 private moderation has a different review scope and behavior from the public mode: it only reviews user input and the model's visible plan before tool calls, not model output or tool results. Read the details below before switching.
 </Warning>
 
-#### Environment variables
+##### Environment variables
 
 | Environment variable | Default | Description |
 | :--- | :--- | :--- |
@@ -125,7 +350,7 @@ export AGENTSENTRY_SK="<your_endpoint_sk>"
 V3 private moderation must be configured through `AGENTSENTRY_URL`. If the path of `TOOL_LLM_SHIELD_URL` is `/OpenTOP/V3/Lumen/Moderate`, initialization raises an error.
 </Note>
 
-#### Review scope and behavior
+##### Review scope and behavior
 
 V3 private moderation mode reviews only the following two points:
 
@@ -142,7 +367,7 @@ Key differences from public mode:
 - **Tool results**: Not reviewed.
 - **Moderation failure handling**: When the V3 service returns a degraded response, a non-200 status code, a timeout, or an unknown decision, tool execution is blocked with a service-unavailable message rather than allowing the content through.
 
-#### Usage
+##### Usage
 
 V3 mode uses the same callback configuration as public mode. Set the environment variables above before importing `content_safety` to enter V3 mode; the calling code stays the same:
 
@@ -171,8 +396,7 @@ response = asyncio.run(
 print(response)
 ```
 
-
-## Usage
+### Usage
 
 Hook the `content_safety` callbacks onto the agent to audit its execution:
 
@@ -211,7 +435,7 @@ tool:
     url: https://<your-lumen-host>/OpenTOP/V1/Lumen/Moderate
 ```
 
-## Checking moderation
+### Checking moderation
 
 Configure settings before importing `content_safety`, and provide the key through `TOOL_LLM_SHIELD_API_KEY`. Save the example and run `python app.py`. Ordinary input should receive a response; verify blocking with test text covered by your configured policy and check the service audit records. A fixed sample sentence does not guarantee a particular policy match
 
@@ -221,7 +445,7 @@ Model-input moderation checks the first text part of the last user content in th
 V3 private moderation mode has a different review scope from the public mode described above: user input review checks all text parts rather than only the first, tool-call review checks the model's visible plan rather than serialized arguments, and model output and tool results are not reviewed. See the "AgentSentry V3 private moderation" section above.
 </Note>
 
-### Adjusting the request timeout
+#### Adjusting the request timeout
 
 In the example above, replace the `content_safety` import with this configuration fragment and retain the same four callbacks:
 
