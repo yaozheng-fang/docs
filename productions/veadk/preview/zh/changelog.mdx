@@ -9,6 +9,8 @@ en_link: "/productions/veadk/preview/en/changelog"
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 内容安全 | `content_safety` 新增 Decision 后端（System One 判定 API）：在 `config.yaml` 的 `tool.content_safety` 块中配置 `provider: decision`，或通过 `Agent` 的 `content_safety` 参数直接配置，`Runner` 和 AgentKit 部署会自动挂载插件。内置问题集覆盖提示词注入、凭证窃取、数据外泄、危险操作、有害内容等类别，支持自定义问题、阈值和拦截文案；支持多模态审计，图片、音频、视频按原始顺序进入 `state`；审计失败按 `on_error` 策略处理，请求体过大时始终拦截。 | [内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety#decision-后端system-one) |
+| 内容安全 | `content_safety` 引入 `provider` 选择后端，默认 `none` 不挂载插件、不发起网络请求；`llm_shield` 保留原有 LLM Shield 回调路径，`decision` 使用 System One 判定 API。`Agent` 新增 `content_safety` 构造参数（`None`/`False`/`True`/`dict`/`ContentSafetyConfig`）和 `content_safety_plugins` 属性，用于自动解析和手动传递插件。 | [内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety#启用内容安全) |
 | 远端沙箱智能体 | 新增 `SkillSandboxAgent`：`AgentkitRemoteSandboxAgent` 的子类，预设 `tool_type` 为 `Skill`，默认从 `AGENTKIT_TOOL_ID_SKILLS` 环境变量读取 Tool ID（未设置时回退到 `AGENTKIT_TOOL_ID`）；新增 `guardrails` 参数在用户任务前附加护栏指令，新增 `timeout` 参数覆盖执行超时并调整会话存活时间。 | [远端沙箱智能体](/productions/veadk/preview/zh/components/agent/remote-sandbox-agent#技能沙箱智能体) |
 | 远端沙箱智能体 | `AgentkitRemoteSandboxAgent` 新增 `tool_id_env` 参数：设置后优先从指定环境变量读取 Tool ID，未设置时回退到 `AGENTKIT_TOOL_ID`。 | [远端沙箱智能体](/productions/veadk/preview/zh/components/agent/remote-sandbox-agent#参数) |
 | 运行时 | 修复外部运行时中长时工具调用挂起后智能体可能重复启动模型循环的问题，以及会话持久化后事件顺序不正确的问题：当长时工具调用尚未返回结果时，智能体现在正确等待而非重新启动模型；模型响应事件的时间戳改为反映实际完成时间，确保数据库会话存储重载后事件顺序正确；Codex 运行时恢复线程时包含当前批次中全部工具结果；PiAgent 运行时跨调用保留完整对话历史与工具调用结果配对。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
