@@ -1,0 +1,172 @@
+---
+title: "Observability"
+zh_link: "/productions/veadk/preview/zh/components/observability"
+---
+
+VeADK provides application logs and traces to diagnose model calls, tools, and agent execution. Logs record individual events; traces connect operations within a request so you can inspect timing and relationships
+
+Tracing uses [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) spans and generative AI attributes. Coverage depends on the instrumentation provided by the runtime and tools. External backends also require compatible protocols, endpoints, and credentials
+
+See [Application logging](/productions/veadk/preview/en/components/observability/logging) for log levels and formatting
+
+## Core concepts
+
+### span
+
+A span is a traceable unit of execution that records a name, start/end times, attributes, and parent-child relationships. VeADK builds a tree of spans for each request, covering nodes such as agent runs, model calls, and tool executions, and annotates them per the generative-AI semantic conventions with attributes like `gen_ai.operation.name` and `gen_ai.span.kind`.
+
+### The tracer `OpentelemetryTracer`
+
+`OpentelemetryTracer` is the unified tracing entry point. It holds a list of exporters, wires each one into the tracing pipeline on initialization, and automatically attaches an in-memory exporter for local retention and dumping.
+
+### exporter
+
+An exporter sends span data to a specific backend platform. Each exporter targets one backend and can be used alone or combined. VeADK ships the following exporters:
+
+| Exporter | Class | Target platform | Docs |
+| :--- | :--- | :--- | :--- |
+| APMPlus | `APMPlusExporter` | Volcengine APMPlus, traces and metrics | [APMPlus](/productions/veadk/preview/en/components/observability/apmplus) |
+| Cozeloop | `CozeloopExporter` | Cozeloop, trace observation and evaluation | [Cozeloop](/productions/veadk/preview/en/components/observability/cozeloop) |
+| TLS | `TLSExporter` | Volcengine TLS log service | [TLS](/productions/veadk/preview/en/components/observability/tls) |
+| In-memory | `InMemoryExporter` | In-process memory, local debugging and dumping | [In-memory exporter](/productions/veadk/preview/en/components/observability/inmemory) |
+
+
+<Warning>
+Traces may contain user input, model responses, and tool data. Before enabling external exporters, confirm the destination, access controls, and retention policy. `force_export()` requests a flush; it does not prove that the backend received the data
+</Warning>
+
+## Attaching a tracer to an agent
+
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model) first. This example stores traces locally and does not require an external observability backend. Running it prints a model response and the path to a JSON trace file
+
+```python title="app.py" lines
+import asyncio
+from pathlib import Path
+
+from veadk import Agent, Runner
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer()
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("Explain the purpose of an agent in one sentence", session_id="demo-session")
+)
+print(response)
+Path("traces").mkdir(exist_ok=True)
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(path)
+```
+
+After configuring each backend's endpoint, credentials, and target resource, one tracer can report to multiple platforms. This configuration fragment replaces the tracer above:
+
+```python lines
+from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
+from veadk.tracing.telemetry.exporters.cozeloop_exporter import CozeloopExporter
+from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer(
+    exporters=[APMPlusExporter(), CozeloopExporter(), TLSExporter()]
+)
+```
+
+### Tracer parameters
+
+`OpentelemetryTracer` accepts the following fields:
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | `veadk_opentelemetry_tracer` | Tracer identifier, used for logging and naming dump files. |
+| `exporters` | `list[BaseExporter]` | `[]` | List of exporters. `InMemoryExporter` may not be added explicitly, or validation fails; the in-memory exporter is attached automatically. |
+| `apmplus_managed_externally` | `bool` | — | Read-only property. Whether a global `TracerProvider` already existed at initialization. When `True`, VeADK reuses the external provider instead of overriding it and skips registering the APMPlus span processor; this does not establish that the external provider reports to APMPlus. |
+
+<Note>
+`InMemoryExporter` is managed automatically by `OpentelemetryTracer` and retains completed, sampled spans. Do not add it to the `exporters` list manually, or initialization fails.
+</Note>
+
+### Reusing a preconfigured global TracerProvider
+
+By default, `OpentelemetryTracer` creates and sets the global `TracerProvider` during initialization. If a global `TracerProvider` already exists at that point (for example, set by another library or the application itself), VeADK reuses it instead of overriding it.
+
+When a global provider already exists, the `APMPlusExporter` object remains in the exporter list, but its span processor is not registered by this tracer. Cozeloop, TLS, and in-memory exporters are still attached. This also applies to exporters created with `ENABLE_APMPLUS=true`
+
+`apmplus_managed_externally` only indicates that a provider already existed at initialization. It does not inspect that provider's destination or confirm delivery to APMPlus. If your application already configures OpenTelemetry, configure the APMPlus destination there and verify the Trace ID in the backend
+
+## Enabling exporters via environment variables
+
+Besides constructing exporters explicitly, `Agent` attaches the matching exporter at runtime based on the following environment variables (enabled when set to `true`). If the agent provides no `tracers`, an `OpentelemetryTracer` is created automatically:
+
+| Environment variable | Exporter enabled |
+| :--- | :--- |
+| `ENABLE_APMPLUS` | `APMPlusExporter` |
+| `ENABLE_COZELOOP` | `CozeloopExporter` |
+| `ENABLE_TLS` | `TLSExporter` |
+
+<Tip>
+When all three variables are `false` (the default), `Agent` creates no tracer. To trace in that case, construct an `OpentelemetryTracer` explicitly and pass it via `tracers`.
+</Tip>
+
+## Content tracing
+
+By default, spans record the input and output content of the agent, model, and tools. In scenarios involving sensitive data, you can disable content capture and reduce content captured by VeADK. This is controlled by `OpenTelemetryConfig.trace_content`.
+
+| Config | Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | Whether to write prompt, completion, and tool input/output content into spans. Set to `false` to disable these content fields; configure third-party instrumentation and application logs separately. |
+
+```bash lines
+# Disable content capture
+export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
+```
+
+## Local dumping
+
+The in-memory exporter built into `OpentelemetryTracer` retains spans by `session_id`. Call `dump` to export the current session's spans to a local JSON file for offline analysis:
+
+```python lines
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(f"trace written to {path}")
+```
+
+The exported JSON contains, for each span, its name, `span_id`, `trace_id`, start/end times, attributes, and parent span. See [In-memory exporter](/productions/veadk/preview/en/components/observability/inmemory) for details.
+
+## Local cache limits
+
+The in-memory exporter retains the most recent 1024 spans by default, with an estimated data cap of 16 MiB. When either limit is reached, the oldest span is evicted. Adjust these limits with the following environment variables:
+
+| Environment variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED` | `bool` | `true` | Whether to retain local span history. |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_SPANS` | `int` (non-negative) | `1024` | Maximum number of spans to retain. |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_BYTES` | `int` (non-negative) | `16777216` | Estimated data size limit in bytes. |
+
+```bash lines
+# Disable local cache and use cloud observability only
+export OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED=false
+```
+
+When local caching is disabled, span annotation, Trace IDs in logs, and configured cloud export remain available; `tracer.dump()` writes an empty array. Multiple tracers under the same `TracerProvider` share one local cache budget. See [In-memory exporter](/productions/veadk/preview/en/components/observability/inmemory#local-cache-limits) for details.
+
+## Request spans and streaming TTFT
+
+VeADK uses native OpenTelemetry span start/end times to describe execution boundaries. VeADK AgentKit/Harness HTTP applications create an `http_request` server span at ASGI ingress, before body parsing, and end it when the application finishes. Direct VeADK Runner execution creates a `runner_request` span; a Runner invoked inside the HTTP request reuses that request scope. These boundaries exclude client/network/gateway delays before the application receives the request.
+
+Each LiteLLM Chat or Ark Responses SDK request creates a `model_request` client span under the owning model span. Its native start time is the same local SDK-request timestamp used to calculate TTFT; it is not provider inference start. VeADK-issued retries/fallbacks create separate spans. Hidden provider/LiteLLM retries remain within the observed SDK call.
+
+| Attribute | Type / meaning |
+| --- | --- |
+| `gen_ai.span.kind` | `llm` on an SDK request span. |
+| `gen_ai.request.model` | Actual requested model. |
+| `gen_ai.request.stream` | Boolean actual SDK streaming mode, independent of HTTP SSE or Runner configuration. |
+| `gen_ai.chat_completions.streaming_time_to_first_token` | Floating-point seconds from SDK request start to its first generated delta. |
+
+The first nonempty text, reasoning, or tool-call delta records TTFT once. Metadata, empty deltas, usage, heartbeats, and completion-only aggregates do not count. Non-streaming, no-output, or uninstrumented paths omit TTFT; unknown SDK mode is not inferred from Runner configuration. One chunk can contain multiple tokens, so this is an SDK-observed duration, not a provider-side per-token timestamp.
+
+The same value is recorded once in the `gen_ai.chat_completions.streaming_time_to_first_token` Histogram, unit `s`, using the existing global MeterProvider. Dimensions are `gen_ai.request.model` and `gen_ai.operation.name=chat`. Metrics do not depend on token usage or trace sampling; export requires a configured metrics pipeline. Negative wall-clock intervals are omitted with a diagnostic; genuine measured zero is valid.
+
+Failed model requests set native Span Status to `ERROR` and `error.type` to `llm_error`, `timeout`, or `cancelled`. Request spans use `request_error`, `timeout`, or `cancelled`; HTTP 5xx responses use `http_error`. Explicit generator closure is not an error. Already observed TTFT survives interruption, and exception text is not added by this instrumentation.
+
+<Note>
+This instrumentation replaces the previous custom timing fields. It no longer exports custom `veadk.request.*` or `veadk.model.*` attributes or a custom first-token event, without compatibility aliases. Client-render timing and TPOT histogram reporting remain outside this feature.
+</Note>

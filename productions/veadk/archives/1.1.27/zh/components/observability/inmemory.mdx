@@ -1,0 +1,97 @@
+---
+title: "内存导出器"
+en_link: "/productions/veadk/preview/en/components/observability/inmemory"
+---
+
+`InMemoryExporter` 把 span 数据保存在进程内存中，而非上报至外部平台。它按 `session_id` 组织 span，便于本地调试、测试以及将某次会话的追踪数据落盘为 JSON 文件进行离线分析。
+
+本地留存的 span 数量受可配置上限约束，达到上限后自动淘汰最早的 span；同一个 `TracerProvider` 下的多个追踪器共享一个内存导出器实例。
+
+## 何时使用
+
+- 本地开发与调试智能体执行流程；
+- 在单元测试或集成测试中校验 span；
+- 离线环境中无外部平台连接，需要本地留存与分析追踪数据。
+
+## 自动管理
+
+`InMemoryExporter` 由 `OpentelemetryTracer` 自动创建并管理，用于记录已完成且被采样的 span。因此它**不能**被显式加入 `OpentelemetryTracer` 的 `exporters` 列表，否则初始化会报错。
+
+```python lines
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+# 即使不配置任何外部导出器，内存导出器仍会自动附加
+tracer = OpentelemetryTracer(exporters=[])
+```
+
+同一个 `TracerProvider` 下的多个追踪器共享一个 `InMemoryExporter` 实例；首次创建时注册，后续追踪器复用已注册的导出器。
+
+## 使用示例
+
+会话运行结束后，可调用追踪器的 `dump` 方法，将该会话的 span 导出为本地 JSON 文件：
+
+```python title="app.py" lines
+import asyncio
+from pathlib import Path
+
+from veadk import Agent, Runner
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer()
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("用一句话解释智能体的用途", session_id="demo-session")
+)
+print(response)
+Path("traces").mkdir(exist_ok=True)
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(path)
+```
+
+## 本地缓存限制
+
+内存导出器的本地留存按 span 数量和估算数据量双重上限管理，达到任一上限时淘汰最早的 span；单个 span 超过字节上限时不写入本地缓存，仍按原有配置交给云端导出器。默认保留最近的 1024 个 span，估算数据总量上限为 16 MiB。
+
+| 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED` | `bool` | `true` | 是否保留本地 span 历史。设为 `false` 时不保留任何 span，但 span 标注、日志中的 Trace ID 和已配置的云端上报保持可用。 |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_SPANS` | `int`（非负） | `1024` | 最多保留的 span 数量。设为 `0` 时不保留。 |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_BYTES` | `int`（非负） | `16777216` | 估算数据量上限，单位为字节。设为 `0` 时不保留。 |
+
+```bash lines
+# 关闭本地缓存，仅使用云端观测
+export OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED=false
+```
+
+关闭本地缓存后，`tracer.dump()` 写入空数组。启用缓存时，`dump()` 只包含仍保留的会话历史；用于关联会话的 span 被淘汰后，对应链路可能不再出现在本地导出中，完整历史应在云端观测平台查询。
+
+字节数是缓存数据的估算值，不代表整个进程的内存上限。配置在首次创建缓存时生效，修改后需重启应用或创建新的 `TracerProvider`。
+
+## 参数
+
+### 构造参数
+
+`InMemoryExporter` 通常无需手动构造，其构造参数如下：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | `inmemory_exporter` | 导出器实例标识。 |
+
+### `dump` 方法参数
+
+`OpentelemetryTracer.dump` 依赖内存导出器留存的 span，参数如下：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `str` | `unknown_user_id` | 用户标识，用于组织与命名落盘文件。 |
+| `session_id` | `str` | `unknown_session_id` | 会话标识，用于筛选该会话的 span。 |
+| `path` | `str` | 智能体目录 | 输出文件所在目录；目录必须已经存在，`dump` 不自动创建目录。 |
+
+落盘文件名形如 `{name}_{user_id}_{session_id}_{trace_id}.json`，内容为 span 列表，每个 span 包含名称、`span_id`、`trace_id`、起止时间、属性以及父 span 关系。
+
+## 判断导出结果
+
+先完成[模型配置](/productions/veadk/preview/zh/components/agent/model)，将示例保存为 `app.py` 后运行 `python app.py`。终端输出的文件路径应存在，JSON 列表应包含本次模型调用的 span
+
+内存数据在进程退出后丢失。会话筛选依赖模型调用写入的会话标识；未产生相关模型 span、采样未保留数据或会话标识不一致时，文件可能为空。`user_id` 用于文件命名，不用于导出筛选，也不构成访问控制

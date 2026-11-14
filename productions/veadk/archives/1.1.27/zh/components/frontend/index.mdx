@@ -1,0 +1,22 @@
+---
+title: "概述"
+en_link: "/productions/veadk/preview/en/components/frontend"
+---
+
+VeADK 提供浏览器界面用于调试、对话和管理智能体。按任务选择启动入口；A2UI 是对话中的界面渲染能力，不是独立的工作台
+
+## VeADK Web 与 VeADK Frontend
+
+| 入口 | 适用任务 | 启动方式 |
+| --- | --- | --- |
+| [VeADK Web](/productions/veadk/preview/zh/components/frontend/veadk-web) | 检查本地智能体、会话和工具事件 | `veadk web ./agents` |
+| [VeADK Frontend](/productions/veadk/preview/zh/components/frontend/veadk-frontend) | 使用 React 对话界面，调试本地智能体或连接云端 Runtime | `veadk frontend --dev --agents-dir ./agents` |
+| [AgentKit Studio](/productions/veadk/preview/zh/components/frontend/studio) | 创建、测试、部署和管理智能体及工作区 | `veadk studio` |
+
+`veadk frontend` 与 `veadk studio` 使用同一套服务和界面，默认连接云端 Runtime；`--dev` 才会从 `--agents-dir` 加载本地智能体。云端资源查询与部署需要对应云服务商凭据，本地模型调用需要模型凭据
+
+## A2UI
+
+[A2UI](/productions/veadk/preview/zh/components/frontend/a2ui)让支持工具调用的模型返回卡片、表单和布局。需要安装 A2UI 依赖、在智能体中启用该能力，并通过支持 A2UI 的前端查看结果
+
+Studio 的创建方式、Preview 可用范围和部署要求见[Studio 智能体工作台](/productions/veadk/preview/zh/components/frontend/studio)。DeepSeek Harness 生成独立的容器运行时，配置方式见[创建与部署指南](/productions/veadk/preview/zh/components/frontend/deepseek-harness)

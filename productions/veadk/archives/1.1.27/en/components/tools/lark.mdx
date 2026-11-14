@@ -1,0 +1,83 @@
+---
+title: "Feishu / Lark MCP"
+zh_link: "/productions/veadk/preview/zh/components/tools/lark"
+---
+
+## Overview
+
+`lark_tools` (`from veadk.tools.builtin_tools.lark import lark_tools`) lets you integrate an AI agent with Feishu / Lark open capabilities for cloud-document processing, chat management, calendar scheduling, and more. It launches a local MCP Server via `npx @larksuiteoapi/lark-mcp`, so `npx` and `lark-mcp` must be installed.
+
+<Note>
+This tool exposes Feishu capabilities **as tools the agent can call**. If instead you want to route inbound Feishu bot messages into a VeADK `Runner`, see the [Feishu Channel extension](/productions/veadk/preview/en/components/extensions/feishu-channel).
+</Note>
+
+## Environment & prerequisites
+
+<Warning>
+To create an app, see [Lark app creation](https://open.larkoffice.com/document/develop-an-echo-bot/introduction).
+
+1. Configure the API key for the agent's reasoning model.
+2. Configure the Lark application App ID, App Secret, and user access token.
+</Warning>
+
+Environment variables:
+
+- `MODEL_AGENT_API_KEY`: API key for the agent's reasoning model
+- `TOOL_LARK_ENDPOINT`: Lark service Application ID
+- `TOOL_LARK_API_KEY`: Lark application App Secret (the variable name remains API_KEY)
+- `TOOL_LARK_TOKEN`: Authorized, unexpired user access token
+
+Install Node.js and npm, then run `npm install -g @larksuiteoapi/lark-mcp`. Both `npx --version` and `lark-mcp -V` must work: importing this tool checks both commands. Enable the required application API scopes and authorize the user. The App Secret and user access token are not interchangeable.
+
+## Usage
+
+```python title="examples/tools/lark/agent.py" lines
+import asyncio
+
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+from veadk.tools.builtin_tools.lark import lark_tools
+
+agent = Agent(
+    name="lark_agent",
+    model_name="doubao-seed-2-1-pro-260628",
+    description="A Feishu bot.",
+    instruction="Read Lark data as requested. Do not send messages or modify data without an explicit request.",
+    tools=[lark_tools],
+)
+
+runner = Runner(agent=agent, short_term_memory=ShortTermMemory())
+
+
+async def main():
+    response = await runner.run(
+        "List the calendars I can access without creating or changing events"
+    )
+    print(response)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Verify tool discovery
+
+The prebuilt instance reads credentials at import time and configures a local MCP connection. List the available tools first; names and input schemas depend on the installed Lark MCP version. This instance has no cloud-region switch. `CLOUD_PROVIDER` does not configure platform differences between Feishu and Lark; use [custom MCP](/productions/veadk/preview/en/components/tools/custom-mcp) for custom endpoints or startup arguments.
+
+```python lines
+import asyncio
+
+from veadk.tools.builtin_tools.lark import lark_tools
+
+
+async def main():
+    try:
+        tools = await lark_tools.get_tools()
+        print([tool.name for tool in tools])
+    finally:
+        await lark_tools.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```

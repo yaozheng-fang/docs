@@ -1,0 +1,172 @@
+---
+title: "概述"
+en_link: "/productions/veadk/preview/en/components/observability"
+---
+
+VeADK 通过运行日志和调用链追踪帮助定位模型、工具及执行流程的问题。日志记录离散事件；追踪将一次请求中的多个操作关联起来，便于查看耗时和调用关系
+
+追踪使用 [OpenTelemetry](https://opentelemetry.io/docs/specs/semconv/registry/attributes/gen-ai/) 的 span 与生成式 AI 属性。实际采集范围取决于运行时和工具的埋点；接入外部平台还需要匹配其协议、端点与凭证
+
+运行日志的级别与格式见[应用日志](/productions/veadk/preview/zh/components/observability/logging)
+
+## 核心概念
+
+### span
+
+span 是一次可被追踪的执行单元，记录名称、起止时间、属性以及父子关系。VeADK 会为一次完整请求生成一棵 span 树，覆盖智能体运行、模型调用、工具执行等节点，并遵循生成式 AI 语义规范标注 `gen_ai.operation.name`、`gen_ai.span.kind` 等属性。
+
+### 追踪器 `OpentelemetryTracer`
+
+`OpentelemetryTracer` 是统一的追踪入口。它持有一组导出器，初始化时将每个导出器接入追踪管线，并自动附加一个内存导出器用于本地留存与落盘。
+
+### 导出器 exporter
+
+导出器负责把 span 数据发送到具体的后端平台。每个导出器对应一个后端，可单独或组合使用。VeADK 内置以下导出器：
+
+| 导出器 | 类 | 目标平台 | 文档 |
+| :--- | :--- | :--- | :--- |
+| APMPlus | `APMPlusExporter` | 火山引擎 APMPlus，追踪与指标 | [APMPlus](/productions/veadk/preview/zh/components/observability/apmplus) |
+| Cozeloop | `CozeloopExporter` | Cozeloop，链路观测与评测 | [Cozeloop](/productions/veadk/preview/zh/components/observability/cozeloop) |
+| TLS | `TLSExporter` | 火山引擎日志服务 TLS | [TLS 日志服务](/productions/veadk/preview/zh/components/observability/tls) |
+| 内存 | `InMemoryExporter` | 进程内存，本地调试与落盘 | [内存导出器](/productions/veadk/preview/zh/components/observability/inmemory) |
+
+
+<Warning>
+追踪数据可能包含用户输入、模型回答和工具数据。启用外部导出器前，确认数据发送目标、访问权限与保留周期；调用 `force_export()` 只会触发刷新，不代表远端已成功接收
+</Warning>
+
+## 给智能体挂载追踪器
+
+先完成[模型配置](/productions/veadk/preview/zh/components/agent/model)。下面的示例只保存在内存中，不需要外部观测平台；运行后会输出模型回复和本地 JSON 文件路径
+
+```python title="app.py" lines
+import asyncio
+from pathlib import Path
+
+from veadk import Agent, Runner
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer()
+agent = Agent(name="trace_demo", tracers=[tracer])
+runner = Runner(agent=agent, app_name="trace_demo", user_id="demo-user")
+response = asyncio.run(
+    runner.run("用一句话解释智能体的用途", session_id="demo-session")
+)
+print(response)
+Path("traces").mkdir(exist_ok=True)
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(path)
+```
+
+配置好每个平台的端点、凭证和目标资源后，一个追踪器可以同时挂多个导出器。下例是替换上方追踪器的配置片段：
+
+```python lines
+from veadk.tracing.telemetry.exporters.apmplus_exporter import APMPlusExporter
+from veadk.tracing.telemetry.exporters.cozeloop_exporter import CozeloopExporter
+from veadk.tracing.telemetry.exporters.tls_exporter import TLSExporter
+from veadk.tracing.telemetry.opentelemetry_tracer import OpentelemetryTracer
+
+tracer = OpentelemetryTracer(
+    exporters=[APMPlusExporter(), CozeloopExporter(), TLSExporter()]
+)
+```
+
+### 追踪器参数
+
+`OpentelemetryTracer` 接受以下字段：
+
+| 参数 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `name` | `str` | `veadk_opentelemetry_tracer` | 追踪器标识，用于日志与落盘文件命名。 |
+| `exporters` | `list[BaseExporter]` | `[]` | 导出器列表。不允许显式加入 `InMemoryExporter`，否则会校验报错；内存导出器由追踪器自动附加。 |
+| `apmplus_managed_externally` | `bool` | — | 只读属性。初始化时是否检测到已存在的全局 `TracerProvider`。为 `True` 时表示 VeADK 复用外部 provider 而不再覆盖，并跳过该追踪器中 `APMPlusExporter` 的链路注册；这不表示外部 provider 已配置 APMPlus。 |
+
+<Note>
+`InMemoryExporter` 由 `OpentelemetryTracer` 自动管理，用于留存已完成且被采样的 span。请勿手动加入 `exporters` 列表，否则初始化会报错。
+</Note>
+
+### 复用全局 TracerProvider
+
+默认情况下，`OpentelemetryTracer` 初始化时会创建并设置全局 `TracerProvider`。如果在初始化之前已存在一个全局 `TracerProvider`（例如由其他库或应用主程序设置），VeADK 将复用该 provider 而不再覆盖它。
+
+已有全局 provider 时，`APMPlusExporter` 对象仍保留在导出器列表中，但该追踪器跳过它的链路注册。Cozeloop、TLS 和内存导出器仍会附加。通过 `ENABLE_APMPLUS=true` 自动创建的导出器也遵循这一行为
+
+`apmplus_managed_externally` 仅表示初始化时检测到了已有 provider。它不检查该 provider 的目标平台，也不保证 APMPlus 收到数据。应用已配置 OpenTelemetry 时，应在同一处配置 APMPlus 的上报目标，并在平台上确认 Trace ID
+
+## 通过环境变量启用导出器
+
+除显式构造导出器外，`Agent` 会根据以下环境变量在运行时自动挂载对应导出器（值为 `true` 时启用）。若智能体未显式提供 `tracers`，会自动创建一个 `OpentelemetryTracer`：
+
+| 环境变量 | 启用的导出器 |
+| :--- | :--- |
+| `ENABLE_APMPLUS` | `APMPlusExporter` |
+| `ENABLE_COZELOOP` | `CozeloopExporter` |
+| `ENABLE_TLS` | `TLSExporter` |
+
+<Tip>
+三个环境变量均为 `false`（默认）时，`Agent` 不会创建追踪器；此时若需要追踪，请显式构造 `OpentelemetryTracer` 并通过 `tracers` 传入。
+</Tip>
+
+## 内容追踪
+
+默认情况下，span 会记录智能体、模型与工具的输入输出内容。在涉及敏感数据的场景中，可关闭内容采集，减少 VeADK 采集的内容数据。该行为由 `OpenTelemetryConfig.trace_content` 控制。
+
+| 配置项 | 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `trace_content` | `OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT` | `bool` | `True` | 是否将提示词、补全与工具输入输出内容写入 span。设为 `false` 时关闭对应内容字段的采集；第三方埋点和应用日志需单独配置。 |
+
+```bash lines
+# 关闭内容采集
+export OBSERVABILITY_OPENTELEMETRY_TRACE_CONTENT=false
+```
+
+## 本地落盘
+
+`OpentelemetryTracer` 内置的内存导出器会按 `session_id` 留存 span，可调用 `dump` 将当前会话的 span 导出为本地 JSON 文件，用于离线分析：
+
+```python lines
+path = tracer.dump(user_id="demo-user", session_id="demo-session", path="traces")
+print(f"trace 已写入 {path}")
+```
+
+导出的 JSON 包含每个 span 的名称、`span_id`、`trace_id`、起止时间、属性以及父 span 关系。更多细节参见[内存导出器](/productions/veadk/preview/zh/components/observability/inmemory)。
+
+## 本地缓存限制
+
+内存导出器默认保留最近的 1024 个 span，估算数据总量上限为 16 MiB，达到任一上限时淘汰最早的 span。可通过以下环境变量调整：
+
+| 环境变量 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED` | `bool` | `true` | 是否保留本地 span 历史。 |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_SPANS` | `int`（非负） | `1024` | 最多保留的 span 数量。 |
+| `OBSERVABILITY_OPENTELEMETRY_INMEMORY_MAX_BYTES` | `int`（非负） | `16777216` | 估算数据量上限，单位为字节。 |
+
+```bash lines
+# 关闭本地缓存，仅使用云端观测
+export OBSERVABILITY_OPENTELEMETRY_INMEMORY_ENABLED=false
+```
+
+关闭本地缓存后，span 标注、日志中的 Trace ID 和已配置的云端上报保持可用，`tracer.dump()` 写入空数组。同一个 `TracerProvider` 下的多个追踪器共享一份本地缓存额度。更多细节参见[内存导出器](/productions/veadk/preview/zh/components/observability/inmemory#本地缓存限制)。
+
+## 请求 Span 与流式 TTFT
+
+VeADK 使用 OpenTelemetry Span 原生起止时间表达执行边界。VeADK AgentKit/Harness HTTP 应用在 ASGI 入口、请求体解析前创建 `http_request` server Span，在应用执行结束时关闭。直接执行 VeADK Runner 时创建 `runner_request` Span；在 HTTP 请求中调用 Runner 时复用该请求范围。上述边界不包含应用接收请求之前的客户端、网络和网关耗时。
+
+每次 LiteLLM Chat 或 Ark Responses SDK 请求，在所属模型 Span 下创建 `model_request` client Span。其原生开始时间与 TTFT 计算使用的本地 SDK 请求起点相同，不代表服务端开始推理。VeADK 发起的重试/降级分别创建 Span；供应商/LiteLLM 内部不可观测的重试仍属于同一次 SDK 调用。
+
+| 属性 | 类型 / 含义 |
+| --- | --- |
+| `gen_ai.span.kind` | SDK 请求 Span 上为 `llm`。 |
+| `gen_ai.request.model` | 实际请求的模型。 |
+| `gen_ai.request.stream` | 布尔值，表示实际 SDK 流式模式，不依赖 HTTP SSE 或 Runner 配置。 |
+| `gen_ai.chat_completions.streaming_time_to_first_token` | 从 SDK 请求开始到首个生成增量到达的浮点秒数。 |
+
+首个非空文本、推理或工具调用增量触发一次 TTFT 记录。元数据、空增量、usage、心跳和仅完成时返回的聚合内容不计入。非流式、无输出或未埋点路径省略 TTFT；SDK 模式未知时不从 Runner 配置推导。一个 chunk 可含多个 token，因此这是 SDK 侧观测耗时，不是供应商侧逐 token 时间戳。
+
+同一个值通过现有全局 MeterProvider，在 `gen_ai.chat_completions.streaming_time_to_first_token` Histogram 记录一次，单位为 `s`。维度为 `gen_ai.request.model` 和 `gen_ai.operation.name=chat`。指标不依赖 token usage 或 Trace 采样；导出需要配置指标链路。负时钟间隔省略并产生诊断；真正测得的零值有效。
+
+失败模型请求设置原生 Span Status 为 `ERROR`，`error.type` 为 `llm_error`、`timeout` 或 `cancelled`。请求 Span 使用 `request_error`、`timeout` 或 `cancelled`；HTTP 5xx 响应使用 `http_error`。主动关闭生成器不算错误。已观测的 TTFT 在中断后保留，本埋点不添加异常正文。
+
+<Note>
+此埋点替代了此前的自定义计时字段，不再导出自定义 `veadk.request.*`、`veadk.model.*` 属性或自定义首 Token 事件，不保留兼容别名。客户端渲染计时和 TPOT Histogram 上报不在本功能范围内。
+</Note>

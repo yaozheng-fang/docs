@@ -1,0 +1,676 @@
+---
+title: "Runtime"
+zh_link: "/productions/veadk/preview/zh/components/agent/runtime"
+---
+
+A runtime organizes model calls, tool execution, and results. VeADK uses Google ADK by default, with `codex` and `piagent` available for coding-oriented execution. Check model settings, tools, and callbacks before switching
+
+Complete [model configuration](/productions/veadk/preview/en/components/agent/model) first. Volcengine and BytePlus each require their own model endpoint and API Key
+
+## Default runtime
+
+Omitting `runtime` is equivalent to `runtime="adk"`, suitable for standard model calls, structured output, and tool workflows
+
+```python main.py lines
+import asyncio
+from veadk import Agent, Runner
+agent = Agent(name="assistant", runtime="adk")
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain what an agent runtime does.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python main.py` to print the final response. Use `Runner.run_async` for event and streaming handling
+
+## Parallel synchronous tool execution
+
+Synchronous functions in the ADK runtime can block other async tasks. Set `tool_thread_pool_config` to run synchronous tools in worker threads, allowing concurrent execution when the model issues multiple calls in one turn
+
+```python parallel_tools.py lines
+import asyncio
+from veadk import Agent, Runner
+from google.adk.agents.run_config import ToolThreadPoolConfig
+
+def lookup_stock(product: str) -> dict:
+    """Return the demo stock count for a product."""
+    return {"product": product, "stock": {"notebook": 12, "pen": 40}.get(product, 0)}
+
+agent = Agent(
+    name="stock_assistant",
+    tools=[lookup_stock],
+    tool_thread_pool_config=ToolThreadPoolConfig(max_workers=4),
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Check stock for notebook and pen.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python parallel_tools.py` to query both products. The model decides whether to issue calls together; the thread pool does not split tasks itself. Tools sharing mutable data or connections must support concurrent access
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `ToolThreadPoolConfig.max_workers` | `int` | `4` | Maximum workers, at least 1 |
+
+`RunConfig.tool_thread_pool_config` takes precedence over the agent setting. It affects ADK synchronous tools, not Codex or PiAgent execution. See [code sandbox](/productions/veadk/preview/en/components/tools/code-sandbox#parallel-call-isolation) for parallel `run_code` session isolation and `VEADK_RUN_CODE_ISOLATE_PARALLEL_CALLS`
+
+## Switch the execution backend
+
+| `runtime` | Purpose | Preparation |
+| :--- | :--- | :--- |
+| `adk` | Standard agent execution; default | No additional runtime installation |
+| `codex` | Coding tasks through the Codex SDK | Install `veadk-python[codex]` |
+| `piagent` | Execution through PiAgent RPC | Supply a binary or allow installation on first use |
+| `dsh` | Execution through the DeepSeek Harness SDK | Install `veadk-python[dsh]` |
+
+### Use the Codex runtime
+
+Install the optional SDK and CLI binary dependencies:
+
+```bash lines
+pip install "veadk-python[codex]"
+```
+
+Model settings remain `model_name`, `model_api_base`, and `model_api_key`. Defaults use an isolated workspace, `workspace_write`, disabled network, and denied escalation. This example keeps those settings explicit
+
+```python codex_runtime.py lines
+import asyncio
+from veadk import Agent, Runner
+from veadk.runtime.codex import CodexRuntimeConfig
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    codex_runtime_config=CodexRuntimeConfig(
+        sandbox="workspace_write",
+        approval_mode="deny_all",
+        network_access=False,
+    ),
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Calculate the sum of integers from 1 to 100.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python codex_runtime.py`. Register function and MCP tools through `Agent.tools`. Local skills in ADK `SkillToolset` can be passed to the runtime; see the compatibility table for legacy `skills_mode` restrictions
+
+### Codex security configuration
+
+`Agent.codex_runtime_config` accepts `CodexRuntimeConfig` or a matching dictionary
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `approval_mode` | `"deny_all" \| "auto_review"` | `"deny_all"` | `deny_all` rejects escalation; `auto_review` automatically accepts all such requests without human review |
+| `sandbox` | `"read_only" \| "workspace_write" \| "full_access"` | `"workspace_write"` | Read-only, workspace writes, or full host access |
+| `network_access` | `bool` | `False` | Controls network only under `workspace_write` |
+| `workspace_root` | `str \| None` | `None` | Workspace root; otherwise an isolated temporary directory is created |
+| `reuse_workspace` | `bool` | `False` | Reuses an explicitly configured workspace across invocations |
+| `mcp_process_reuse` | `bool` | `True` | Whether to reuse same-thread MCP processes with identity validation. Enabled by default for stable ADK/MCP tools under `direct` + `resume`; set `False` to use a fresh process per invocation |
+| `reasoning_effort` | `"minimal" \| "low" \| "medium" \| "high" \| "xhigh"` | `"medium"` | Reasoning effort; actual support depends on the model |
+| `personality` | `"none" \| "friendly" \| "pragmatic"` | `"pragmatic"` | Response style |
+| `max_tool_iterations` | `int` | `32` | Bridged ADK tool iteration budget for the whole turn, from 1 to 256; not a universal limit on native operations |
+| `tool_timeout_seconds` | `float \| None` | `120.0` | Bridged tool timeout in seconds; must be positive, or `None` to omit this timeout |
+| `turn_timeout_seconds` | `float \| None` | `1800.0` | Upper bound for Codex admission, setup, and one running turn; the turn is interrupted and the invocation fails on timeout; `None` removes the bound |
+| `auto_compact_token_limit` | `int \| None` | `None` | Token count at which Codex compacts the thread history itself (direct transport only); `None` keeps Codex's default |
+| `model_transport` | `"auto" \| "direct" \| "shim"` | `"auto"` | How Codex reaches the model: `direct` calls the endpoint's Responses API directly and serves ADK tools over an MCP bridge; `shim` routes through VeADK's in-process Responses-to-chat shim that runs the tools; `auto` selects `direct` for endpoints known to serve the Responses API and `shim` for the rest |
+| `thread_mode` | `"resume" \| "ephemeral"` | `"resume"` | `resume` keeps one Codex thread per session, resumed on the next turn instead of replaying a transcript; `ephemeral` starts a fresh thread every invocation. Only `direct` supports resume; `shim` is always ephemeral |
+
+<Warning>
+`auto_review` automatically approves escalation and file changes; it is not model-based review. `full_access` broadens host access, and `reuse_workspace=True` can share files across invocations. Use them only when explicitly needed in trusted environments. `network_access=False` cannot restrict `full_access`, so that combination is rejected. `read_only` also ignores this network switch
+</Warning>
+
+VeADK enforces session isolation through a custom permissions profile: under `workspace_write` and `read_only`, sandbox commands run with a VeADK-generated permissions configuration based on read-only access, denying access to temporary directories and non-shared workspace roots, and only allowing the current session's working directory and skills. A session's commands cannot read or write another session's workspace, rollouts, or configuration. Other files on the host (such as application configuration or a local SQLite session database) remain readable; isolate tenants at the container or OS-user level
+
+These environment variables override constructor settings:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `VEADK_CODEX_SANDBOX` | Unset | Overrides `sandbox` |
+| `VEADK_CODEX_APPROVAL_MODE` | Unset | Overrides `approval_mode` |
+| `VEADK_CODEX_WORKSPACE_ROOT` | Unset | Overrides `workspace_root` |
+| `VEADK_CODEX_NETWORK_ACCESS` | Unset | Overrides `network_access`; `1`, `true`, `yes`, and `on` enable it, case-insensitively |
+| `VEADK_CODEX_MODEL_TRANSPORT` | Unset | Overrides `model_transport`, case-insensitively |
+| `VEADK_CODEX_THREAD_MODE` | Unset | Overrides `thread_mode`, case-insensitively |
+| `VEADK_CODEX_MCP_PROCESS_REUSE` | Unset | Overrides `mcp_process_reuse`; `1`, `true`, `yes`, and `on` enable it, case-insensitively |
+
+### Codex process reuse and concurrency
+
+With `direct` transport and `thread_mode="resume"`, tool-free turns and turns exposing stable ADK/MCP tools reuse processes by default. Set `mcp_process_reuse=False` or `VEADK_CODEX_MCP_PROCESS_REUSE=0` to disable MCP process reuse; tool-free turns can still be reused. Each turn rebinds the executor, callbacks, working directory, and tool budget. Before execution, the SDK-confirmed thread/turn ID is validated; stale turns, missing or mismatched identities, and duplicate in-process request IDs are rejected. Idle processes do not accept tool execution. Reuse occurs only when the storage, session, thread, model, permissions, skills, instruction, and tool declarations are unchanged and the stored thread identity and version still match. Processes are closed on error, interruption, save failure, or when the request lifecycle cannot be determined. `VEADK_CODEX_PROCESS_POOL_SIZE=0` keeps a fresh process for every turn.
+
+Reuse avoids repeatedly injecting skills and environment context on warm paths; necessary context is still preserved on cold recovery. An existing empty working directory is no longer reported as reset; newly created or rebuilt directories still are.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `VEADK_CODEX_PROCESS_POOL_SIZE` | `20` | Maximum idle Codex processes retained per VeADK process; the least recently used is closed when exceeded. `0` disables reuse (one process per call) |
+| `VEADK_CODEX_PROCESS_IDLE_TTL_SECONDS` | `600` | Idle processes are closed after this many seconds |
+| `VEADK_CODEX_MAX_CONCURRENT_TURNS` | Unset (no limit) | Maximum concurrent Codex turns per VeADK process. Excess calls queue before workspace, private directory, tools, and session lock allocation; admission, setup, and execution share `turn_timeout_seconds`, and expiry before the turn starts raises a timeout error |
+| `VEADK_CODEX_DENY_READ_PATHS` | Unset | Additional host paths the sandbox cannot read, separated by `os.pathsep` (`:` on Linux/macOS) |
+
+Idle processes are released automatically after the idle timeout. To release early: `await veadk.runtime.codex.release_codex_session(app_name, user_id, session_id)` closes a session's persistent process (call when deleting a session); `await veadk.runtime.codex.shutdown_codex_runtime()` closes all persistent processes plus the MCP bridge and shim, called automatically when an AgentKit application shuts down. If a VeADK process is killed, its Codex subprocesses exit with it; subsequent VeADK processes on the same host clean up locked workspaces and directories only when they can prove the owner has exited
+
+### Parallel and batch tool workloads
+
+Independent async function tools can already execute concurrently when Codex emits them in the same model response. Mark independence in application instructions and concise tool descriptions; dependent reads and writes must retain their required ordering. An application-owned batch tool can bound independent reads and return a result or explicit error for each item. Authorize each item: ADK tools execute on the host, so the Codex sandbox does not replace business permissions. One batch is one SDK tool invocation, and the application must cap the number of business reads separately.
+
+The checkout provides a local example and benchmark, `scripts/benchmark_codex_tools.py`, with `single`, `parallel`, `serial`, and `batch` scenarios. Its `bounded_batch_lookup` example limits admission, applies per-item timeouts, preserves cancellation, and reports partial failures. It never combines arbitrary registered tools automatically.
+
+```bash
+uv run --extra dev python scripts/benchmark_codex_tools.py --scenario parallel --turns 5 --pool-size 20
+uv run --extra dev python scripts/benchmark_codex_tools.py --scenario parallel --turns 5 --pool-size 0
+```
+
+These runs use the real Codex binary and a scripted loopback model without provider tokens. They validate warm hits, model request counts, context growth, and tool results; their latency is framework/simulation evidence, not a real-model performance claim. Run the real-binary regression separately with `CODEX_RUN_SMOKE=1 uv run --extra dev pytest tests/runtime/codex/test_codex_tool_workloads.py -m codex_smoke -p no:xdist -rs`.
+
+### Model transport
+
+`model_transport` controls how Codex reaches the model and runs tools:
+
+| Transport | Model access | Tool execution | Thread resume |
+| :--- | :--- | :--- | :--- |
+| `direct` | Codex calls the endpoint's Responses API directly | ADK tools are served to Codex over an in-process MCP bridge; Codex drives the tool loop | Supported |
+| `shim` | Routed through VeADK's in-process Responses-to-chat shim | The shim runs ADK tools itself; Codex is unaware of them | Not supported; always ephemeral |
+| `auto` | Endpoints known to serve the Responses API use `direct`; the rest use `shim` | Same as above | `direct` supports it |
+
+In `auto` mode, Volcengine Ark (`*.volces.com`), BytePlus ModelArk (`*.bytepluses.com`), and `api.openai.com` endpoints use `direct`; all others use `shim`
+
+### Thread resume
+
+With `thread_mode="resume"`, each session keeps one Codex thread. The thread's rollout is stored alongside the session (in its database when the short-term memory is database-backed) and resumed on the next turn, so Codex keeps its own full history instead of being handed a replayed transcript. `ephemeral` starts a fresh thread every invocation
+
+<Note>
+Thread resume only works with the `direct` transport. The `shim` transport is always ephemeral because the tools it runs never reach Codex's history. Thread persistence depends on session storage; with in-memory session storage, threads do not survive a process restart
+</Note>
+
+### Steer a running turn
+
+`Runner.steer(session_id, text)` adds an instruction to the turn currently running for a session without starting a new one. The agent adjusts course without losing its progress
+
+```python steer.py lines
+import asyncio
+from veadk import Agent, Runner
+from veadk.runtime.codex import CodexRuntimeConfig
+
+agent = Agent(
+    name="coding_assistant",
+    runtime="codex",
+    codex_runtime_config=CodexRuntimeConfig(
+        model_transport="direct",
+        thread_mode="resume",
+    ),
+)
+runner = Runner(agent=agent, app_name="steer-demo", user_id="demo-user")
+
+async def main():
+    async def send():
+        print(await runner.run(
+            messages='Write a Python function to sort a list.', session_id="steer-demo"
+        ))
+    async def steer():
+        await asyncio.sleep(2)
+        delivered = await runner.steer(
+            session_id="steer-demo", text="Also add type hints."
+        )
+        print(f"Steer delivered: {delivered}")
+
+    await asyncio.gather(send(), steer())
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+`steer` returns `True` when the text was delivered to a running turn, `False` when no turn is running or the runtime does not support steering. Only the `direct` transport supports it, and the turn must be running in the current process
+
+### Codex observability
+
+Lifecycle notifications, function calls, and MCP calls become ADK events for sessions, traces, and frontends. Log fields such as `invocation_id`, `call_id`, `tool`, `status`, and `duration_ms` correlate operations. Token usage is exposed through `codex_event_type=token_usage` events
+
+Runtime logs are not complete traces of every model call. Events, sessions, and configured exporters may contain task and tool content; control access and retention when exporting them
+
+### Configure transient-error retries
+
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `CODEX_SHIM_NUM_RETRIES` | `int` | `2` | Maximum retries for rate limits, server errors, overload, and timeouts; `0` disables retries |
+| `CODEX_SHIM_TIMEOUT` | `float` | `0` | Backend model request timeout in seconds; `0` uses the client default |
+
+### Use PiAgent
+
+<Warning>
+PiAgent executes in a local working directory. Built-in tools may modify files or run commands. An isolated configuration directory is not an operating-system sandbox. Use trusted projects, a restricted environment, and appropriate tool limits
+</Warning>
+
+```python piagent_runtime.py lines
+import asyncio
+from veadk import Agent, Runner
+agent = Agent(name="coding_assistant", runtime="piagent")
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain the steps for checking a CSV file without modifying files.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python piagent_runtime.py`. VeADK checks `PIAGENT_BINARY`, then its managed cache, and downloads a Pi Release if neither is available. Download checksums are verified only when `PIAGENT_BINARY_SHA256` is set. Preinstall the binary and specify its path for offline and production environments
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `PIAGENT_BINARY` | Unset | Installed executable |
+| `PIAGENT_INSTALL_DIR` | `~/.cache/veadk/piagent` | Download and cache directory |
+| `PIAGENT_BINARY_URL` | Release URL | Custom archive URL |
+| `PIAGENT_BINARY_SHA256` | Unset | Expected archive SHA-256 |
+| `PIAGENT_BINARY_VERSION` | `latest` | Version to download |
+| `PIAGENT_BINARY_REPO` | `earendil-works/pi` | Release repository |
+| `PIAGENT_BINARY_PLATFORM` | Current OS and architecture | Linux/macOS amd64 and arm64, plus Windows amd64 |
+| `PIAGENT_AGENT_DIR` | Temporary directory per invocation | Isolated configuration and sessions; cannot be the real `~/.pi/agent` or its descendants |
+| `PIAGENT_ALLOW_PARENT_PI_CODING_AGENT_DIR` | `false` | Allows the parent's `PI_CODING_AGENT_DIR` when no explicit directory is set; isolation checks still apply |
+| `PIAGENT_WORKDIR` | Current directory | Task working directory |
+| `PIAGENT_TIMEOUT_SECONDS` | `600` | Invocation timeout in seconds |
+| `PIAGENT_PROVIDER_ID` | `veadk` | Provider identifier registered in Pi |
+| `PIAGENT_MODEL_API` | `openai-completions` | Pi model API type |
+| `PIAGENT_MODEL_API_KEY_ENV` | `VEADK_PI_MODEL_API_KEY` | Variable name used to pass the model Key to the subprocess |
+| `PIAGENT_DISABLE_TOOLS` | `false` | Disables tools; bridge registration may re-enable them, so this is not an isolation guarantee |
+| `PIAGENT_DISABLE_BUILTIN_TOOLS` | `false` | Disables Pi built-in tools |
+| `PIAGENT_TOOL_ALLOWLIST` | Empty | Comma-separated built-in tool allowlist |
+| `PIAGENT_EXCLUDE_TOOLS` | Empty | Comma-separated excluded tools |
+| `PIAGENT_DISABLE_EXTENSION_DISCOVERY` | `true` | Disables automatic extension discovery |
+| `PIAGENT_ENABLE_EXTENSION_DISCOVERY` | Unset | Enables discovery unless the matching `DISABLE` variable is set |
+| `PIAGENT_DISABLE_SKILL_DISCOVERY` | `true` | Disables automatic skill discovery, not explicitly supplied skills |
+| `PIAGENT_ENABLE_SKILL_DISCOVERY` | Unset | Enables discovery unless the matching `DISABLE` variable is set |
+| `PIAGENT_PROJECT_TRUST` | `deny` | Project trust policy: `deny`, `approve`, or Pi's `default` |
+
+### Use the DeepSeek Harness runtime
+
+The DeepSeek Harness runtime delegates the agent inner loop to the DeepSeek Harness SDK. The binary is acquired at install time through a Python extra, and the subprocess starts lazily at runtime without a first-run download
+
+Install the optional SDK and matching binary dependencies:
+
+```bash lines
+pip install "veadk-python[dsh]"
+```
+
+`veadk-python[dsh]` depends on `deepseek-harness-sdk`, which in turn depends on a matching `deepseek-harness-runtime-bin`. The `dsh` executable arrives with the wheel; VeADK does not download a binary at runtime. Importing VeADK or constructing an `Agent` does not start DSH; the SDK starts the subprocess when execution first reaches the runtime entry point
+
+One effective configuration reuses one SDK object and DSH subprocess. The same VeADK app/user/session/agent maps to a stable DSH session identifier. VeADK session history remains the source of truth for short-term memory and is serialized into the prompt as structured conversation data; the DSH session identifier stays stable but is not the sole memory source
+
+ADK function tools and MCP tools are expanded before the DSH run and executed through generated tool plugins and an authenticated local callback server. `sub_agents` use the same injected transfer path as other external runtimes. ADK `SkillToolset` and legacy skills are materialized into an isolated directory and registered as DSH native skill plugins. Root-session DSH streaming output maps to ADK partial events, and DSH native tool events map to ADK function call/response events
+
+Model settings remain `model_name`, `model_api_base`, and `model_api_key`. The following example uses a Volcengine Ark endpoint:
+
+```python dsh_runtime.py lines
+import os
+from veadk import Agent, Runner
+from veadk.runtime.deepseek_harness import DeepSeekHarnessRuntimeConfig
+
+agent = Agent(
+    name="assistant",
+    runtime="dsh",
+    model_name="doubao-seed-2-1-pro-260628",
+    model_api_base="https://ark.cn-beijing.volces.com/api/v3",
+    model_api_key=os.environ["MODEL_AGENT_API_KEY"],
+    deepseek_harness_runtime_config=DeepSeekHarnessRuntimeConfig(
+        provider="volcengine",
+        profile="sdk-minimal",
+    ),
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain what an agent runtime does.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+```
+
+Run `python dsh_runtime.py` to print the final response
+
+`provider` is the user-facing provider name, defaulting to `deepseek-official`. `openai`, `volcengine`, `volcengine-ark`, `ark`, `openai-compatible`, and `third-party` all map to the current DSH `deepseek-official` adapter; unknown provider names are passed through for future DSH native adapters. When `base_url` and `api_key` are not set in the config, they fall back to `Agent.model_api_base` and `Agent.model_api_key`
+
+When `dsh_home` is not configured, VeADK generates an isolated process-owned directory and passes it to the SDK instead of implicitly using `~/.dsh`. Configure a persistent `dsh_home` when DSH sessions must survive process restarts
+
+### DSH configuration
+
+`Agent.deepseek_harness_runtime_config` accepts `DeepSeekHarnessRuntimeConfig` or a matching dictionary
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `provider` | `str` | `"deepseek-official"` | User-facing provider name; empty values normalize to `deepseek-official`. `openai`, `volcengine`, `volcengine-ark`, `ark`, `openai-compatible`, and `third-party` map to `deepseek-official` |
+| `model` | `str \| None` | `None` | Overrides `Agent.model_name`; when unset, uses the first entry of `Agent.model_name` |
+| `reasoning_effort` | `str \| None` | `None` | Reasoning effort; actual support depends on the model |
+| `max_tokens` | `int \| None` | `None` | Maximum output tokens; must be positive |
+| `cwd` | `str \| None` | `None` | Working directory; expanded and resolved to an absolute path before use |
+| `runtime_cwd` | `str \| None` | `None` | Runtime working directory; expanded and resolved to an absolute path before use |
+| `dsh_bin` | `str \| None` | `None` | Path to the `dsh` executable; expanded and resolved to an absolute path before use |
+| `profile` | `str` | `"sdk-minimal"` | DSH profile name. `sdk-minimal` lets VeADK inject its own tool and skill plugins; `sdk` uses DSH's fuller profile, and VeADK patches existing skill plugin configuration instead of inserting duplicate plugin groups |
+| `patches` | `tuple[str, ...]` | `()` | Additional DSH plugin patch file paths; expanded and resolved to absolute paths before use |
+| `dsh_home` | `str \| None` | `None` | DSH home directory; when unset, an isolated process-owned directory is generated. Expanded and resolved to an absolute path before use |
+| `env` | `dict[str, str]` | `{}` | Extra environment variables passed to the DSH subprocess |
+| `initialize_timeout_seconds` | `float` | `30.0` | SDK initialization timeout in seconds; must be positive |
+| `request_timeout_seconds` | `float \| None` | `None` | Timeout for a single DSH run in seconds; `None` removes the limit. Set explicitly in production when a hard deadline is needed |
+| `shutdown_timeout_seconds` | `float \| None` | `1.0` | Timeout for shutting down the DSH SDK in seconds; `None` omits this timeout |
+| `base_url` | `str \| None` | `None` | Model API endpoint; falls back to `Agent.model_api_base` when unset |
+| `api_key` | `str \| None` | `None` | Model API Key; falls back to `Agent.model_api_key` when unset |
+These environment variables override constructor settings:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `VEADK_DEEPSEEK_HARNESS_PROVIDER` | Unset | Overrides `provider` |
+| `VEADK_DEEPSEEK_HARNESS_MODEL` | Unset | Overrides `model` |
+| `VEADK_DEEPSEEK_HARNESS_REASONING_EFFORT` | Unset | Overrides `reasoning_effort` |
+| `VEADK_DEEPSEEK_HARNESS_MAX_TOKENS` | Unset | Overrides `max_tokens` |
+| `VEADK_DEEPSEEK_HARNESS_CWD` | Unset | Overrides `cwd` |
+| `VEADK_DEEPSEEK_HARNESS_RUNTIME_CWD` | Unset | Overrides `runtime_cwd` |
+| `VEADK_DEEPSEEK_HARNESS_DSH_BIN` | Unset | Overrides `dsh_bin` |
+| `VEADK_DEEPSEEK_HARNESS_PROFILE` | Unset | Overrides `profile` |
+| `VEADK_DEEPSEEK_HARNESS_DSH_HOME` | Unset | Overrides `dsh_home` |
+| `VEADK_DEEPSEEK_HARNESS_INITIALIZE_TIMEOUT_SECONDS` | Unset | Overrides `initialize_timeout_seconds` |
+| `VEADK_DEEPSEEK_HARNESS_REQUEST_TIMEOUT_SECONDS` | Unset | Overrides `request_timeout_seconds` |
+| `VEADK_DEEPSEEK_HARNESS_SHUTDOWN_TIMEOUT_SECONDS` | Unset | Overrides `shutdown_timeout_seconds` |
+| `VEADK_DEEPSEEK_HARNESS_BASE_URL` | Unset | Overrides `base_url` |
+| `VEADK_DEEPSEEK_HARNESS_API_KEY` | Unset | Overrides `api_key` |
+
+<Note>
+`enable_skills_checklist` is not enforced inside DSH's native skill loader. Descendant DSH subagent session notifications are not yet projected as first-class child-session events. These differences from `codex` and `piagent` are listed in the compatibility table below
+</Note>
+
+### Runtime compatibility
+
+Check these settings when switching to `codex`, `piagent`, or `dsh`:
+
+| Setting | External-runtime behavior |
+| :--- | :--- |
+| Custom `model`, `output_schema`, `planner`, agent-level `code_executor` | Unsupported; configuration fails |
+| `include_contents="none"`, `enable_supervisor=True` | Unsupported; configuration fails |
+| `generate_content_config` | Only `system_instruction` is supported; other explicit fields fail |
+| `model_name` list, `model_fallbacks` | Uses only the primary model; ignores fallbacks |
+| `model_provider` | Does not select a LiteLLM provider; requires a compatible endpoint |
+| `enable_responses`, `enable_responses_cache` | Do not enable ADK's Ark Responses features |
+| `model_extra_config` | Forwarded by Codex; unused by PiAgent and DSH |
+| `knowledgebase`, `example_store` | Do not supply content automatically; use ADK or retrieve content and add it to instructions |
+| Legacy `skills_mode`, `enable_skills_checklist` | `codex` and `piagent` do not provide the full legacy toolset behavior; `dsh` materializes `SkillToolset` and legacy skills into DSH native skill plugins but does not enforce `enable_skills_checklist` inside that loader |
+| `after_model_callback`, model traces | Operate on turn results; do not assume per-model-call callbacks and traces |
+| `RunConfig.max_llm_calls` | Codex checks before calls; PiAgent and DSH count completed calls and may stop one call beyond the limit |
+
+## Agent transfer
+
+`transfer_to_agent` lets the model delegate to another agent in the tree, which continues execution and returns results. ADK, Codex, PiAgent, and DSH support transfers
+
+| Target | Condition |
+| :--- | :--- |
+| Child | Registered in `sub_agents`, excluding `single_turn` and `task` modes |
+| Parent | A parent exists and `disallow_transfer_to_parent` is not set |
+| Peer | Peer transfer is allowed and the target accepts transfers |
+
+```python transfer.py lines
+import asyncio
+from veadk import Agent, Runner
+writer = Agent(
+    name="writer",
+    description="Rewrite supplied text as a concise announcement.",
+    instruction="Rewrite the user's text as an announcement without adding facts.",
+)
+agent = Agent(
+    name="coordinator",
+    instruction="Transfer announcement-writing tasks to writer.",
+    sub_agents=[writer],
+)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Write an announcement: the office closes at 17:00 on Friday.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python transfer.py` to obtain an announcement. Transfers require `Runner`; the target executes in the same invocation context, including its `output_key` behavior. Use the sequential workflow below when execution order must be fixed
+
+## Output persistence
+
+`output_key` stores the final response in session state under ADK, Codex, PiAgent, and DSH. It does not independently persist data to disk; survival across processes depends on [session storage](/productions/veadk/preview/en/components/session/index)
+
+```python pipeline.py lines
+import asyncio
+from google.adk.agents import SequentialAgent
+from veadk import Agent, Runner
+from veadk.memory.short_term_memory import ShortTermMemory
+
+planner = Agent(
+    name="planner",
+    instruction="Create an outline for the user's requested article.",
+    output_key="plan",
+)
+writer = Agent(
+    name="writer",
+    instruction="Write the article using this outline: {plan}",
+    output_key="draft",
+)
+pipeline = SequentialAgent(name="pipeline", sub_agents=[planner, writer])
+
+async def main():
+    runner = Runner(
+        agent=pipeline, short_term_memory=ShortTermMemory(),
+        app_name="writing_pipeline", user_id="demo-user",
+    )
+    print(await runner.run(
+        messages="Write a short introduction to session state.", session_id="writing-demo"
+    ))
+    session = await runner.session_service.get_session(
+        app_name="writing_pipeline", user_id="demo-user", session_id="writing-demo"
+    )
+    print(session.state["plan"])
+    print(session.state["draft"])
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python pipeline.py`. The planner writes `plan`, the writer reads it through `{plan}`, and the article is stored in `draft`. The script prints the response and both state values for verification
+
+## Model callbacks
+
+Callbacks may be synchronous or asynchronous. ADK runs them around model calls; external runtimes run before/after callbacks around the whole turn, with plugin callbacks before agent callbacks. Returning `None` continues normal handling
+
+| Callback | Behavior |
+| :--- | :--- |
+| `before_model_callback(callback_context, llm_request)` | Can change input, system instructions, and available tools; returning `LlmResponse` supplies a result and skips execution |
+| `after_model_callback(callback_context, llm_response)` | Returning `LlmResponse` replaces the reply; external runtimes buffer and merge final text when this callback is configured |
+| `on_model_error_callback(callback_context, llm_request, error)` | Returning `LlmResponse` supplies an error response; returning `None` propagates the exception |
+
+Mutating a request does not add support for every ADK setting. The compatibility table still applies, including restrictions on `output_schema`
+
+```python model_callback.py lines
+import asyncio
+from veadk import Agent, Runner
+from google.adk.models.llm_response import LlmResponse
+from google.genai import types
+
+def fallback_on_error(callback_context, llm_request, error):
+    return LlmResponse(content=types.Content(
+        role="model",
+        parts=[types.Part(text="The model is temporarily unavailable. Please retry later.")],
+    ))
+
+agent = Agent(name="assistant", on_model_error_callback=fallback_on_error)
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain session state.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python model_callback.py`. A successful model call returns its normal answer; a model failure returns the configured message. The callback does not handle every initialization, tool, or business error
+
+### Convert PDF attachments to images
+
+`pdf_to_images_before_model_callback` converts inline PDF bytes into images for models that support images but cannot read raw PDFs. PDF rendering dependencies are included in the default VeADK installation
+
+Save a document suitable for sending to the model service as `example.pdf` in the current directory, select a vision-capable model, and run this script:
+
+```python pdf_callback.py lines
+import asyncio
+from pathlib import Path
+from google.genai import types
+from veadk import Agent, Runner
+from veadk.utils.pdf_to_images import pdf_to_images_before_model_callback
+
+async def main():
+    agent = Agent(
+        name="document_reader",
+        before_model_callback=pdf_to_images_before_model_callback,
+    )
+    runner = Runner(agent=agent, app_name="pdf_demo", user_id="demo-user")
+    await runner.session_service.create_session(
+        app_name="pdf_demo", user_id="demo-user", session_id="pdf-session"
+    )
+    message = types.Content(role="user", parts=[
+        types.Part(text="Summarize the document."),
+        types.Part(inline_data=types.Blob(
+            mime_type="application/pdf", data=Path("example.pdf").read_bytes()
+        )),
+    ])
+    async for event in runner.run_async(
+        user_id="demo-user", session_id="pdf-session", new_message=message
+    ):
+        if event.is_final_response() and event.content:
+            print("".join(part.text or "" for part in event.content.parts or []))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+The default callback renders at most the first 10 pages of each PDF at scale `2.0`. To change these values, import `make_pdf_to_images_callback` from the same module and set `max_pages` and `scale`. More pages or a larger scale increase image volume, memory use, and model input usage
+
+## Choose where each tool runs
+
+`RuntimeProvider` controls individual tool calls, typically keeping the ADK flow while sending selected work to an application service. `DispatchRuntimeProvider` invokes your dispatch function, while `LocalRuntimeProvider` uses the original tool. To customize the full policy, subclass `RuntimeProvider` and implement `execute(tool_call)`
+
+### Usage example
+
+This runnable example simulates a service adapter locally. Dispatched stock is `12`; the original tool returning `0` is not executed again. It does not connect to a real remote service
+
+```python dispatch.py lines
+import asyncio
+from veadk import Agent, Runner
+from veadk.runtime import DispatchRuntimeProvider, ToolCall
+
+def lookup_stock(product: str) -> dict:
+    """Look up stock for a product."""
+    return {"product": product, "stock": 0, "source": "local"}
+
+async def dispatch_task(tool_call: ToolCall):
+    # Demonstration adapter: replace this body with your service client.
+    return {
+        "product": tool_call.arguments["product"],
+        "stock": 12,
+        "source": "dispatch-demo",
+    }
+
+agent = Agent(
+    name="stock_assistant",
+    instruction="Use lookup_stock to answer stock questions.",
+    tools=[lookup_stock],
+)
+runtime_provider = DispatchRuntimeProvider(
+    dispatch_task, dispatchable_tools={"lookup_stock"}
+)
+
+async def main():
+    print(await Runner(agent=agent, plugins=[runtime_provider]).run(
+        messages='How many notebooks are in stock?', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+For a real service, replace `dispatch_task` with a client configured with authentication and timeouts, correlating requests with `tool_call.id`. Dispatch functions may be sync or async and should return a tool-compatible result. The application defines the service contract
+
+Alternatively, pass `runtime_provider.before_tool_callback` to `Agent.before_tool_callback`. Do not register both entry points, which would intercept twice. MCP tools retain their own connections regardless of dispatch selection
+
+### DispatchRuntimeProvider parameters
+
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `dispatch_task` | `Callable[[ToolCall], Any]` | — | Required. The function called for each dispatched tool call; receives a `ToolCall` and returns the tool result. May be synchronous or asynchronous |
+| `dispatchable_tools` | `Collection[str] \| None` | `("bash",)` | Names of non-MCP tools to dispatch. Set to `None` to dispatch every non-MCP tool |
+| `local_runtime` | `RuntimeProvider \| None` | `None` | Local provider for non-dispatched tools. Defaults to `LocalRuntimeProvider` |
+| `name` | `str` | `"veadk_dispatch_runtime_provider"` | Plugin name |
+
+### ToolCall fields
+
+| Field / Property | Type | Description |
+| :--- | :--- | :--- |
+| `name` | `str` | Tool name |
+| `arguments` | `dict[str, Any]` | Arguments passed to the tool |
+| `tool` | `BaseTool` | The ADK tool object, usable for local execution |
+| `context` | `ToolContext` | The ADK tool context |
+| `id` | `str` | Property. ADK function-call identifier; empty string when unavailable |
+| `session_id` | `str` | Property. Current VeADK session identifier; empty string when unavailable |
+`RuntimeProvider(name=...)` requires a plugin name. `LocalRuntimeProvider` only has an optional `name`, defaulting to `"veadk_local_runtime_provider"`
+
+## Request processing
+
+`run_processor` wraps the event stream of `Runner.run` for authentication, timing, cleanup, or event transformation. Precedence is the current `Runner.run(run_processor=...)`, the `Runner` constructor, the root agent, then the default pass-through processor. Calling `run_async` directly does not apply this wrapper
+
+For authentication, pass `veadk.integrations.ve_identity.AuthRequestProcessor` to `Agent(run_processor=...)`. See [inbound authentication](/productions/veadk/preview/en/components/security/inbound) for identity setup
+
+### Custom processors
+
+Subclass `BaseRunProcessor` and implement `process_run(runner, message, **kwargs)`. This processor forwards events, records elapsed time, and closes the event stream on success, failure, or cancellation
+
+```python run_processor.py lines
+import asyncio
+from veadk import Agent, Runner
+import time
+from contextlib import aclosing
+from veadk.processors.base_run_processor import BaseRunProcessor
+
+class TimingProcessor(BaseRunProcessor):
+    def process_run(self, runner, message, **kwargs):
+        def decorator(event_generator):
+            async def wrapper():
+                started = time.perf_counter()
+                try:
+                    async with aclosing(event_generator()) as events:
+                        async for event in events:
+                            yield event
+                finally:
+                    print(f"Run elapsed: {time.perf_counter() - started:.2f}s")
+            return wrapper
+        return decorator
+
+agent = Agent(name="assistant", run_processor=TimingProcessor())
+
+async def main():
+    print(await Runner(agent=agent).run(
+        messages='Explain what a runtime does.', session_id="runtime-demo"
+    ))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run `python run_processor.py` to see the response and elapsed time. Before adding retries to a processor, determine whether a task has already produced external side effects to avoid repeating them

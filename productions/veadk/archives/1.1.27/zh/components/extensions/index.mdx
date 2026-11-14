@@ -1,0 +1,13 @@
+---
+title: "概述"
+en_link: "/productions/veadk/preview/en/components/extensions"
+---
+
+扩展用于把智能体接入消息渠道，或调整一次运行中的上下文、工具结果和回答检查。根据目标选择对应指南；内容安全的审查配置位于安全章节
+
+| 扩展 | 用途 | 使用前准备 |
+| --- | --- | --- |
+| [飞书消息渠道](/productions/veadk/preview/zh/components/extensions/feishu-channel) | 接收机器人消息，交给 Runner 并回复 | 机器人凭据、消息事件与读取和发送权限 |
+| [Harness](/productions/veadk/preview/zh/components/extensions/harness) | 进程内增强插件或受管 Sidecar | 模型配置；Sidecar 还需可用的运行时 |
+
+[内容安全护栏](/productions/veadk/preview/zh/components/security/content-safety)通过回调接入外部审查服务；[Harness 服务部署](/productions/veadk/preview/zh/deploy/harness)则是独立运行时的创建和部署流程，与本页进程内插件的接入方式不同
