@@ -185,3 +185,19 @@ VeADK 使用 OpenTelemetry Span 原生起止时间表达执行边界。VeADK Age
 对于火山引擎 Ark 端点，响应 ID 取自响应头的 `x-request-id`。其他 provider 使用 SDK 返回的响应 ID 原值。
 
 提供方未返回可取得的响应 ID 时，该属性会省略，不会用 HTTP request ID、SDK 自动生成的 ID、tool call ID 或历史响应 ID 替代。失败尝试的 ID 保留在其对应的 `model_request` span 中；重试或 fallback 后的 `call_llm` 记录实际交付响应的 ID。
+
+### 协议响应 ID
+
+除 `gen_ai.response.id` 外，VeADK 还会将模型提供方在响应体中返回的响应 ID 记录到 `veadk.response.id` span 属性。该属性写入每次模型请求尝试的 `model_request` span 及其所属的 `call_llm` 或 `generate_content` span，覆盖三种线路协议的流式与非流式模式：
+
+| 线路协议 | 响应 ID 来源 |
+| :--- | :--- |
+| Chat Completions | 响应体和每个流式分片的 `id` 字段 |
+| Responses API | 响应体顶层 `id`，或 `response.created`、`response.in_progress` 及终态事件中的 `response.id` |
+| Messages（Anthropic 线路格式） | 消息体顶层 `id`，或 `message_start` 事件中的 `message.id` |
+
+<Note>
+对于火山引擎 Ark Chat 端点，`gen_ai.response.id` 取自响应头的 `x-request-id`，而 `veadk.response.id` 记录响应体中的 `id`，两者可能不同。其他 provider 两个属性的值通常一致。
+</Note>
+
+每次模型请求尝试在观测到响应 ID 时，额外输出一条 `[llm-dispatch] response id` 日志，包含模型名称、线路协议、流式模式和响应 ID。日志中的 ID 经清理为单行并限制长度；span 中保留原始值。提取过程对空白或非字符串 ID、缺失字段和空响应做防御处理，遥测失败不会影响模型调用。

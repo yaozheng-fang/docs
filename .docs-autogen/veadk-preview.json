@@ -2,11 +2,11 @@
   "docs_project": "veadk",
   "source_repo": "https://github.com/volcengine/veadk-python.git",
   "source_branch": "main",
-  "previous_source_head_sha": "6800ad248270c7d8111d24a8bdeb096d55d38423",
-  "source_head_sha": "edbc240d85c92a798c49f65ab2dcd02a210f6d8b",
-  "event_base_ref": "6800ad248270c7d8111d24a8bdeb096d55d38423",
-  "event_head_ref": "edbc240d85c92a798c49f65ab2dcd02a210f6d8b",
-  "bootstrap_preview_base_ref": "6800ad248270c7d8111d24a8bdeb096d55d38423",
-  "generated_at": "2026-11-27T00:13:46Z",
+  "previous_source_head_sha": "edbc240d85c92a798c49f65ab2dcd02a210f6d8b",
+  "source_head_sha": "8d1afbc040db1ed5e89ee80106d7893f767caf0f",
+  "event_base_ref": "edbc240d85c92a798c49f65ab2dcd02a210f6d8b",
+  "event_head_ref": "8d1afbc040db1ed5e89ee80106d7893f767caf0f",
+  "bootstrap_preview_base_ref": "edbc240d85c92a798c49f65ab2dcd02a210f6d8b",
+  "generated_at": "2026-11-27T09:46:08Z",
   "task_type": "preview"
 }

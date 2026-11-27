@@ -185,3 +185,19 @@ When tracing is enabled and the model returns a response ID, VeADK records its o
 For Volcengine Ark endpoints, the response ID is taken from the `x-request-id` response header. Other providers use the response ID returned by the SDK as-is.
 
 If no provider response ID is available, the attribute is omitted. VeADK does not substitute HTTP request IDs, SDK-generated IDs, tool call IDs, or previous response IDs. Failed attempts retain their IDs on their own `model_request` spans; retries and fallbacks report the ID of the delivered response on `call_llm`.
+
+### Protocol response ID
+
+In addition to `gen_ai.response.id`, VeADK records the response ID returned by the provider in the response body as the `veadk.response.id` span attribute. This attribute is written to the `model_request` span of each model request attempt and to its parent `call_llm` or `generate_content` span, covering streaming and non-streaming modes across three wire protocols:
+
+| Wire protocol | Response ID source |
+| :--- | :--- |
+| Chat Completions | `id` field on the response body and every stream chunk |
+| Responses API | Top-level `id` on the response, or `response.id` on `response.created`, `response.in_progress`, and terminal events |
+| Messages (Anthropic wire format) | Top-level `id` on the message, or `message.id` on the `message_start` event |
+
+<Note>
+For Volcengine Ark Chat endpoints, `gen_ai.response.id` is taken from the `x-request-id` response header, while `veadk.response.id` records the `id` from the response body; the two may differ. For other providers, the two attributes typically carry the same value.
+</Note>
+
+When a response ID is observed for a model request attempt, an additional `[llm-dispatch] response id` log line is emitted, including the model name, wire protocol, streaming mode, and response ID. The logged ID is sanitized to a single bounded line; the span retains the raw value. Extraction is defensive — blank or non-string IDs, missing fields, and empty response or message objects are ignored, and telemetry failures never affect the model call.

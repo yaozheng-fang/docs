@@ -61,7 +61,7 @@ VeADK emits structured dispatch boundary logs at the INFO level to help locate r
 | :--- | :--- | :--- |
 | `[turn-dispatch]` | `Runner` | Start and end of each run turn, plus start and end of trace data saving — includes session ID, message count, output length, and total elapsed time. |
 | `[tool-dispatch]` | Tool dispatch layer | Entry and exit of function-tool calls, tool name, thread-pool configuration, parallel-call count; for `run_code` and `bash_tool` — entry, remote-call or subprocess start and end, timeout, and cancellation. |
-| `[llm-dispatch]` | Model clients | Preparation, dispatch, first-delta arrival, and completion of model requests — includes model name, streaming mode, input item count, tool count, response count, and total elapsed time; records TTFT when the first output arrives. |
+| `[llm-dispatch]` | Model clients | Preparation, dispatch, first-delta arrival, and completion of model requests — includes model name, streaming mode, input item count, tool count, response count, and total elapsed time; records TTFT when the first output arrives. When a protocol response ID is observed, an additional log line is emitted with the model name, wire protocol, and response ID. |
 | `[http-dispatch]` | Volcengine signed requests | HTTP request send start and end — includes action, host, status code, request body size, and elapsed time. |
 
 <Note>

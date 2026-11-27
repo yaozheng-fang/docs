@@ -17,6 +17,7 @@ VeADK 1.1.32 发布于 2026 年 11 月 27 日。下表列出该版本的公开�
 
 | 模块 | 变更细节 | 链接 |
 | --- | --- | --- |
+| 可观测 | 新增协议响应 ID 遥测：VeADK 将模型提供方在响应体中返回的响应 ID 记录为 `veadk.response.id` span 属性，写入每次模型请求尝试的 `model_request` span 及其所属的 `call_llm` 或 `generate_content` span，覆盖 Chat Completions、Responses API 和 Anthropic Messages 三种线路协议的流式与非流式模式。每次尝试在观测到响应 ID 时额外输出一条 `[llm-dispatch] response id` 日志。该属性与已有的 `gen_ai.response.id` 互不影响。 | [可观测概述](/productions/veadk/preview/zh/components/observability#协议响应-id) · [应用日志](/productions/veadk/preview/zh/components/observability/logging#调度边界日志) |
 | 远端沙箱智能体 | 新增 `SkillSandboxAgent`：`AgentkitRemoteSandboxAgent` 的子类，预设 `tool_type` 为 `Skill`，默认从 `AGENTKIT_TOOL_ID_SKILLS` 环境变量读取 Tool ID（未设置时回退到 `AGENTKIT_TOOL_ID`）；新增 `guardrails` 参数在用户任务前附加护栏指令，新增 `timeout` 参数覆盖执行超时并调整会话存活时间。 | [远端沙箱智能体](/productions/veadk/preview/zh/components/agent/remote-sandbox-agent#技能沙箱智能体) |
 | 远端沙箱智能体 | `AgentkitRemoteSandboxAgent` 新增 `tool_id_env` 参数：设置后优先从指定环境变量读取 Tool ID，未设置时回退到 `AGENTKIT_TOOL_ID`。 | [远端沙箱智能体](/productions/veadk/preview/zh/components/agent/remote-sandbox-agent#参数) |
 | 运行时 | 修复外部运行时中长时工具调用挂起后智能体可能重复启动模型循环的问题，以及会话持久化后事件顺序不正确的问题：当长时工具调用尚未返回结果时，智能体现在正确等待而非重新启动模型；模型响应事件的时间戳改为反映实际完成时间，确保数据库会话存储重载后事件顺序正确；Codex 运行时恢复线程时包含当前批次中全部工具结果；PiAgent 运行时跨调用保留完整对话历史与工具调用结果配对。 | [运行时](/productions/veadk/preview/zh/components/agent/runtime) |
